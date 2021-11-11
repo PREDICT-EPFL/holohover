@@ -113,6 +113,16 @@ You can monitor serial messages with:
 idf.py monitor
 ```
 
+### Building the micro-ROS agent
+
+To build the micro-ROS agent run the following:
+```
+cd ~/holohover_ws/
+ros2 run micro_ros_setup create_agent_ws.sh
+ros2 run micro_ros_setup build_agent.sh
+source install/local_setup.sh
+```
+
 ### Running the micro-ROS agent
 
 To connect micro-ROS running on the ESP32 with the remaining ROS2 network we have to start the micro-ROS agent:
