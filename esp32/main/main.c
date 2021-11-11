@@ -44,7 +44,7 @@
 #define UART_RXD           16
 #define UART_RTS           18
 #define UART_CTS           19
-#define UART_BAUD_RATE     115200
+#define UART_BAUD_RATE     1000000
 #define UART_BUF_SIZE      1024
 // Timeout of 100ms
 #define UART_TIMEOUT  (100 / portTICK_RATE_MS)
