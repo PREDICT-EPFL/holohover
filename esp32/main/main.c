@@ -44,7 +44,7 @@
 #define UART_RXD           16
 #define UART_RTS           18
 #define UART_CTS           19
-#define UART_BAUD_RATE     500000
+#define UART_BAUD_RATE     115200
 #define UART_BUF_SIZE      1024
 // Timeout of 100ms
 #define UART_TIMEOUT  (100 / portTICK_RATE_MS)
@@ -151,7 +151,7 @@ void micro_ros_task(void * arg)
 #ifdef CONFIG_MICRO_ROS_ESP_XRCE_DDS_MIDDLEWARE
 	rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&init_options);
 
-	// Static Agent IP and port can be used instead of autodisvery.
+	// Static Agent IP and port can be used instead of autodiscovery.
 	RCCHECK(rmw_uros_options_set_udp_address(CONFIG_MICRO_ROS_AGENT_IP, CONFIG_MICRO_ROS_AGENT_PORT, rmw_options));
 	//RCCHECK(rmw_uros_discover_agent(rmw_options));
 #endif

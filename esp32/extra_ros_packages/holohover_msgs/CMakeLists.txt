@@ -24,10 +24,13 @@ endif()
 
 find_package(rosidl_default_generators REQUIRED)
 
+find_package(geometry_msgs REQUIRED)
+
 rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/Attitude.msg"
         "msg/DroneMeasurement.msg"
         "msg/MotorControl.msg"
+        DEPENDENCIES geometry_msgs
         )
 
 ament_export_dependencies(rosidl_default_runtime)

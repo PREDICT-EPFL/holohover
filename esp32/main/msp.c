@@ -32,7 +32,8 @@ void msp_write(uart_port_t uart_num, uint8_t message_id, void* payload, size_t s
         uint8_t b = *(payload_ptr++);
         checksum ^= b;
     }
-    uart_write_bytes(uart_num, payload, size);
+    if (size > 0)
+        uart_write_bytes(uart_num, payload, size);
     uart_write_bytes(uart_num, &checksum, 1);
 }
 
@@ -64,14 +65,15 @@ int msp_read(uart_port_t uart_num, uint8_t* message_id, void* payload, uint32_t 
                 return -1;
 
             // read message ID (type)
-            if (uart_read_bytes(uart_num, &message_id, 1, ticks_remaining) < 0)
+            if (uart_read_bytes(uart_num, message_id, 1, ticks_remaining) < 0)
                 return -1;
 
             uint8_t checksum_calc = message_size ^ *message_id;
 
             // read payload
             ticks_remaining = ticks_end - xTaskGetTickCount();
-            if (uart_read_bytes(uart_num, payload, payload_size, ticks_remaining) < 0)
+            uint8_t max_read_size = message_size < payload_size ? message_size : payload_size;
+            if (max_read_size > 0 && uart_read_bytes(uart_num, payload, max_read_size, ticks_remaining) < 0)
                 return -1;
 
             uint8_t * payload_ptr = (uint8_t*) payload;
