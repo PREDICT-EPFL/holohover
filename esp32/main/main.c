@@ -81,10 +81,6 @@ void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
             outgoing_measurement.gyro.y = imu.gyro[1];
             outgoing_measurement.gyro.z = imu.gyro[2];
 
-            outgoing_measurement.mag.x = imu.mag[0];
-            outgoing_measurement.mag.y = imu.mag[1];
-            outgoing_measurement.mag.z = imu.mag[2];
-
             RCSOFTCHECK(rcl_publish(&drone_measurement_publisher, (const void*) &outgoing_measurement, NULL));
         } else {
             if (msp_attitude_result < 0) {
