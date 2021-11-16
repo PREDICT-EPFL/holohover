@@ -25,12 +25,12 @@
 #include <rmw_microros/rmw_microros.h>
 #endif
 
+#define TAG "HOLOHOVER_ESP32_MAIN"
+
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); vTaskDelete(NULL);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
-#define TAG "HOLOHOVER_ESP32"
-
-#define SAMPLE_TIME_MS 10
+#define SAMPLE_TIME_MS 5
 
 #define MOTOR_A_1  0
 #define MOTOR_A_2  1
@@ -65,9 +65,10 @@ void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 
 	if (timer != NULL) {
 
-        if (msp_request(UART_PORT, MSP_ATTITUDE, &attitude, sizeof(attitude), UART_TIMEOUT) >= 0
-         && msp_request(UART_PORT, MSP_RAW_IMU, &imu, sizeof(imu), UART_TIMEOUT) >= 0) {
+        int msp_attitude_result = msp_request(UART_PORT, MSP_ATTITUDE, &attitude, sizeof(attitude), UART_TIMEOUT);
+        int msp_raw_imu_result = msp_request(UART_PORT, MSP_RAW_IMU, &imu, sizeof(imu), UART_TIMEOUT);
 
+        if (msp_attitude_result >= 0 && msp_raw_imu_result >= 0) {
             outgoing_measurement.atti.roll  = (float) attitude.roll;
             outgoing_measurement.atti.pitch = (float) attitude.pitch;
             outgoing_measurement.atti.yaw   = (float) attitude.yaw;
@@ -85,6 +86,13 @@ void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
             outgoing_measurement.mag.z = imu.mag[2];
 
             RCSOFTCHECK(rcl_publish(&drone_measurement_publisher, (const void*) &outgoing_measurement, NULL));
+        } else {
+            if (msp_attitude_result < 0) {
+                ESP_LOGW(TAG, "MSP attitude request failed.");
+            }
+            if (msp_raw_imu_result < 0) {
+                ESP_LOGW(TAG, "MSP raw imu request failed.");
+            }
         }
 	}
 }
@@ -100,7 +108,9 @@ void motor_control_subscription_callback(const void * msgin)
     motors.motor[MOTOR_C_1] = 1000 + (int)(1000 * msg->motor_c_1);
     motors.motor[MOTOR_C_2] = 1000 + (int)(1000 * msg->motor_c_2);
 
-    msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT);
+    if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
+        ESP_LOGW(TAG, "MSP set motor command failed.");
+    }
 }
 
 void micro_ros_task(void * arg)
@@ -120,7 +130,7 @@ void micro_ros_task(void * arg)
     // Set UART log level
     esp_log_level_set(TAG, ESP_LOG_INFO);
 
-    ESP_LOGI(TAG, "Start RS485 application test and configure UART.");
+    ESP_LOGI(TAG, "Configure UART.");
 
     // Install UART driver (we don't need an event queue here)
     ESP_ERROR_CHECK(uart_driver_install(UART_PORT, UART_BUF_SIZE * 2, UART_BUF_SIZE * 2, 0, NULL, 0));
@@ -138,7 +148,9 @@ void micro_ros_task(void * arg)
     for (int i = 0; i < MSP_MAX_SUPPORTED_MOTORS; ++i) {
         motors.motor[i] = 1000;
     }
-    msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT);
+    if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
+        ESP_LOGW(TAG, "Initial MSP set motor command failed.");
+    }
 
 #if 0
 	// create init_options
@@ -163,11 +175,11 @@ void micro_ros_task(void * arg)
 	rcl_node_t node = rcl_get_zero_initialized_node();
 	RCCHECK(rclc_node_init_default(&node, "esp32_node", "", &support));
 
-	// Create a best effort pong publisher
+	// Create a best effort publisher
 	RCCHECK(rclc_publisher_init_best_effort(&drone_measurement_publisher, &node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, DroneMeasurement), "/drone/measurement"));
 
-	// Create a best effort ping subscriber
+	// Create a best effort subscriber
 	RCCHECK(rclc_subscription_init_best_effort(&motor_control_subscriber, &node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, MotorControl), "/drone/motor_control"));
 
