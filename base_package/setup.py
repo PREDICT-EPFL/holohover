@@ -12,8 +12,16 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    include_package_data = True,
-    install_requires=['setuptools'],
+    package_data={
+        '': ['*.csv'],
+    },
+    install_requires=[
+        'setuptools',
+        'numpy',
+        'pandas',
+        'opencv-python',
+        'opencv-contrib-python',
+    ],
     zip_safe=True,
     maintainer='karim',
     maintainer_email='karimsamaha98@gmail.com',
