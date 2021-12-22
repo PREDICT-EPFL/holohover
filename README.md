@@ -61,10 +61,15 @@
     pip3 install catkin_pkg lark-parser empy colcon-common-extensions importlib-resources
     ```
 
-### Configuring and building the project
+### CLion setup (Optional)
 
-* Set up the environment variables if not already done:
+The project may also be directly build using cmake. To set up CLion follow the guide [here](https://www.jetbrains.com/help/clion/esp-idf.html#cmake-setup).
+
+### Configuring the project
+
+* Cd into the esp32 project and set up the environment variables if not already done:
     ```
+    cd ~/holohover_ws/src/holohover/esp32
     . ~/esp/esp-idf/export.sh
     ```
 
@@ -72,17 +77,34 @@
     ```
     idf.py set-target esp32
     ```
+There are two options for the transport layer. It is recommended to use the bluetooth transport layer which is also enabled by default because it allows for higher sampling rates and less delay. To use the WIFI transport layer remove the line `"-DRMW_UXRCE_TRANSPORT=custom"` in the file `app-colcon.meta`.
 
-* Set your micro-ROS configuration and WiFi credentials under `micro-ROS Settings` using
+#### Bluetooth Transport Layer
+
+* Open the micro-ROS configuration
     ```
     idf.py menuconfig
     ```
-    Under `micro-ROS Settings --->` set the `micro-ROS Agent IP` and `micro-ROS Agent Port`,  and under `micro-ROS Settings ---> WiFi Configuration --->` set up your WiFi credentials.
-    
-* Then build the project
+
+* Navigate to `Component config ---> Bluetooth --->` and enable `Bluetooth`.
+
+* Navigate to `Component config ---> Bluetooth ---> Bluetooth controller(ESP32 Dual Mode Bluetooth) ---> Bluetooth controller mode (BR/EDR/BLE/DUALMODE) (BR/EDR Only) --->` and select `BR/EDR Only`.
+
+* Navigate to `Component config ---> Bluetooth ---> Bluedroid Options --->` and enable `Classic Bluetooth` and `Classic Bluetooth -> SPP`.
+
+* Quit and save.
+
+#### WIFI Transport Layer
+
+* Open the micro-ROS configuration
     ```
-    idf.py build
+    idf.py menuconfig
     ```
+* Navigate to `micro-ROS Settings --->` and set the `micro-ROS Agent IP` and `micro-ROS Agent Port`.
+
+* Navigate to `micro-ROS Settings ---> WiFi Configuration --->` and set up your WiFi credentials.
+
+* Quit and save.
 
 #### Error Handing
 
@@ -97,11 +119,12 @@ After fixing compilation errors it may be helpful to clean and rebuild all the m
 idf.py clean-microros
 ```
 
-### CLion setup
+### Building, flashing, and monitoring
 
-The project may also be directly build using cmake. To set up CLion follow the guide [here](https://www.jetbrains.com/help/clion/esp-idf.html#cmake-setup).
-
-### Flashing and monitoring
+To build the project run:
+```
+idf.py build
+```
 
 To flash the compiled program onto the ESP32 run:
 ```
@@ -113,7 +136,9 @@ You can monitor serial messages with:
 idf.py monitor
 ```
 
-### Building the micro-ROS agent
+### Connect the ESP32 to your ROS network with micro-ROS agent
+
+#### Building the micro-ROS agent
 
 To build the micro-ROS agent run the following:
 ```
@@ -123,9 +148,17 @@ ros2 run micro_ros_setup build_agent.sh
 source install/local_setup.sh
 ```
 
-### Running the micro-ROS agent
+#### Running the micro-ROS agent
 
-To connect micro-ROS running on the ESP32 with the remaining ROS2 network we have to start the micro-ROS agent:
+To connect micro-ROS running on the ESP32 with the remaining ROS2 network we have to start the micro-ROS agent.
+
+To use the Bluetooth transport layer run:
+```
+ros2 run micro_ros_agent micro_ros_agent serial -D /dev/tty.ESP32-ESP32SPP
+```
+where `/dev/tty.ESP32-ESP32SPP` has to be changed to match the bluetooth input which can be found by running `ls /dev`.
+
+To use the WIFI transport layer run:
 ```
 ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
 ```
