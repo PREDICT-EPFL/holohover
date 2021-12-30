@@ -30,7 +30,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'talker = base_package.global_positioner:main',
+            'camera = base_package.camera:main',
+            'simulator = base_package.simulator:main'
         ],
     },
 )
