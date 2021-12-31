@@ -13,7 +13,6 @@
 
 #include "msp.h"
 
-#include <uros_network_interfaces.h>
 #include <holohover_msgs/msg/drone_measurement.h>
 #include <holohover_msgs/msg/motor_control.h>
 #include <rcl/rcl.h>
@@ -24,12 +23,19 @@
 #ifdef CONFIG_MICRO_ROS_ESP_XRCE_DDS_MIDDLEWARE
 #include <rmw_microros/rmw_microros.h>
 #endif
+#ifdef RMW_UXRCE_TRANSPORT_CUSTOM
+#include "nvs_flash.h"
+#include "esp32_bluetooth_serial_transport.h"
+#elif defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
+#include <uros_network_interfaces.h>
+#endif
 
 #define TAG "HOLOHOVER_ESP32_MAIN"
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); vTaskDelete(NULL);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
+// Sampling frequency of 200Hz
 #define SAMPLE_TIME_MS 5
 
 #define MOTOR_A_1  0
@@ -148,24 +154,22 @@ void micro_ros_task(void * arg)
         ESP_LOGW(TAG, "Initial MSP set motor command failed.");
     }
 
-#if 0
-	// create init_options
-	//RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
-#endif
+#ifdef RMW_UXRCE_TRANSPORT_CUSTOM
+    // create init_options
+    RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
+#elif defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
+    rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
+    RCCHECK(rcl_init_options_init(&init_options, allocator));
 
-	rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
-	RCCHECK(rcl_init_options_init(&init_options, allocator));
-
-#ifdef CONFIG_MICRO_ROS_ESP_XRCE_DDS_MIDDLEWARE
 	rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&init_options);
 
 	// Static Agent IP and port can be used instead of autodiscovery.
 	RCCHECK(rmw_uros_options_set_udp_address(CONFIG_MICRO_ROS_AGENT_IP, CONFIG_MICRO_ROS_AGENT_PORT, rmw_options));
 	//RCCHECK(rmw_uros_discover_agent(rmw_options));
-#endif
 
-	// create init_options
+    // create init_options
 	RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
+#endif
 
 	// create node
 	rcl_node_t node = rcl_get_zero_initialized_node();
@@ -204,8 +208,26 @@ void micro_ros_task(void * arg)
 
 void app_main(void)
 {
-#ifdef CONFIG_MICRO_ROS_ESP_NETIF_WLAN || CONFIG_MICRO_ROS_ESP_NETIF_ENET
+#ifdef RMW_UXRCE_TRANSPORT_CUSTOM
+    esp_err_t ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
+
+    ESP_ERROR_CHECK(rmw_uros_set_custom_transport(
+		true,
+		(void *) "ESP32",
+		esp32_bluetooth_serial_open,
+		esp32_bluetooth_serial_close,
+		esp32_bluetooth_serial_write,
+		esp32_bluetooth_serial_read
+	));
+#elif defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
     ESP_ERROR_CHECK(uros_network_interface_initialize());
+#else
+#error micro-ROS transports misconfigured
 #endif
 
     //pin micro-ros task in APP_CPU to make PRO_CPU to deal with wifi:
