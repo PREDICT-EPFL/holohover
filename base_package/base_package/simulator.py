@@ -3,7 +3,7 @@ from rclpy.node import Node
 from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose
 from std_msgs.msg import String
 import numpy as np
-from .helpers.Holohover import Holohover
+from helpers.Holohover import Holohover
 import scipy
 from numpy import DataSource, array, dot
 from qpsolvers import solve_qp
@@ -302,7 +302,7 @@ class Simulator(Node):
 
     def listener_callback(self, msg):
         #Update the thrust input
-        self.get_logger().info('Updating the thrust force')
+        #self.get_logger().info('Updating the thrust force')
         Thrust = np.array([msg.motor_a_1, msg.motor_a_2, msg.motor_b_1, msg.motor_b_2, msg.motor_c_1, msg.motor_c_2])
         self.predict(input=Thrust, input_type='signal')
 

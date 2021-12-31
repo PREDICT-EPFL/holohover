@@ -318,7 +318,7 @@ class Estimator(Node):
 
     def motor_command_callback(self, msg):
         # Update the thrust input
-        self.get_logger().info('Updating the thrust force')
+        #self.get_logger().info('Updating the thrust force')
         signal = np.array([msg.motor_a_1, msg.motor_a_2, msg.motor_b_1, msg.motor_b_2, msg.motor_c_1, msg.motor_c_2])
         thrust = self.__convertSignal(signal)
         self.u = self.__getAcceleration(np.transpose(thrust))
@@ -327,7 +327,7 @@ class Estimator(Node):
     def predict_callback(self):
         self.predict(input=self.u, input_type='acceleration')
         self.P_KF = self.A_d @ self.P_KF @ np.transpose(self.A_d) + self.Q_KF
-        print('Predictor: {}'.format(self.x))
+        #print('Predictor: {}'.format(self.x))
 
         # Publish
         msg = DroneState()
@@ -361,7 +361,7 @@ class Estimator(Node):
         # Update State
         self.IMU.x = self.x + self.IMU.K @ (self.IMU.z - self.IMU.H @ self.x)
         self.x = self.IMU.x
-        print('IMU: {}'.format(self.x))
+        #print('IMU: {}'.format(self.x))
 
         # Update State Error Covariance
         self.P_KF = self.P_KF - (self.IMU.K @ self.IMU.H @ self.P_KF)
@@ -390,7 +390,7 @@ class Estimator(Node):
         self.x_prev = x
         self.y_prev = y
         self.yaw_prev = yaw
-        print('Camera: {}'.format(self.x))
+        #print('Camera: {}'.format(self.x))
 
         # Update State Error Covariance
         self.P_KF = self.P_KF - (self.Camera.K @ self.Camera.H @ self.P_KF)

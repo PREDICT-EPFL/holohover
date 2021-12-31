@@ -150,8 +150,12 @@ def getThrust(self):
 def convertToSignal(self):
     # Input a polynomial function that maps the force in N to a signal
     # between 1000 2000
-    for idx,i in enumerate(self.thrust):
-        self.signal[idx] = fromThrusttoSignal(i)
+    if self.thrust is not None:
+        for idx,i in enumerate(self.thrust):
+            self.signal[idx] = fromThrusttoSignal(i)
+    else:
+        print('Thrust is None')
+        self.signal = np.zeros(shape=(6,1))
     return self.signal
 
 def fromThrusttoSignal(x):

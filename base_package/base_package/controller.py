@@ -4,10 +4,10 @@ from rclpy.node import Node, NodeNameNonExistentError
 from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose, DroneState, MotorControl
 from std_msgs.msg import String
 import numpy as np
-from helpers.Holohover import Holohover
-from helpers.Sensor import Sensor
-from helpers.Helpers import *
-from helpers.PID import PID
+from .helpers.Holohover import Holohover
+from .helpers.Sensor import Sensor
+from .helpers.Helpers import *
+from .helpers.PID import PID
 import scipy
 from numpy import DataSource, array, dot
 from qpsolvers import solve_qp

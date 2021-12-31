@@ -32,7 +32,8 @@ setup(
         'console_scripts': [
             'camera = base_package.camera:main',
             'simulator = base_package.simulator:main',
-            'estimator = base_package.estimator:main'
+            'estimator = base_package.estimator:main',
+            'controller = base_package.controller:main'
         ],
     },
 )
