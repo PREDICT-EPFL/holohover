@@ -31,7 +31,8 @@ setup(
     entry_points={
         'console_scripts': [
             'camera = base_package.camera:main',
-            'simulator = base_package.simulator:main'
+            'simulator = base_package.simulator:main',
+            'estimator = base_package.estimator:main'
         ],
     },
 )

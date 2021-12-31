@@ -3,8 +3,8 @@ from rclpy.node import Node, NodeNameNonExistentError
 from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose, DroneState, MotorControl
 from std_msgs.msg import String
 import numpy as np
-from helpers.Holohover import Holohover
-from helpers.Sensor import Sensor
+from .helpers.Holohover import Holohover
+from .helpers.Sensor import Sensor
 import scipy
 from numpy import DataSource, array, dot
 from qpsolvers import solve_qp
@@ -69,7 +69,7 @@ class Estimator(Node):
         self.mass = 90*10**(-3)                 # in kilograms
         self.J = 0.5*self.mass**2*(self.R+0.02) # inertia of the robot in the z-direction
         self.MAX_THRUST = 100                   # in newtons
-        self.YAW_OFFSET = 0.3 #[TODO]
+        self.YAW_OFFSET = 0 #[TODO]
         # Mappings
         self.P = None
         self.G = None
@@ -81,11 +81,12 @@ class Estimator(Node):
         self.v_y = self.x[3]
         self.x_prev = self.x[4]
         self.y_prev = self.x[5]
+        self.yaw_prev = self.x[0]
 
         # Kalman Filter Parameters
         self.IMU = Sensor()
         self.IMU.R = np.array([[0.01,0  ,0      ,0],
-                               [0   ,0.5,0      ,0],
+                               [0   ,3  ,0      ,0],
                                [0   ,0  ,0.05   ,0],
                                [0   ,0  ,0   ,0.05]])
 
@@ -112,13 +113,15 @@ class Estimator(Node):
                               [0,0,0,0,0,0.01]])
 
         self.Camera = Sensor()
-        self.Camera.R = np.array([[0.01,0   ,0      ,0,   0],
-                                  [0   ,0.1 ,0      ,0,   0],
-                                  [0   ,0   ,0.1   ,0,   0],
-                                  [0   ,0   ,0   ,0.01 ,   0],
-                                  [0   ,0   ,0   ,0   , 0.01]])
+        self.Camera.R = np.array([[0.01,0   ,0      ,0,   0, 0],
+                                  [0   ,0.1 ,0      ,0,   0, 0],
+                                  [0   ,0   ,0.01   ,0,   0, 0],
+                                  [0   ,0   ,0   ,0.01 ,   0, 0],
+                                  [0   ,0   ,0   ,0   , 0.01, 0],
+                                  [0   ,0   ,0      ,0,   0,  0.01]])
 
         self.Camera.H = np.array([[1,0,0,0,0,0],
+                                  [0,1,0,0,0,0],
                                   [0,0,1,0,0,0],
                                   [0,0,0,1,0,0],
                                   [0,0,0,0,1,0],
@@ -324,6 +327,7 @@ class Estimator(Node):
     def predict_callback(self):
         self.predict(input=self.u, input_type='acceleration')
         self.P_KF = self.A_d @ self.P_KF @ np.transpose(self.A_d) + self.Q_KF
+        print('Predictor: {}'.format(self.x))
 
         # Publish
         msg = DroneState()
@@ -357,6 +361,7 @@ class Estimator(Node):
         # Update State
         self.IMU.x = self.x + self.IMU.K @ (self.IMU.z - self.IMU.H @ self.x)
         self.x = self.IMU.x
+        print('IMU: {}'.format(self.x))
 
         # Update State Error Covariance
         self.P_KF = self.P_KF - (self.IMU.K @ self.IMU.H @ self.P_KF)
@@ -371,16 +376,21 @@ class Estimator(Node):
         Delta = Camera_Time - self.Camera_previousTime
         v_x = (self.x_prev-x)/Delta
         v_y = (self.y_prev-y)/Delta
+        yaw_d = (self.yaw_prev - yaw)/Delta
         self.Camera_previousTime = Camera_Time
 
         # Update Kalman Gain
-        self.Camera.z = np.array([yaw,v_x,v_y,x,y])
+        self.Camera.z = np.array([yaw,yaw_d,v_x,v_y,x,y])
         S = self.Camera.H @ self.P_KF @ np.transpose(self.Camera.H) + self.Camera.R
         self.Camera.K = self.P_KF @ np.transpose(self.Camera.H) @ np.linalg.inv(S)
 
         # Update State
         self.Camera.x = self.x + self.Camera.K @ (self.Camera.z - self.Camera.H @ self.x)
         self.x = self.Camera.x
+        self.x_prev = x
+        self.y_prev = y
+        self.yaw_prev = yaw
+        print('Camera: {}'.format(self.x))
 
         # Update State Error Covariance
         self.P_KF = self.P_KF - (self.Camera.K @ self.Camera.H @ self.P_KF)

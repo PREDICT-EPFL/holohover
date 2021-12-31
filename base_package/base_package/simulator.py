@@ -233,8 +233,8 @@ class Simulator(Node):
         # Simulate gaussian noise
         if noisy:
             N = len(self.camera)
-            sigma_pos = 0.5
-            sigma_yaw = 0.02
+            sigma_pos = 0.002 # cm
+            sigma_yaw = 0.2 * np.pi / 180 # rad == 0.2 deg
             self.camera_noise = np.array([sigma_pos*np.random.randn(),sigma_pos*np.random.randn(),sigma_yaw*np.random.randn()])
             self.camera = np.add(self.camera,self.camera_noise)
         return self.camera
@@ -251,7 +251,7 @@ class Simulator(Node):
         self.gyro = np.array([0,0,self.x[1]]) #[TODO]
 
         if noisy:
-            self.gyro_noise = np.array([0,0,self.gyro_noise[2] + (np.random.randn() + 1)*0.01])
+            self.gyro_noise = np.array([0,0,self.gyro_noise[2] + (np.random.randn() + 1)*0.0001])
             self.gyro = np.add(self.gyro,self.gyro_noise)
             sigma = 0.02
             self.acc_noise = np.array([sigma*np.random.randn(),sigma*np.random.randn(),0])
@@ -298,7 +298,7 @@ class Simulator(Node):
         b = b.astype(float)
         lb = np.zeros(shape=(6,))
         T = solve_qp(P,q,G,h,A,b,lb)
-        return T
+        return 
 
     def listener_callback(self, msg):
         #Update the thrust input
