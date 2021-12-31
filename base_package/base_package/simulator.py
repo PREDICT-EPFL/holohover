@@ -3,7 +3,7 @@ from rclpy.node import Node
 from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose
 from std_msgs.msg import String
 import numpy as np
-from helpers.Holohover import Holohover
+from .helpers.Holohover import Holohover
 import scipy
 from numpy import DataSource, array, dot
 from qpsolvers import solve_qp
@@ -121,7 +121,12 @@ class Simulator(Node):
         b = 1000
         a = 1000
         input = np.add(1000,np.multiply(input, np.ones(shape=(1,6))*1000))
+        for idx, i in enumerate(input):
+            input[idx] = self.fromSignaltoThrust(i)*10**-3
         return input
+
+    def fromSignaltoThrust(self, x):
+        return (1.5447*10**-7)*x**3 - 0.000565*x**2 + 0.70302*x - 292.4456
 
     def __getBodytoWorld(self):
         # Returns the transformation matrix from body to world frame

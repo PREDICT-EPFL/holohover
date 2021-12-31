@@ -4,6 +4,9 @@ from numpy import DataSource, array, dot
 from qpsolvers import solve_qp
 from scipy.signal import cont2discrete
 import matplotlib.pyplot as plt
+import os 
+
+
 
 
 
@@ -258,7 +261,7 @@ if __name__ == "__main__":
     G = np.empty(shape=(SIMULATION_LENGTH+1,1))
 
     # Initialize results
-    U[:,:] = [1,0,0]
+    U[:,:] = [0.1,0,0]
     X[0,:] = x0[:,0]
     U[0,:] = u0[:,0]
     Robot.initializeThrust()
@@ -275,6 +278,11 @@ if __name__ == "__main__":
         G[i+1,:], A[i+1,:] = Robot.getIMUReading(noisy=True)
 
 
+    # Write Data 
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    np.savetxt(dir_path + "/F.csv", F, delimiter=",")
+    np.savetxt(dir_path + "/U.csv", U, delimiter=",")
+    np.savetxt(dir_path + "/X.csv", X, delimiter=",")
 
     # Plots
     t = np.arange(0,(SIMULATION_LENGTH+1)*Robot.dt,Robot.dt)

@@ -152,11 +152,13 @@ def convertToSignal(self):
     # between 1000 2000
     if self.thrust is not None:
         for idx,i in enumerate(self.thrust):
-            self.signal[idx] = fromThrusttoSignal(i)
+            self.signal[idx] = fromThrusttoSignal(i) # Returns a signal between [1000-2000]
+            self.signal[idx] = 0.001*self.signal[idx] - 1 # Returns a signal between [0-1]
     else:
         print('Thrust is None')
         self.signal = np.zeros(shape=(6,1))
     return self.signal
 
 def fromThrusttoSignal(x):
+    x = x*10**3 #mN
     return 0.0143*x**3 - 1.6098*x**2 + 60.891*x + 1048.5

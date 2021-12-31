@@ -175,7 +175,13 @@ class Estimator(Node):
         b = 1000
         a = 1000
         input = np.add(1000,np.multiply(input, np.ones(shape=(1,6))*1000))
+        for idx, i in enumerate(input):
+            input[idx] = self.fromSignaltoThrust(i)*10**-3
         return input
+
+    def fromSignaltoThrust(self, x):
+        return (1.5447*10**-7)*x**3 - 0.000565*x**2 + 0.70302*x - 292.4456
+
 
     def __getBodytoWorld(self):
         # Returns the transformation matrix from body to world frame
