@@ -15,7 +15,7 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from holohover_msgs.msg import Positions
+from holohover_msgs.msg import Pose
 import os
 import cv2
 import pandas as pd
@@ -24,16 +24,19 @@ from .helpers.Aruco import get_pose, four_point_transform
 import time
 
 
-class GlobalPositioner(Node):
+class Camera(Node):
 
     def __init__(self):
         #path = '/install/base_package/lib/python3.8/site-packages/base_package/'
         FILENAME = os.path.join(os.path.dirname(__file__),'refPt.csv')
-        super().__init__('tracking_system')
-        self.publisher_ = self.create_publisher(Positions, 'global_position', 10)
+        super().__init__('Camera')
+        self.publisher_1 = self.create_publisher(Pose, '/camera/robot_pose', 10)
         timer_period = 1 / 50 # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.i = 0
+        self.timer = self.create_timer(timer_period, self.pose_callback)
+        self.publisher_2 = self.create_publisher(Pose, '/camera/puck_pose', 10)
+        timer_period = 1 / 50 # seconds
+        
+        
         print('[INFO] Launching video capture')
         CV_CAP_PROP_FRAME_WIDTH = 3
         CV_CAP_PROP_FRAME_HEIGHT = 4
@@ -52,7 +55,7 @@ class GlobalPositioner(Node):
     def __del__(self):
         cap.release()
 
-    def timer_callback(self):
+    def pose_callback(self):
         if cap.isOpened():
             t0 = time.time()
             ret, frame = cap.read()
@@ -71,28 +74,31 @@ class GlobalPositioner(Node):
             holohover_idx = np.where(pose == holohover_ID)[0][0]
             puck_idx = np.where(pose == puck_ID)[0][0]
 
-            msg = Positions()
-            msg.holohover.x = float(pose[holohover_idx][1])
-            msg.holohover.y = float(pose[holohover_idx][2])
-            msg.holohover.yaw = float(pose[holohover_idx][3])
-            msg.puck.x = float(pose[puck_idx][1])
-            msg.puck.y = float(pose[puck_idx][2])
-            msg.puck.yaw = float(pose[puck_idx][3])
-            self.publisher_.publish(msg)
-            self.i += 1
+            msg = Pose()
+            msg.x = float(pose[holohover_idx][1])
+            msg.y = float(pose[holohover_idx][2])
+            msg.yaw = float(pose[holohover_idx][3])
+
+            self.publisher_1.publish(msg)
+
+            msg = Pose()
+            msg.x = float(pose[puck_idx][1])
+            msg.y = float(pose[puck_idx][2])
+            msg.yaw = float(pose[puck_idx][3])
+            self.publisher_2.publish(msg)
 
 
 def main(args=None):
     rclpy.init(args=args)
 
-    tracking_system = GlobalPositioner()
+    camera = Camera()
 
-    rclpy.spin(tracking_system)
+    rclpy.spin(camera)
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
-    tracking_system.destroy_node()
+    camera.destroy_node()
     rclpy.shutdown()
 
 

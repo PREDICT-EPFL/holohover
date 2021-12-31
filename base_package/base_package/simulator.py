@@ -1,18 +1,28 @@
+import rclpy
+from rclpy.node import Node
+from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose
+from std_msgs.msg import String
 import numpy as np
+from .helpers.Holohover import Holohover
 import scipy
 from numpy import DataSource, array, dot
 from qpsolvers import solve_qp
 from scipy.signal import cont2discrete
 import matplotlib.pyplot as plt
-import os 
+import time
 
+class Simulator(Node):
 
+    def __init__(self, x0, u0, input = 'acceleration'):
+        super().__init__('Simulator')
+        self.subscription_1 = self.create_subscription(MotorControl,'drone/motor_control',self.listener_callback,10)
+        self.subscription_1  # prevent unused variable warning
 
-
-
-
-class Holohover:
-    def __init__(self, x0, u0):
+        self.publisher_1 = self.create_publisher(DroneMeasurement, '/drone/measurement', 10)
+        timer_period = 0.005  # 200Hz
+        self.timer_1 = self.create_timer(timer_period, self.measurement_callback)
+        self.publisher_2 = self.create_publisher(Pose, '/camera/robot_pose', 10)
+        self.timer_2 = self.create_timer(timer_period, self.pose_callback)
 
         # Robot State Space
         self.A = np.array(([0,1,0,0,0,0],
@@ -31,7 +41,12 @@ class Holohover:
         self.C = np.eye(6,6)
         self.D = np.zeros(shape=(6,3))
         self.x = x0
-        self.u = u0
+
+        if input == 'acceleration':
+            self.u = u0
+        else:
+            self.u = self.__getAcceleration(u0)
+        
         self.dt = 1/100
         self.A_d,self.B_d,self.C_d,self.D_d,_ = self.__getDiscrete()
         self.x_prev = x0
@@ -52,8 +67,35 @@ class Holohover:
         self.acc = self.u[0:2]
         self.gyro = self.x[1] 
         self.camera_noise = np.zeros(shape=(2,1)) 
-        self.gyro_noise = 0
+        self.gyro_noise = np.array([0,0,0])
         self.acc_noise = np.zeros(shape=(2,1))
+
+        # Mappings
+        self.P = None
+        self.G = None
+
+        # Initial Time
+        self.previousTime = time.time()
+        self.Time = None
+
+    # Body to World Force Mapping Matrix
+    def __getForceMapping(self):
+        I = np.eye(3,3)
+        tmp = np.concatenate((I,I,I),axis=1)
+        P = self.__getBodytoWorld() @ np.concatenate((tmp,tmp), axis=1)
+        return P
+
+
+    # Body to World Moment Mapping Matrix
+    def __getMomentMapping(self):  
+        R = self.__getRadialVector()
+        G = np.empty(shape=(3,18))
+        for idx,r in enumerate(R):
+            cross = np.array([[0    ,-r[2],r[1]],
+                             [r[2] ,0    ,-r[0]],
+                             [-r[1],r[0] ,   0]])
+            G[:,idx*3:idx*3+3] = cross
+        return G
 
     def __getDiscrete(self):
         # Convert the continuous system to discrete taking AD/DA conversion
@@ -63,13 +105,28 @@ class Holohover:
     def initializeThrust(self):
         self.thrust = self.__getThrust()
 
-    def predict(self, u):
+    def predict(self, input, input_type = 'acceleration'):
         # Takes an input vector u and precticts the state at iteration i+1
         self.x_prev = self.x
         self.u_prev = self.u
-        self.u = u
+        if input_type == 'acceleration':
+            self.u = input
+        elif input_type == 'signal':
+            thrust = self.__convertSignal(input)
+            self.u = self.__getAcceleration(np.transpose(thrust))
         self.x = np.add(self.A_d @ self.x, np.reshape((self.B_d @ self.u), newshape=(6,)))
         self.updateThrust()
+
+    def __convertSignal(self, input):
+        b = 1000
+        a = 1000
+        input = np.add(1000,np.multiply(input, np.ones(shape=(1,6))*1000))
+        for idx, i in enumerate(input):
+            input[idx] = self.fromSignaltoThrust(i)*10**-3
+        return input
+
+    def fromSignaltoThrust(self, x):
+        return (1.5447*10**-7)*x**3 - 0.000565*x**2 + 0.70302*x - 292.4456
 
     def __getBodytoWorld(self):
         # Returns the transformation matrix from body to world frame
@@ -121,7 +178,6 @@ class Holohover:
         return np.array([r1,r2,r3,r4,r5,r6])
     
 
-
     def updateThrust(self):
         self.thrust = self.__getThrust()
     
@@ -145,7 +201,7 @@ class Holohover:
         Fx = self.u[0]*self.mass
         Fy = self.u[1]*self.mass
         Fz = 0
-        return np.array([Fx,Fy,Fz])
+        return np.array([Fx,Fy,Fz], dtype='object')
 
     def __fromTranslation(self):
         """
@@ -154,9 +210,7 @@ class Holohover:
         :returns: F: (3,1) numpy array including the world forces (Fx,Fy,Fz)
                   P: (3,18) numpy array including relating the world forces to the local force vector (18,1)  
         """
-        I = np.eye(3,3)
-        tmp = np.concatenate((I,I,I),axis=1)
-        P = self.__getBodytoWorld() @ np.concatenate((tmp,tmp), axis=1)
+        P = self.__getForceMapping()
         F = self.__getWorldForces()
         return F,P
 
@@ -167,14 +221,9 @@ class Holohover:
         :returns: M: (3,1) numpy array including the world moments (Mx,My,Mz)
                   G: (3,18) numpy array including relating the world moments to the local force vector (18,1)  
         """
-        M = np.array([0,0,self.J*self.u[2]])
+        M = np.array([0,0,self.J*self.u[2]], dtype='object')
         R = self.__getRadialVector()
-        G = np.empty(shape=(3,18))
-        for idx,r in enumerate(R):
-            cross = np.array([[0    ,-r[2],r[1]],
-                             [r[2] ,0    ,-r[0]],
-                             [-r[1],r[0] ,   0]])
-            G[:,idx*3:idx*3+3] = cross
+        G = self.__getMomentMapping()
         return M,G 
 
     def getCameraReading(self, noisy=False):
@@ -184,14 +233,15 @@ class Holohover:
         :returns: pose: (3,1) numpy array including the pose of the robot in global frame (X,Y,Yaw)
         """
         
-        self.camera = self.x[4:]
+        self.camera = np.array([self.x[4],self.x[5],self.x[0]])
         
         # Simulate gaussian noise
         if noisy:
             N = len(self.camera)
-            sigma = 2.5
-            self.camera_noise = sigma*np.random.randn(int(N),1)
-            self.camera = np.add(self.camera,self.camera_noise[:,0])
+            sigma_pos = 0.002 # cm
+            sigma_yaw = 0.2 * np.pi / 180 # rad == 0.2 deg
+            self.camera_noise = np.array([sigma_pos*np.random.randn(),sigma_pos*np.random.randn(),sigma_yaw*np.random.randn()])
+            self.camera = np.add(self.camera,self.camera_noise)
         return self.camera
 
     def getIMUReading(self, noisy=False):
@@ -202,17 +252,31 @@ class Holohover:
                   gyro: (3,1) numpy array including the angular velocities of the robot
         """
 
-        self.acc = self.u[0:2] #[TODO]
-        self.gyro = self.x[1] #[TODO]
+        self.acc = np.array([self.u[0], self.u[1],0] , dtype='object') #[TODO]
+        self.gyro = np.array([0,0,self.x[1]]) #[TODO]
 
         if noisy:
-            self.gyro_noise = self.gyro_noise + (np.random.randn() + 1)*0.01
+            self.gyro_noise = np.array([0,0,self.gyro_noise[2] + (np.random.randn() + 1)*0.0001])
             self.gyro = np.add(self.gyro,self.gyro_noise)
             sigma = 0.02
-            self.acc_noise = sigma*np.random.randn(2,1)
-            self.acc = np.add(self.acc, self.acc_noise[:,0])
+            self.acc_noise = np.array([sigma*np.random.randn(),sigma*np.random.randn(),0])
+            self.acc = np.add(self.acc, self.acc_noise)
         
         return self.gyro, self.acc
+
+    def __getAcceleration(self, U):
+        P = self.__getForceMapping()
+        G = self.__getMomentMapping()
+        H = np.concatenate((P,G), axis=0)
+        E = self.__getDirectionMatrix()
+
+        A = H @ E @ U
+
+        a_x = A[0]/self.mass
+        a_y = A[1]/self.mass
+        gamma_dd = A[5]/self.J
+
+        return np.array([a_x,a_y,gamma_dd]) 
 
     def __getThrust(self):
         """
@@ -239,99 +303,60 @@ class Holohover:
         b = b.astype(float)
         lb = np.zeros(shape=(6,))
         T = solve_qp(P,q,G,h,A,b,lb)
-        return T
+        return 
 
+    def listener_callback(self, msg):
+        #Update the thrust input
+        #self.get_logger().info('Updating the thrust force')
+        Thrust = np.array([msg.motor_a_1, msg.motor_a_2, msg.motor_b_1, msg.motor_b_2, msg.motor_c_1, msg.motor_c_2])
+        self.predict(input=Thrust, input_type='signal')
 
-if __name__ == "__main__":
+    def measurement_callback(self):
+        msg = DroneMeasurement()
+
+        # Attitude
+        msg.atti.roll = float(0)
+        msg.atti.pitch = float(0)
+        msg.atti.yaw = float(self.x[0])
+
+        # Accelerometer and Gyro
+        gyro, acc  = self.getIMUReading(noisy=True)
+        msg.gyro.x = float(gyro[0])
+        msg.gyro.y = float(gyro[1])
+        msg.gyro.z = float(gyro[2])
+
+        msg.acc.x = float(acc[0])
+        msg.acc.y = float(acc[1])
+        msg.acc.z = float(acc[2])
+
+        self.publisher_1.publish(msg)
+
+    def pose_callback(self):
+        msg = Pose()
+
+        pose = self.getCameraReading(noisy=True)
+        msg.x = pose[0]
+        msg.y = pose[1]
+        msg.yaw = pose[2]
+
+        self.publisher_2.publish(msg)
+
+def main(args=None):
+    rclpy.init(args=args)
+ 
+    # Initialize simulator
     x0 = np.zeros(shape=(6,1))
     u0 = np.zeros(shape=(3,1))
-    Robot = Holohover(x0[:,0],u0[:,0])
+    simulator = Simulator(x0[:,0],u0[:,0])
+    simulator.initializeThrust() # Initialize the corresponding thrust based on initital inputs
 
-    SIMULATION_TIME = 10 #In seconds
-    SIMULATION_LENGTH = int(SIMULATION_TIME/Robot.dt)
-    
-    # States
-    U = np.zeros(shape=(SIMULATION_LENGTH+1,3))
-    X = np.empty(shape=(SIMULATION_LENGTH+1,6))
-    F = np.empty(shape=(SIMULATION_LENGTH+1,6))
-    
-    # Sensors
-    C = np.empty(shape=(SIMULATION_LENGTH+1,2))
-    A = np.empty(shape=(SIMULATION_LENGTH+1,2))
-    G = np.empty(shape=(SIMULATION_LENGTH+1,1))
-
-    # Initialize results
-    U[:,:] = [0.1,0,0]
-    X[0,:] = x0[:,0]
-    U[0,:] = u0[:,0]
-    Robot.initializeThrust()
-    F[0,:] = Robot.thrust
+    rclpy.spin(simulator)
+    # Destroy the node explicitly
+    # (optional - otherwise it will be done automatically
+    # when the garbage collector destroys the node object)
+    simulator.destroy_node()
+    rclpy.shutdown()
 
 
-    # Run Simulation
-    for i in range(SIMULATION_LENGTH): 
-        Robot.predict(U[i,:])
-        
-        X[i+1,:] = Robot.x
-        F[i+1,:] = Robot.thrust
-        C[i+1,:] = Robot.getCameraReading(noisy=True)
-        G[i+1,:], A[i+1,:] = Robot.getIMUReading(noisy=True)
-
-
-    # Write Data 
-    dir_path = os.path.dirname(os.path.realpath(__file__))
-    np.savetxt(dir_path + "/F.csv", F, delimiter=",")
-    np.savetxt(dir_path + "/U.csv", U, delimiter=",")
-    np.savetxt(dir_path + "/X.csv", X, delimiter=",")
-
-    # Plots
-    t = np.arange(0,(SIMULATION_LENGTH+1)*Robot.dt,Robot.dt)
-    
-    f, ax = plt.subplots(2, 2, sharey=False)
-
-    f.suptitle('State Space Readings')
-    
-    ax[0,0].plot(t,X[:,4])
-    ax[0,0].set_title('Position')
-
-    ax[1,0].plot(t,X[:,2])
-    ax[1,0].set_title('Velocity')
-
-    ax[0,1].plot(t,U[:,0])
-    ax[0,1].set_title('Acceleration')
-
-    ax[1,1].plot(t,F[:,0])
-    ax[1,1].plot(t,F[:,1])
-    ax[1,1].plot(t,F[:,2])
-    ax[1,1].plot(t,F[:,3])
-    ax[1,1].plot(t,F[:,4])
-    ax[1,1].plot(t,F[:,5])
-    ax[1,1].set_title('Propellers')
-
-
-    f2, ax2 = plt.subplots(3, sharey=False)
-
-    f2.suptitle('Noisy Sensor Readings')
-
-    ax2[0].plot(t,C[:,0])
-    ax2[0].set_title('Position')
-
-    ax2[1].plot(t,A[:,0])
-    ax2[1].set_title('Acceleration')
-
-    ax2[2].plot(t,G[:,0])
-    ax2[2].set_title('Angular Velocity')
-
-
-    f.show()
-    f2.show()
-    input("<Hit Enter To Close>")
-    print('Simulation complete')
-
-
-
-
-
-
-
-
+if __name__ == '__main__':
+    main()
