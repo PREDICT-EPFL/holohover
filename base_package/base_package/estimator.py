@@ -17,7 +17,7 @@ class Estimator(Node):
     def __init__(self, x0, u0, input='acceleration'):
         super().__init__('Estimator')
         
-        self.dt = 1/100 #Update rate
+        self.dt = 1/1000 #Update rate
         
         # Subscribers
         self.subscription_1 = self.create_subscription(Pose,'camera/robot_pose',self.updateFromCamera_callback,10)
@@ -26,7 +26,7 @@ class Estimator(Node):
         self.subscription_2  # prevent unused variable warning
         self.subscription_3 = self.create_subscription(MotorControl,'drone/motor_control',self.motor_command_callback,10)
         self.subscription_3  # prevent unused variable warning
-        
+
         # Publishers
         self.publisher = self.create_publisher(DroneState, '/estimator/state', 10)
         self.timer = self.create_timer(self.dt, self.predict_callback)
@@ -68,7 +68,7 @@ class Estimator(Node):
         self.flipped = False                    # change to True if thrust force are directed inwards
         self.mass = 90*10**(-3)                 # in kilograms
         self.J = 0.5*self.mass**2*(self.R+0.02) # inertia of the robot in the z-direction
-        self.MAX_THRUST = 100                   # in newtons
+        self.MAX_THRUST = 60*10**-3                   # in newtons
         self.YAW_OFFSET = 0 #[TODO]
         # Mappings
         self.P = None
@@ -85,10 +85,10 @@ class Estimator(Node):
 
         # Kalman Filter Parameters
         self.IMU = Sensor()
-        self.IMU.R = np.array([[0.01,0  ,0      ,0],
-                               [0   ,3  ,0      ,0],
-                               [0   ,0  ,0.05   ,0],
-                               [0   ,0  ,0   ,0.05]])
+        self.IMU.R = np.array([[0.1,   0  ,0      ,0],
+                               [0   ,0.1  ,0      ,0],
+                               [0   ,0  ,0.1   ,0],
+                               [0   ,0  ,0   ,0.1]])
 
         self.IMU.H = np.array([[1,0,0,0,0,0],
                                [0,1,0,0,0,0],
@@ -105,20 +105,20 @@ class Estimator(Node):
                               [0,0,0,0,0.1,0],
                               [0,0,0,0,0,0.1]])
 
-        self.Q_KF = np.array([[0.01,0,0,0,0,0],
-                              [0,0.01,0,0,0,0],
+        self.Q_KF = np.array([[0.1,0,0,0,0,0],
+                              [0,0.1,0,0,0,0],
                               [0,0,0.1,0,0,0],
                               [0,0,0,0.1,0,0],
-                              [0,0,0,0,0.01,0],
-                              [0,0,0,0,0,0.01]])
+                              [0,0,0,0,0.1,0],
+                              [0,0,0,0,0,0.1]])
 
         self.Camera = Sensor()
-        self.Camera.R = np.array([[0.01,0   ,0      ,0,   0, 0],
-                                  [0   ,0.1 ,0      ,0,   0, 0],
-                                  [0   ,0   ,0.01   ,0,   0, 0],
-                                  [0   ,0   ,0   ,0.01 ,   0, 0],
-                                  [0   ,0   ,0   ,0   , 0.01, 0],
-                                  [0   ,0   ,0      ,0,   0,  0.01]])
+        self.Camera.R = np.array([[0.1,0   ,0      ,0,   0, 0],
+                                  [0   ,1000 ,0      ,0,   0, 0],
+                                  [0   ,0   ,1000   ,0,   0, 0],
+                                  [0   ,0   ,0   ,1000 ,   0, 0],
+                                  [0   ,0   ,0   ,0   , 0.1, 0],
+                                  [0   ,0   ,0      ,0,   0,  0.1]])
 
         self.Camera.H = np.array([[1,0,0,0,0,0],
                                   [0,1,0,0,0,0],
@@ -333,7 +333,8 @@ class Estimator(Node):
     def predict_callback(self):
         self.predict(input=self.u, input_type='acceleration')
         self.P_KF = self.A_d @ self.P_KF @ np.transpose(self.A_d) + self.Q_KF
-        #print('Predictor: {}'.format(self.x))
+        #self.get_logger().info('Predictor: {}'.format(self.x))
+        #self.get_logger().info('Predictor yaw_d: {}'.format(self.x[1]))
 
         # Publish
         msg = DroneState()
@@ -367,7 +368,7 @@ class Estimator(Node):
         # Update State
         self.IMU.x = self.x + self.IMU.K @ (self.IMU.z - self.IMU.H @ self.x)
         self.x = self.IMU.x
-        #print('IMU: {}'.format(self.x))
+        #self.get_logger().info('IMU : {}'.format(self.x))
 
         # Update State Error Covariance
         self.P_KF = self.P_KF - (self.IMU.K @ self.IMU.H @ self.P_KF)
@@ -380,9 +381,10 @@ class Estimator(Node):
 
         Camera_Time =  time.time()
         Delta = Camera_Time - self.Camera_previousTime
-        v_x = (self.x_prev-x)/Delta
-        v_y = (self.y_prev-y)/Delta
-        yaw_d = (self.yaw_prev - yaw)/Delta
+        v_x = (x- self.x_prev)/Delta
+        v_y = (y- self.y_prev)/Delta
+        yaw_d = (yaw - self.yaw_prev)/Delta
+        print(yaw_d)
         self.Camera_previousTime = Camera_Time
 
         # Update Kalman Gain
@@ -396,8 +398,8 @@ class Estimator(Node):
         self.x_prev = x
         self.y_prev = y
         self.yaw_prev = yaw
-        #print('Camera: {}'.format(self.x))
-
+        #self.get_logger().info('Camera : {}'.format(self.x))
+        #self.get_logger().info('Camera yaw_d: {}'.format(yaw_d))
         # Update State Error Covariance
         self.P_KF = self.P_KF - (self.Camera.K @ self.Camera.H @ self.P_KF)
 

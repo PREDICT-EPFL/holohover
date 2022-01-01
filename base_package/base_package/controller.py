@@ -4,10 +4,10 @@ from rclpy.node import Node, NodeNameNonExistentError
 from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose, DroneState, MotorControl
 from std_msgs.msg import String
 import numpy as np
-from helpers.Holohover import Holohover
-from helpers.Sensor import Sensor
-from helpers.Helpers import *
-from helpers.PID import PID
+from .helpers.Holohover import Holohover
+from .helpers.Sensor import Sensor
+from .helpers.Helpers import *
+from .helpers.PID import PID
 import scipy
 from numpy import DataSource, array, dot
 from qpsolvers import solve_qp
@@ -27,9 +27,9 @@ class Controller(Node):
         self.publisher = self.create_publisher(MotorControl, '/drone/motor_control', 10)
 
         # Controllers
-        self.PID_vx    = PID(Kp=2, Kd=0.1, Ki=0.01, ref=0, limit=0.1)
-        self.PID_vy    = PID(Kp=2, Kd=0.1, Ki=0.01, ref=0, limit=0.1)
-        self.PID_yaw_d = PID(Kp=2, Kd=0.1, Ki=0.01, ref=0, limit=1)
+        self.PID_vx    = PID(Kp=2, Kd=0, Ki=0, ref=2, limit=0.1)
+        self.PID_vy    = PID(Kp=2, Kd=0, Ki=0, ref=-1, limit=0.1)
+        self.PID_yaw_d = PID(Kp=2, Kd=0, Ki=0, ref=0.2, limit=5)
         self.u = None
         self.x = None
         self.signal = np.empty(shape=(6,1))
@@ -42,7 +42,7 @@ class Controller(Node):
         self.flipped = False                    # change to True if thrust force are directed inwards
         self.mass = 90*10**(-3)                 # in kilograms
         self.J = 0.5*self.mass**2*(self.R+0.02) # inertia of the robot in the z-direction
-        self.MAX_THRUST = 100                   # in newtons 
+        self.MAX_THRUST = 60*10**-3             # in newtons 
 
 
     def control_callback(self, msg):
@@ -61,13 +61,13 @@ class Controller(Node):
         acc_x  = self.PID_vx.computeOutput(v_x_0)
         acc_y  = self.PID_vy.computeOutput(v_y_0)
         yaw_dd = self.PID_yaw_d.computeOutput(yaw_d_0)
-
         self.u = np.array([acc_x,acc_y,yaw_dd])
+        self.get_logger().info('Controller Output: {}'.format(self.u))
         self.thrust = getThrust(self)
         self.signal = convertToSignal(self)
 
         # Cap
-        self.signal[self.signal > 1] = 1
+        #self.signal[self.signal > 1] = 1
 
         msg = MotorControl()
         msg.motor_a_1 = float(self.signal[0])

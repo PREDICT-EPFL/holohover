@@ -1,8 +1,8 @@
 class PID():
 
     def __init__(self, Kp, Kd, Ki, ref, limit):
-        self.Kd = Kp
-        self.Kp = Kd
+        self.Kd = Kd
+        self.Kp = Kp
         self.Ki = Ki
         self.ref = ref
         self.prev_err = None

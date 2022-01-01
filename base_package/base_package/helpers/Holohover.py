@@ -189,7 +189,7 @@ class Holohover:
         # Simulate gaussian noise
         if noisy:
             N = len(self.camera)
-            sigma = 2.5
+            sigma = 0.02
             self.camera_noise = sigma*np.random.randn(int(N),1)
             self.camera = np.add(self.camera,self.camera_noise[:,0])
         return self.camera
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     G = np.empty(shape=(SIMULATION_LENGTH+1,1))
 
     # Initialize results
-    U[:,:] = [0.1,0,0]
+    U[:,:] = [0,0,1]
     X[0,:] = x0[:,0]
     U[0,:] = u0[:,0]
     Robot.initializeThrust()
@@ -323,8 +323,23 @@ if __name__ == "__main__":
     ax2[2].set_title('Angular Velocity')
 
 
+    f3, ax3 = plt.subplots(2, 2, sharey=False)
+
+    f3.suptitle('State Space Readings')
+    
+    ax3[0,0].plot(t,X[:,0])
+    ax3[0,0].set_title('Yaw')
+
+    ax3[1,0].plot(t,X[:,1])
+    ax3[1,0].set_title('Yaw_d')
+
+    ax3[0,1].plot(t,U[:,2])
+    ax3[0,1].set_title('Yaw_dd')
+
     f.show()
     f2.show()
+    f3.show()
+
     input("<Hit Enter To Close>")
     print('Simulation complete')
 

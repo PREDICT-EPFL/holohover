@@ -20,5 +20,5 @@ def generate_launch_description():
     )
     ld.add_action(simulator_node)
     ld.add_action(estimator_node)
-    ld.add_action(controller_node)
+    #ld.add_action(controller_node)
     return ld

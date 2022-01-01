@@ -9,5 +9,15 @@ Signal = np.array([[0.4765499 ],
        [0.79465889],
        [0.0485    ],
        [0.0485    ]])
+       
+## Motor Commands for 0.1 m/s^2 a_x 
 
+ros2 topic pub --once /drone/motor_control holohover_msgs/msg/MotorControl "{motor_a_1: 0.476549, motor_a_2: 0.0485, motor_b_1: 0.7946, motor_b_2: 0.7946, motor_c_1: 0.0485, motor_c_2: 0.0485}"
+
+
+## Motor Commands for 0.1 rad/s^2 yaw_dd
+
+F = np.array([0,0,1.402961154130790691e-02,1.402961154130790691e-02,0,0])
+
+ros2 topic pub --once /drone/motor_control holohover_msgs/msg/MotorControl "{motor_a_1: 0.0485, motor_a_2: 0.0485, motor_b_1: 0.6254, motor_b_2: 0.6254, motor_c_1: 0.0485, motor_c_2: 0.0485}"
 

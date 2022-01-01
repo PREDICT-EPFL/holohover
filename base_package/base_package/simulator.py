@@ -19,10 +19,11 @@ class Simulator(Node):
         self.subscription_1  # prevent unused variable warning
 
         self.publisher_1 = self.create_publisher(DroneMeasurement, '/drone/measurement', 10)
-        timer_period = 0.005  # 200Hz
-        self.timer_1 = self.create_timer(timer_period, self.measurement_callback)
+        timer_period_1 = 0.005  # 200Hz
+        self.timer_1 = self.create_timer(timer_period_1, self.measurement_callback)
+        timer_period_2 = 1/30 # 30Hz
         self.publisher_2 = self.create_publisher(Pose, '/camera/robot_pose', 10)
-        self.timer_2 = self.create_timer(timer_period, self.pose_callback)
+        self.timer_2 = self.create_timer(timer_period_2, self.pose_callback)
 
         # Robot State Space
         self.A = np.array(([0,1,0,0,0,0],
@@ -47,7 +48,7 @@ class Simulator(Node):
         else:
             self.u = self.__getAcceleration(u0)
         
-        self.dt = 1/100
+        self.dt = 1/1000
         self.A_d,self.B_d,self.C_d,self.D_d,_ = self.__getDiscrete()
         self.x_prev = x0
         self.u_prev = u0   
@@ -60,7 +61,7 @@ class Simulator(Node):
         self.flipped = False                    # change to True if thrust force are directed inwards
         self.mass = 90*10**(-3)                 # in kilograms
         self.J = 0.5*self.mass**2*(self.R+0.02) # inertia of the robot in the z-direction
-        self.MAX_THRUST = 100                   # in newtons
+        self.MAX_THRUST = 60*10**-3                   # in newtons
         
         # Sensors
         self.camera = self.x[4:]
@@ -310,6 +311,8 @@ class Simulator(Node):
         #self.get_logger().info('Updating the thrust force')
         Thrust = np.array([msg.motor_a_1, msg.motor_a_2, msg.motor_b_1, msg.motor_b_2, msg.motor_c_1, msg.motor_c_2])
         self.predict(input=Thrust, input_type='signal')
+        self.get_logger().info('State: {}'.format(self.x))
+
 
     def measurement_callback(self):
         msg = DroneMeasurement()
