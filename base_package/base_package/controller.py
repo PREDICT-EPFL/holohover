@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node, NodeNameNonExistentError
 from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose, DroneState, MotorControl
 from std_msgs.msg import String
+from geometry_msgs.msg import Twist
 import numpy as np
 from .helpers.Holohover import Holohover
 from .helpers.Sensor import Sensor
@@ -23,13 +24,17 @@ class Controller(Node):
         self.subscription = self.create_subscription(DroneState,'estimator/state',self.control_callback,10)
         self.subscription  # prevent unused variable warning
         
+        self.subscription2 = self.create_subscription(Twist,'cmd_vel',self.reference_callback,10)
+        self.subscription2  # prevent unused variable warning
+        
+
         # Publisher
         self.publisher = self.create_publisher(MotorControl, '/drone/motor_control', 10)
 
         # Controllers
-        self.PID_vx    = PID(Kp=2, Kd=0, Ki=0, ref=2, limit=0.1)
-        self.PID_vy    = PID(Kp=2, Kd=0, Ki=0, ref=-1, limit=0.1)
-        self.PID_yaw_d = PID(Kp=2, Kd=0, Ki=0, ref=0.2, limit=5)
+        self.PID_vx    = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=0.1)
+        self.PID_vy    = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=0.1)
+        self.PID_yaw_d = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=5)
         self.u = None
         self.x = None
         self.signal = np.empty(shape=(6,1))
@@ -78,6 +83,10 @@ class Controller(Node):
         msg.motor_c_2 = float(self.signal[5])
         
         self.publisher.publish(msg)
+
+    def reference_callback(self, msg):
+        self.PID_vx.ref = msg.linear.x
+        self.PID_vy.ref = msg.linear.y
 
 def main(args=None):
     rclpy.init(args=args)

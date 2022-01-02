@@ -334,7 +334,7 @@ class Estimator(Node):
     def predict_callback(self):
         self.predict(input=self.u, input_type='acceleration')
         self.P_KF = self.A_d @ self.P_KF @ np.transpose(self.A_d) + self.Q_KF
-        self.get_logger().info('Predictor: {}'.format(self.x[2]))
+        #self.get_logger().info('Predictor: {}'.format(self.x[2]))
         #self.get_logger().info('Predictor yaw_d: {}'.format(self.x[1]))
 
         # Publish
