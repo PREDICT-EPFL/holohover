@@ -311,7 +311,7 @@ class Simulator(Node):
         #self.get_logger().info('Updating the thrust force')
         Thrust = np.array([msg.motor_a_1, msg.motor_a_2, msg.motor_b_1, msg.motor_b_2, msg.motor_c_1, msg.motor_c_2])
         self.predict(input=Thrust, input_type='signal')
-        self.get_logger().info('State: {}'.format(self.x))
+        #self.get_logger().info('State: {}'.format(self.x))
 
 
     def measurement_callback(self):

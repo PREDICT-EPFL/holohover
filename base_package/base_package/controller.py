@@ -62,7 +62,7 @@ class Controller(Node):
         acc_y  = self.PID_vy.computeOutput(v_y_0)
         yaw_dd = self.PID_yaw_d.computeOutput(yaw_d_0)
         self.u = np.array([acc_x,acc_y,yaw_dd])
-        self.get_logger().info('Controller Output: {}'.format(self.u))
+        #self.get_logger().info('Controller Output: {}'.format(self.u))
         self.thrust = getThrust(self)
         self.signal = convertToSignal(self)
 

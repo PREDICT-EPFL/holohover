@@ -30,7 +30,8 @@ class Estimator(Node):
         # Publishers
         self.publisher = self.create_publisher(DroneState, '/estimator/state', 10)
         self.timer = self.create_timer(self.dt, self.predict_callback)
-        
+        self.publisher2 = self.create_publisher(DroneState, '/estimator/IMU_state', 10)
+        self.publisher3 = self.create_publisher(DroneState, '/estimator/Camera_state', 10)
         # Robot State Space
         self.A = np.array(([0,1,0,0,0,0],
                           [0,0,0,0,0,0],
@@ -105,12 +106,12 @@ class Estimator(Node):
                               [0,0,0,0,0.1,0],
                               [0,0,0,0,0,0.1]])
 
-        self.Q_KF = np.array([[0.1,0,0,0,0,0],
-                              [0,0.1,0,0,0,0],
-                              [0,0,0.1,0,0,0],
-                              [0,0,0,0.1,0,0],
-                              [0,0,0,0,0.1,0],
-                              [0,0,0,0,0,0.1]])
+        self.Q_KF = np.array([[1000,0,0,0,0,0],
+                              [0,1000,0,0,0,0],
+                              [0,0,1000,0,0,0],
+                              [0,0,0,1000,0,0],
+                              [0,0,0,0,1000,0],
+                              [0,0,0,0,0,1000]])
 
         self.Camera = Sensor()
         self.Camera.R = np.array([[0.1,0   ,0      ,0,   0, 0],
@@ -333,7 +334,7 @@ class Estimator(Node):
     def predict_callback(self):
         self.predict(input=self.u, input_type='acceleration')
         self.P_KF = self.A_d @ self.P_KF @ np.transpose(self.A_d) + self.Q_KF
-        #self.get_logger().info('Predictor: {}'.format(self.x))
+        self.get_logger().info('Predictor: {}'.format(self.x[2]))
         #self.get_logger().info('Predictor yaw_d: {}'.format(self.x[1]))
 
         # Publish
@@ -358,7 +359,7 @@ class Estimator(Node):
         self.v_y = self.v_y + acc_y*Delta
         yaw = msg.atti.yaw + self.YAW_OFFSET
         yaw_d = gyro_z
-        self.IMU_Prev_Time = IMU_Time
+        self.IMU_previousTime = IMU_Time
 
         # Update Kalman Gain
         self.IMU.z = np.array([yaw,yaw_d,self.v_x,self.v_y])
@@ -368,11 +369,21 @@ class Estimator(Node):
         # Update State
         self.IMU.x = self.x + self.IMU.K @ (self.IMU.z - self.IMU.H @ self.x)
         self.x = self.IMU.x
-        #self.get_logger().info('IMU : {}'.format(self.x))
+        #self.get_logger().info('IMU : {}'.format(self.IMU.x[2]))
 
         # Update State Error Covariance
         self.P_KF = self.P_KF - (self.IMU.K @ self.IMU.H @ self.P_KF)
     
+        # Publish
+        msg = DroneState()
+        msg.yaw    = self.IMU.z[0]
+        msg.yaw_d  = self.IMU.z[1]
+        msg.v_x    = self.IMU.z[2]
+        msg.v_y    = self.IMU.z[3]
+        msg.x      = float(0)
+        msg.y      = float(0)
+
+        self.publisher2.publish(msg)
 
     def updateFromCamera_callback(self, msg):
         x = msg.x
@@ -384,7 +395,6 @@ class Estimator(Node):
         v_x = (x- self.x_prev)/Delta
         v_y = (y- self.y_prev)/Delta
         yaw_d = (yaw - self.yaw_prev)/Delta
-        print(yaw_d)
         self.Camera_previousTime = Camera_Time
 
         # Update Kalman Gain
@@ -398,10 +408,21 @@ class Estimator(Node):
         self.x_prev = x
         self.y_prev = y
         self.yaw_prev = yaw
-        #self.get_logger().info('Camera : {}'.format(self.x))
+        #self.get_logger().info('Camera : {}'.format(self.Camera.x[2]))
         #self.get_logger().info('Camera yaw_d: {}'.format(yaw_d))
         # Update State Error Covariance
         self.P_KF = self.P_KF - (self.Camera.K @ self.Camera.H @ self.P_KF)
+        
+        # Publish
+        msg = DroneState()
+        msg.yaw    = self.Camera.z[0]
+        msg.yaw_d  = self.Camera.z[1]
+        msg.v_x    = self.Camera.z[2]
+        msg.v_y    = self.Camera.z[3]
+        msg.x      = self.Camera.z[4]
+        msg.y      = self.Camera.z[5]
+
+        self.publisher3.publish(msg)
 
 
 def main(args=None):
