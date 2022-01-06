@@ -107,17 +107,15 @@ class Holohover:
 
     def __getDirectionMatrix(self):
         """
-        Returns a direction matrix which maps the thrusts in vector format (18,1) to thrusts in magnitude as (6,1)
+        Returns a direction matrix which maps the thrusts in magnitude (6,) to thrusts in vector format (18,) to
         
         :returns: (18,6) numpy array including the different direction vectors
         """
 
-        E = np.empty((18, 6))
+        E = np.zeros((18, 6))
         e = self.__getDirectionVector()
         for idx, vec in enumerate(e):
-            tmp = np.zeros((3, 6))
-            tmp[:, idx] = vec
-            E[idx * 3:idx * 3 + 3, :] = tmp
+            E[idx * 3:idx * 3 + 3, idx] = vec
         return E
 
     def __getWorldForces(self):
@@ -138,16 +136,16 @@ class Holohover:
         Computes Newton's law equations in Translation
         
         :returns: F: (3,) numpy array including the world forces (Fx,Fy,Fz)
-                  P: (3,18) numpy array including relating the world forces to the local force vector (18,1)  
+                  P: (3,18) numpy array including relating the local force vectors (18,) to world forces
         """
-        P = self.__getForceMapping()
         F = self.__getWorldForces()
+        P = self.__getForceMapping()
         return F, P
 
     # Body to World Moment Mapping Matrix
     def __getMomentMapping(self):
         R = self.__getRadialVector()
-        G = np.empty(shape=(3, 18))
+        G = np.empty((3, 18))
         for idx, r in enumerate(R):
             cross = np.array([[0, -r[2], r[1]],
                               [r[2], 0, -r[0]],
@@ -163,7 +161,6 @@ class Holohover:
                   G: (3,18) numpy array including relating the world moments to the local force vector (18,1)  
         """
         M = np.array([0, 0, self.J * self.u[2]])
-        R = self.__getRadialVector()
         G = self.__getMomentMapping()
         return M, G
 
@@ -271,7 +268,7 @@ class Holohover:
         return signal
 
     def __fromThrustToSignal(self, x):
-        x = x * 1e3  # mN -> N
+        x = x * 1e3  # N -> mN
         return 0.0143 * x ** 3 - 1.6098 * x ** 2 + 60.891 * x + 1048.5
 
 
