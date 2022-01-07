@@ -14,11 +14,10 @@ import time
 
 class Estimator(Node):
 
-    def __init__(self, x0, u0, input='acceleration'):
+    def __init__(self, x0, u0, input='acceleration', noisy_model=False):
         super().__init__('Estimator')
         
         self.dt = 1/1000 #Update rate
-        
         # Subscribers
         self.subscription_1 = self.create_subscription(Pose,'camera/robot_pose',self.updateFromCamera_callback,10)
         self.subscription_1  # prevent unused variable warning
@@ -33,22 +32,40 @@ class Estimator(Node):
         self.publisher2 = self.create_publisher(DroneState, '/estimator/IMU_state', 10)
         self.publisher3 = self.create_publisher(DroneState, '/estimator/Camera_state', 10)
         # Robot State Space
-        self.A = np.array(([0,1,0,0,0,0],
-                          [0,0,0,0,0,0],
-                          [0,0,0,0,0,0],
-                          [0,0,0,0,0,0],
-                          [0,0,1,0,0,0],
-                          [0,0,0,1,0,0]))
+        if not noisy_model:
+            self.A = np.array(([0,1,0,0,0,0],
+                            [0,0,0,0,0,0],
+                            [0,0,0,0,0,0],
+                            [0,0,0,0,0,0],
+                            [0,0,1,0,0,0],
+                            [0,0,0,1,0,0]))
 
-        self.B = np.array(([0,0,0],
-                           [0,0,1],
-                           [1,0,0],
-                           [0,1,0],
-                           [0,0,0],
-                           [0,0,0]))
+            self.B = np.array(([0,0,0],
+                            [0,0,1],
+                            [1,0,0],
+                            [0,1,0],
+                            [0,0,0],
+                            [0,0,0]))
 
-        self.C = np.eye(6,6)
-        self.D = np.zeros(shape=(6,3))
+            self.C = np.eye(6,6)
+            self.D = np.zeros(shape=(6,3))
+        else:
+            self.A = np.array(([0,1.2,0,0,0,0],
+                [0,0,0,0,0,0],
+                [0,0,0,0,0,0],
+                [0,0,0,0,0,0],
+                [0,0,0.90,0,0,0],
+                [0,0,0,0.89,0,0]))
+
+            self.B = np.array(([0,0,0],
+                            [0,0,1.5],
+                            [1.2,0,0],
+                            [0,1.1,0],
+                            [0,0,0],
+                            [0,0,0]))
+
+            self.C = np.eye(6,6)
+            self.D = np.zeros(shape=(6,3))
         self.x = x0
 
         if input == 'acceleration':
@@ -171,6 +188,7 @@ class Estimator(Node):
             self.u = self.__getAcceleration(np.transpose(thrust))
         self.x = np.add(self.A_d @ self.x, np.reshape((self.B_d @ self.u), newshape=(6,)))
         self.updateThrust()
+
 
     def __convertSignal(self, input):
         b = 1000
