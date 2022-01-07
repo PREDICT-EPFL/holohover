@@ -1,6 +1,5 @@
 from setuptools import setup
-from glob import glob
-import os
+
 package_name = 'base_package'
 submodules = "base_package/helpers"
 
@@ -12,7 +11,6 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        (os.path.join('share', package_name), glob('launch/*.launch.py'))
     ],
     package_data={
         '': ['*.csv'],

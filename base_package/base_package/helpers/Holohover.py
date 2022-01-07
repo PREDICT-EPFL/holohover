@@ -261,7 +261,7 @@ if __name__ == "__main__":
     G = np.empty(shape=(SIMULATION_LENGTH+1,1))
 
     # Initialize results
-    U[:,:] = [0.1,0,0]
+    U[:,:] = [0,0,1]
     X[0,:] = x0[:,0]
     U[0,:] = u0[:,0]
     Robot.initializeThrust()
@@ -279,15 +279,14 @@ if __name__ == "__main__":
 
 
     # Write Data 
-    dir_path = os.path.dirname(os.path.realpath(__file__))+'/results/model_validation'
-    t = np.arange(0,(SIMULATION_LENGTH+1)*Robot.dt,Robot.dt)
-    np.savetxt(dir_path + "/t.csv", t, delimiter=",")
+    dir_path = os.path.dirname(os.path.realpath(__file__))
     np.savetxt(dir_path + "/F.csv", F, delimiter=",")
     np.savetxt(dir_path + "/U.csv", U, delimiter=",")
     np.savetxt(dir_path + "/X.csv", X, delimiter=",")
 
     # Plots
-
+    t = np.arange(0,(SIMULATION_LENGTH+1)*Robot.dt,Robot.dt)
+    
     f, ax = plt.subplots(2, 2, sharey=False)
 
     f.suptitle('State Space Readings')
