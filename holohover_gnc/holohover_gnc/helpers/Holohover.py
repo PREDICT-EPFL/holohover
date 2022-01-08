@@ -291,7 +291,7 @@ if __name__ == "__main__":
     G = np.empty((SIMULATION_LENGTH + 1, 3))
 
     # Initialize results
-    U[:, :] = [0, 0, 1]
+    U[:, :] = [0.1, 0, 0]
     X[0, :] = x0
     U[0, :] = u0
     F[0, :] = Robot.getThrust()
@@ -302,6 +302,7 @@ if __name__ == "__main__":
 
         X[i + 1, :] = Robot.x
         F[i + 1, :] = Robot.getThrust()
+        print(Robot.convertToSignal(Robot.getThrust()))
         C[i + 1, :] = Robot.getCameraReading(noisy=True)
         G[i + 1, :], A[i + 1, :] = Robot.getIMUReading(noisy=True)
 

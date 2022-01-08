@@ -73,6 +73,7 @@ class Controller(Node):
     def reference_callback(self, msg):
         self.PID_vx.ref = msg.linear.x
         self.PID_vy.ref = msg.linear.y
+        return
 
 
 def main(args=None):

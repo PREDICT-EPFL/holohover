@@ -4,11 +4,11 @@ from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose, DroneState,
 import numpy as np
 from holohover_gnc.helpers.Holohover import Holohover
 from holohover_gnc.helpers.Sensor import Sensor
-
+import random
 
 class Estimator(Node):
 
-    def __init__(self, x0, u0):
+    def __init__(self, x0, u0, noisy_model=False):
         super().__init__('Estimator')
 
         self.dt = 1 / 200  # Update rate
@@ -26,6 +26,15 @@ class Estimator(Node):
         self.x = x0
         self.u = u0
         self.robot = Holohover(x0, u0, self.dt)
+
+        if noisy_model:
+            # Modify the dynamics (Noisy Model)
+            self.robot.A_d[0,0] = self.robot.A_d[0,0] + 4
+            self.robot.A_d[1,1] = self.robot.A_d[1,1] + 0.2
+            self.robot.A_d[2,2] = self.robot.A_d[2,2] - 0.4
+            self.robot.A_d[3,3] = self.robot.A_d[3,3] - 8
+            self.robot.A_d[4,2] = self.robot.A_d[4,2] + 0.45
+            self.robot.A_d[5,3] = self.robot.A_d[5,3] + 0.65
 
         # Kalman Filter Parameters
         # yaw, yaw_d, vx, vy, x, y
@@ -117,7 +126,7 @@ def main(args=None):
     # Initialize simulator
     x0 = np.zeros(6)
     u0 = np.zeros(3)
-    estimator = Estimator(x0, u0)
+    estimator = Estimator(x0, u0, noisy_model=False)
 
     rclpy.spin(estimator)
     # Destroy the node explicitly
