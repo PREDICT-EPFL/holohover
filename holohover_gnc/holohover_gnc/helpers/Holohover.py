@@ -30,13 +30,14 @@ class Holohover:
         self.A_d, self.B_d, self.C_d, self.D_d, _ = self.__getDiscrete()
 
         # Robot Configuration
-        self.D = 0.02  # half the distance between the propellers
-        self.R = 0.1  # radial distance from the center of the robot to the midpoint between the two propellers
+        self.D = 0.015  # half the distance between the propellers
+        self.R = 0.043  # radial distance from the center of the robot to the midpoint between the two propellers
         self.phi = 2 * np.pi / 3  # separation angle between sets of propellers
+        self.phi_offset = np.pi / 3  # angle of first set of propellers
         self.flipped = False  # change to True if thrust force are directed inwards
         self.mass = 90 * 10 ** (-3)  # in kilograms
         self.J = 0.5 * self.mass ** 2 * (self.R + 0.02)  # inertia of the robot in the z-direction
-        self.MAX_THRUST = 100  # in newtons
+        self.MAX_THRUST = 60.2 * 1e-3  # in newtons
 
         # Sensors
         self.camera = np.array([self.x[4], self.x[5], self.x[0]])
@@ -77,11 +78,11 @@ class Holohover:
         :returns: (6,3) numpy array including the different unit vectors
         """
 
-        e1 = np.array([np.cos(self.phi * 0), np.sin(self.phi * 0), 0])
+        e1 = np.array([np.sin(self.phi_offset + self.phi * 0), -np.cos(self.phi_offset + self.phi * 0), 0])
         e2 = -1 * e1
-        e3 = np.array([np.cos(self.phi * 1), np.sin(self.phi * 1), 0])
+        e3 = np.array([np.sin(self.phi_offset + self.phi * 1), -np.cos(self.phi_offset + self.phi * 1), 0])
         e4 = -1 * e3
-        e5 = np.array([np.cos(self.phi * 2), np.sin(self.phi * 2), 0])
+        e5 = np.array([np.sin(self.phi_offset + self.phi * 2), -np.cos(self.phi_offset + self.phi * 2), 0])
         e6 = -1 * e5
         if self.flipped:
             return -np.stack([e1, e2, e3, e4, e5, e6], axis=0)
@@ -97,12 +98,12 @@ class Holohover:
 
         alpha = np.arctan(self.D / self.R)
         r = np.sqrt(self.R ** 2 + self.D ** 2)
-        r1 = [r * np.sin(self.phi * 0 - alpha), r * np.cos(self.phi * 0 - alpha), 0]
-        r2 = [r * np.sin(self.phi * 0 + alpha), r * np.cos(self.phi * 0 + alpha), 0]
-        r3 = [r * np.sin(self.phi * 1 - alpha), r * np.cos(self.phi * 1 - alpha), 0]
-        r4 = [r * np.sin(self.phi * 1 + alpha), r * np.cos(self.phi * 1 + alpha), 0]
-        r5 = [r * np.sin(self.phi * 2 - alpha), r * np.cos(self.phi * 2 - alpha), 0]
-        r6 = [r * np.sin(self.phi * 2 + alpha), r * np.cos(self.phi * 2 + alpha), 0]
+        r1 = [r * np.cos(self.phi_offset + self.phi * 0 - alpha), r * np.sin(self.phi_offset + self.phi * 0 - alpha), 0]
+        r2 = [r * np.cos(self.phi_offset + self.phi * 0 + alpha), r * np.sin(self.phi_offset + self.phi * 0 + alpha), 0]
+        r3 = [r * np.cos(self.phi_offset + self.phi * 1 - alpha), r * np.sin(self.phi_offset + self.phi * 1 - alpha), 0]
+        r4 = [r * np.cos(self.phi_offset + self.phi * 1 + alpha), r * np.sin(self.phi_offset + self.phi * 1 + alpha), 0]
+        r5 = [r * np.cos(self.phi_offset + self.phi * 2 - alpha), r * np.sin(self.phi_offset + self.phi * 2 - alpha), 0]
+        r6 = [r * np.cos(self.phi_offset + self.phi * 2 + alpha), r * np.sin(self.phi_offset + self.phi * 2 + alpha), 0]
         return np.array([r1, r2, r3, r4, r5, r6])
 
     def __getDirectionMatrix(self):
@@ -223,15 +224,31 @@ class Holohover:
         b = np.concatenate((F, M), axis=0)
 
         # QP formualtion
-        P = np.eye(6, dtype=float)
-        q = np.zeros(6, dtype=float)
-        G = np.eye(6, dtype=float)
-        h = np.ones(6, dtype=float) * self.MAX_THRUST
-        A = A.astype(float)
-        b = b.astype(float)
-        lb = np.zeros(6)
-        T = solve_qp(P, q, G, h, A, b, lb)
-        return T
+        #
+        # min   ||F_i||^2_2 + mu * ||eps||^2_2
+        # s.t.  (Fx,Fy,Fz,Mx,My,Mz) = A @ (F_1,...,F_6) + eps
+        #       0 <= F_i <= F_max
+        #
+        # translated into standard form
+        # min   0.5 * x'Px + q'x
+        # s.t.  Gx <= h
+        #       Ax = b
+        #       lb <= x <= ub
+        #
+        # with x = (F_i, eps)
+
+        mu = 1e6
+        P = np.diag(np.concatenate((np.ones(6), mu * np.ones(6))))
+        q = np.zeros(12)
+        G = None
+        h = None
+        A = np.hstack((A, np.eye(6)))
+        b = b
+        lb = np.concatenate((np.zeros(6), -np.inf * np.ones(6)))
+        ub = np.concatenate((self.MAX_THRUST * np.ones(6), np.inf * np.ones(6)))
+        T = solve_qp(P, q, G, h, A, b, lb, ub)
+
+        return T[:6]
 
     def getAcceleration(self, thrust):
         """
@@ -255,10 +272,11 @@ class Holohover:
 
     def convertFromSignal(self, motor_input):
         motor_input = 1000 + 1000 * motor_input
-        return self.__fromSignalToThrust(motor_input) * 1e-3
+        return self.__fromSignalToThrust(motor_input)
 
     def __fromSignalToThrust(self, x):
-        return 1.5447e-7 * x ** 3 - 0.000565 * x ** 2 + 0.70302 * x - 292.4456
+        y = 1.5447e-7 * x ** 3 - 0.000565 * x ** 2 + 0.70302 * x - 292.4456
+        return y * 1e-3  # mN -> N
 
     def convertToSignal(self, thrust):
         # Input a polynomial function that maps the force in N to a signal

@@ -38,11 +38,11 @@ class Estimator(Node):
 
         # Kalman Filter Parameters
         # yaw, yaw_d, vx, vy, x, y
-        self.Q = np.diag([1000, 1000, 1000, 1000, 1000, 1000])
+        self.Q = np.diag([1, 1, 1, 1, 1, 1])
 
         self.IMU = Sensor()  # yaw_d reading from gyro
         self.IMU.H = np.array([[0, 1, 0, 0, 0, 0]])
-        self.IMU.R = np.diag([0.1])
+        self.IMU.R = np.diag([10])
         self.IMU.z = None
         self.IMU.K = None
 
@@ -50,7 +50,7 @@ class Estimator(Node):
         self.Camera.H = np.array([[0, 0, 0, 0, 1, 0],
                                   [0, 0, 0, 0, 0, 1],
                                   [1, 0, 0, 0, 0, 0]])
-        self.Camera.R = np.diag([1, 1, 1])
+        self.Camera.R = np.diag([100, 100, 100])
         self.Camera.z = None
         self.Camera.K = None
 
