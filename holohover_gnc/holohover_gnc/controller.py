@@ -1,6 +1,6 @@
 import rclpy
-from rclpy.node import Node, NodeNameNonExistentError
-from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose, DroneState, MotorControl
+from rclpy.node import Node
+from holohover_msgs.msg import MotorControl, DroneState
 from geometry_msgs.msg import Twist
 import numpy as np
 from holohover_gnc.helpers.Holohover import Holohover
@@ -23,8 +23,8 @@ class Controller(Node):
         self.motor_control_publisher = self.create_publisher(MotorControl, '/drone/motor_control', 10)
 
         # Controllers
-        self.PID_vx = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=0.1)
-        self.PID_vy = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=0.1)
+        self.PID_vx = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=0.2)
+        self.PID_vy = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=0.2)
         self.PID_yaw_d = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=5)
         self.u = np.zeros(3)
         self.x = np.zeros(6)

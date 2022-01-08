@@ -1,3 +1,4 @@
+import os
 from setuptools import setup, glob
 
 package_name = 'holohover_utils'
@@ -9,8 +10,9 @@ setup(
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
-        ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', glob.glob('launch/*.launch.py')),
+        (os.path.join('share', package_name), ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob.glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'gui'), glob.glob('gui/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -21,6 +23,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'rviz_interface = holohover_utils.rviz_interface:main',
         ],
     },
 )

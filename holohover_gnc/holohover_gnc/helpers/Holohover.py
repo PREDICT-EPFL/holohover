@@ -30,9 +30,10 @@ class Holohover:
         self.A_d, self.B_d, self.C_d, self.D_d, _ = self.__getDiscrete()
 
         # Robot Configuration
-        self.D = 0.02  # half the distance between the propellers
-        self.R = 0.1  # radial distance from the center of the robot to the midpoint between the two propellers
+        self.D = 0.015  # half the distance between the propellers
+        self.R = 0.043  # radial distance from the center of the robot to the midpoint between the two propellers
         self.phi = 2 * np.pi / 3  # separation angle between sets of propellers
+        self.phi_offset = np.pi / 3  # angle of first set of propellers
         self.flipped = False  # change to True if thrust force are directed inwards
         self.mass = 90 * 10 ** (-3)  # in kilograms
         self.J = 0.5 * self.mass ** 2 * (self.R + 0.02)  # inertia of the robot in the z-direction
@@ -77,11 +78,11 @@ class Holohover:
         :returns: (6,3) numpy array including the different unit vectors
         """
 
-        e1 = np.array([np.cos(self.phi * 0), np.sin(self.phi * 0), 0])
+        e1 = np.array([np.sin(self.phi_offset + self.phi * 0), -np.cos(self.phi_offset + self.phi * 0), 0])
         e2 = -1 * e1
-        e3 = np.array([np.cos(self.phi * 1), np.sin(self.phi * 1), 0])
+        e3 = np.array([np.sin(self.phi_offset + self.phi * 1), -np.cos(self.phi_offset + self.phi * 1), 0])
         e4 = -1 * e3
-        e5 = np.array([np.cos(self.phi * 2), np.sin(self.phi * 2), 0])
+        e5 = np.array([np.sin(self.phi_offset + self.phi * 2), -np.cos(self.phi_offset + self.phi * 2), 0])
         e6 = -1 * e5
         if self.flipped:
             return -np.stack([e1, e2, e3, e4, e5, e6], axis=0)
@@ -97,12 +98,12 @@ class Holohover:
 
         alpha = np.arctan(self.D / self.R)
         r = np.sqrt(self.R ** 2 + self.D ** 2)
-        r1 = [r * np.sin(self.phi * 0 - alpha), r * np.cos(self.phi * 0 - alpha), 0]
-        r2 = [r * np.sin(self.phi * 0 + alpha), r * np.cos(self.phi * 0 + alpha), 0]
-        r3 = [r * np.sin(self.phi * 1 - alpha), r * np.cos(self.phi * 1 - alpha), 0]
-        r4 = [r * np.sin(self.phi * 1 + alpha), r * np.cos(self.phi * 1 + alpha), 0]
-        r5 = [r * np.sin(self.phi * 2 - alpha), r * np.cos(self.phi * 2 - alpha), 0]
-        r6 = [r * np.sin(self.phi * 2 + alpha), r * np.cos(self.phi * 2 + alpha), 0]
+        r1 = [r * np.cos(self.phi_offset + self.phi * 0 - alpha), r * np.sin(self.phi_offset + self.phi * 0 - alpha), 0]
+        r2 = [r * np.cos(self.phi_offset + self.phi * 0 + alpha), r * np.sin(self.phi_offset + self.phi * 0 + alpha), 0]
+        r3 = [r * np.cos(self.phi_offset + self.phi * 1 - alpha), r * np.sin(self.phi_offset + self.phi * 1 - alpha), 0]
+        r4 = [r * np.cos(self.phi_offset + self.phi * 1 + alpha), r * np.sin(self.phi_offset + self.phi * 1 + alpha), 0]
+        r5 = [r * np.cos(self.phi_offset + self.phi * 2 - alpha), r * np.sin(self.phi_offset + self.phi * 2 - alpha), 0]
+        r6 = [r * np.cos(self.phi_offset + self.phi * 2 + alpha), r * np.sin(self.phi_offset + self.phi * 2 + alpha), 0]
         return np.array([r1, r2, r3, r4, r5, r6])
 
     def __getDirectionMatrix(self):
