@@ -12,7 +12,7 @@ class Estimator(Node):
     def __init__(self, x0, u0, noisy_model=False):
         super().__init__('Estimator')
 
-        self.dt = 1 / 200  # Update rate
+        self.dt = 1 / 100  # Update rate
 
         # Subscribers
         self.camera_subscription = self.create_subscription(Pose, 'camera/robot_pose', self.updateFromCamera_callback, 10)

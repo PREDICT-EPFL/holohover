@@ -13,7 +13,7 @@ class Controller(Node):
     def __init__(self):
         super().__init__('Controller')
 
-        self.dt = 1/200  # Update rate
+        self.dt = 1/100  # Update rate
 
         # Subscriber
         self.state_subscription = self.create_subscription(DroneState, 'estimator/state', self.control_callback, 10)
@@ -26,7 +26,7 @@ class Controller(Node):
         # Controllers
         self.PID_vx = PID(Kp=1, Kd=0, Ki=0, ref=0, limit=100)
         self.PID_vy = PID(Kp=1, Kd=0, Ki=0, ref=0, limit=100)
-        self.PID_yaw_d = PID(Kp=0.5, Kd=0, Ki=0, ref=0, limit=100)
+        self.PID_yaw_d = PID(Kp=0.3, Kd=0, Ki=0, ref=0, limit=100)
         self.u = np.zeros(3)
         self.x = np.zeros(6)
         self.signal = np.empty((6, 1))

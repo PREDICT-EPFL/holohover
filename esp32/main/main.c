@@ -35,8 +35,8 @@
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); vTaskDelete(NULL);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
-// Sampling frequency of 200Hz
-#define SAMPLE_TIME_MS 5
+// Sampling frequency of 100Hz
+#define SAMPLE_TIME_MS 10
 
 #define MOTOR_A_1  4
 #define MOTOR_A_2  1
