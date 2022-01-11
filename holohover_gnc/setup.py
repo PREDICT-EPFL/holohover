@@ -18,7 +18,6 @@ setup(
         'setuptools',
         'numpy',
         'pandas',
-        'opencv-python',
         'opencv-contrib-python',
         'qpsolvers',
     ],

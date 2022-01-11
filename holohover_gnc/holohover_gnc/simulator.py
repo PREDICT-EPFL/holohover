@@ -1,5 +1,6 @@
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSPresetProfiles
 from holohover_msgs.msg import DroneState, DroneMeasurement, Pose, MotorControl
 import numpy as np
 from holohover_gnc.helpers.Holohover import Holohover
@@ -14,7 +15,7 @@ class Simulator(Node):
         state_timer_period = 1 / 200  # 200Hz
         self.state_timer = self.create_timer(state_timer_period, self.state_callback)
 
-        self.imu_publisher = self.create_publisher(DroneMeasurement, '/drone/measurement', 10)
+        self.imu_publisher = self.create_publisher(DroneMeasurement, '/drone/measurement', QoSPresetProfiles.SENSOR_DATA.value)
         imu_timer_period = 1 / 200  # 200Hz
         self.imu_timer = self.create_timer(imu_timer_period, self.measurement_callback)
 
@@ -22,7 +23,7 @@ class Simulator(Node):
         camera_period = 1 / 30  # 30Hz
         self.camera_timer = self.create_timer(camera_period, self.pose_callback)
 
-        self.motor_control_subscription = self.create_subscription(MotorControl, 'drone/motor_control', self.listener_callback, 10)
+        self.motor_control_subscription = self.create_subscription(MotorControl, 'drone/motor_control', self.listener_callback, QoSPresetProfiles.SENSOR_DATA.value)
 
         self.robot = Holohover(x0, u0, state_timer_period)
         self.u = u0

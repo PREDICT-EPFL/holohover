@@ -14,7 +14,6 @@
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
 from holohover_msgs.msg import Pose
 import os
 import cv2
@@ -31,13 +30,12 @@ class Camera(Node):
         FILENAME = os.path.join(os.path.dirname(__file__),'refPt.csv')
         super().__init__('Camera')
         self.publisher_1 = self.create_publisher(Pose, '/camera/robot_pose', 10)
-        timer_period = 1 / 50 # seconds
+        timer_period = 1 / 30 # seconds
         self.timer = self.create_timer(timer_period, self.pose_callback)
         self.publisher_2 = self.create_publisher(Pose, '/camera/puck_pose', 10)
-        timer_period = 1 / 50 # seconds
         
         
-        print('[INFO] Launching video capture')
+        self.get_logger().info('Launching video capture')
         CV_CAP_PROP_FRAME_WIDTH = 3
         CV_CAP_PROP_FRAME_HEIGHT = 4
         CAP_PROP_FPS = 5
@@ -62,7 +60,7 @@ class Camera(Node):
             #print('Processing time is {}'.format(time.time()-t0))
             # if frame is read correctly ret is True
             if not ret:
-                print("[FAIL] Frame captuer failed")
+                self.get_logger().error('Frame capture failed')
                 return
             
             #[TODO] Add image cropping
@@ -74,18 +72,19 @@ class Camera(Node):
             holohover_idx = np.where(pose == holohover_ID)[0][0]
             puck_idx = np.where(pose == puck_ID)[0][0]
 
-            msg = Pose()
-            msg.x = float(pose[holohover_idx][1])
-            msg.y = float(pose[holohover_idx][2])
-            msg.yaw = float(pose[holohover_idx][3])
+            if pose[holohover_idx][1] != -999:
+                msg = Pose()
+                msg.x = float(pose[holohover_idx][1])
+                msg.y = float(pose[holohover_idx][2])
+                msg.yaw = float(pose[holohover_idx][3])
+                self.publisher_1.publish(msg)
 
-            self.publisher_1.publish(msg)
-
-            msg = Pose()
-            msg.x = float(pose[puck_idx][1])
-            msg.y = float(pose[puck_idx][2])
-            msg.yaw = float(pose[puck_idx][3])
-            self.publisher_2.publish(msg)
+            if pose[puck_idx][1] != -999:
+                msg = Pose()
+                msg.x = float(pose[puck_idx][1])
+                msg.y = float(pose[puck_idx][2])
+                msg.yaw = float(pose[puck_idx][3])
+                self.publisher_2.publish(msg)
 
 
 def main(args=None):

@@ -1,10 +1,8 @@
 import cv2
 import numpy as np
 from cv2 import aruco
-import pandas as pd
 from numpy.lib.type_check import imag
-import time 
-#from Homography import *
+import time
 
 def project_to_floor(image_coordinates, H): 
   """
@@ -160,11 +158,12 @@ def get_arukos(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     parameters =  aruco.DetectorParameters_create()
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-    corners = np.array(corners)
-    corners = corners[:,0,:,:]
-    try:
+
+    if ids is not None:
+        corners = np.array(corners)
+        corners = corners[:,0,:,:]
         return corners, ids 
-    except:
+    else:
         return None, None
 
 

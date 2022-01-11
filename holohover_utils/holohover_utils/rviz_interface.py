@@ -1,6 +1,7 @@
 import rclpy
 import numpy as np
 from rclpy.node import Node
+from rclpy.qos import QoSPresetProfiles
 from rclpy.duration import Duration
 from holohover_msgs.msg import DroneState, MotorControl
 from visualization_msgs.msg import Marker, MarkerArray
@@ -20,7 +21,7 @@ class RVizInterface(Node):
 
         # Subscriber
         self.state_subscription = self.create_subscription(DroneState, '/estimator/state', self.state_callback, 10)
-        self.motor_control_subscription = self.create_subscription(MotorControl, '/drone/motor_control', self.control_callback, 10)
+        self.motor_control_subscription = self.create_subscription(MotorControl, '/drone/motor_control', self.control_callback, QoSPresetProfiles.SENSOR_DATA.value)
 
         # Publisher
         self.viz_publisher = self.create_publisher(MarkerArray, '/holohover_visualization', 10)
@@ -100,7 +101,8 @@ class RVizInterface(Node):
         # Thrust Arrows
         T = self.robot._Holohover__getBodytoWorld()
         radial_vectors = self.robot._Holohover__getRadialVector()
-        direction_vectors = self.robot._Holohover__getDirectionVector()
+        # We are taking the inverted direction vectors to visualize the air flow
+        direction_vectors = -self.robot._Holohover__getDirectionVector()
 
         propeller_height = 0.045
         thrust_scaling = 0.2

@@ -34,7 +34,7 @@ class Holohover:
         self.R = 0.043  # radial distance from the center of the robot to the midpoint between the two propellers
         self.phi = 2 * np.pi / 3  # separation angle between sets of propellers
         self.phi_offset = np.pi / 3  # angle of first set of propellers
-        self.flipped = False  # change to True if thrust force are directed inwards
+        self.flipped = True  # True, if thrust force are directed inwards
         self.mass = 90 * 10 ** (-3)  # in kilograms
         self.J = 0.5 * self.mass ** 2 * (self.R + 0.02)  # inertia of the robot in the z-direction
         self.MAX_THRUST = 60.2 * 1e-3  # in newtons

@@ -1,10 +1,11 @@
 import rclpy
-from rclpy.node import Node, NodeNameNonExistentError
+from rclpy.node import Node
+from rclpy.qos import QoSPresetProfiles
 from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose, DroneState, MotorControl
 import numpy as np
 from holohover_gnc.helpers.Holohover import Holohover
 from holohover_gnc.helpers.Sensor import Sensor
-import random
+
 
 class Estimator(Node):
 
@@ -15,8 +16,8 @@ class Estimator(Node):
 
         # Subscribers
         self.camera_subscription = self.create_subscription(Pose, 'camera/robot_pose', self.updateFromCamera_callback, 10)
-        self.imu_subscription = self.create_subscription(DroneMeasurement, 'drone/measurement', self.updateFromIMU_callback, 10)
-        self.motor_control_subscription = self.create_subscription(MotorControl, 'drone/motor_control', self.motor_command_callback, 10)
+        self.imu_subscription = self.create_subscription(DroneMeasurement, 'drone/measurement', self.updateFromIMU_callback, QoSPresetProfiles.SENSOR_DATA.value)
+        self.motor_control_subscription = self.create_subscription(MotorControl, 'drone/motor_control', self.motor_command_callback, QoSPresetProfiles.SENSOR_DATA.value)
 
         # Publishers
         self.state_publisher = self.create_publisher(DroneState, '/estimator/state', 10)
@@ -29,20 +30,21 @@ class Estimator(Node):
 
         if noisy_model:
             # Modify the dynamics (Noisy Model)
-            self.robot.A_d[0,0] = self.robot.A_d[0,0] + 4
-            self.robot.A_d[1,1] = self.robot.A_d[1,1] + 0.2
-            self.robot.A_d[2,2] = self.robot.A_d[2,2] - 0.4
-            self.robot.A_d[3,3] = self.robot.A_d[3,3] - 8
-            self.robot.A_d[4,2] = self.robot.A_d[4,2] + 0.45
-            self.robot.A_d[5,3] = self.robot.A_d[5,3] + 0.65
+            self.robot.A_d[0, 0] = self.robot.A_d[0, 0] + 4
+            self.robot.A_d[1, 1] = self.robot.A_d[1, 1] + 0.2
+            self.robot.A_d[2, 2] = self.robot.A_d[2, 2] - 0.4
+            self.robot.A_d[3, 3] = self.robot.A_d[3, 3] - 8
+            self.robot.A_d[4, 2] = self.robot.A_d[4, 2] + 0.45
+            self.robot.A_d[5, 3] = self.robot.A_d[5, 3] + 0.65
 
         # Kalman Filter Parameters
         # yaw, yaw_d, vx, vy, x, y
         self.Q = np.diag([1, 1, 1, 1, 1, 1])
 
-        self.IMU = Sensor()  # yaw_d reading from gyro
-        self.IMU.H = np.array([[0, 1, 0, 0, 0, 0]])
-        self.IMU.R = np.diag([10])
+        self.IMU = Sensor()  # yaw from the attitude and yaw_d reading from gyro
+        self.IMU.H = np.array([[1, 0, 0, 0, 0, 0],
+                               [0, 1, 0, 0, 0, 0]])
+        self.IMU.R = np.diag([200, 10])
         self.IMU.z = None
         self.IMU.K = None
 
@@ -57,10 +59,11 @@ class Estimator(Node):
         self.P = self.Q
 
     def updateFromIMU_callback(self, msg):
+        yaw = msg.atti.yaw
         yaw_d = msg.gyro.z
 
         # Update Kalman Gain
-        self.IMU.z = np.array([yaw_d])
+        self.IMU.z = np.array([yaw, yaw_d])
         S = self.IMU.H @ self.P @ np.transpose(self.IMU.H) + self.IMU.R
         self.IMU.K = self.P @ np.transpose(self.IMU.H) @ np.linalg.inv(S)
 
@@ -99,7 +102,6 @@ class Estimator(Node):
         self.u = self.robot.getAcceleration(thrust)
 
     def predict_callback(self):
-
         # Kalman Predict Step
         self.robot.x = self.x
         self.robot.predict(self.u)

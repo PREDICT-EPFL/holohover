@@ -1,6 +1,6 @@
-#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include "math.h"
 
 #ifdef ESP_PLATFORM
 #include "freertos/FreeRTOS.h"
@@ -38,12 +38,14 @@
 // Sampling frequency of 200Hz
 #define SAMPLE_TIME_MS 5
 
-#define MOTOR_A_1  0
+#define MOTOR_A_1  4
 #define MOTOR_A_2  1
-#define MOTOR_B_1  2
-#define MOTOR_B_2  3
-#define MOTOR_C_1  4
-#define MOTOR_C_2  5
+#define MOTOR_B_1  3
+#define MOTOR_B_2  5
+#define MOTOR_C_1  2
+#define MOTOR_C_2  0
+// Time for watchdog to turn off motors if no commands arrive: 1s
+#define MOTOR_WATCHDOG_TIMEOUT  (1000 / portTICK_RATE_MS)
 
 #define UART_PORT          UART_NUM_2
 #define UART_TXD           17
@@ -65,6 +67,8 @@ struct msp_attitude_t attitude;
 struct msp_raw_imu_t imu;
 struct msp_motor_t motors;
 
+TickType_t last_control_tick;
+
 void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
 	RCLC_UNUSED(last_call_time);
@@ -75,17 +79,17 @@ void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
         int msp_raw_imu_result = msp_request(UART_PORT, MSP_RAW_IMU, &imu, sizeof(imu), UART_TIMEOUT);
 
         if (msp_attitude_result >= 0 && msp_raw_imu_result >= 0) {
-            outgoing_measurement.atti.roll  = (float) attitude.roll;
-            outgoing_measurement.atti.pitch = (float) attitude.pitch;
-            outgoing_measurement.atti.yaw   = (float) attitude.yaw;
+            outgoing_measurement.atti.roll  = (double) attitude.roll / 1800.0 * M_PI;
+            outgoing_measurement.atti.pitch = (double) attitude.pitch / 1800.0 * M_PI;
+            outgoing_measurement.atti.yaw   = 2 * M_PI - ((double) attitude.yaw / 180.0 * M_PI);
 
             outgoing_measurement.acc.x = imu.acc[0];
             outgoing_measurement.acc.y = imu.acc[1];
             outgoing_measurement.acc.z = imu.acc[2];
 
-            outgoing_measurement.gyro.x = imu.gyro[0];
-            outgoing_measurement.gyro.y = imu.gyro[1];
-            outgoing_measurement.gyro.z = imu.gyro[2];
+            outgoing_measurement.gyro.x = (double) imu.gyro[0] / 32767.0 * 2000.0 / 180.0 * M_PI;
+            outgoing_measurement.gyro.y = (double) imu.gyro[1] / 32767.0 * 2000.0 / 180.0 * M_PI;
+            outgoing_measurement.gyro.z = (double) imu.gyro[2] / 32767.0 * 2000.0 / 180.0 * M_PI;
 
             RCSOFTCHECK(rcl_publish(&drone_measurement_publisher, (const void*) &outgoing_measurement, NULL));
         } else {
@@ -99,6 +103,22 @@ void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 	}
 }
 
+void motor_watchdog_callback(rcl_timer_t * timer, int64_t last_call_time)
+{
+    RCLC_UNUSED(last_call_time);
+
+    if (timer != NULL) {
+        if (xTaskGetTickCount() - last_control_tick >= MOTOR_WATCHDOG_TIMEOUT) {
+            for (int i = 0; i < MSP_MAX_SUPPORTED_MOTORS; ++i) {
+                motors.motor[i] = 1000;
+            }
+            if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
+                ESP_LOGW(TAG, "Initial MSP set motor command failed.");
+            }
+        }
+    }
+}
+
 void motor_control_subscription_callback(const void * msgin)
 {
     const holohover_msgs__msg__MotorControl *msg = (const holohover_msgs__msg__MotorControl*) msgin;
@@ -110,6 +130,7 @@ void motor_control_subscription_callback(const void * msgin)
     motors.motor[MOTOR_C_1] = 1000 + (int)(1000 * msg->motor_c_1);
     motors.motor[MOTOR_C_2] = 1000 + (int)(1000 * msg->motor_c_2);
 
+    last_control_tick = xTaskGetTickCount();
     if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
         ESP_LOGW(TAG, "MSP set motor command failed.");
     }
@@ -117,6 +138,9 @@ void motor_control_subscription_callback(const void * msgin)
 
 void micro_ros_task(void * arg)
 {
+    // Wait 2 sec for flight controller
+    vTaskDelay((2000 / portTICK_RATE_MS));
+
 	rcl_allocator_t allocator = rcl_get_default_allocator();
 	rclc_support_t support;
 
@@ -150,6 +174,7 @@ void micro_ros_task(void * arg)
     for (int i = 0; i < MSP_MAX_SUPPORTED_MOTORS; ++i) {
         motors.motor[i] = 1000;
     }
+    last_control_tick = xTaskGetTickCount();
     if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
         ESP_LOGW(TAG, "Initial MSP set motor command failed.");
     }
@@ -184,13 +209,18 @@ void micro_ros_task(void * arg)
 		ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, MotorControl), "/drone/motor_control"));
 
 	// Create a timer to sample measurements
-	rcl_timer_t timer;
-	RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(SAMPLE_TIME_MS), measurement_timer_callback));
+	rcl_timer_t measurement_timer;
+	RCCHECK(rclc_timer_init_default(&measurement_timer, &support, RCL_MS_TO_NS(SAMPLE_TIME_MS), measurement_timer_callback));
+
+    // Create a timer to turn off motors if no controls arrive
+    rcl_timer_t motor_watchdog_timer;
+    RCCHECK(rclc_timer_init_default(&motor_watchdog_timer, &support, RCL_MS_TO_NS(50), motor_watchdog_callback));
 
 	// Create executor
 	rclc_executor_t executor;
 	RCCHECK(rclc_executor_init(&executor, &support.context, 3, &allocator));
-	RCCHECK(rclc_executor_add_timer(&executor, &timer));
+	RCCHECK(rclc_executor_add_timer(&executor, &measurement_timer));
+    RCCHECK(rclc_executor_add_timer(&executor, &motor_watchdog_timer));
 	RCCHECK(rclc_executor_add_subscription(&executor, &motor_control_subscriber, &incoming_motor_control,
 		&motor_control_subscription_callback, ON_NEW_DATA));
 
