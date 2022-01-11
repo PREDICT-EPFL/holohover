@@ -12,11 +12,11 @@ class Simulator(Node):
         super().__init__('Simulator')
 
         self.state_publisher = self.create_publisher(DroneState, '/simulator/state', 10)
-        state_timer_period = 1 / 200  # 200Hz
+        state_timer_period = 1 / 100  # 100Hz
         self.state_timer = self.create_timer(state_timer_period, self.state_callback)
 
         self.imu_publisher = self.create_publisher(DroneMeasurement, '/drone/measurement', QoSPresetProfiles.SENSOR_DATA.value)
-        imu_timer_period = 1 / 200  # 200Hz
+        imu_timer_period = 1 / 100  # 100Hz
         self.imu_timer = self.create_timer(imu_timer_period, self.measurement_callback)
 
         self.camera_publisher = self.create_publisher(Pose, '/camera/robot_pose', 10)

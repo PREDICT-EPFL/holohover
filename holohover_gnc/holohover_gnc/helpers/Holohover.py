@@ -3,6 +3,7 @@ from qpsolvers import solve_qp
 from scipy.signal import cont2discrete
 import matplotlib.pyplot as plt
 import os
+import math
 
 
 class Holohover:
@@ -56,6 +57,11 @@ class Holohover:
         # Takes an input vector u and practices the state at iteration i+1
         self.u = u
         self.x = self.A_d @ self.x + self.B_d @ self.u
+        # Map yaw between 0 and 2pi
+        if self.x[0] < 0:
+            self.x[0] += math.ceil(-self.x[0] / (2 * math.pi)) * 2 * math.pi
+        elif self.x[0] > 2 * math.pi:
+            self.x[0] -= math.floor(self.x[0] / (2 * math.pi)) * 2 * math.pi
 
     def __getBodytoWorld(self):
         # Returns the transformation matrix from body to world frame
