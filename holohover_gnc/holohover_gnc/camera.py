@@ -36,27 +36,22 @@ class Camera(Node):
         
         
         self.get_logger().info('Launching video capture')
-        CV_CAP_PROP_FRAME_WIDTH = 3
-        CV_CAP_PROP_FRAME_HEIGHT = 4
-        CAP_PROP_FPS = 5
-        global holohover_ID, puck_ID
-        holohover_ID = 1
-        puck_ID = 2
-        global cap
-        cap = cv2.VideoCapture(0)                     #Change if needed
-        cap.set(CAP_PROP_FPS, 60)
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))               #Change if needed
-        cap.set(CV_CAP_PROP_FRAME_WIDTH,1920)
-        cap.set(CV_CAP_PROP_FRAME_HEIGHT, 1080)
+        self.holohover_ID = 1
+        self.puck_ID = 2
+        self.cap = cv2.VideoCapture(0)                     #Change if needed
+        self.cap.set(cv2.CAP_PROP_FPS, 60)
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))               #Change if needed
+        self.cap.set(cv2.CV_CAP_PROP_FRAME_WIDTH,1920)
+        self.cap.set(cv2.CV_CAP_PROP_FRAME_HEIGHT, 1080)
         self.ref_Pt = np.array(pd.read_csv(FILENAME, header=None))
 
     def __del__(self):
-        cap.release()
+        self.cap.release()
 
     def pose_callback(self):
-        if cap.isOpened():
+        if self.cap.isOpened():
             t0 = time.time()
-            ret, frame = cap.read()
+            ret, frame = self.cap.read()
             #print('Processing time is {}'.format(time.time()-t0))
             # if frame is read correctly ret is True
             if not ret:
@@ -67,10 +62,10 @@ class Camera(Node):
             M, cropped = four_point_transform(frame, self.ref_Pt)
             
 
-            ids = [holohover_ID,puck_ID]
+            ids = [self.holohover_ID, self.puck_ID]
             pose = get_pose(cropped, ids)
-            holohover_idx = np.where(pose == holohover_ID)[0][0]
-            puck_idx = np.where(pose == puck_ID)[0][0]
+            holohover_idx = np.where(pose == self.holohover_ID)[0][0]
+            puck_idx = np.where(pose == self.puck_ID)[0][0]
 
             if pose[holohover_idx][1] != -999:
                 msg = Pose()
