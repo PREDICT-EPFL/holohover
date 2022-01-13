@@ -338,6 +338,7 @@ if __name__ == "__main__":
 
     # Plots
     t = np.arange(0, (SIMULATION_LENGTH + 1) * Robot.dt, Robot.dt)
+    np.savetxt(dir_path + "/t.csv", t, delimiter=",")
 
     f, ax = plt.subplots(2, 2, sharey=False)
 
