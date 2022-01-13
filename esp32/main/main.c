@@ -79,17 +79,17 @@ void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
         int msp_raw_imu_result = msp_request(UART_PORT, MSP_RAW_IMU, &imu, sizeof(imu), UART_TIMEOUT);
 
         if (msp_attitude_result >= 0 && msp_raw_imu_result >= 0) {
-            outgoing_measurement.atti.roll  = (double) attitude.roll / 1800.0 * M_PI;
-            outgoing_measurement.atti.pitch = (double) attitude.pitch / 1800.0 * M_PI;
-            outgoing_measurement.atti.yaw   = 2 * M_PI - ((double) attitude.yaw / 180.0 * M_PI);
+            outgoing_measurement.atti.roll  = (double) attitude.roll / 1800 * M_PI;
+            outgoing_measurement.atti.pitch = (double) attitude.pitch / 1800 * M_PI;
+            outgoing_measurement.atti.yaw   = 2 * M_PI - ((double) attitude.yaw / 180 * M_PI);
 
-            outgoing_measurement.acc.x = imu.acc[0];
-            outgoing_measurement.acc.y = imu.acc[1];
-            outgoing_measurement.acc.z = imu.acc[2];
+            outgoing_measurement.acc.x = (double) imu.acc[0] / 32767 * 16 * 4 * 9.81;
+            outgoing_measurement.acc.y = (double) imu.acc[1] / 32767 * 16 * 4 * 9.81;
+            outgoing_measurement.acc.z = -((double) imu.acc[2] / 32767 * 16 * 4 * 9.81);
 
-            outgoing_measurement.gyro.x = (double) imu.gyro[0] / 32767.0 * 2000.0 / 180.0 * M_PI;
-            outgoing_measurement.gyro.y = (double) imu.gyro[1] / 32767.0 * 2000.0 / 180.0 * M_PI;
-            outgoing_measurement.gyro.z = (double) imu.gyro[2] / 32767.0 * 2000.0 / 180.0 * M_PI;
+            outgoing_measurement.gyro.x = (double) imu.gyro[0] / 32767 * 2000 / 180 * M_PI;
+            outgoing_measurement.gyro.y = (double) imu.gyro[1] / 32767 * 2000 / 180 * M_PI;
+            outgoing_measurement.gyro.z = (double) imu.gyro[2] / 32767 * 2000 / 180 * M_PI;
 
             RCSOFTCHECK(rcl_publish(&drone_measurement_publisher, (const void*) &outgoing_measurement, NULL));
         } else {
