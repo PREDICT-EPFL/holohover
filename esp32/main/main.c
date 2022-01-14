@@ -88,7 +88,7 @@ void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
         if (msp_attitude_result >= 0 && msp_raw_imu_result >= 0) {
             outgoing_measurement.atti.roll  = (double) attitude.roll / 1800 * M_PI;
             outgoing_measurement.atti.pitch = (double) attitude.pitch / 1800 * M_PI;
-            outgoing_measurement.atti.yaw   = 2 * M_PI - ((double) attitude.yaw / 180 * M_PI);
+            outgoing_measurement.atti.yaw   = M_PI - ((double) attitude.yaw / 180 * M_PI);
 
             outgoing_measurement.acc.x = (double) imu.acc[0] / 32767 * 16 * 4 * 9.81;
             outgoing_measurement.acc.y = (double) imu.acc[1] / 32767 * 16 * 4 * 9.81;
