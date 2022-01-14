@@ -24,6 +24,7 @@ setup(
     entry_points={
         'console_scripts': [
             'rviz_interface = holohover_utils.rviz_interface:main',
+            'holohover_ping = holohover_utils.holohover_ping:main',
         ],
     },
 )

@@ -77,9 +77,14 @@ The project may also be directly build using cmake. To set up CLion follow the g
     ```
     idf.py set-target esp32
     ```
-There are two options for the transport layer. It is recommended to use the bluetooth transport layer which is also enabled by default because it allows for higher sampling rates and less delay. To use the WIFI transport layer remove the line `"-DRMW_UXRCE_TRANSPORT=custom"` in the file `app-colcon.meta`.
+There are two options for the transport layer. After changing the transportation layer you have to clean the micro-ROS build with
+```
+idf.py clean-microros
+```
 
 #### Bluetooth Transport Layer
+
+* Set `"-DRMW_UXRCE_TRANSPORT=custom"` in the file `app-colcon.meta`.
 
 * Open the micro-ROS configuration
     ```
@@ -95,6 +100,8 @@ There are two options for the transport layer. It is recommended to use the blue
 * Quit and save.
 
 #### WIFI Transport Layer
+
+* Set `"-DRMW_UXRCE_TRANSPORT=udp"` in the file `app-colcon.meta`.
 
 * Open the micro-ROS configuration
     ```

@@ -13,6 +13,7 @@
 
 #include "msp.h"
 
+#include <std_msgs/msg/header.h>
 #include <holohover_msgs/msg/drone_measurement.h>
 #include <holohover_msgs/msg/motor_control.h>
 #include <rcl/rcl.h>
@@ -31,6 +32,8 @@
 #endif
 
 #define TAG "HOLOHOVER_ESP32_MAIN"
+
+#define STRING_BUFFER_LEN 50
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); vTaskDelete(NULL);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
@@ -60,8 +63,12 @@
 rcl_publisher_t drone_measurement_publisher;
 rcl_subscription_t motor_control_subscriber;
 
+rcl_publisher_t pong_publisher;
+rcl_subscription_t ping_subscriber;
+
 holohover_msgs__msg__DroneMeasurement outgoing_measurement;
 holohover_msgs__msg__MotorControl incoming_motor_control;
+std_msgs__msg__Header incoming_ping;
 
 struct msp_attitude_t attitude;
 struct msp_raw_imu_t imu;
@@ -136,6 +143,13 @@ void motor_control_subscription_callback(const void * msgin)
     }
 }
 
+void ping_subscription_callback(const void * msgin)
+{
+    const std_msgs__msg__Header *msg = (const std_msgs__msg__Header*) msgin;
+
+    RCSOFTCHECK(rcl_publish(&pong_publisher, (const void*) msg, NULL));
+}
+
 void micro_ros_task(void * arg)
 {
     // Wait 2 sec for flight controller
@@ -175,6 +189,7 @@ void micro_ros_task(void * arg)
         motors.motor[i] = 1000;
     }
     last_control_tick = xTaskGetTickCount();
+    ESP_LOGI(TAG, "Init motors to 0.");
     if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
         ESP_LOGW(TAG, "Initial MSP set motor command failed.");
     }
@@ -196,6 +211,8 @@ void micro_ros_task(void * arg)
 	RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
 #endif
 
+    ESP_LOGI(TAG, "Setup ros node, publishers and subscribers.");
+
 	// create node
 	rcl_node_t node = rcl_get_zero_initialized_node();
 	RCCHECK(rclc_node_init_default(&node, "esp32_node", "", &support));
@@ -208,6 +225,14 @@ void micro_ros_task(void * arg)
 	RCCHECK(rclc_subscription_init_best_effort(&motor_control_subscriber, &node,
 		ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, MotorControl), "/drone/motor_control"));
 
+    // Create a best effort publisher
+    RCCHECK(rclc_publisher_init_best_effort(&pong_publisher, &node,
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/pong"));
+
+    // Create a best effort subscriber
+    RCCHECK(rclc_subscription_init_best_effort(&ping_subscriber, &node,
+       ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/ping"));
+
 	// Create a timer to sample measurements
 	rcl_timer_t measurement_timer;
 	RCCHECK(rclc_timer_init_default(&measurement_timer, &support, RCL_MS_TO_NS(SAMPLE_TIME_MS), measurement_timer_callback));
@@ -216,13 +241,23 @@ void micro_ros_task(void * arg)
     rcl_timer_t motor_watchdog_timer;
     RCCHECK(rclc_timer_init_default(&motor_watchdog_timer, &support, RCL_MS_TO_NS(50), motor_watchdog_callback));
 
+    ESP_LOGI(TAG, "Starting ros executor.");
+
 	// Create executor
 	rclc_executor_t executor;
-	RCCHECK(rclc_executor_init(&executor, &support.context, 3, &allocator));
+	RCCHECK(rclc_executor_init(&executor, &support.context, 4, &allocator));
 	RCCHECK(rclc_executor_add_timer(&executor, &measurement_timer));
     RCCHECK(rclc_executor_add_timer(&executor, &motor_watchdog_timer));
 	RCCHECK(rclc_executor_add_subscription(&executor, &motor_control_subscriber, &incoming_motor_control,
 		&motor_control_subscription_callback, ON_NEW_DATA));
+    RCCHECK(rclc_executor_add_subscription(&executor, &ping_subscriber, &incoming_ping,
+        &ping_subscription_callback, ON_NEW_DATA));
+
+    char incoming_ping_buffer[STRING_BUFFER_LEN];
+    incoming_ping.frame_id.data = incoming_ping_buffer;
+    incoming_ping.frame_id.capacity = STRING_BUFFER_LEN;
+
+    ESP_LOGI(TAG, "Ros executor started, ros is now spinning.");
 
 	while(1){
 		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
