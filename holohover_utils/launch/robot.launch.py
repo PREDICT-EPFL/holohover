@@ -38,9 +38,9 @@ def generate_launch_description():
         arguments=['-d', rviz_config],
     )
 
-    # ld.add_action(camera_node)
+    ld.add_action(camera_node)
     ld.add_action(estimator_node)
-    ld.add_action(controller_node)
+    #ld.add_action(controller_node)
     ld.add_action(rviz_interface_node)
     ld.add_action(rviz_node)
 

@@ -158,7 +158,7 @@ def get_arukos(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     parameters =  aruco.DetectorParameters_create()
     corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-
+    
     if ids is not None:
         corners = np.array(corners)
         corners = corners[:,0,:,:]
@@ -167,7 +167,7 @@ def get_arukos(img):
         return None, None
 
 
-def get_yaw(corners, Y=[1,0], X=[0,1], unit='degrees'):
+def get_yaw(corners, Y=[1,0], X=[0,1], unit='radians'):
     #get the local frame
     y = corners[1] - corners[0]
     x = corners[3] - corners[0]
@@ -193,8 +193,8 @@ def get_transformation(corners):
 def get_position(corners, img, unit='metric'):
     pix_height = img.shape[0]
     pix_width = img.shape[1]
-    metric_height = 214             # Height of the table in cm 
-    metric_width = 106.5            # Width of the table in cm
+    metric_height = 2.14             # Height of the table in m 
+    metric_width = 1.065            # Width of the table in m
     s1 = metric_height/pix_height
     s2 = metric_width/pix_width
     s = np.mean(([s1,s2])) 
@@ -221,7 +221,7 @@ def get_pose(img,ID=[]):
             try:
                 corner_idx = np.where(ids==id)[0][0] #Check if id is detected
                 pos = get_position(corners[corner_idx],img,unit='metric')
-                yaw = get_yaw(corners[corner_idx], unit='degrees')
+                yaw = get_yaw(corners[corner_idx], unit='radians')
                 pose[idx,:] = [id,pos[0],pos[1],yaw]
             except:
                 pose[idx,:] = [id,-999,-999,-999]

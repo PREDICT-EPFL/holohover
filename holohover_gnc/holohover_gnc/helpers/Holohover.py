@@ -281,7 +281,8 @@ class Holohover:
         return self.__fromSignalToThrust(motor_input)
 
     def __fromSignalToThrust(self, x):
-        y = 1.5447e-7 * x ** 3 - 0.000565 * x ** 2 + 0.70302 * x - 292.4456
+        #y = 1.5447e-7 * x ** 3 - 0.000565 * x ** 2 + 0.70302 * x - 292.4456
+        y = 0.0001*x**2 - 0.1083*x
         return y * 1e-3  # mN -> N
 
     def convertToSignal(self, thrust):
@@ -293,7 +294,8 @@ class Holohover:
 
     def __fromThrustToSignal(self, x):
         x = x * 1e3  # N -> mN
-        return 0.0143 * x ** 3 - 1.6098 * x ** 2 + 60.891 * x + 1048.5
+        #return 0.0143 * x ** 3 - 1.6098 * x ** 2 + 60.891 * x + 1048.5
+        return 0.0002*x**3 - 0.0592*x**2 + 10.268*x + 1000
 
 
 if __name__ == "__main__":

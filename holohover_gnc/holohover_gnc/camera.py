@@ -30,7 +30,7 @@ class Camera(Node):
         FILENAME = os.path.join(os.path.dirname(__file__),'refPt.csv')
         super().__init__('Camera')
         self.publisher_1 = self.create_publisher(Pose, '/camera/robot_pose', 10)
-        timer_period = 1 / 30 # seconds
+        timer_period = 1 / 60 # seconds
         self.timer = self.create_timer(timer_period, self.pose_callback)
         self.publisher_2 = self.create_publisher(Pose, '/camera/puck_pose', 10)
         
@@ -38,11 +38,11 @@ class Camera(Node):
         self.get_logger().info('Launching video capture')
         self.holohover_ID = 1
         self.puck_ID = 2
-        self.cap = cv2.VideoCapture(0)                     #Change if needed
+        self.cap = cv2.VideoCapture(2)                     #Change if needed
         self.cap.set(cv2.CAP_PROP_FPS, 60)
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))               #Change if needed
-        self.cap.set(cv2.CV_CAP_PROP_FRAME_WIDTH,1920)
-        self.cap.set(cv2.CV_CAP_PROP_FRAME_HEIGHT, 1080)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,1920)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
         self.ref_Pt = np.array(pd.read_csv(FILENAME, header=None))
 
     def __del__(self):

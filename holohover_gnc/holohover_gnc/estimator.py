@@ -5,7 +5,7 @@ from holohover_msgs.msg import MotorControl, DroneMeasurement, Pose, DroneState,
 import numpy as np
 from holohover_gnc.helpers.Holohover import Holohover
 from holohover_gnc.helpers.Sensor import Sensor
-
+import math 
 
 class Estimator(Node):
 
@@ -58,9 +58,24 @@ class Estimator(Node):
 
         self.P = self.Q
 
+        self.Camera_YAW_OFFSET = None
+        self.IMU_YAW_OFFSET = None
+
     def updateFromIMU_callback(self, msg):
         yaw = msg.atti.yaw
         yaw_d = msg.gyro.z
+
+        # Offset Compensation
+        if self.IMU_YAW_OFFSET is None:
+            self.IMU_YAW_OFFSET = yaw
+
+        # Correction
+        yaw = yaw - self.IMU_YAW_OFFSET
+        # Map yaw between 0 and 2pi
+        if yaw < 0:
+            yaw += math.ceil(-yaw / (2 * math.pi)) * 2 * math.pi
+        elif yaw > 2 * math.pi:
+            yaw -= math.floor(yaw / (2 * math.pi)) * 2 * math.pi
 
         # Update Kalman Gain
         self.IMU.z = np.array([yaw, yaw_d])
@@ -77,6 +92,19 @@ class Estimator(Node):
         x = msg.x
         y = msg.y
         yaw = msg.yaw
+
+
+        # Offset Compensation
+        if self.Camera_YAW_OFFSET is None:
+            self.Camera_YAW_OFFSET = yaw
+
+        # Correction
+        yaw = yaw - self.Camera_YAW_OFFSET
+        # Map yaw between 0 and 2pi
+        if yaw < 0:
+            yaw += math.ceil(-yaw / (2 * math.pi)) * 2 * math.pi
+        elif yaw > 2 * math.pi:
+            yaw -= math.floor(yaw / (2 * math.pi)) * 2 * math.pi
 
         # Update Kalman Gain
         self.Camera.z = np.array([x, y, yaw])
