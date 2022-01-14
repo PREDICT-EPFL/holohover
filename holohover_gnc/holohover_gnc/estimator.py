@@ -68,6 +68,7 @@ class Estimator(Node):
         # Offset Compensation
         if self.IMU_YAW_OFFSET is None:
             self.IMU_YAW_OFFSET = yaw
+            print('The IMU OFFSET is {}'.format(self.IMU_YAW_OFFSET))
 
         # Correction
         yaw = yaw - self.IMU_YAW_OFFSET
@@ -76,6 +77,7 @@ class Estimator(Node):
             yaw += math.ceil(-yaw / (2 * math.pi)) * 2 * math.pi
         elif yaw > 2 * math.pi:
             yaw -= math.floor(yaw / (2 * math.pi)) * 2 * math.pi
+        #print('IMU yaw is {}'.format(yaw))
 
         # Update Kalman Gain
         self.IMU.z = np.array([yaw, yaw_d])
@@ -97,14 +99,17 @@ class Estimator(Node):
         # Offset Compensation
         if self.Camera_YAW_OFFSET is None:
             self.Camera_YAW_OFFSET = yaw
+            print('The CAMERA OFFSET is {}'.format(self.Camera_YAW_OFFSET))
 
         # Correction
         yaw = yaw - self.Camera_YAW_OFFSET
         # Map yaw between 0 and 2pi
-        if yaw < 0:
-            yaw += math.ceil(-yaw / (2 * math.pi)) * 2 * math.pi
-        elif yaw > 2 * math.pi:
-            yaw -= math.floor(yaw / (2 * math.pi)) * 2 * math.pi
+        # if yaw < 0:
+        #     yaw += math.ceil(-yaw / (2 * math.pi)) * 2 * math.pi
+        # elif yaw > 2 * math.pi:
+        #     yaw -= math.floor(yaw / (2 * math.pi)) * 2 * math.pi
+
+        print('Camera yaw is {}'.format(yaw))
 
         # Update Kalman Gain
         self.Camera.z = np.array([x, y, yaw])

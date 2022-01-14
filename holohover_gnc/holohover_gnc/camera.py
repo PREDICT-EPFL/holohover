@@ -38,7 +38,7 @@ class Camera(Node):
         self.get_logger().info('Launching video capture')
         self.holohover_ID = 1
         self.puck_ID = 2
-        self.cap = cv2.VideoCapture(1)                     #Change if needed
+        self.cap = cv2.VideoCapture(2)                     #Change if needed
         self.cap.set(cv2.CAP_PROP_FPS, 60)
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))               #Change if needed
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,1920)

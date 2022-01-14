@@ -3,6 +3,7 @@ import numpy as np
 from cv2 import aruco
 from numpy.lib.type_check import imag
 import time
+import math
 
 def project_to_floor(image_coordinates, H): 
   """
@@ -167,14 +168,12 @@ def get_arukos(img):
         return None, None
 
 
-def get_yaw(corners, Y=[1,0], X=[0,1], unit='radians'):
+def get_yaw(corners, unit='radians'):
     #get the local frame
-    y = corners[1] - corners[0]
     x = corners[3] - corners[0]
 
-    y = np.flip(y)
     x = np.flip(x)
-    theta = np.dot(x,X)/(np.linalg.norm(x)*np.linalg.norm(X)) #rad
+    theta = np.arctan2(x[0],x[1])
 
     if unit == 'degrees':
         return theta*180/np.pi #deg
