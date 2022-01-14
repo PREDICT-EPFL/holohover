@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <unistd.h>
 #include "math.h"
@@ -25,7 +24,6 @@
 #ifdef CONFIG_MICRO_ROS_ESP_XRCE_DDS_MIDDLEWARE
 #include <rmw_microros/rmw_microros.h>
 #endif
-#undef RMW_UXRCE_TRANSPORT_CUSTOM
 #ifdef RMW_UXRCE_TRANSPORT_CUSTOM
 #include "nvs_flash.h"
 #include "esp32_bluetooth_serial_transport.h"
