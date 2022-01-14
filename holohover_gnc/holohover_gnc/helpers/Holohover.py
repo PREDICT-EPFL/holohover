@@ -38,7 +38,7 @@ class Holohover:
         self.flipped = True  # True, if thrust force are directed inwards
         self.mass = 90 * 10 ** (-3)  # in kilograms
         self.J = 0.5 * self.mass ** 2 * (self.R + 0.02)  # inertia of the robot in the z-direction
-        self.MAX_THRUST = 60.2 * 1e-3  # in newtons
+        self.MAX_THRUST = 194.72 * 1e-3  # in newtons
 
         # Sensors
         self.camera = np.array([self.x[4], self.x[5], self.x[0]])
@@ -282,7 +282,7 @@ class Holohover:
 
     def __fromSignalToThrust(self, x):
         #y = 1.5447e-7 * x ** 3 - 0.000565 * x ** 2 + 0.70302 * x - 292.4456
-        y = 0.0001*x**2 - 0.1083*x
+        y = 420.58731842654373 - 1.0281139878509176 * x ** 1 + 0.0007574610504379525 * x ** 2 - 1.4993438101663197e-07 * x ** 3
         return y * 1e-3  # mN -> N
 
     def convertToSignal(self, thrust):
@@ -295,7 +295,7 @@ class Holohover:
     def __fromThrustToSignal(self, x):
         x = x * 1e3  # N -> mN
         #return 0.0143 * x ** 3 - 1.6098 * x ** 2 + 60.891 * x + 1048.5
-        return 0.0002*x**3 - 0.0592*x**2 + 10.268*x + 1000
+        return 1000.0 + 15.817062025818032 * x ** 1 - 0.3112167804023788 * x ** 2 + 0.004097946565699018 * x ** 3 - 2.798537417355097e-05 * x ** 4 + 9.503346846496716e-08 * x ** 5 - 1.2669059126488525e-10 * x ** 6
 
 
 if __name__ == "__main__":
