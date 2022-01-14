@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
+
 #include <esp_gap_bt_api.h>
 #include <esp_spp_api.h>
 
@@ -24,3 +26,5 @@ bool bluetooth_serial_disconnect();
 bool bluetooth_serial_unpair_device(uint8_t remoteAddress[]);
 bool bluetooth_serial_connected(int timeout);
 bool bluetooth_serial_is_ready(bool checkMaster, int timeout);
+
+#endif

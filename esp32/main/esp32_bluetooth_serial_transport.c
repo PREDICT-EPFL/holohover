@@ -4,6 +4,8 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BLUEDROID_ENABLED)
+
 #include "bluetooth_serial.h"
 
 #define TAG "HOLOHOVER_ESP32_BLUETOOTH_SERIAL_TRANSPORT"
@@ -45,3 +47,5 @@ size_t esp32_bluetooth_serial_read(struct uxrCustomTransport* transport, uint8_t
     }
     return idx;
 }
+
+#endif

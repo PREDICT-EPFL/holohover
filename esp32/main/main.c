@@ -189,6 +189,7 @@ void micro_ros_task(void * arg)
         motors.motor[i] = 1000;
     }
     last_control_tick = xTaskGetTickCount();
+    ESP_LOGI(TAG, "Init motors to 0.");
     if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
         ESP_LOGW(TAG, "Initial MSP set motor command failed.");
     }
@@ -209,6 +210,8 @@ void micro_ros_task(void * arg)
     // create init_options
 	RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
 #endif
+
+    ESP_LOGI(TAG, "Setup ros node, publishers and subscribers.");
 
 	// create node
 	rcl_node_t node = rcl_get_zero_initialized_node();
@@ -238,19 +241,23 @@ void micro_ros_task(void * arg)
     rcl_timer_t motor_watchdog_timer;
     RCCHECK(rclc_timer_init_default(&motor_watchdog_timer, &support, RCL_MS_TO_NS(50), motor_watchdog_callback));
 
+    ESP_LOGI(TAG, "Starting ros executor.");
+
 	// Create executor
 	rclc_executor_t executor;
-	RCCHECK(rclc_executor_init(&executor, &support.context, 3, &allocator));
+	RCCHECK(rclc_executor_init(&executor, &support.context, 4, &allocator));
 	RCCHECK(rclc_executor_add_timer(&executor, &measurement_timer));
     RCCHECK(rclc_executor_add_timer(&executor, &motor_watchdog_timer));
 	RCCHECK(rclc_executor_add_subscription(&executor, &motor_control_subscriber, &incoming_motor_control,
 		&motor_control_subscription_callback, ON_NEW_DATA));
     RCCHECK(rclc_executor_add_subscription(&executor, &ping_subscriber, &incoming_ping,
-                                           &ping_subscription_callback, ON_NEW_DATA));
+        &ping_subscription_callback, ON_NEW_DATA));
 
     char incoming_ping_buffer[STRING_BUFFER_LEN];
     incoming_ping.frame_id.data = incoming_ping_buffer;
     incoming_ping.frame_id.capacity = STRING_BUFFER_LEN;
+
+    ESP_LOGI(TAG, "Ros executor started, ros is now spinning.");
 
 	while(1){
 		rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
