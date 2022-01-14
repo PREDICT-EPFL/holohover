@@ -44,7 +44,7 @@ class Estimator(Node):
         self.IMU = Sensor()  # yaw from the attitude and yaw_d reading from gyro
         self.IMU.H = np.array([[1, 0, 0, 0, 0, 0],
                                [0, 1, 0, 0, 0, 0]])
-        self.IMU.R = np.diag([200, 10])
+        self.IMU.R = np.diag([10000, 10])
         self.IMU.z = None
         self.IMU.K = None
 

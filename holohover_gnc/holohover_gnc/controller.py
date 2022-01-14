@@ -24,9 +24,9 @@ class Controller(Node):
         self.motor_control_publisher = self.create_publisher(MotorControl, '/drone/motor_control', QoSPresetProfiles.SENSOR_DATA.value)
 
         # Controllers
-        self.PID_vx = PID(Kp=1, Kd=0, Ki=0, ref=0, limit=100)
-        self.PID_vy = PID(Kp=1, Kd=0, Ki=0, ref=0, limit=100)
-        self.PID_yaw_d = PID(Kp=0.3, Kd=0, Ki=0, ref=0, limit=100)
+        self.PID_vx = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=100)
+        self.PID_vy = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=100)
+        self.PID_yaw_d = PID(Kp=2, Kd=0, Ki=0, ref=0, limit=100)
         self.u = np.zeros(3)
         self.x = np.zeros(6)
         self.signal = np.empty((6, 1))
