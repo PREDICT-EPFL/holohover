@@ -24,9 +24,10 @@ class HolohoverPing(Node):
         header = Header()
         header.frame_id = ''
         header.stamp = self.get_clock().now().to_msg()
+        self.ping_publisher.publish(header)
 
     def pong_callback(self, msg):
-        ping_time = Time.from_msg(msg.stamp, self.get_clock().clock_type)
+        ping_time = Time.from_msg(msg.stamp)
         duration = self.get_clock().now() - ping_time
         self.get_logger().info(f'Received Ping in {duration.nanoseconds * 1e-6} ms')
 

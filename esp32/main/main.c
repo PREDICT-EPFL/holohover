@@ -147,7 +147,7 @@ void ping_subscription_callback(const void * msgin)
 {
     const std_msgs__msg__Header *msg = (const std_msgs__msg__Header*) msgin;
 
-    RCSOFTCHECK(rcl_publish(&pong_publisher, (const void*) &msg, NULL));
+    RCSOFTCHECK(rcl_publish(&pong_publisher, (const void*) msg, NULL));
 }
 
 void micro_ros_task(void * arg)
