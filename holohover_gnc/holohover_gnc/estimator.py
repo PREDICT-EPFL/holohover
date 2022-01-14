@@ -71,11 +71,11 @@ class Estimator(Node):
 
         # Correction
         yaw = yaw - self.IMU_YAW_OFFSET
-        # Map yaw between 0 and 2pi
-        if yaw < 0:
-            yaw += math.ceil(-yaw / (2 * math.pi)) * 2 * math.pi
-        elif yaw > 2 * math.pi:
-            yaw -= math.floor(yaw / (2 * math.pi)) * 2 * math.pi
+        # Map yaw between -pi and pi
+        while yaw < -math.pi:
+            yaw += 2 * math.pi
+        while yaw > math.pi:
+            yaw -= 2 * math.pi
 
         # Update Kalman Gain
         self.IMU.z = np.array([yaw, yaw_d])
@@ -100,11 +100,11 @@ class Estimator(Node):
 
         # Correction
         yaw = yaw - self.Camera_YAW_OFFSET
-        # Map yaw between 0 and 2pi
-        if yaw < 0:
-            yaw += math.ceil(-yaw / (2 * math.pi)) * 2 * math.pi
-        elif yaw > 2 * math.pi:
-            yaw -= math.floor(yaw / (2 * math.pi)) * 2 * math.pi
+        # Map yaw between -pi and pi
+        while yaw < -math.pi:
+            yaw += 2 * math.pi
+        while yaw > math.pi:
+            yaw -= 2 * math.pi
 
         # Update Kalman Gain
         self.Camera.z = np.array([x, y, yaw])
