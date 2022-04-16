@@ -18,10 +18,13 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+find_package(holohover_msgs REQUIRED)
+
 include_directories(submodules/polympc/src)
 include_directories(include)
 
 add_executable(holohover_navigation src/navigation/holohover_navigation_node.cpp)
+ament_target_dependencies(holohover_navigation rclcpp holohover_msgs)
 target_link_libraries(holohover_navigation Eigen3::Eigen)
 
 # Install Python modules

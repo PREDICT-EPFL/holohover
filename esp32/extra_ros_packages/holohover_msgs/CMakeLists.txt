@@ -28,11 +28,11 @@ find_package(geometry_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/Attitude.msg"
-        "msg/DroneMeasurement.msg"
-        "msg/MotorControl.msg"
+        "msg/HolohoverMeasurement.msg"
+        "msg/HolohoverControl.msg"
         "msg/Pose.msg"
         "msg/Positions.msg"
-        "msg/DroneState.msg"
+        "msg/HolohoverState.msg"
         DEPENDENCIES geometry_msgs
         )
 
