@@ -27,6 +27,16 @@ add_executable(holohover_navigation src/navigation/holohover_navigation_node.cpp
 ament_target_dependencies(holohover_navigation rclcpp holohover_msgs)
 target_link_libraries(holohover_navigation Eigen3::Eigen)
 
+install(DIRECTORY
+        config
+        DESTINATION share/${PROJECT_NAME}
+        )
+
+install(TARGETS
+        holohover_navigation
+        DESTINATION lib/${PROJECT_NAME}
+        )
+
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
 

@@ -249,13 +249,14 @@ public:
     inline void signal_to_thrust(const control_force_t<T> &u_signal, control_force_t<T> &u_thrust) const noexcept
     {
         // map normalized signal [0, 1] to motor signal [1000, 2000]
-        control_force_t<T> u_motor_signal = 1000 + 1000 * u_signal;
+        control_force_t<T> u_motor_signal;
+        u_motor_signal.array() = 1000 + 1000 * u_signal.array();
         control_force_t<T> u_thrust_mN;
         u_thrust_mN.setZero();
         for (const double& coeff: props.signal_to_thrust_coeffs)
         {
             u_thrust_mN.array() *= u_motor_signal.array();
-            u_thrust_mN += coeff;
+            u_thrust_mN.array() += coeff;
         }
         // fitted thrust is in mN
         u_thrust = 1e-3 * u_thrust_mN;
