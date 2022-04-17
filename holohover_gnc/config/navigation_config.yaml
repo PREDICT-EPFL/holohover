@@ -1,4 +1,4 @@
-holohover_navigation:
+navigation:
   ros__parameters:
     period: 0.001
 

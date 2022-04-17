@@ -1,9 +1,8 @@
 #include "holohover_navigation_node.hpp"
 
 HolohoverNavigationNode::HolohoverNavigationNode() :
-    Node("holohover_navigation",
-         rclcpp::NodeOptions().allow_undeclared_parameters(true)
-                              .automatically_declare_parameters_from_overrides(true)),
+    Node("navigation", rclcpp::NodeOptions().allow_undeclared_parameters(true)
+                                            .automatically_declare_parameters_from_overrides(true)),
     holohover_props(load_holohover_pros(*this)),
     navigation_settings(load_navigation_settings(*this)),
     holohover(holohover_props, navigation_settings.period),
