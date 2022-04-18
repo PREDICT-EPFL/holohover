@@ -27,6 +27,10 @@ add_executable(navigation src/navigation/navigation_node.cpp)
 ament_target_dependencies(navigation rclcpp holohover_msgs)
 target_link_libraries(navigation Eigen3::Eigen)
 
+add_executable(simulation src/simulation/simulation_node.cpp)
+ament_target_dependencies(simulation rclcpp holohover_msgs)
+target_link_libraries(simulation Eigen3::Eigen)
+
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
 
@@ -36,7 +40,7 @@ install(DIRECTORY
         )
 
 install(TARGETS
-        navigation
+        navigation simulation
         DESTINATION lib/${PROJECT_NAME}
         )
 

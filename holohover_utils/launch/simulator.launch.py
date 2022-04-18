@@ -6,41 +6,60 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     ld = LaunchDescription()
-    simulator_node = Node(
+
+    holohover_params = os.path.join(
+        get_package_share_directory('holohover_gnc'),
+        'config',
+        'holohover_params.yaml'
+    )
+
+    simulation_config = os.path.join(
+        get_package_share_directory('holohover_gnc'),
+        'config',
+        'simulation_config.yaml'
+    )
+    simulation_node = Node(
         package="holohover_gnc",
-        executable="simulator",
+        executable="simulation",
+        parameters=[holohover_params, simulation_config]
     )
 
-    controller_node = Node(
+    navigation_config = os.path.join(
+        get_package_share_directory('holohover_gnc'),
+        'config',
+        'navigation_config.yaml'
+    )
+    navigation_node = Node(
         package="holohover_gnc",
-        executable="controller"
+        executable="navigation",
+        parameters=[holohover_params, navigation_config]
     )
 
-    estimator_node = Node(
-        package="holohover_gnc",
-        executable="estimator"
-    )
+    # controller_node = Node(
+    #     package="holohover_gnc",
+    #     executable="controller"
+    # )
 
-    rviz_interface_node = Node(
-        package="holohover_utils",
-        executable="rviz_interface"
-    )
+    # rviz_interface_node = Node(
+    #     package="holohover_utils",
+    #     executable="rviz_interface"
+    # )
+    #
+    # rviz_config = os.path.join(
+    #     get_package_share_directory('holohover_utils'),
+    #     'gui',
+    #     'holohover_config.rviz'
+    # )
+    # rviz_node = Node(
+    #     package="rviz2",
+    #     executable="rviz2",
+    #     arguments=['-d', rviz_config],
+    # )
 
-    rviz_config = os.path.join(
-        get_package_share_directory('holohover_utils'),
-        'gui',
-        'holohover_config.rviz'
-    )
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        arguments=['-d', rviz_config],
-    )
-
-    ld.add_action(simulator_node)
-    ld.add_action(estimator_node)
-    ld.add_action(controller_node)
-    ld.add_action(rviz_interface_node)
-    ld.add_action(rviz_node)
+    ld.add_action(simulation_node)
+    ld.add_action(navigation_node)
+    # ld.add_action(controller_node)
+    # ld.add_action(rviz_interface_node)
+    # ld.add_action(rviz_node)
 
     return ld
