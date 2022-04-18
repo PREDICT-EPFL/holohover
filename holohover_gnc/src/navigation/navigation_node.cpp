@@ -25,7 +25,7 @@ void HolohoverNavigationNode::init_topics()
     state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverState>("navigation/state", 10);
     comp_time_publisher = this->create_publisher<std_msgs::msg::Float64>("debug/navigation_comp_time", 10);
 
-    imu_subscription = this->create_subscription<holohover_msgs::msg::HolohoverMeasurement>(
+    imu_subscription = this->create_subscription<holohover_msgs::msg::HolohoverIMU>(
             "drone/measurement",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::imu_callback, this, std::placeholders::_1));
@@ -91,7 +91,7 @@ void HolohoverNavigationNode::kalman_predict_step()
     comp_time_publisher->publish(comp_time);
 }
 
-void HolohoverNavigationNode::imu_callback(const holohover_msgs::msg::HolohoverMeasurement &measurement)
+void HolohoverNavigationNode::imu_callback(const holohover_msgs::msg::HolohoverIMU &measurement)
 {
     current_imu = measurement;
     received_imu = true;

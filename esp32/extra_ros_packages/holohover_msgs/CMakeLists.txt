@@ -28,10 +28,9 @@ find_package(geometry_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/Attitude.msg"
-        "msg/HolohoverMeasurement.msg"
+        "msg/HolohoverIMU.msg"
         "msg/HolohoverControl.msg"
         "msg/Pose.msg"
-        "msg/Positions.msg"
         "msg/HolohoverState.msg"
         DEPENDENCIES geometry_msgs
         )

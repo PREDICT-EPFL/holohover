@@ -5,7 +5,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
-#include "holohover_msgs/msg/holohover_measurement.hpp"
+#include "holohover_msgs/msg/holohover_imu.hpp"
 #include "holohover_msgs/msg/holohover_control.hpp"
 #include "holohover_msgs/msg/holohover_state.hpp"
 #include "holohover_gnc/models/holohover_model.hpp"
@@ -25,7 +25,7 @@ private:
     Holohover holohover;
     HolohoverEKF kalman;
 
-    holohover_msgs::msg::HolohoverMeasurement current_imu;
+    holohover_msgs::msg::HolohoverIMU current_imu;
     bool received_imu = false;
     holohover_msgs::msg::HolohoverControl current_control;
     bool received_control = false;
@@ -33,13 +33,13 @@ private:
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverState>::SharedPtr state_publisher;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr comp_time_publisher;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverMeasurement>::SharedPtr imu_subscription;
+    rclcpp::Subscription<holohover_msgs::msg::HolohoverIMU>::SharedPtr imu_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverControl>::SharedPtr control_subscription;
 
     void init_topics();
     void init_timer();
     void kalman_predict_step();
-    void imu_callback(const holohover_msgs::msg::HolohoverMeasurement &measurement);
+    void imu_callback(const holohover_msgs::msg::HolohoverIMU &measurement);
     void control_callback(const holohover_msgs::msg::HolohoverControl &control);
 };
 
