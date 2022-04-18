@@ -23,7 +23,7 @@ find_package(holohover_msgs REQUIRED)
 include_directories(submodules/polympc/src)
 include_directories(include)
 
-add_executable(navigation src/navigation/holohover_navigation_node.cpp)
+add_executable(navigation src/navigation/navigation_node.cpp)
 ament_target_dependencies(navigation rclcpp holohover_msgs)
 target_link_libraries(navigation Eigen3::Eigen)
 

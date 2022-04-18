@@ -1,4 +1,4 @@
-#include "holohover_navigation_node.hpp"
+#include "navigation_node.hpp"
 
 HolohoverNavigationNode::HolohoverNavigationNode() :
     Node("navigation", rclcpp::NodeOptions().allow_undeclared_parameters(true)
