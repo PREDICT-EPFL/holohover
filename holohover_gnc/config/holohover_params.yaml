@@ -3,8 +3,10 @@
     propeller_pair_gap_distance: 73.921e-3
     propeller_pair_radial_distance: 44.048e-3
     phi_offset: 0.0
+
     mass: 98.3e-3
     inertia: 0.27320855e-3 # 0.5 * mass^2 * (propeller_pair_radial_distance + 12.5e-3)
+
     max_thrust: 194.72e-3
     signal_to_thrust_coeffs: [-1.49934381e-07, 7.57461050e-04, -1.02811399e+00, 4.20587318e+02]
     thrust_to_signal_coeffs: [-1.26690591e-10, 9.50334685e-08, -2.79853742e-05, 4.09794657e-03, -3.11216780e-01, 1.58170620e+01, 1.00000000e+03]

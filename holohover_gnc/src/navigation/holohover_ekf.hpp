@@ -67,13 +67,13 @@ public:
         Q_control.diagonal() << settings.control_cov_a_x, settings.control_cov_a_y, settings.control_cov_w_dot_z;
 
         Q_acc.setIdentity();
-        Q_acc.diagonal() << settings.sensor_acc_cov_a_x_body, settings.sensor_acc_cov_a_y_body;
+        Q_acc.diagonal() << settings.sensor_acc_cov_x, settings.sensor_acc_cov_y;
 
         R_gyro.setIdentity();
-        R_gyro.diagonal() << settings.sensor_gyro_cov_w_z;
+        R_gyro.diagonal() << settings.sensor_gyro_cov_z;
 
         R_mouse.setIdentity();
-        R_mouse.diagonal() << settings.sensor_mouse_cov_v_x_body, settings.sensor_mouse_cov_v_y_body;
+        R_mouse.diagonal() << settings.sensor_mouse_cov_x, settings.sensor_mouse_cov_y;
 
         R_pose.setIdentity();
         R_pose.diagonal() << settings.sensor_pose_cov_x, settings.sensor_pose_cov_y, settings.sensor_pose_cov_yaw;

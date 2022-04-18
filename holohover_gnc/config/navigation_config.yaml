@@ -2,25 +2,24 @@ navigation:
   ros__parameters:
     period: 0.001
 
-    state_cov_x: 1.0
-    state_cov_y: 1.0
-    state_cov_v_x: 1.0
-    state_cov_v_y: 1.0
-    state_cov_yaw: 1.0
-    state_cov_w_z: 1.0
+    state_cov_x: 1e-2
+    state_cov_y: 1e-2
+    state_cov_v_x: 1e-2
+    state_cov_v_y: 1e-2
+    state_cov_yaw: 1e-2
+    state_cov_w_z: 1e-2
 
-    control_cov_a_x: 1.0
-    control_cov_a_y: 1.0
-    control_cov_w_dot_z: 1.0
+    control_cov_a_x: 1e-2
+    control_cov_a_y: 1e-2
+    control_cov_w_dot_z: 1e-2
 
-    sensor_acc_cov_a_x_body: 1.0
-    sensor_acc_cov_a_y_body: 1.0
+    sensor_acc_cov_x: 3.5e-1
+    sensor_acc_cov_y: 3.5e-1
+    sensor_gyro_cov_z: 1.5e-2
 
-    sensor_gyro_cov_w_z: 1.0
+    sensor_mouse_cov_x: 1e-2
+    sensor_mouse_cov_y: 1e-2
 
-    sensor_mouse_cov_v_x_body: 1.0
-    sensor_mouse_cov_v_y_body: 1.0
-
-    sensor_pose_cov_x: 1.0
-    sensor_pose_cov_y: 1.0
-    sensor_pose_cov_yaw: 1.0
+    sensor_pose_cov_x: 1e-3
+    sensor_pose_cov_y: 1e-3
+    sensor_pose_cov_yaw: 5e-3
