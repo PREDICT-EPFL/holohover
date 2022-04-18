@@ -23,12 +23,20 @@ HolohoverNavigationNode::HolohoverNavigationNode() :
 void HolohoverNavigationNode::init_topics()
 {
     state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverState>("navigation/state", 10);
-    comp_time_publisher = this->create_publisher<std_msgs::msg::Float64>("debug/navigation_comp_time", 10);
+    comp_time_publisher = this->create_publisher<std_msgs::msg::Float64>("navigation/debug/comp_time", 10);
 
     imu_subscription = this->create_subscription<holohover_msgs::msg::HolohoverIMU>(
-            "drone/measurement",
+            "drone/imu",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::imu_callback, this, std::placeholders::_1));
+    mouse_subscription = this->create_subscription<holohover_msgs::msg::HolohoverMouse>(
+            "drone/mouse",
+            rclcpp::SensorDataQoS(),
+            std::bind(&HolohoverNavigationNode::mouse_callback, this, std::placeholders::_1));
+    pose_subscription = this->create_subscription<holohover_msgs::msg::Pose>(
+            "optitrack/drone/pose",
+            rclcpp::SensorDataQoS(),
+            std::bind(&HolohoverNavigationNode::pose_callback, this, std::placeholders::_1));
     control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControl>(
             "drone/control",
             rclcpp::SensorDataQoS(),
@@ -95,6 +103,23 @@ void HolohoverNavigationNode::imu_callback(const holohover_msgs::msg::HolohoverI
 {
     current_imu = measurement;
     received_imu = true;
+}
+
+void HolohoverNavigationNode::mouse_callback(const holohover_msgs::msg::HolohoverMouse &measurement)
+{
+    HolohoverEKF::sensor_mouse_t mouse_measurement;
+    mouse_measurement(0) = measurement.v_x;
+    mouse_measurement(1) = measurement.v_y;
+    kalman.update_sensor_mouse(mouse_measurement);
+}
+
+void HolohoverNavigationNode::pose_callback(const holohover_msgs::msg::Pose &measurement)
+{
+    HolohoverEKF::sensor_pose_t pose_measurement;
+    pose_measurement(0) = measurement.x;
+    pose_measurement(1) = measurement.y;
+    pose_measurement(2) = measurement.yaw;
+    kalman.update_sensor_pose(pose_measurement);
 }
 
 void HolohoverNavigationNode::control_callback(const holohover_msgs::msg::HolohoverControl &control)

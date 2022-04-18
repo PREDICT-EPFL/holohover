@@ -6,6 +6,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "holohover_msgs/msg/holohover_imu.hpp"
+#include "holohover_msgs/msg/holohover_mouse.hpp"
+#include "holohover_msgs/msg/pose.hpp"
 #include "holohover_msgs/msg/holohover_control.hpp"
 #include "holohover_msgs/msg/holohover_state.hpp"
 #include "holohover_gnc/models/holohover_model.hpp"
@@ -34,12 +36,16 @@ private:
     rclcpp::Publisher<holohover_msgs::msg::HolohoverState>::SharedPtr state_publisher;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr comp_time_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverIMU>::SharedPtr imu_subscription;
+    rclcpp::Subscription<holohover_msgs::msg::HolohoverMouse>::SharedPtr mouse_subscription;
+    rclcpp::Subscription<holohover_msgs::msg::Pose>::SharedPtr pose_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverControl>::SharedPtr control_subscription;
 
     void init_topics();
     void init_timer();
     void kalman_predict_step();
     void imu_callback(const holohover_msgs::msg::HolohoverIMU &measurement);
+    void mouse_callback(const holohover_msgs::msg::HolohoverMouse &measurement);
+    void pose_callback(const holohover_msgs::msg::Pose &measurement);
     void control_callback(const holohover_msgs::msg::HolohoverControl &control);
 };
 
