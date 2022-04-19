@@ -1,1 +1,0 @@
-ros2 topic pub --once /drone/motor_control holohover_msgs/msg/MotorControl "{motor_a_1: 0.0, motor_a_2: 0.0, motor_b_1: 0.0, motor_b_2: 0.0, motor_c_1: 0.0, motor_c_2: 0.0}"
