@@ -1,5 +1,4 @@
 import rclpy
-import numpy as np
 from rclpy.node import Node
 from rclpy.qos import QoSPresetProfiles
 from rclpy.time import Time
