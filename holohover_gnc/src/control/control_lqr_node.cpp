@@ -1,12 +1,5 @@
 #include "control_lqr_node.hpp"
 
-int main(int argc, char **argv) {
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<HolohoverControlLQRNode>());
-    rclcpp::shutdown();
-    return 0;
-}
-
 HolohoverControlLQRNode::HolohoverControlLQRNode() :
         Node("control_lqr", rclcpp::NodeOptions().allow_undeclared_parameters(true)
                                                  .automatically_declare_parameters_from_overrides(true)),
@@ -106,4 +99,11 @@ void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::Holohove
 void HolohoverControlLQRNode::ref_callback(const holohover_msgs::msg::Pose &pose)
 {
     ref = pose;
+}
+
+int main(int argc, char **argv) {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<HolohoverControlLQRNode>());
+    rclcpp::shutdown();
+    return 0;
 }

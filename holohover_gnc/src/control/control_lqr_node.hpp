@@ -10,7 +10,7 @@
 #include "holohover_msgs/msg/holohover_control.hpp"
 #include "holohover_gnc/riccati_solver.hpp"
 #include "holohover_gnc/models/holohover_model.hpp"
-#include "../utils/load_holohover_props.hpp"
+#include "holohover_gnc/utils/load_holohover_props.hpp"
 
 struct ControlLQRSettings
 {

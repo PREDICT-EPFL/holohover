@@ -13,7 +13,7 @@
 #include "holohover_msgs/msg/holohover_control.hpp"
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "simulation_settings.hpp"
-#include "../utils/load_holohover_props.hpp"
+#include "holohover_gnc/utils/load_holohover_props.hpp"
 #include "load_simulation_settings.hpp"
 
 class HolohoverSimulationNode : public rclcpp::Node

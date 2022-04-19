@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    propeller_pair_gap_distance: 73.921e-3
+    propeller_pair_gap_distance: 30e-3
     propeller_pair_radial_distance: 44.048e-3
     phi_offset: 0.0
 

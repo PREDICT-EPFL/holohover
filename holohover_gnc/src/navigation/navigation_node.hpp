@@ -13,7 +13,7 @@
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "holohover_ekf.hpp"
 #include "navigation_settings.hpp"
-#include "../utils/load_holohover_props.hpp"
+#include "holohover_gnc/utils/load_holohover_props.hpp"
 #include "load_navigation_settings.hpp"
 
 class HolohoverNavigationNode : public rclcpp::Node

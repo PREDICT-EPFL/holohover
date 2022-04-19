@@ -25,6 +25,11 @@ struct HolohoverProps
     std::vector<double> signal_to_thrust_coeffs;
     // polynomial coefficients for thrust [mN] to signal [1000,2000] conversation (coeff of the highest order polynomial first)
     std::vector<double> thrust_to_signal_coeffs;
+
+    // half the angle between two propeller pairs
+    double angle_propeller_pair;
+    // distance from center to propeller
+    double radius_propeller;
 };
 
 class Holohover
@@ -122,22 +127,12 @@ public:
             force_to_total_force(1, 2 * i + 1) = -cos(props.phi_offset + phi * i);
         }
 
-        // rotation from body to world frame
-        Eigen::Matrix<T, 2, 2> rotation_matrix;
-        body_to_world_rotation_matrix(x, rotation_matrix);
-
-        // half the angle between two propeller pairs
-        double alpha = atan2(props.propeller_pair_gap_distance / 2, props.propeller_pair_radial_distance);
-        // distance from center to propeller
-        double r = sqrt(props.propeller_pair_radial_distance * props.propeller_pair_radial_distance + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
-
-        //
         Eigen::Matrix<T, 1, NU> force_to_moment;
         for (int i = 0; i < 3; i++)
         {
             // position vector of the first propeller in the propeller pair i
-            double rx1 = r * cos(props.phi_offset + phi * i - alpha);
-            double ry1 = r * sin(props.phi_offset + phi * i - alpha);
+            double rx1 = props.radius_propeller * cos(props.phi_offset + phi * i - props.angle_propeller_pair);
+            double ry1 = props.radius_propeller * sin(props.phi_offset + phi * i - props.angle_propeller_pair);
             // force vector of the first propeller in the propeller pair i
             double Fx1 = force_to_total_force(0, 2 * i);
             double Fy1 = force_to_total_force(1, 2 * i);
@@ -145,14 +140,18 @@ public:
             force_to_moment(0, 2 * i) = rx1 * Fy1 - ry1 * Fx1;
 
             // position vector of the second propeller in the propeller pair i
-            double rx2 = r * cos(props.phi_offset + phi * i + alpha);
-            double ry2 = r * sin(props.phi_offset + phi * i + alpha);
+            double rx2 = props.radius_propeller * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
+            double ry2 = props.radius_propeller * sin(props.phi_offset + phi * i + props.angle_propeller_pair);
             // force vector of the second propeller in the propeller pair i
             double Fx2 = force_to_total_force(0, 2 * i + 1);
             double Fy2 = force_to_total_force(1, 2 * i + 1);
             // moment induced by the second propeller in the propeller pair i
             force_to_moment(0, 2 * i + 1) = rx2 * Fy2 - ry2 * Fx2;
         }
+
+        // rotation from body to world frame
+        Eigen::Matrix<T, 2, 2> rotation_matrix;
+        body_to_world_rotation_matrix(x, rotation_matrix);
 
         // x, y acceleration mapping
         map.template topLeftCorner<2, NU>() = 1.0 / props.mass * rotation_matrix * force_to_total_force;
@@ -202,7 +201,7 @@ public:
         Eigen::Matrix<T, NU + NA, 1> lb, ub;
 
         H.setIdentity();
-        H.diagonal().template tail<NA>() = Eigen::Matrix<T, NA, 1>::Constant(mu);
+        H.diagonal().template tail<NA>().setConstant(mu);
         h.setZero();
         A.template topLeftCorner<NA, NU>() = control_force_to_acceleration_map;
         A.template topRightCorner<NA, NA>().setIdentity();

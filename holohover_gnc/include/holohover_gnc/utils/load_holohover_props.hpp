@@ -15,7 +15,11 @@ HolohoverProps load_holohover_pros(rclcpp::Node &node)
         node.get_parameter("inertia", props.inertia) &&
         node.get_parameter("max_thrust", props.max_thrust) &&
         node.get_parameter("signal_to_thrust_coeffs", props.signal_to_thrust_coeffs) &&
-        node.get_parameter("thrust_to_signal_coeffs", props.thrust_to_signal_coeffs)) {}
+        node.get_parameter("thrust_to_signal_coeffs", props.thrust_to_signal_coeffs))
+    {
+        props.angle_propeller_pair = atan2(props.propeller_pair_gap_distance / 2, props.propeller_pair_radial_distance);
+        props.radius_propeller = sqrt(props.propeller_pair_radial_distance * props.propeller_pair_radial_distance + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
+    }
     else
     {
         RCLCPP_INFO(node.get_logger(), "Failed to load holohover parameters");
