@@ -1,6 +1,6 @@
 [submodule "micro_ros_setup"]
 	path = micro_ros_setup
 	url = https://github.com/micro-ROS/micro_ros_setup.git
-[submodule "holohover_gnc/submodules/polympc"]
-	path = holohover_gnc/submodules/polympc
+[submodule "ros_polympc/submodules/polympc"]
+	path = ros_polympc/submodules/polympc
 	url = https://gitlab.epfl.ch/listov/polympc.git
