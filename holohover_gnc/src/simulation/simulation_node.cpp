@@ -132,9 +132,14 @@ void HolohoverSimulationNode::imu_callback()
 
 void HolohoverSimulationNode::mouse_callback()
 {
+    Eigen::Matrix2d rotation_matrix;
+    holohover.world_to_body_rotation_matrix(state, rotation_matrix);
+    Eigen::Vector2d velocity_world = state.segment<2>(2);
+    Eigen::Vector2d velocity_body = rotation_matrix * velocity_world;
+
     holohover_msgs::msg::HolohoverMouse mouse_measurement;
-    mouse_measurement.v_x = state(2);
-    mouse_measurement.v_y = state(3);
+    mouse_measurement.v_x = velocity_body(0);
+    mouse_measurement.v_y = velocity_body(1);
 
     std::normal_distribution<> mouse_v_x_noise(0, simulation_settings.sensor_mouse_noise_x);
     std::normal_distribution<> mouse_v_y_noise(0, simulation_settings.sensor_mouse_noise_y);
