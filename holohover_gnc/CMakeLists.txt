@@ -23,13 +23,17 @@ find_package(holohover_msgs REQUIRED)
 include_directories(submodules/polympc/src)
 include_directories(include)
 
+add_executable(simulation src/simulation/simulation_node.cpp)
+ament_target_dependencies(simulation rclcpp holohover_msgs)
+target_link_libraries(simulation Eigen3::Eigen)
+
 add_executable(navigation src/navigation/navigation_node.cpp)
 ament_target_dependencies(navigation rclcpp holohover_msgs)
 target_link_libraries(navigation Eigen3::Eigen)
 
-add_executable(simulation src/simulation/simulation_node.cpp)
-ament_target_dependencies(simulation rclcpp holohover_msgs)
-target_link_libraries(simulation Eigen3::Eigen)
+add_executable(control_lqr src/control/control_lqr_node.cpp)
+ament_target_dependencies(control_lqr rclcpp holohover_msgs)
+target_link_libraries(control_lqr Eigen3::Eigen)
 
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
@@ -40,7 +44,7 @@ install(DIRECTORY
         )
 
 install(TARGETS
-        navigation simulation
+        simulation navigation control_lqr
         DESTINATION lib/${PROJECT_NAME}
         )
 

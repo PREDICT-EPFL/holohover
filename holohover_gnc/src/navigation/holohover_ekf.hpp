@@ -92,13 +92,13 @@ public:
         double dt = settings.period;
         auto P_dot = [&] (const state_matrix_t &Pt)
         {
-            return holohover.Ad * Pt + Pt * holohover.Ad.transpose() + Q_full;
+            return holohover.A * Pt + Pt * holohover.A.transpose() + Q_full;
         };
         state_matrix_t P_k1 = P_dot(P);
         state_matrix_t P_k2 = P_dot(P + dt * P_k1 / 2);
         state_matrix_t P_k3 = P_dot(P + dt * P_k2 / 2);
         state_matrix_t P_k4 = P_dot(P + dt * P_k3);
-        P = (P_k1 + 2 * P_k2 + 2 * P_k3 + P_k4) * dt / 6;
+        P += (P_k1 + 2 * P_k2 + 2 * P_k3 + P_k4) * dt / 6;
     }
 
     void predict_control_acc(const control_acc_t &u_acc)

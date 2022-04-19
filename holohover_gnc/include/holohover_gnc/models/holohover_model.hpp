@@ -59,7 +59,7 @@ public:
     // discretized system dynamics for input u = (a_x, a_y, w_dot_z)
     double dt;
     Eigen::Matrix<double, NX, NX> Ad;
-    Eigen::Matrix<double, NX, NA>  Bd;
+    Eigen::Matrix<double, NX, NA> Bd;
 
     explicit Holohover(HolohoverProps &_props, double _dt = 0.01) : props(_props), dt(_dt)
     {
@@ -202,7 +202,7 @@ public:
         Eigen::Matrix<T, NU + NA, 1> lb, ub;
 
         H.setIdentity();
-        H.diagonal().template tail<NA>() = mu;
+        H.diagonal().template tail<NA>() = Eigen::Matrix<T, NA, 1>::Constant(mu);
         h.setZero();
         A.template topLeftCorner<NA, NU>() = control_force_to_acceleration_map;
         A.template topRightCorner<NA, NA>().setIdentity();
@@ -266,16 +266,16 @@ public:
     inline void thrust_to_signal(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
     {
         // fitted thrust is in mN
-        control_force_t<T> u_thrust_mN = 1e3 * u_thrust;
+        control_force_t<T> u_thrust_mN = 1e3 * u_thrust.array();
         control_force_t<T> u_motor_signal;
         u_motor_signal.setZero();
         for (const double& coeff: props.thrust_to_signal_coeffs)
         {
             u_motor_signal.array() *= u_thrust_mN.array();
-            u_motor_signal += coeff;
+            u_motor_signal.array() += coeff;
         }
         // motor signal [1000, 2000] to normalized signal [0, 1]
-        u_signal = 0.001 * u_motor_signal - 1;
+        u_signal.array() = 0.001 * u_motor_signal.array() - 1;
     }
 };
 

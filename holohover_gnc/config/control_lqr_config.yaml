@@ -1,0 +1,14 @@
+control_lqr:
+  ros__parameters:
+    period: 0.01
+
+    weight_x: 1.0
+    weight_y: 1.0
+    weight_v_x: 1.0
+    weight_v_y: 1.0
+    weight_yaw: 1.0
+    weight_w_z: 1.0
+
+    weight_a_x: 0.1
+    weight_a_y: 0.1
+    weight_w_dot_z: 0.1

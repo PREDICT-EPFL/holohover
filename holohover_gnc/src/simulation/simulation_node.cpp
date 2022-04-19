@@ -70,13 +70,15 @@ void HolohoverSimulationNode::init_timers()
 
 void HolohoverSimulationNode::calculate_control_acc()
 {
+    Holohover::control_force_t<double> current_control_signal;
+    current_control_signal(0) = current_control.motor_a_1;
+    current_control_signal(1) = current_control.motor_a_2;
+    current_control_signal(2) = current_control.motor_b_1;
+    current_control_signal(3) = current_control.motor_b_2;
+    current_control_signal(4) = current_control.motor_c_1;
+    current_control_signal(5) = current_control.motor_c_2;
     Holohover::control_force_t<double> current_control_force;
-    current_control_force(0) = current_control.motor_a_1;
-    current_control_force(1) = current_control.motor_a_2;
-    current_control_force(2) = current_control.motor_b_1;
-    current_control_force(3) = current_control.motor_b_2;
-    current_control_force(4) = current_control.motor_c_1;
-    current_control_force(5) = current_control.motor_c_2;
+    holohover.signal_to_thrust(current_control_signal, current_control_force);
     holohover.control_force_to_acceleration(state, current_control_force, current_control_acc);
 
     // add drag force
@@ -116,7 +118,7 @@ void HolohoverSimulationNode::imu_callback()
     imu_measurement.acc.z = -9.81;
     imu_measurement.gyro.x = 0;
     imu_measurement.gyro.y = 0;
-    imu_measurement.gyro.z = current_control_acc(2);
+    imu_measurement.gyro.z = state(5);
 
     std::normal_distribution<> acc_x_noise(simulation_settings.sensor_acc_bias_x, simulation_settings.sensor_acc_noise_x);
     std::normal_distribution<> acc_y_noise(simulation_settings.sensor_acc_bias_y, simulation_settings.sensor_acc_noise_y);
