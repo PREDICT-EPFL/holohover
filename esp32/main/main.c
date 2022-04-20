@@ -27,7 +27,7 @@
 #endif
 #ifdef RMW_UXRCE_TRANSPORT_CUSTOM
 #include "nvs_flash.h"
-#include "esp32_bluetooth_serial_transport.h"
+#include "bluetooth/esp32_bluetooth_serial_transport.h"
 #elif defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
 #include <uros_network_interfaces.h>
 #endif
