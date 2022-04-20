@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include "math.h"
 
 #ifdef ESP_PLATFORM
@@ -14,8 +15,8 @@
 #include "msp.h"
 
 #include <std_msgs/msg/header.h>
-#include <holohover_msgs/msg/drone_measurement.h>
-#include <holohover_msgs/msg/motor_control.h>
+#include <holohover_msgs/msg/holohover_imu.h>
+#include <holohover_msgs/msg/holohover_control.h>
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
 #include <rclc/rclc.h>
@@ -41,14 +42,14 @@
 // Sampling frequency of 100Hz
 #define SAMPLE_TIME_MS 10
 
-#define MOTOR_A_1  4
-#define MOTOR_A_2  1
-#define MOTOR_B_1  3
-#define MOTOR_B_2  5
-#define MOTOR_C_1  2
-#define MOTOR_C_2  0
-// Time for watchdog to turn off motors if no commands arrive: 1s
-#define MOTOR_WATCHDOG_TIMEOUT  (1000 / portTICK_RATE_MS)
+#define MOTOR_A_1  3
+#define MOTOR_A_2  5
+#define MOTOR_B_1  2
+#define MOTOR_B_2  0
+#define MOTOR_C_1  4
+#define MOTOR_C_2  1
+// Time for watchdog to turn off motors if no commands arrive: 100ms
+#define MOTOR_WATCHDOG_TIMEOUT  (100 / portTICK_RATE_MS)
 
 #define UART_PORT          UART_NUM_2
 #define UART_TXD           17
@@ -66,8 +67,8 @@ rcl_subscription_t motor_control_subscriber;
 rcl_publisher_t pong_publisher;
 rcl_subscription_t ping_subscriber;
 
-holohover_msgs__msg__DroneMeasurement outgoing_measurement;
-holohover_msgs__msg__MotorControl incoming_motor_control;
+holohover_msgs__msg__HolohoverIMU outgoing_measurement;
+holohover_msgs__msg__HolohoverControl incoming_motor_control;
 std_msgs__msg__Header incoming_ping;
 
 struct msp_attitude_t attitude;
@@ -86,16 +87,19 @@ void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
         int msp_raw_imu_result = msp_request(UART_PORT, MSP_RAW_IMU, &imu, sizeof(imu), UART_TIMEOUT);
 
         if (msp_attitude_result >= 0 && msp_raw_imu_result >= 0) {
-            outgoing_measurement.atti.roll  = (double) attitude.roll / 1800 * M_PI;
-            outgoing_measurement.atti.pitch = (double) attitude.pitch / 1800 * M_PI;
-            outgoing_measurement.atti.yaw   = M_PI - ((double) attitude.yaw / 180 * M_PI);
+            outgoing_measurement.atti.roll  = (double) attitude.pitch / 1800 * M_PI;
+            outgoing_measurement.atti.pitch = -((double) attitude.roll / 1800 * M_PI);
+            outgoing_measurement.atti.yaw   = -((double) attitude.yaw / 180 * M_PI);
+            if (outgoing_measurement.atti.yaw < -M_PI) {
+                outgoing_measurement.atti.yaw += 2 * M_PI;
+            }
 
-            outgoing_measurement.acc.x = (double) imu.acc[0] / 32767 * 16 * 4 * 9.81;
-            outgoing_measurement.acc.y = (double) imu.acc[1] / 32767 * 16 * 4 * 9.81;
+            outgoing_measurement.acc.x = (double) imu.acc[1] / 32767 * 16 * 4 * 9.81;
+            outgoing_measurement.acc.y = -((double) imu.acc[0] / 32767 * 16 * 4 * 9.81);
             outgoing_measurement.acc.z = -((double) imu.acc[2] / 32767 * 16 * 4 * 9.81);
 
-            outgoing_measurement.gyro.x = (double) imu.gyro[0] / 32767 * 2000 / 180 * M_PI;
-            outgoing_measurement.gyro.y = (double) imu.gyro[1] / 32767 * 2000 / 180 * M_PI;
+            outgoing_measurement.gyro.x = (double) imu.gyro[1] / 32767 * 2000 / 180 * M_PI;
+            outgoing_measurement.gyro.y = -((double) imu.gyro[0] / 32767 * 2000 / 180 * M_PI);
             outgoing_measurement.gyro.z = (double) imu.gyro[2] / 32767 * 2000 / 180 * M_PI;
 
             RCSOFTCHECK(rcl_publish(&drone_measurement_publisher, (const void*) &outgoing_measurement, NULL));
@@ -128,7 +132,7 @@ void motor_watchdog_callback(rcl_timer_t * timer, int64_t last_call_time)
 
 void motor_control_subscription_callback(const void * msgin)
 {
-    const holohover_msgs__msg__MotorControl *msg = (const holohover_msgs__msg__MotorControl*) msgin;
+    const holohover_msgs__msg__HolohoverControl *msg = (const holohover_msgs__msg__HolohoverControl*) msgin;
 
     motors.motor[MOTOR_A_1] = 1000 + (int)(1000 * msg->motor_a_1);
     motors.motor[MOTOR_A_2] = 1000 + (int)(1000 * msg->motor_a_2);
@@ -203,9 +207,13 @@ void micro_ros_task(void * arg)
 
     rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&init_options);
 
-    // Static Agent IP and port can be used instead of autodiscovery.
-    // RCCHECK(rmw_uros_options_set_udp_address(CONFIG_MICRO_ROS_AGENT_IP, CONFIG_MICRO_ROS_AGENT_PORT, rmw_options));
-    RCCHECK(rmw_uros_discover_agent(rmw_options));
+    if (strcmp(CONFIG_MICRO_ROS_AGENT_IP, "0.0.0.0") == 0) {
+        // autodiscover
+        RCCHECK(rmw_uros_discover_agent(rmw_options));
+    } else {
+        // use static agent ip and port
+        RCCHECK(rmw_uros_options_set_udp_address(CONFIG_MICRO_ROS_AGENT_IP, CONFIG_MICRO_ROS_AGENT_PORT, rmw_options));
+    }
 
     // create init_options
     RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
@@ -219,11 +227,11 @@ void micro_ros_task(void * arg)
 
     // Create a best effort publisher
     RCCHECK(rclc_publisher_init_best_effort(&drone_measurement_publisher, &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, DroneMeasurement), "/drone/measurement"));
+        ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverIMU), "/drone/imu"));
 
     // Create a best effort subscriber
     RCCHECK(rclc_subscription_init_best_effort(&motor_control_subscriber, &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, MotorControl), "/drone/motor_control"));
+        ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverControl), "/drone/control"));
 
     // Create a best effort publisher
     RCCHECK(rclc_publisher_init_best_effort(&pong_publisher, &node,
