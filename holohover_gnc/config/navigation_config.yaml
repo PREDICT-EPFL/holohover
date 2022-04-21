@@ -22,4 +22,4 @@ navigation:
 
     sensor_pose_cov_x: 1e-3
     sensor_pose_cov_y: 1e-3
-    sensor_pose_cov_yaw: 5e-3
+    sensor_pose_cov_yaw: 1e-3

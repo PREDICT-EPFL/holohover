@@ -21,7 +21,8 @@ def generate_launch_description():
     simulation_node = Node(
         package="holohover_gnc",
         executable="simulation",
-        parameters=[holohover_params, simulation_config]
+        parameters=[holohover_params, simulation_config],
+        output='screen'
     )
 
     navigation_config = os.path.join(
@@ -32,7 +33,8 @@ def generate_launch_description():
     navigation_node = Node(
         package="holohover_gnc",
         executable="navigation",
-        parameters=[holohover_params, navigation_config]
+        parameters=[holohover_params, navigation_config],
+        output='screen'
     )
 
     control_lqr_config = os.path.join(
@@ -43,13 +45,15 @@ def generate_launch_description():
     controller_node = Node(
         package="holohover_gnc",
         executable="control_lqr",
-        parameters=[holohover_params, control_lqr_config]
+        parameters=[holohover_params, control_lqr_config],
+        output='screen'
     )
 
     rviz_interface_node = Node(
         package="holohover_utils",
         executable="rviz_interface",
-        parameters=[holohover_params]
+        parameters=[holohover_params],
+        output='screen'
     )
 
     rviz_config = os.path.join(
@@ -61,6 +65,7 @@ def generate_launch_description():
         package="rviz2",
         executable="rviz2",
         arguments=['-d', rviz_config],
+        output='screen'
     )
 
     ld.add_action(simulation_node)
