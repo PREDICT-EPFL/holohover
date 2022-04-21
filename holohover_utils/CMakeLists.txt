@@ -19,6 +19,7 @@ find_package(rclpy REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 find_package(tf2 REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(ros_polympc REQUIRED)
 find_package(holohover_msgs REQUIRED)
@@ -28,16 +29,19 @@ add_executable(rviz_interface src/rviz_interface_node.cpp)
 ament_target_dependencies(rviz_interface rclcpp tf2 visualization_msgs holohover_msgs holohover_gnc ros_polympc)
 target_link_libraries(rviz_interface Eigen3::Eigen)
 
+add_executable(optitrack_interface src/optitrack_interface_node.cpp)
+ament_target_dependencies(optitrack_interface rclcpp geometry_msgs)
+
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
 
 install(DIRECTORY
-        launch gui
+        config gui launch
         DESTINATION share/${PROJECT_NAME}
         )
 
 install(TARGETS
-        rviz_interface
+        rviz_interface optitrack_interface
         DESTINATION lib/${PROJECT_NAME}
         )
 
