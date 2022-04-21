@@ -13,7 +13,7 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     // init ref
     ref.x = 0;
     ref.y = 0;
-    ref.yaw = 0;
+    ref.theta = 0;
 
     // calculate LQR gain
     Eigen::Matrix<double, Holohover::NX, Holohover::NX> &Ad = holohover.Ad;
@@ -47,7 +47,7 @@ void HolohoverControlLQRNode::init_topics()
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
             "navigation/state", 10,
             std::bind(&HolohoverControlLQRNode::state_callback, this, std::placeholders::_1));
-    reference_subscription = this->create_subscription<holohover_msgs::msg::Pose>(
+    reference_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
             "control/ref", 10,
             std::bind(&HolohoverControlLQRNode::ref_callback, this, std::placeholders::_1));
 }
@@ -65,7 +65,7 @@ void HolohoverControlLQRNode::publish_control()
     state_ref.setZero();
     state_ref(0) = ref.x;
     state_ref(1) = ref.y;
-    state_ref(4) = ref.yaw;
+    state_ref(4) = ref.theta;
 
     Holohover::control_acc_t<double> u_acc = -K * (state - state_ref);
     Holohover::control_force_t<double> u_force;
@@ -96,7 +96,7 @@ void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::Holohove
     state(5) = state_msg.w_z;
 }
 
-void HolohoverControlLQRNode::ref_callback(const holohover_msgs::msg::Pose &pose)
+void HolohoverControlLQRNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)
 {
     ref = pose;
 }

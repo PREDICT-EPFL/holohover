@@ -33,7 +33,7 @@ void HolohoverSimulationNode::init_topics()
     mouse_publisher = this->create_publisher<holohover_msgs::msg::HolohoverMouse>(
             "drone/mouse",
             rclcpp::SensorDataQoS());
-    pose_publisher = this->create_publisher<holohover_msgs::msg::Pose>(
+    pose_publisher = this->create_publisher<geometry_msgs::msg::Pose2D>(
             "optitrack/drone/pose",
             rclcpp::SensorDataQoS());
 
@@ -151,17 +151,17 @@ void HolohoverSimulationNode::mouse_callback()
 
 void HolohoverSimulationNode::pose_callback()
 {
-    holohover_msgs::msg::Pose pose_measurement;
+    geometry_msgs::msg::Pose2D pose_measurement;
     pose_measurement.x = state(0);
     pose_measurement.y = state(1);
-    pose_measurement.yaw = state(4);
+    pose_measurement.theta = state(4);
 
     std::normal_distribution<> pose_x_noise(0, simulation_settings.sensor_pose_noise_x);
     std::normal_distribution<> pose_y_noise(0, simulation_settings.sensor_pose_noise_y);
     std::normal_distribution<> pose_yaw_noise(0, simulation_settings.sensor_pose_noise_yaw);
     pose_measurement.x += pose_x_noise(random_engine);
     pose_measurement.y += pose_y_noise(random_engine);
-    pose_measurement.yaw += pose_yaw_noise(random_engine);
+    pose_measurement.theta += pose_yaw_noise(random_engine);
 
     pose_publisher->publish(pose_measurement);
 }

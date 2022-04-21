@@ -31,7 +31,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/HolohoverIMU.msg"
         "msg/HolohoverMouse.msg"
         "msg/HolohoverControl.msg"
-        "msg/Pose.msg"
         "msg/HolohoverState.msg"
         DEPENDENCIES geometry_msgs
         )

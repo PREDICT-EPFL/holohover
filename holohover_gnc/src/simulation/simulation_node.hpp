@@ -6,10 +6,10 @@
 #include <random>
 
 #include "rclcpp/rclcpp.hpp"
+#include "geometry_msgs/msg/pose2_d.hpp"
 #include "holohover_msgs/msg/holohover_state.hpp"
 #include "holohover_msgs/msg/holohover_imu.hpp"
 #include "holohover_msgs/msg/holohover_mouse.hpp"
-#include "holohover_msgs/msg/pose.hpp"
 #include "holohover_msgs/msg/holohover_control.hpp"
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "simulation_settings.hpp"
@@ -39,7 +39,7 @@ private:
     rclcpp::Publisher<holohover_msgs::msg::HolohoverState>::SharedPtr state_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverIMU>::SharedPtr imu_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverMouse>::SharedPtr mouse_publisher;
-    rclcpp::Publisher<holohover_msgs::msg::Pose>::SharedPtr pose_publisher;
+    rclcpp::Publisher<geometry_msgs::msg::Pose2D>::SharedPtr pose_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverControl>::SharedPtr control_subscription;
 
     void init_topics();

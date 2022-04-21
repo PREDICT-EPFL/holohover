@@ -5,8 +5,8 @@
 #include <cmath>
 
 #include "rclcpp/rclcpp.hpp"
+#include "geometry_msgs/msg/pose2_d.hpp"
 #include "holohover_msgs/msg/holohover_state.hpp"
-#include "holohover_msgs/msg/pose.hpp"
 #include "holohover_msgs/msg/holohover_control.hpp"
 #include "holohover_gnc/riccati_solver.hpp"
 #include "holohover_gnc/models/holohover_model.hpp"
@@ -61,19 +61,19 @@ private:
     Holohover holohover;
 
     Holohover::state_t<double> state;
-    holohover_msgs::msg::Pose ref;
+    geometry_msgs::msg::Pose2D ref;
     Eigen::Matrix<double, Holohover::NA, Holohover::NX> K;
 
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControl>::SharedPtr control_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverState>::SharedPtr state_subscription;
-    rclcpp::Subscription<holohover_msgs::msg::Pose>::SharedPtr reference_subscription;
+    rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr reference_subscription;
 
     void init_topics();
     void init_timer();
     void publish_control();
     void state_callback(const holohover_msgs::msg::HolohoverState &state_msg);
-    void ref_callback(const holohover_msgs::msg::Pose &pose);
+    void ref_callback(const geometry_msgs::msg::Pose2D &pose);
 };
 
 #endif //HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP

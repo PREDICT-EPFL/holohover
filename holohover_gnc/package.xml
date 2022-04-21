@@ -11,6 +11,7 @@
 
   <depend>rclcpp</depend>
   <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
   <depend>ros_polympc</depend>
   <depend>holohover_msgs</depend>
 

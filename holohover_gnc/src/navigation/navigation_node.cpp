@@ -33,7 +33,7 @@ void HolohoverNavigationNode::init_topics()
             "drone/mouse",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::mouse_callback, this, std::placeholders::_1));
-    pose_subscription = this->create_subscription<holohover_msgs::msg::Pose>(
+    pose_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
             "optitrack/drone/pose",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::pose_callback, this, std::placeholders::_1));
@@ -113,12 +113,12 @@ void HolohoverNavigationNode::mouse_callback(const holohover_msgs::msg::Holohove
     kalman.update_sensor_mouse(mouse_measurement);
 }
 
-void HolohoverNavigationNode::pose_callback(const holohover_msgs::msg::Pose &measurement)
+void HolohoverNavigationNode::pose_callback(const geometry_msgs::msg::Pose2D &measurement)
 {
     HolohoverEKF::sensor_pose_t pose_measurement;
     pose_measurement(0) = measurement.x;
     pose_measurement(1) = measurement.y;
-    pose_measurement(2) = measurement.yaw;
+    pose_measurement(2) = measurement.theta;
     kalman.update_sensor_pose(pose_measurement);
 }
 
