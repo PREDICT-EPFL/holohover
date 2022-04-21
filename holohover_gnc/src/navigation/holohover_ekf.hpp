@@ -83,10 +83,23 @@ public:
         P = Q;
     }
 
+    void normalize_yaw()
+    {
+        if (x(4) < -M_PI)
+        {
+            x(4) += 2 * M_PI;
+        }
+        if (x(4) > M_PI)
+        {
+            x(4) -= 2 * M_PI;
+        }
+    }
+
     void predict_integrate(const control_acc_t &u_acc, const state_matrix_t &Q_full)
     {
         // integrate state estimate x using discretized dynamics
         x = holohover.Ad * x + holohover.Bd * u_acc;
+        normalize_yaw();
 
         // integrate covariance estimate P using RK4
         double dt = settings.period;
@@ -171,6 +184,7 @@ public:
         Eigen::Matrix<double, NX, NZ> K = S.transpose().ldlt().solve(H * P.transpose()).transpose();
         // update state estimate
         x = x + K * (z - h * x);
+        normalize_yaw();
         // update state covariance estimate
         P = (state_matrix_t::Identity() - K * H) * P;
     }

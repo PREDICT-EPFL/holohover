@@ -104,6 +104,15 @@ void HolohoverSimulationNode::simulate_forward_callback()
     state_msg.yaw = state(4);
     state_msg.w_z = state(5);
 
+    if (state_msg.yaw < -M_PI)
+    {
+        state_msg.yaw += 2 * M_PI;
+    }
+    if (state_msg.yaw > M_PI)
+    {
+        state_msg.yaw -= 2 * M_PI;
+    }
+
     state_publisher->publish(state_msg);
 }
 
@@ -162,6 +171,15 @@ void HolohoverSimulationNode::pose_callback()
     pose_measurement.x += pose_x_noise(random_engine);
     pose_measurement.y += pose_y_noise(random_engine);
     pose_measurement.theta += pose_yaw_noise(random_engine);
+
+    if (pose_measurement.theta < -M_PI)
+    {
+        pose_measurement.theta += 2 * M_PI;
+    }
+    if (pose_measurement.theta > M_PI)
+    {
+        pose_measurement.theta -= 2 * M_PI;
+    }
 
     pose_publisher->publish(pose_measurement);
 }
