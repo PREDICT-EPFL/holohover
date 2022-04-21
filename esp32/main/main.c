@@ -13,9 +13,11 @@
 #include "driver/uart.h"
 
 #include "msp.h"
+#include "PMW3389DM/spi_pmw3389dm.h"
 
 #include <std_msgs/msg/header.h>
 #include <holohover_msgs/msg/holohover_imu.h>
+#include <holohover_msgs/msg/holohover_mouse.h>
 #include <holohover_msgs/msg/holohover_control.h>
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
@@ -39,9 +41,6 @@
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); vTaskDelete(NULL);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 
-// Sampling frequency of 100Hz
-#define SAMPLE_TIME_MS 10
-
 #define MOTOR_A_1  3
 #define MOTOR_A_2  5
 #define MOTOR_B_1  2
@@ -60,24 +59,40 @@
 #define UART_BUF_SIZE      1024
 // Timeout of 100ms
 #define UART_TIMEOUT  (100 / portTICK_RATE_MS)
+// Sampling frequency of 100Hz
+#define IMU_SAMPLE_TIME_MS 10
 
-rcl_publisher_t drone_measurement_publisher;
-rcl_subscription_t motor_control_subscriber;
+#define SPI_MISO 19
+#define SPI_MOSI 18
+#define SPI_CLK  5
+#define SPI_CS   33
+#define SPI_RS   27
+// Sampling frequency of 100Hz
+#define MOUSE_SAMPLE_TIME_MS 10
+
+pmw3389dm_handle_t pmw3389dm_handle;
+
+rcl_publisher_t imu_publisher;
+rcl_publisher_t mouse_publisher;
+rcl_subscription_t control_subscriber;
 
 rcl_publisher_t pong_publisher;
 rcl_subscription_t ping_subscriber;
 
-holohover_msgs__msg__HolohoverIMU outgoing_measurement;
-holohover_msgs__msg__HolohoverControl incoming_motor_control;
+holohover_msgs__msg__HolohoverIMU outgoing_imu_measurement;
+holohover_msgs__msg__HolohoverMouse outgoing_mouse_measurement;
+holohover_msgs__msg__HolohoverControl incoming_control;
 std_msgs__msg__Header incoming_ping;
 
 struct msp_attitude_t attitude;
 struct msp_raw_imu_t imu;
 struct msp_motor_t motors;
 
+uint8_t burst_buffer[12];
+
 TickType_t last_control_tick;
 
-void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
+void imu_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
     RCLC_UNUSED(last_call_time);
 
@@ -87,22 +102,22 @@ void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
         int msp_raw_imu_result = msp_request(UART_PORT, MSP_RAW_IMU, &imu, sizeof(imu), UART_TIMEOUT);
 
         if (msp_attitude_result >= 0 && msp_raw_imu_result >= 0) {
-            outgoing_measurement.atti.roll  = (double) attitude.pitch / 1800 * M_PI;
-            outgoing_measurement.atti.pitch = -((double) attitude.roll / 1800 * M_PI);
-            outgoing_measurement.atti.yaw   = -((double) attitude.yaw / 180 * M_PI);
-            if (outgoing_measurement.atti.yaw < -M_PI) {
-                outgoing_measurement.atti.yaw += 2 * M_PI;
+            outgoing_imu_measurement.atti.roll  = (double) attitude.pitch / 1800 * M_PI;
+            outgoing_imu_measurement.atti.pitch = -((double) attitude.roll / 1800 * M_PI);
+            outgoing_imu_measurement.atti.yaw   = -((double) attitude.yaw / 180 * M_PI);
+            if (outgoing_imu_measurement.atti.yaw < -M_PI) {
+                outgoing_imu_measurement.atti.yaw += 2 * M_PI;
             }
 
-            outgoing_measurement.acc.x = (double) imu.acc[1] / 32767 * 16 * 4 * 9.81;
-            outgoing_measurement.acc.y = -((double) imu.acc[0] / 32767 * 16 * 4 * 9.81);
-            outgoing_measurement.acc.z = -((double) imu.acc[2] / 32767 * 16 * 4 * 9.81);
+            outgoing_imu_measurement.acc.x = (double) imu.acc[1] / 32767 * 16 * 4 * 9.81;
+            outgoing_imu_measurement.acc.y = -((double) imu.acc[0] / 32767 * 16 * 4 * 9.81);
+            outgoing_imu_measurement.acc.z = -((double) imu.acc[2] / 32767 * 16 * 4 * 9.81);
 
-            outgoing_measurement.gyro.x = (double) imu.gyro[1] / 32767 * 2000 / 180 * M_PI;
-            outgoing_measurement.gyro.y = -((double) imu.gyro[0] / 32767 * 2000 / 180 * M_PI);
-            outgoing_measurement.gyro.z = (double) imu.gyro[2] / 32767 * 2000 / 180 * M_PI;
+            outgoing_imu_measurement.gyro.x = (double) imu.gyro[1] / 32767 * 2000 / 180 * M_PI;
+            outgoing_imu_measurement.gyro.y = -((double) imu.gyro[0] / 32767 * 2000 / 180 * M_PI);
+            outgoing_imu_measurement.gyro.z = (double) imu.gyro[2] / 32767 * 2000 / 180 * M_PI;
 
-            RCSOFTCHECK(rcl_publish(&drone_measurement_publisher, (const void*) &outgoing_measurement, NULL));
+            RCSOFTCHECK(rcl_publish(&imu_publisher, (const void*) &outgoing_imu_measurement, NULL));
         } else {
             if (msp_attitude_result < 0) {
                 ESP_LOGW(TAG, "MSP attitude request failed.");
@@ -110,6 +125,43 @@ void measurement_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
             if (msp_raw_imu_result < 0) {
                 ESP_LOGW(TAG, "MSP raw imu request failed.");
             }
+        }
+    }
+}
+
+void mouse_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
+{
+    if (timer != NULL) {
+
+        esp_err_t err = spi_pmw3389dm_burst_read(pmw3389dm_handle, burst_buffer);
+        if (err == ESP_OK) {
+            bool motion = (burst_buffer[0] & 0x80) > 0;
+            bool lifted = (burst_buffer[0] & 0x08) > 0;
+
+            if (lifted) {
+                ESP_LOGI(TAG, "Holohover ist lifted.");
+                return;
+            }
+
+            if (motion) {
+                // movement count since last call
+                int16_t delta_x = (int16_t) ((burst_buffer[3] << 8) | burst_buffer[2]);
+                int16_t delta_y = (int16_t) ((burst_buffer[5] << 8) | burst_buffer[4]);
+
+                // last term convert inch to meters
+                double dist_x = (double) delta_x / 16000 * 0.0254;
+                double dist_y = (double) delta_y / 16000 * 0.0254;
+
+                outgoing_mouse_measurement.v_x = dist_x / (double) last_call_time * 1000 * 1000 * 1000;
+                outgoing_mouse_measurement.v_y = -dist_y / (double) last_call_time * 1000 * 1000 * 1000;
+            } else {
+                outgoing_mouse_measurement.v_x = 0;
+                outgoing_mouse_measurement.v_y = 0;
+            }
+
+            RCSOFTCHECK(rcl_publish(&mouse_publisher, (const void*) &outgoing_mouse_measurement, NULL));
+        } else {
+            ESP_LOGW(TAG, "Burst read failed.");
         }
     }
 }
@@ -156,12 +208,16 @@ void ping_subscription_callback(const void * msgin)
 
 void micro_ros_task(void * arg)
 {
+    // set log level
+    esp_log_level_set(TAG, ESP_LOG_INFO);
+
     // Wait 2 sec for flight controller
     vTaskDelay((2000 / portTICK_RATE_MS));
 
     rcl_allocator_t allocator = rcl_get_default_allocator();
     rclc_support_t support;
 
+    ESP_LOGI(TAG, "Configure UART.");
     uart_config_t uart_config = {
         .baud_rate = UART_BAUD_RATE,
         .data_bits = UART_DATA_8_BITS,
@@ -170,22 +226,39 @@ void micro_ros_task(void * arg)
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .rx_flow_ctrl_thresh = 122,
     };
-
-    // Set UART log level
-    esp_log_level_set(TAG, ESP_LOG_INFO);
-
-    ESP_LOGI(TAG, "Configure UART.");
-
     // Install UART driver (we don't need an event queue here)
     ESP_ERROR_CHECK(uart_driver_install(UART_PORT, UART_BUF_SIZE * 2, UART_BUF_SIZE * 2, 0, NULL, 0));
-
     // Configure UART parameters
     ESP_ERROR_CHECK(uart_param_config(UART_PORT, &uart_config));
-
     ESP_LOGI(TAG, "UART set pins, mode and install driver.");
-
     // Set UART pins
     ESP_ERROR_CHECK(uart_set_pin(UART_PORT, UART_TXD, UART_RXD, UART_RTS, UART_CTS));
+
+    ESP_LOGI(TAG, "Configure SPI.");
+    spi_bus_config_t buscfg = {
+            .miso_io_num = SPI_MISO,
+            .mosi_io_num = SPI_MOSI,
+            .sclk_io_num = SPI_CLK,
+            .quadwp_io_num = -1,
+            .quadhd_io_num = -1
+    };
+    // Initialize SPI bus
+    ESP_ERROR_CHECK(spi_bus_initialize(HSPI_HOST, &buscfg, SPI_DMA_CH_AUTO));
+    pmw3389dm_config_t pmw3389dm_config = {
+            .host = HSPI_HOST,
+            .cs_io = SPI_CS,
+            .rs_io = SPI_RS
+    };
+    ESP_LOGI(TAG, "Initialize PMW3389DM...");
+    ESP_ERROR_CHECK(spi_pmw3389dm_init(&pmw3389dm_config, &pmw3389dm_handle));
+    // power up and upload firmware
+    ESP_ERROR_CHECK(spi_pmw3389dm_power_up_and_upload_firmware(pmw3389dm_handle));
+    // set CPI to maximum (16000)
+    ESP_ERROR_CHECK(spi_pmw3389dm_set_cpi(pmw3389dm_handle, 16000));
+    // set lift cut off to 3mm
+    ESP_ERROR_CHECK(spi_pmw3389dm_write(pmw3389dm_handle, 0x63, 0x03));
+    // since we only burst read we can initialise it here
+    ESP_ERROR_CHECK(spi_pmw3389dm_init_burst_read(pmw3389dm_handle));
 
     // init motors
     // 1000 = 0%, 2000 = 100%
@@ -221,29 +294,26 @@ void micro_ros_task(void * arg)
 
     ESP_LOGI(TAG, "Setup ros node, publishers and subscribers.");
 
-    // create node
+    // Create node
     rcl_node_t node = rcl_get_zero_initialized_node();
     RCCHECK(rclc_node_init_default(&node, "esp32_node", "", &support));
 
-    // Create a best effort publisher
-    RCCHECK(rclc_publisher_init_best_effort(&drone_measurement_publisher, &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverIMU), "/drone/imu"));
+    // Create publishers and subscribers for measurements and control commands
+    RCCHECK(rclc_publisher_init_best_effort(&imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverIMU), "/drone/imu"));
+    RCCHECK(rclc_publisher_init_best_effort(&mouse_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverMouse), "/drone/mouse"));
+    RCCHECK(rclc_subscription_init_best_effort(&control_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverControl), "/drone/control"));
 
-    // Create a best effort subscriber
-    RCCHECK(rclc_subscription_init_best_effort(&motor_control_subscriber, &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverControl), "/drone/control"));
+    // Ping and pong publisher and subscriber
+    RCCHECK(rclc_publisher_init_best_effort(&pong_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/pong"));
+    RCCHECK(rclc_subscription_init_best_effort(&ping_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/ping"));
 
-    // Create a best effort publisher
-    RCCHECK(rclc_publisher_init_best_effort(&pong_publisher, &node,
-        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/pong"));
+    // Create a timer to sample imu
+    rcl_timer_t imu_timer;
+    RCCHECK(rclc_timer_init_default(&imu_timer, &support, RCL_MS_TO_NS(IMU_SAMPLE_TIME_MS), imu_timer_callback));
 
-    // Create a best effort subscriber
-    RCCHECK(rclc_subscription_init_best_effort(&ping_subscriber, &node,
-       ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/ping"));
-
-    // Create a timer to sample measurements
-    rcl_timer_t measurement_timer;
-    RCCHECK(rclc_timer_init_default(&measurement_timer, &support, RCL_MS_TO_NS(SAMPLE_TIME_MS), measurement_timer_callback));
+    // Create a timer to sample mouse
+    rcl_timer_t mouse_timer;
+    RCCHECK(rclc_timer_init_default(&mouse_timer, &support, RCL_MS_TO_NS(MOUSE_SAMPLE_TIME_MS), mouse_timer_callback));
 
     // Create a timer to turn off motors if no controls arrive
     rcl_timer_t motor_watchdog_timer;
@@ -253,13 +323,12 @@ void micro_ros_task(void * arg)
 
     // Create executor
     rclc_executor_t executor;
-    RCCHECK(rclc_executor_init(&executor, &support.context, 4, &allocator));
-    RCCHECK(rclc_executor_add_timer(&executor, &measurement_timer));
+    RCCHECK(rclc_executor_init(&executor, &support.context, 5, &allocator));
+    RCCHECK(rclc_executor_add_timer(&executor, &imu_timer));
+    RCCHECK(rclc_executor_add_timer(&executor, &mouse_timer));
     RCCHECK(rclc_executor_add_timer(&executor, &motor_watchdog_timer));
-    RCCHECK(rclc_executor_add_subscription(&executor, &motor_control_subscriber, &incoming_motor_control,
-        &motor_control_subscription_callback, ON_NEW_DATA));
-    RCCHECK(rclc_executor_add_subscription(&executor, &ping_subscriber, &incoming_ping,
-        &ping_subscription_callback, ON_NEW_DATA));
+    RCCHECK(rclc_executor_add_subscription(&executor, &control_subscriber, &incoming_control, &motor_control_subscription_callback, ON_NEW_DATA));
+    RCCHECK(rclc_executor_add_subscription(&executor, &ping_subscriber, &incoming_ping, &ping_subscription_callback, ON_NEW_DATA));
 
     char incoming_ping_buffer[STRING_BUFFER_LEN];
     incoming_ping.frame_id.data = incoming_ping_buffer;
@@ -267,15 +336,10 @@ void micro_ros_task(void * arg)
 
     ESP_LOGI(TAG, "Ros executor started, ros is now spinning.");
 
-    while(1){
+    while(1) {
         rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
         usleep(1000);
     }
-
-    // Free resources
-    RCCHECK(rcl_publisher_fini(&drone_measurement_publisher, &node));
-    RCCHECK(rcl_subscription_fini(&motor_control_subscriber, &node));
-    RCCHECK(rcl_node_fini(&node));
 }
 
 
