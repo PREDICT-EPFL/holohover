@@ -6,6 +6,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
+#include "geometry_msgs/msg/accel.hpp"
 #include "holohover_msgs/msg/holohover_imu.hpp"
 #include "holohover_msgs/msg/holohover_mouse.hpp"
 #include "holohover_msgs/msg/holohover_control.hpp"
@@ -34,6 +35,7 @@ private:
 
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverState>::SharedPtr state_publisher;
+    rclcpp::Publisher<geometry_msgs::msg::Accel>::SharedPtr control_accel_publisher;
     rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr comp_time_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverIMU>::SharedPtr imu_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverMouse>::SharedPtr mouse_subscription;

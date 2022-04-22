@@ -23,6 +23,7 @@ HolohoverNavigationNode::HolohoverNavigationNode() :
 void HolohoverNavigationNode::init_topics()
 {
     state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverState>("navigation/state", 10);
+    control_accel_publisher = this->create_publisher<geometry_msgs::msg::Accel>("navigation/control_accel", 10);
     comp_time_publisher = this->create_publisher<std_msgs::msg::Float64>("navigation/debug/comp_time", 10);
 
     imu_subscription = this->create_subscription<holohover_msgs::msg::HolohoverIMU>(
@@ -126,6 +127,26 @@ void HolohoverNavigationNode::control_callback(const holohover_msgs::msg::Holoho
 {
     current_control = control;
     received_control = true;
+
+    // convert control signal into control acceleration
+    Holohover::control_force_t<double> u_signal;
+    u_signal(0) = control.motor_a_1;
+    u_signal(1) = control.motor_a_2;
+    u_signal(2) = control.motor_b_1;
+    u_signal(3) = control.motor_b_2;
+    u_signal(4) = control.motor_c_1;
+    u_signal(5) = control.motor_c_2;
+    Holohover::control_force_t<double> u_force;
+    holohover.signal_to_thrust(u_signal, u_force);
+    Holohover::control_acc_t<double> u_acc;
+    holohover.control_force_to_acceleration(kalman.x, u_force, u_acc);
+
+    // publish control acceleration
+    geometry_msgs::msg::Accel control_accel;
+    control_accel.linear.x = u_acc(0);
+    control_accel.linear.y = u_acc(1);
+    control_accel.angular.z = u_acc(2);
+    control_accel_publisher->publish(control_accel);
 }
 
 int main(int argc, char **argv) {
