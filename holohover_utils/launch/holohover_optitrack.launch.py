@@ -18,11 +18,12 @@ def generate_launch_description():
     mocap_config = os.path.join(
         get_package_share_directory('holohover_utils'),
         'config',
-        'mocap_config.yaml'
+        'vrpn_config.yaml'
     )
     mocap_node = Node(
-        package='mocap_optitrack',
-        executable='mocap_node',
+        package='vrpn_mocap',
+        namespace='vrpn_mocap',
+        executable='client_node',
         parameters=[mocap_config],
         output='screen'
     )

@@ -19,6 +19,7 @@ find_package(rclpy REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(ros_polympc REQUIRED)
@@ -30,7 +31,7 @@ ament_target_dependencies(rviz_interface rclcpp tf2 visualization_msgs holohover
 target_link_libraries(rviz_interface Eigen3::Eigen)
 
 add_executable(optitrack_interface src/optitrack_interface_node.cpp)
-ament_target_dependencies(optitrack_interface rclcpp geometry_msgs)
+ament_target_dependencies(optitrack_interface rclcpp geometry_msgs tf2 tf2_geometry_msgs)
 
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
