@@ -4,6 +4,6 @@
 [submodule "ros_polympc/submodules/polympc"]
 	path = ros_polympc/submodules/polympc
 	url = https://gitlab.epfl.ch/listov/polympc.git
-[submodule "vrpn_mocap"]
-	path = vrpn_mocap
-	url = https://github.com/alvinsunyixiao/vrpn_mocap
+[submodule "mocap_optitrack"]
+	path = mocap_optitrack
+	url = https://github.com/StanfordASL/mocap_optitrack.git
