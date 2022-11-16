@@ -35,6 +35,10 @@ add_executable(control_lqr src/control/control_lqr_node.cpp)
 ament_target_dependencies(control_lqr rclcpp geometry_msgs holohover_msgs ros_polympc)
 target_link_libraries(control_lqr Eigen3::Eigen)
 
+add_executable(control_signal src/control/control_signal_node.cpp)
+ament_target_dependencies(control_signal rclcpp geometry_msgs holohover_msgs ros_polympc)
+target_link_libraries(control_signal Eigen3::Eigen)
+
 install(DIRECTORY include/
         DESTINATION include
         )
@@ -46,7 +50,7 @@ install(DIRECTORY
         )
 
 install(TARGETS
-        simulation navigation control_lqr
+        simulation navigation control_lqr control_signal
         DESTINATION lib/${PROJECT_NAME}
         )
 
