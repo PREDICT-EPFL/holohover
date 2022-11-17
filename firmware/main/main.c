@@ -28,8 +28,9 @@
 #include <rmw_microros/rmw_microros.h>
 #endif
 #ifdef RMW_UXRCE_TRANSPORT_CUSTOM
-#include "nvs_flash.h"
-#include "bluetooth/esp32_bluetooth_serial_transport.h"
+//#include "nvs_flash.h"
+//#include "bluetooth/esp32_bluetooth_serial_transport.h"
+#include "esp32_serial_transport.h"
 #elif defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
 #include <uros_network_interfaces.h>
 #endif
@@ -40,6 +41,15 @@
 
 #define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); vTaskDelete(NULL);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
+#define RCSOFTCHECKRET(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);return temp_rc;}}
+
+#define EXECUTE_EVERY_N_MS(MS, X)  do { \
+    static volatile int64_t init = -1; \
+    if (init == -1) { init = uxr_millis();} \
+    if (uxr_millis() - init > MS) { X; init = uxr_millis();} \
+} while (0)
+
+#define GPIO_NUM_LED GPIO_NUM_13
 
 #define MOTOR_A_1  3
 #define MOTOR_A_2  5
@@ -48,7 +58,7 @@
 #define MOTOR_C_1  4
 #define MOTOR_C_2  1
 // Time for watchdog to turn off motors if no commands arrive: 100ms
-#define MOTOR_WATCHDOG_TIMEOUT  (100 / portTICK_RATE_MS)
+#define MOTOR_WATCHDOG_TIMEOUT  100
 
 #define UART_PORT          UART_NUM_2
 #define UART_TXD           17
@@ -72,6 +82,15 @@
 
 pmw3389dm_handle_t pmw3389dm_handle;
 
+rcl_init_options_t init_options;
+rclc_support_t support;
+rcl_node_t node;
+rclc_executor_t executor;
+rcl_allocator_t allocator;
+
+rcl_timer_t imu_timer;
+rcl_timer_t mouse_timer;
+
 rcl_publisher_t imu_publisher;
 rcl_publisher_t mouse_publisher;
 rcl_subscription_t control_subscriber;
@@ -90,7 +109,14 @@ struct msp_motor_t motors;
 
 uint8_t burst_buffer[12];
 
-TickType_t last_control_tick;
+int64_t last_control_time;
+
+enum states {
+    WAITING_AGENT,
+    AGENT_AVAILABLE,
+    AGENT_CONNECTED,
+    AGENT_DISCONNECTED
+} state;
 
 void imu_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
@@ -166,22 +192,6 @@ void mouse_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
     }
 }
 
-void motor_watchdog_callback(rcl_timer_t * timer, int64_t last_call_time)
-{
-    RCLC_UNUSED(last_call_time);
-
-    if (timer != NULL) {
-        if (xTaskGetTickCount() - last_control_tick >= MOTOR_WATCHDOG_TIMEOUT) {
-            for (int i = 0; i < MSP_MAX_SUPPORTED_MOTORS; ++i) {
-                motors.motor[i] = 1000;
-            }
-            if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
-                ESP_LOGW(TAG, "Initial MSP set motor command failed.");
-            }
-        }
-    }
-}
-
 void motor_control_subscription_callback(const void * msgin)
 {
     const holohover_msgs__msg__HolohoverControl *msg = (const holohover_msgs__msg__HolohoverControl*) msgin;
@@ -193,7 +203,7 @@ void motor_control_subscription_callback(const void * msgin)
     motors.motor[MOTOR_C_1] = 1000 + (int)(1000 * msg->motor_c_1);
     motors.motor[MOTOR_C_2] = 1000 + (int)(1000 * msg->motor_c_2);
 
-    last_control_tick = xTaskGetTickCount();
+    last_control_time = uxr_millis();
     if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
         ESP_LOGW(TAG, "MSP set motor command failed.");
     }
@@ -206,16 +216,97 @@ void ping_subscription_callback(const void * msgin)
     RCSOFTCHECK(rcl_publish(&pong_publisher, (const void*) msg, NULL));
 }
 
+void configure_led()
+{
+    gpio_reset_pin(GPIO_NUM_LED);
+    // Set the GPIO as a push/pull output
+    gpio_set_direction(GPIO_NUM_LED, GPIO_MODE_OUTPUT);
+    gpio_set_level(GPIO_NUM_LED, 0);
+}
+
+void reset_motors()
+{
+    // 1000 = 0%, 2000 = 100%
+    for (int i = 0; i < MSP_MAX_SUPPORTED_MOTORS; ++i) {
+        motors.motor[i] = 1000;
+    }
+    ESP_LOGI(TAG, "Init motors to 0.");
+    if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
+        ESP_LOGW(TAG, "Initial MSP set motor command failed.");
+    }
+}
+
+rcl_ret_t create_entities()
+{
+    ESP_LOGI(TAG, "Setup ros node, publishers and subscribers.");
+
+    // create init_options
+    RCSOFTCHECKRET(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
+
+    // Create node
+    RCSOFTCHECKRET(rclc_node_init_default(&node, "holohover_firmware", "", &support));
+
+    // Create publishers and subscribers for measurements and control commands
+    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverIMU), "/drone/imu"));
+    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&mouse_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverMouse), "/drone/mouse"));
+    RCSOFTCHECKRET(rclc_subscription_init_best_effort(&control_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverControl), "/drone/control"));
+
+    // Ping and pong publisher and subscriber
+    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&pong_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/pong"));
+    RCSOFTCHECKRET(rclc_subscription_init_best_effort(&ping_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/ping"));
+
+    // Create a timer to sample imu
+    RCSOFTCHECKRET(rclc_timer_init_default(&imu_timer, &support, RCL_MS_TO_NS(IMU_SAMPLE_TIME_MS), imu_timer_callback));
+
+    // Create a timer to sample mouse
+    RCSOFTCHECKRET(rclc_timer_init_default(&mouse_timer, &support, RCL_MS_TO_NS(MOUSE_SAMPLE_TIME_MS), mouse_timer_callback));
+
+    ESP_LOGI(TAG, "Starting ros executor.");
+
+    // Create executor
+    RCSOFTCHECKRET(rclc_executor_init(&executor, &support.context, 5, &allocator));
+    RCSOFTCHECKRET(rclc_executor_add_timer(&executor, &imu_timer));
+    RCSOFTCHECKRET(rclc_executor_add_timer(&executor, &mouse_timer));
+    RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &control_subscriber, &incoming_control, &motor_control_subscription_callback, ON_NEW_DATA));
+    RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &ping_subscriber, &incoming_ping, &ping_subscription_callback, ON_NEW_DATA));
+
+    return RCL_RET_OK;
+}
+
+void destroy_entities()
+{
+    rmw_context_t * rmw_context = rcl_context_get_rmw_context(&support.context);
+    (void) rmw_uros_set_context_entity_destroy_session_timeout(rmw_context, 0);
+
+    RCSOFTCHECK(rcl_subscription_fini(&control_subscriber, &node));
+    RCSOFTCHECK(rcl_subscription_fini(&ping_subscriber, &node));
+
+    RCSOFTCHECK(rcl_timer_fini(&imu_timer));
+    RCSOFTCHECK(rcl_timer_fini(&mouse_timer));
+
+    RCSOFTCHECK(rcl_publisher_fini(&imu_publisher, &node));
+    RCSOFTCHECK(rcl_publisher_fini(&mouse_publisher, &node));
+    RCSOFTCHECK(rcl_publisher_fini(&pong_publisher, &node));
+
+    RCSOFTCHECK(rclc_executor_fini(&executor));
+    RCSOFTCHECK(rcl_node_fini(&node));
+    RCSOFTCHECK(rclc_support_fini(&support));
+}
+
 void micro_ros_task(void * arg)
 {
     // set log level
+#ifdef RMW_UXRCE_TRANSPORT_CUSTOM
+    // Don't log with custom transport to not disturb serial communication
+    esp_log_level_set(TAG, ESP_LOG_NONE);
+#else
     esp_log_level_set(TAG, ESP_LOG_INFO);
+#endif
 
     // Wait 2 sec for flight controller
     vTaskDelay((2000 / portTICK_RATE_MS));
 
-    rcl_allocator_t allocator = rcl_get_default_allocator();
-    rclc_support_t support;
+    configure_led();
 
     ESP_LOGI(TAG, "Configure UART.");
     uart_config_t uart_config = {
@@ -260,26 +351,18 @@ void micro_ros_task(void * arg)
     // since we only burst read we can initialise it here
     ESP_ERROR_CHECK(spi_pmw3389dm_init_burst_read(pmw3389dm_handle));
 
-    // init motors
-    // 1000 = 0%, 2000 = 100%
-    for (int i = 0; i < MSP_MAX_SUPPORTED_MOTORS; ++i) {
-        motors.motor[i] = 1000;
-    }
-    last_control_tick = xTaskGetTickCount();
-    ESP_LOGI(TAG, "Init motors to 0.");
-    if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
-        ESP_LOGW(TAG, "Initial MSP set motor command failed.");
-    }
+    reset_motors();
 
-#ifdef RMW_UXRCE_TRANSPORT_CUSTOM
-    // create init_options
-    RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
-#elif defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
-    rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
+    char incoming_ping_buffer[STRING_BUFFER_LEN];
+    incoming_ping.frame_id.data = incoming_ping_buffer;
+    incoming_ping.frame_id.capacity = STRING_BUFFER_LEN;
+
+    allocator = rcl_get_default_allocator();
+
+    init_options = rcl_get_zero_initialized_init_options();
     RCCHECK(rcl_init_options_init(&init_options, allocator));
-
     rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&init_options);
-
+#if defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
     if (strcmp(CONFIG_MICRO_ROS_AGENT_IP, "0.0.0.0") == 0) {
         // autodiscover
         RCCHECK(rmw_uros_discover_agent(rmw_options));
@@ -287,80 +370,81 @@ void micro_ros_task(void * arg)
         // use static agent ip and port
         RCCHECK(rmw_uros_options_set_udp_address(CONFIG_MICRO_ROS_AGENT_IP, CONFIG_MICRO_ROS_AGENT_PORT, rmw_options));
     }
-
-    // create init_options
-    RCCHECK(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
 #endif
 
-    ESP_LOGI(TAG, "Setup ros node, publishers and subscribers.");
-
-    // Create node
-    rcl_node_t node = rcl_get_zero_initialized_node();
-    RCCHECK(rclc_node_init_default(&node, "esp32_node", "", &support));
-
-    // Create publishers and subscribers for measurements and control commands
-    RCCHECK(rclc_publisher_init_best_effort(&imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverIMU), "/drone/imu"));
-    RCCHECK(rclc_publisher_init_best_effort(&mouse_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverMouse), "/drone/mouse"));
-    RCCHECK(rclc_subscription_init_best_effort(&control_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverControl), "/drone/control"));
-
-    // Ping and pong publisher and subscriber
-    RCCHECK(rclc_publisher_init_best_effort(&pong_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/pong"));
-    RCCHECK(rclc_subscription_init_best_effort(&ping_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/ping"));
-
-    // Create a timer to sample imu
-    rcl_timer_t imu_timer;
-    RCCHECK(rclc_timer_init_default(&imu_timer, &support, RCL_MS_TO_NS(IMU_SAMPLE_TIME_MS), imu_timer_callback));
-
-    // Create a timer to sample mouse
-    rcl_timer_t mouse_timer;
-    RCCHECK(rclc_timer_init_default(&mouse_timer, &support, RCL_MS_TO_NS(MOUSE_SAMPLE_TIME_MS), mouse_timer_callback));
-
-    // Create a timer to turn off motors if no controls arrive
-    rcl_timer_t motor_watchdog_timer;
-    RCCHECK(rclc_timer_init_default(&motor_watchdog_timer, &support, RCL_MS_TO_NS(50), motor_watchdog_callback));
-
-    ESP_LOGI(TAG, "Starting ros executor.");
-
-    // Create executor
-    rclc_executor_t executor;
-    RCCHECK(rclc_executor_init(&executor, &support.context, 5, &allocator));
-    RCCHECK(rclc_executor_add_timer(&executor, &imu_timer));
-    RCCHECK(rclc_executor_add_timer(&executor, &mouse_timer));
-    RCCHECK(rclc_executor_add_timer(&executor, &motor_watchdog_timer));
-    RCCHECK(rclc_executor_add_subscription(&executor, &control_subscriber, &incoming_control, &motor_control_subscription_callback, ON_NEW_DATA));
-    RCCHECK(rclc_executor_add_subscription(&executor, &ping_subscriber, &incoming_ping, &ping_subscription_callback, ON_NEW_DATA));
-
-    char incoming_ping_buffer[STRING_BUFFER_LEN];
-    incoming_ping.frame_id.data = incoming_ping_buffer;
-    incoming_ping.frame_id.capacity = STRING_BUFFER_LEN;
-
-    ESP_LOGI(TAG, "Ros executor started, ros is now spinning.");
-
     while(1) {
-        rclc_executor_spin_some(&executor, RCL_MS_TO_NS(10));
-        usleep(1000);
+        switch (state) {
+            case WAITING_AGENT:
+                EXECUTE_EVERY_N_MS(500, state = (RMW_RET_OK == rmw_uros_ping_agent_options(100, 1, rmw_options)) ? AGENT_AVAILABLE : WAITING_AGENT;);
+                break;
+            case AGENT_AVAILABLE:
+                state = (RCL_RET_OK == create_entities()) ? AGENT_CONNECTED : WAITING_AGENT;
+
+                if (state == AGENT_CONNECTED) {
+                    state = (RMW_RET_OK == rmw_uros_sync_session(500)) ? AGENT_CONNECTED : WAITING_AGENT;
+                }
+
+                if (state == WAITING_AGENT) {
+                    destroy_entities();
+                }
+                break;
+            case AGENT_CONNECTED:
+                ESP_LOGI(TAG, "Agent is connected, ros is now spinning.");
+
+                if (uxr_millis() - last_control_time > MOTOR_WATCHDOG_TIMEOUT) {
+                    reset_motors();
+                    EXECUTE_EVERY_N_MS(500, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 3)) ? AGENT_CONNECTED : AGENT_DISCONNECTED;);
+                }
+
+                if (state == AGENT_CONNECTED) {
+                    rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+                }
+                break;
+            case AGENT_DISCONNECTED:
+                reset_motors();
+                destroy_entities();
+                state = WAITING_AGENT;
+                break;
+            default:
+                break;
+        }
+
+        if (state == AGENT_CONNECTED) {
+            gpio_set_level(GPIO_NUM_LED, 1);
+        } else {
+            gpio_set_level(GPIO_NUM_LED, 0);
+        }
     }
 }
 
+static size_t uart_port = UART_NUM_0;
 
 void app_main(void)
 {
 #ifdef RMW_UXRCE_TRANSPORT_CUSTOM
-    esp_err_t ret = nvs_flash_init();
-    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_ERROR_CHECK(nvs_flash_erase());
-        ret = nvs_flash_init();
-    }
-    ESP_ERROR_CHECK(ret);
-
+//    esp_err_t ret = nvs_flash_init();
+//    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+//        ESP_ERROR_CHECK(nvs_flash_erase());
+//        ret = nvs_flash_init();
+//    }
+//    ESP_ERROR_CHECK(ret);
+//
+//    ESP_ERROR_CHECK(rmw_uros_set_custom_transport(
+//        true,
+//        (void *) "ESP32",
+//        esp32_bluetooth_serial_open,
+//        esp32_bluetooth_serial_close,
+//        esp32_bluetooth_serial_write,
+//        esp32_bluetooth_serial_read
+//    ));
     ESP_ERROR_CHECK(rmw_uros_set_custom_transport(
-        true,
-        (void *) "ESP32",
-        esp32_bluetooth_serial_open,
-        esp32_bluetooth_serial_close,
-        esp32_bluetooth_serial_write,
-        esp32_bluetooth_serial_read
-    ));
+		true,
+		(void *) &uart_port,
+		esp32_serial_open,
+		esp32_serial_close,
+		esp32_serial_write,
+		esp32_serial_read
+	));
 #elif defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
     ESP_ERROR_CHECK(uros_network_interface_initialize());
 #else
