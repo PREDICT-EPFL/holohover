@@ -3,6 +3,8 @@
 #include <driver/uart.h>
 #include <driver/gpio.h>
 
+#ifdef RMW_UXRCE_TRANSPORT_CUSTOM
+
 #define UART_TXD  (CONFIG_MICROROS_UART_TXD)
 #define UART_RXD  (CONFIG_MICROROS_UART_RXD)
 #define UART_RTS  (CONFIG_MICROROS_UART_RTS)
@@ -52,3 +54,5 @@ size_t esp32_serial_read(struct uxrCustomTransport* transport, uint8_t* buf, siz
     const int rxBytes = uart_read_bytes(*uart_port, buf, len, timeout / portTICK_RATE_MS);
     return rxBytes;
 }
+
+#endif
