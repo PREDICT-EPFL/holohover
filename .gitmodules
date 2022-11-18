@@ -6,4 +6,4 @@
 	url = https://gitlab.epfl.ch/listov/polympc.git
 [submodule "mocap_optitrack"]
 	path = mocap_optitrack
-	url = https://github.com/StanfordASL/mocap_optitrack.git
+	url = https://github.com/PREDICT-EPFL/mocap_optitrack.git
