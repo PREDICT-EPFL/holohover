@@ -7,7 +7,7 @@ mocap_node:
     rigid_bodies:
       '1':
         pose2d: optitrack/drone/pose_raw
-    free_markers: false # set to true to publish marker positions for markers not in rigid bodies
+    free_markers: true # set to true to publish marker positions for markers not in rigid bodies
     optitrack_config:
       # should match the Multicast Interface in Motive streaming panel
       multicast_address: 239.255.42.99

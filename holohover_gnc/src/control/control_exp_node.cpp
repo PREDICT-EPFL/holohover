@@ -1,6 +1,6 @@
-#include "control_lqr_node.hpp"
+#include "control_exp_node.hpp"
 
-HolohoverControlLQRNode::HolohoverControlLQRNode() :
+HolohoverControlExpNode::HolohoverControlExpNode() :
         Node("control_lqr", rclcpp::NodeOptions().allow_undeclared_parameters(true)
                                                  .automatically_declare_parameters_from_overrides(true)),
         holohover_props(load_holohover_pros(*this)),
@@ -38,7 +38,7 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     init_timer();
 }
 
-void HolohoverControlLQRNode::init_topics()
+void HolohoverControlExpNode::init_topics()
 {
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControl>(
             "drone/control",
@@ -46,20 +46,20 @@ void HolohoverControlLQRNode::init_topics()
 
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
             "navigation/state", 10,
-            std::bind(&HolohoverControlLQRNode::state_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverControlExpNode::state_callback, this, std::placeholders::_1));
     reference_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
             "control/ref", 10,
-            std::bind(&HolohoverControlLQRNode::ref_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverControlExpNode::ref_callback, this, std::placeholders::_1));
 }
 
-void HolohoverControlLQRNode::init_timer()
+void HolohoverControlExpNode::init_timer()
 {
     timer = this->create_wall_timer(
             std::chrono::duration<double>(control_settings.period),
-            std::bind(&HolohoverControlLQRNode::publish_control, this));
+            std::bind(&HolohoverControlExpNode::publish_control, this));
 }
 
-void HolohoverControlLQRNode::publish_control()
+void HolohoverControlExpNode::publish_control()
 {
     Holohover::state_t<double> state_ref;
     state_ref.setZero();
@@ -99,7 +99,7 @@ void HolohoverControlLQRNode::publish_control()
     control_publisher->publish(control_msg);
 }
 
-void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverState &state_msg)
+void HolohoverControlExpNode::state_callback(const holohover_msgs::msg::HolohoverState &state_msg)
 {
     state(0) = state_msg.x;
     state(1) = state_msg.y;
@@ -109,7 +109,7 @@ void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::Holohove
     state(5) = state_msg.w_z;
 }
 
-void HolohoverControlLQRNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)
+void HolohoverControlExpNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)
 {
     ref = pose;
 }
@@ -117,7 +117,7 @@ void HolohoverControlLQRNode::ref_callback(const geometry_msgs::msg::Pose2D &pos
 /*
 * Added by Nicolaj
 */
-void HolohoverControlLQRNode::rand_vel(Holohover::state_t<double>& vel_rand, 
+void HolohoverControlExpNode::rand_vel(Holohover::state_t<double>& vel_rand, 
 				       const Holohover::state_t<double>& state)
 {
 
@@ -197,7 +197,7 @@ void HolohoverControlLQRNode::rand_vel(Holohover::state_t<double>& vel_rand,
 /*
 * Added by Nicolaj
 */
-void HolohoverControlLQRNode::random_state(Holohover::state_t<double>& state_rand)
+void HolohoverControlExpNode::random_state(Holohover::state_t<double>& state_rand)
 {
     static int signal_length = 0;
     static int counter = 0;
@@ -222,7 +222,7 @@ void HolohoverControlLQRNode::random_state(Holohover::state_t<double>& state_ran
 /*
 * Added by Nicolaj
 */
-void HolohoverControlLQRNode::random_control_acc(Holohover::control_acc_t<double>& u_acc_rand)
+void HolohoverControlExpNode::random_control_acc(Holohover::control_acc_t<double>& u_acc_rand)
 {
     static int signal_length = 0;
     static int counter = 0;
@@ -246,7 +246,7 @@ void HolohoverControlLQRNode::random_control_acc(Holohover::control_acc_t<double
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<HolohoverControlLQRNode>());
+    rclcpp::spin(std::make_shared<HolohoverControlExpNode>());
     rclcpp::shutdown();
     return 0;
 }

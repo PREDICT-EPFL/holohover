@@ -22,9 +22,19 @@ struct HolohoverProps
     // max thrust of a single propeller
     double max_thrust;
     // polynomial coefficients for signal [1000,2000] to thrust [mN] conversation (coeff of the highest order polynomial first)
-    std::vector<double> signal_to_thrust_coeffs;
+    std::vector<double> signal_to_thrust_coeffs_motor1;
+    std::vector<double> signal_to_thrust_coeffs_motor2;
+    std::vector<double> signal_to_thrust_coeffs_motor3;
+    std::vector<double> signal_to_thrust_coeffs_motor4;
+    std::vector<double> signal_to_thrust_coeffs_motor5;
+    std::vector<double> signal_to_thrust_coeffs_motor6;
     // polynomial coefficients for thrust [mN] to signal [1000,2000] conversation (coeff of the highest order polynomial first)
-    std::vector<double> thrust_to_signal_coeffs;
+    std::vector<double> thrust_to_signal_coeffs_motor1;
+    std::vector<double> thrust_to_signal_coeffs_motor2;
+    std::vector<double> thrust_to_signal_coeffs_motor3;
+    std::vector<double> thrust_to_signal_coeffs_motor4;
+    std::vector<double> thrust_to_signal_coeffs_motor5;
+    std::vector<double> thrust_to_signal_coeffs_motor6;
 
     // half the angle between two propeller pairs
     double angle_propeller_pair;
@@ -248,33 +258,59 @@ public:
     inline void signal_to_thrust(const control_force_t<T> &u_signal, control_force_t<T> &u_thrust) const noexcept
     {
         // map normalized signal [0, 1] to motor signal [1000, 2000]
-        control_force_t<T> u_motor_signal;
-        u_motor_signal.array() = 1000 + 1000 * u_signal.array();
-        control_force_t<T> u_thrust_mN;
-        u_thrust_mN.setZero();
-        for (const double& coeff: props.signal_to_thrust_coeffs)
+        control_force_t<T> u_motor_signal = u_signal.array();
+        control_force_t<T> u_motor_thrust;
+        u_motor_thrust.setZero();
+        
+        for (std::size_t i=0; i!=props.signal_to_thrust_coeffs_motor1.size(); ++i)
         {
-            u_thrust_mN.array() *= u_motor_signal.array();
-            u_thrust_mN.array() += coeff;
+            u_motor_thrust.array() *= u_motor_signal.array();
+        	Eigen::Matrix<T, NU, 1> coeffs {props.signal_to_thrust_coeffs_motor1[i],
+        									props.signal_to_thrust_coeffs_motor2[i],
+        									props.signal_to_thrust_coeffs_motor3[i],
+        									props.signal_to_thrust_coeffs_motor4[i],
+        									props.signal_to_thrust_coeffs_motor5[i],
+        									props.signal_to_thrust_coeffs_motor6[i]};
+            u_motor_thrust = u_motor_thrust + coeffs;
         }
-        // fitted thrust is in mN
-        u_thrust = 1e-3 * u_thrust_mN;
+        
+        //for (const double& coeff: props.signal_to_thrust_coeffs_motor1)
+        //{
+        //    u_thrust_mN.array() *= u_motor_signal.array();
+        //    u_thrust_mN.array() += coeff;
+        //}
+        
+        u_thrust = u_motor_thrust;
     }
 
     template<typename T>
     inline void thrust_to_signal(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
     {
         // fitted thrust is in mN
-        control_force_t<T> u_thrust_mN = 1e3 * u_thrust.array();
+        control_force_t<T> u_motor_thrust = u_thrust.array();
         control_force_t<T> u_motor_signal;
         u_motor_signal.setZero();
-        for (const double& coeff: props.thrust_to_signal_coeffs)
+        
+        for (std::size_t i=0; i!=props.thrust_to_signal_coeffs_motor1.size(); ++i)
         {
-            u_motor_signal.array() *= u_thrust_mN.array();
-            u_motor_signal.array() += coeff;
+            u_motor_signal.array() *= u_motor_thrust.array();
+        	Eigen::Matrix<T, NU, 1> coeffs {props.thrust_to_signal_coeffs_motor1[i],
+        									props.thrust_to_signal_coeffs_motor2[i],
+        									props.thrust_to_signal_coeffs_motor3[i],
+        									props.thrust_to_signal_coeffs_motor4[i],
+        									props.thrust_to_signal_coeffs_motor5[i],
+        									props.thrust_to_signal_coeffs_motor6[i]};
+            u_motor_signal = u_motor_signal + coeffs;
         }
-        // motor signal [1000, 2000] to normalized signal [0, 1]
-        u_signal.array() = 0.001 * u_motor_signal.array() - 1;
+        
+        //for (const double& coeff: props.thrust_to_signal_coeffs_motor1)
+        //{
+        //    u_motor_signal.array() *= u_thrust_mN.array();
+        //    u_motor_signal.array() += coeff;
+        //    std::cout << coeff << ", ";
+        //}
+        
+        u_signal.array() = u_motor_signal.array();
     }
 };
 

@@ -45,7 +45,7 @@ def generate_launch_description():
     )
     controller_node = Node(
         package="holohover_gnc",
-        executable="control_signal",
+        executable="control_exp",
         parameters=[holohover_params, control_lqr_config],
         output='screen'
     )
@@ -73,18 +73,10 @@ def generate_launch_description():
     	cmd=['ros2', 'bag', 'record', '-a'],
     	output='screen'
     )
-    
-    #bota_dir = get_package_share_directory("rokubimini_ethercat")
-    #bota_driver_node = launch_ros.actions.IncludeLaunchDescription(
-    #	launch.launch_description_sources.PythonLaunchDescriptionSource(
-    #		bota_dir + "launch/rokubimini_ethercat.launch.py"
-	#	)
-    #) 
 
     ld.add_action(simulation_node)
     ld.add_action(navigation_node)
     ld.add_action(controller_node)
-    #ld.add_action(bota_driver_node)
     ld.add_action(rviz_interface_node)
     ld.add_action(rviz_node)
     ld.add_action(recorder)

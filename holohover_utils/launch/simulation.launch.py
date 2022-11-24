@@ -1,4 +1,5 @@
 import os
+import launch.actions
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
@@ -67,11 +68,17 @@ def generate_launch_description():
         arguments=['-d', rviz_config],
         output='screen'
     )
+    
+    recorder = launch.actions.ExecuteProcess(
+    	cmd=['ros2', 'bag', 'record', '-a'],
+    	output='screen'
+    )
 
     ld.add_action(simulation_node)
     ld.add_action(navigation_node)
     ld.add_action(controller_node)
     ld.add_action(rviz_interface_node)
     ld.add_action(rviz_node)
+    ld.add_action(recorder)
 
     return ld

@@ -8,5 +8,17 @@
     inertia: 0.3599e-3 # 0.5 * mass^2 * (propeller_pair_radial_distance + 12.5e-3)
 
     max_thrust: 194.72e-3
-    signal_to_thrust_coeffs: [-1.49934381e-07, 7.57461050e-04, -1.02811399e+00, 4.20587318e+02]
-    thrust_to_signal_coeffs: [-1.26690591e-10, 9.50334685e-08, -2.79853742e-05, 4.09794657e-03, -3.11216780e-01, 1.58170620e+01, 1.00000000e+03]
+    signal_to_thrust_coeffs_motor1: [-0.27675822, 0.73228747, 0.19089428, 0.0] 
+    signal_to_thrust_coeffs_motor2: [-0.26599642, 0.71018331, 0.21030774, 0.0] 
+    signal_to_thrust_coeffs_motor3: [-0.47014436, 1.01239162, 0.08407954, 0.0]
+    signal_to_thrust_coeffs_motor4: [-0.19689546, 0.63304683, 0.2327298, 0.0]
+    signal_to_thrust_coeffs_motor5: [-0.34435633, 0.85337578, 0.16751077, 0.0]
+    signal_to_thrust_coeffs_motor6: [-0.33533427, 0.82140377, 0.19129567, 0.0]
+     
+    
+    thrust_to_signal_coeffs_motor1: [3.49581533, -4.47141818, 2.98873851, 0.0]
+    thrust_to_signal_coeffs_motor2: [3.30363383, -4.24495062, 2.90772305, 0.0]
+    thrust_to_signal_coeffs_motor3: [5.15943747, -5.94591164, 3.31592928, 0.0]
+    thrust_to_signal_coeffs_motor4: [2.99021517, -4.00947358, 2.85930776, 0.0]
+    thrust_to_signal_coeffs_motor5: [3.37550854, -4.39801983, 2.92519653, 0.0]
+    thrust_to_signal_coeffs_motor6: [3.25073935, -4.21033082, 2.85532567, 0.0]

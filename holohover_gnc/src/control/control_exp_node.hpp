@@ -69,10 +69,10 @@ ControlLQRSettings load_control_lqr_settings(rclcpp::Node &node)
     return settings;
 }
 
-class HolohoverControlLQRNode : public rclcpp::Node
+class HolohoverControlExpNode : public rclcpp::Node
 {
 public:
-    HolohoverControlLQRNode();
+    HolohoverControlExpNode();
 private:
     HolohoverProps holohover_props;
     ControlLQRSettings control_settings;

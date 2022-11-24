@@ -25,19 +25,12 @@ void HolohoverControlSignalNode::init_topics()
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControl>(
             "drone/control",
             rclcpp::SensorDataQoS());
-
-    state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
-            "navigation/state", 10,
-            std::bind(&HolohoverControlSignalNode::state_callback, this, std::placeholders::_1));
-    reference_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
-            "control/ref", 10,
-            std::bind(&HolohoverControlSignalNode::ref_callback, this, std::placeholders::_1));
 }
 
 void HolohoverControlSignalNode::init_timer()
 {
     timer = this->create_wall_timer(
-            std::chrono::duration<double>(control_settings.period),
+            std::chrono::duration<double>(0.01),
             std::bind(&HolohoverControlSignalNode::publish_control, this));
 }
 
@@ -65,22 +58,21 @@ void HolohoverControlSignalNode::publish_control()
     static bool u_signal_init = false;
     
     if(!u_signal_init) {
-    	for(int i=0; i<6; i++) {
+    	for(int i=0; i<NB_MOTORS; i++) {
 			u_signal(i) = 0.0;
 		}
     	u_signal_init = true;
     }
 	  
-    if(us_counter >= 2500000) {
+    if(us_counter >= CYCLE_TIME) {
     	begin = std::chrono::steady_clock::now();
+    	signal_test1(u_signal, comb); // convert combination to signal
     	comb += 1;
-    	motor_combination(u_signal, comb); // convert combination to signal
-    	std::cout << "comb = " << comb << "\n";
-    } /*else if(us_counter >= 2000000) {
-		for(int i=0; i<6; i++) {
+    } else if(us_counter >= (CYCLE_TIME-OFF_TIME)) {
+		for(int i=0; i<NB_MOTORS; i++) {
 			u_signal(i) = 0.0;
 		}
-	}*/
+	}
 
 
     // clip between 0 and 1
@@ -97,28 +89,43 @@ void HolohoverControlSignalNode::publish_control()
     control_publisher->publish(control_msg);
 }
 
-void HolohoverControlSignalNode::motor_combination(Holohover::control_force_t<double>& u_signal, int comb)
+/*
+*  Turn one motor after each other on with 16 signals in the range (0,1]
+*/
+void HolohoverControlSignalNode::signal_test1(Holohover::control_force_t<double>& u_signal, int comb)
 {
-	/*int a = comb % NB_SIGNALS;
-	float signal_a = a / (NB_SIGNALS-1);
+	uint16_t s = (comb & 0x000F); // masking bits 0-3
+	uint16_t m = (comb & 0x0070) >> 4; // masking bits 4-6 and shifting them to zero
 	
-	comb = comb/NB_SIGNALS;
-	int b = int(std::floor(comb)) % NB_SIGNALS;
-	float signal_b = b / (NB_SIGNALS-1);
+	float signal = (float(s)+1)/NB_SIGNALS;
 	
-	comb = comb/NB_SIGNALS;
-	int c = int(std::floor(comb)) % NB_SIGNALS;
-	float signal_c = c / (NB_SIGNALS-1);
+	int motor_mask[NB_MOTORS] = {0,0,0,0,0,0};
+	if(m < NB_MOTORS) {
+		motor_mask[m] = 1;
+	}
 	
-	comb /= NB_MOTORS;
-	int motor_a = int(std::floor(comb)) % NB_MOTORS;
+	// set ouput signal
+	for(int i=0; i<NB_MOTORS; i++) {
+		u_signal(i) = signal * float(motor_mask[i]);
+	}
 	
-	comb /= NB_MOTORS;
-	int motor_b = int(std::floor(comb)) % NB_MOTORS;
-	
-	comb /= NB_MOTORS;
-	int motor_c = int(std::floor(comb)) % NB_MOTORS;*/
-	
+	// print resulting signal and mask
+	std::cout << "comb = " << comb << std::endl;
+	std::cout << "signal = " << signal << std::endl;	
+	std::cout << "mask = ";
+	for (int i=0; i<NB_MOTORS; i++) {
+		std::cout << motor_mask[i];
+	}
+	std::cout << std::endl;
+	std::cout << "u = [";
+	for (int i=0; i<NB_MOTORS; i++) {
+		std::cout << u_signal(i) << ", ";
+	}
+	std::cout << "]" << std::endl;
+}
+
+void HolohoverControlSignalNode::signal_test2(Holohover::control_force_t<double>& u_signal, int comb)
+{
 	uint16_t ma = (comb & 0x0001);
 	uint16_t mb = (comb & 0x0002) >> 1;
 	uint16_t mc = (comb & 0x0004) >> 2;
@@ -153,21 +160,6 @@ void HolohoverControlSignalNode::motor_combination(Holohover::control_force_t<do
 	for(int i=0; i<6; i++) {
 		u_signal(i) = signal[i] * motor_mask[i];
 	}
-}
-
-void HolohoverControlSignalNode::state_callback(const holohover_msgs::msg::HolohoverState &state_msg)
-{
-    state(0) = state_msg.x;
-    state(1) = state_msg.y;
-    state(2) = state_msg.v_x;
-    state(3) = state_msg.v_y;
-    state(4) = state_msg.yaw;
-    state(5) = state_msg.w_z;
-}
-
-void HolohoverControlSignalNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)
-{
-    ref = pose;
 }
 
 

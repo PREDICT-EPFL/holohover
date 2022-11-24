@@ -12,8 +12,10 @@
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "holohover_gnc/utils/load_holohover_props.hpp"
 
-#define NB_SIGNALS 11
-#define NB_MOTORS 2
+#define NB_SIGNALS 	16
+#define NB_MOTORS 	6
+#define CYCLE_TIME 	5000000 // in us, signal-on time + signal-off time
+#define OFF_TIME 	1000000 // in us, signal-off time
 
 struct ControlLQRSettings
 {
@@ -69,15 +71,12 @@ private:
 
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControl>::SharedPtr control_publisher;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverState>::SharedPtr state_subscription;
-    rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr reference_subscription;
 
     void init_topics();
     void init_timer();
     void publish_control();
-    void state_callback(const holohover_msgs::msg::HolohoverState &state_msg);
-    void ref_callback(const geometry_msgs::msg::Pose2D &pose);
-    void motor_combination(Holohover::control_force_t<double>& u_signal, int comb);
+    void signal_test1(Holohover::control_force_t<double>& u_signal, int comb);
+    void signal_test2(Holohover::control_force_t<double>& u_signal, int comb);
     
 };
 
