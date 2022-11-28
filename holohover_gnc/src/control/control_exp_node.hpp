@@ -1,5 +1,5 @@
-#ifndef HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP
-#define HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP
+#ifndef HOLOHOVER_GNC_HOLOHOVER_CONTROL_EXP_NODE_HPP
+#define HOLOHOVER_GNC_HOLOHOVER_CONTROL_EXP_NODE_HPP
 
 #include <chrono>
 #include <cmath>
@@ -11,25 +11,6 @@
 #include "holohover_gnc/riccati_solver.hpp"
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "holohover_gnc/utils/load_holohover_props.hpp"
-
-// added by Nicolaj
-#define RAND_POS_MAX	0.25
-#define RAND_POS_MIN	-0.25
-#define RAND_ANG_MAX	0.3 // 45 degrees
-#define RAND_ANG_MIN	-0.3
-#define RAND_VEL_MAX	0.3 //0.8
-#define RAND_VEL_MIN	-0.3 //-0.8
-#define RAND_OMG_MAX	0.3 //1.5708 // 90 degree/s
-#define RAND_OMG_MIN	-0.3 //-1.5708
-#define RAND_SIG_MAX	120//60
-#define RAND_SIG_MIN	60//30
-
-#define RAND_STATE_SIG_MAX	5000
-#define RAND_STATE_SIG_MIN	1000
-#define RAND_ACC_MAX		0.5
-#define RAND_ACC_MIN		-0.5
-#define RAND_ACC_SIG_MAX	1000
-#define RAND_ACC_SIG_MIN	100
 
 struct ControlLQRSettings
 {
@@ -45,6 +26,22 @@ struct ControlLQRSettings
     double weight_a_x;
     double weight_a_y;
     double weight_w_dot_z;
+};
+
+struct ControlExpSettings
+{
+    double rand_pos_max = 3.33;
+    double rand_pos_min;
+    double rand_ang_max;
+    double rand_ang_min;
+    
+    double rand_vel_max;
+    double rand_vel_min;
+    double rand_omg_max;
+    double rand_omg_min;
+    
+    double rand_sig_max;
+    double rand_sig_min;
 };
 
 ControlLQRSettings load_control_lqr_settings(rclcpp::Node &node)
@@ -65,8 +62,28 @@ ControlLQRSettings load_control_lqr_settings(rclcpp::Node &node)
     {
         RCLCPP_INFO(node.get_logger(), "Failed to load control lqr settings");
     }
-
     return settings;
+}
+
+ControlExpSettings load_control_exp_settings(rclcpp::Node &node)
+{
+    ControlExpSettings settings2;
+
+    if (node.get_parameter("rand_pos_max", settings2.rand_pos_max) &&
+        node.get_parameter("rand_pos_min", settings2.rand_pos_min) &&
+        node.get_parameter("rand_ang_max", settings2.rand_ang_max) &&
+        node.get_parameter("rand_ang_min", settings2.rand_ang_min) &&
+        node.get_parameter("rand_vel_max", settings2.rand_vel_max) &&
+        node.get_parameter("rand_vel_min", settings2.rand_vel_min) &&
+        node.get_parameter("rand_omg_max", settings2.rand_omg_max) &&
+        node.get_parameter("rand_omg_min", settings2.rand_omg_min) &&
+        node.get_parameter("rand_sig_max", settings2.rand_sig_max) &&
+        node.get_parameter("rand_sig_min", settings2.rand_sig_min)) {}
+    else
+    {
+        RCLCPP_INFO(node.get_logger(), "Failed to load control exp settings");
+    }
+    return settings2;
 }
 
 class HolohoverControlExpNode : public rclcpp::Node
@@ -76,6 +93,7 @@ public:
 private:
     HolohoverProps holohover_props;
     ControlLQRSettings control_settings;
+    ControlExpSettings exp_settings;
 
     Holohover holohover;
 
@@ -100,4 +118,4 @@ private:
     void rand_vel(Holohover::state_t<double>& vel_rand, const Holohover::state_t<double>& state);
 };
 
-#endif //HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP
+#endif //HOLOHOVER_GNC_HOLOHOVER_CONTROL_EXP_NODE_HPP

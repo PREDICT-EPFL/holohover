@@ -7,8 +7,21 @@ control_lqr:
     weight_v_x: 1.0
     weight_v_y: 1.0
     weight_yaw: 10.0
-    weight_w_z: 1.0
+    weight_w_z: 10.0
 
     weight_a_x: 10.0
     weight_a_y: 10.0
     weight_w_dot_z: 10.0
+    
+    rand_pos_max: 0.25
+    rand_pos_min: -0.25
+    rand_ang_max: 0.1
+    rand_ang_min: -0.1
+    
+    rand_vel_max: 0.3 
+    rand_vel_min: -0.3 
+    rand_omg_max: 0.6
+    rand_omg_min: -0.6
+    
+    rand_sig_max: 1000000.0
+    rand_sig_min: 1000000.0

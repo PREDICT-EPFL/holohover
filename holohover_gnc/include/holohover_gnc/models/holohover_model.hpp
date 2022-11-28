@@ -257,7 +257,7 @@ public:
     template<typename T>
     inline void signal_to_thrust(const control_force_t<T> &u_signal, control_force_t<T> &u_thrust) const noexcept
     {
-        // map normalized signal [0, 1] to motor signal [1000, 2000]
+        // 
         control_force_t<T> u_motor_signal = u_signal.array();
         control_force_t<T> u_motor_thrust;
         u_motor_thrust.setZero();
@@ -286,7 +286,7 @@ public:
     template<typename T>
     inline void thrust_to_signal(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
     {
-        // fitted thrust is in mN
+        // 
         control_force_t<T> u_motor_thrust = u_thrust.array();
         control_force_t<T> u_motor_signal;
         u_motor_signal.setZero();
@@ -302,6 +302,9 @@ public:
         									props.thrust_to_signal_coeffs_motor6[i]};
             u_motor_signal = u_motor_signal + coeffs;
         }
+        
+        std::cout << "thrust_to_signal: thrust = " << u_thrust << std::endl;
+        std::cout << "thrust_to_signal: signal = " << u_motor_signal << std::endl;
         
         //for (const double& coeff: props.thrust_to_signal_coeffs_motor1)
         //{

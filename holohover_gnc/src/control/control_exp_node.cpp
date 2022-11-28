@@ -5,6 +5,7 @@ HolohoverControlExpNode::HolohoverControlExpNode() :
                                                  .automatically_declare_parameters_from_overrides(true)),
         holohover_props(load_holohover_pros(*this)),
         control_settings(load_control_lqr_settings(*this)),
+        exp_settings(load_control_exp_settings(*this)),
         holohover(holohover_props, control_settings.period)
 {
     // init state
@@ -67,20 +68,10 @@ void HolohoverControlExpNode::publish_control()
     state_ref(1) = ref.y;
     state_ref(4) = ref.theta;
     
-    // added by Nicolaj
-    /*Holohover::state_t<double> state_rand;
-    random_state(state_rand);
-    Holohover::control_acc_t<double> u_acc_rand;
-    random_control_acc(u_acc_rand);*/
-    
-    // added by Nicolaj
     static Holohover::state_t<double> vel_rand;
     rand_vel(vel_rand, state);
 
-    // modified by Nicolaj
-    //Holohover::control_acc_t<double> u_acc = -K * (state - state_ref + state_rand) + u_acc_rand;
-    Holohover::control_acc_t<double> u_acc = -K * (state - vel_rand);
-    
+    Holohover::control_acc_t<double> u_acc = -K * (state - vel_rand); 
     Holohover::control_force_t<double> u_force;
     holohover.control_acceleration_to_force(state, u_acc, u_force);
     Holohover::control_force_t<double> u_signal;
@@ -114,115 +105,69 @@ void HolohoverControlExpNode::ref_callback(const geometry_msgs::msg::Pose2D &pos
     ref = pose;
 }
 
-/*
-* Added by Nicolaj
-*/
 void HolohoverControlExpNode::rand_vel(Holohover::state_t<double>& vel_rand, 
 				       const Holohover::state_t<double>& state)
 {
-
-    /*static auto time_before = std::chrono::high_resolution_clock::now();
-    
-    auto time_now = std::chrono::high_resolution_clock::now();
-    auto time_duration = std::chrono::duration_cast<std::chrono::microseconds>(time_before - time_now);
-    double update_time = time_duration.count() / 1000000;
-    time_before = time_now;*/
-    float periode = 0.01;
-    static int counter = 300;
+	// static time variables
+    static int us_cycle_time = 3000000; // amount of time same signal is applied, in us
+    static std::chrono::microseconds::rep us_counter = 0; // amount of time signal is already applied, in us
+    static std::chrono::steady_clock::time_point 
+    						begin = std::chrono::steady_clock::now(); // amount of time since last fct. call
+    						
+    // measure current time and calc. time past since last fct. call in us
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	std::chrono::microseconds::rep periode = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+	
+	// update time variables
+	begin = end;
+	us_counter += periode;
+	
+	//std::cout << "periode = " << periode << ", \t";
+	//std::cout << "us_counter = " << us_counter << ", \t";
+	//std::cout << "us_cycle_time = " << us_cycle_time << std::endl;
+	
     
     // calc. next position in fct. of current one and velocity
-    vel_rand(0,0) = state(0,0) + vel_rand(2,0)*periode;
-    vel_rand(1,0) = state(1,0) + vel_rand(3,0)*periode;
-    vel_rand(4,0) = state(4,0) + vel_rand(5,0)*periode;
+    vel_rand(0,0) = state(0,0) + vel_rand(2,0)*periode/1000000;
+    vel_rand(1,0) = state(1,0) + vel_rand(3,0)*periode/1000000;
+    vel_rand(4,0) = state(4,0) + vel_rand(5,0)*periode/1000000;
     
-    counter -= 1;    
-    if(counter <= 0) {
-        vel_rand(2,0) = rand()*(RAND_VEL_MAX-RAND_VEL_MIN)/RAND_MAX + RAND_VEL_MIN;
-        vel_rand(3,0) = rand()*(RAND_VEL_MAX-RAND_VEL_MIN)/RAND_MAX + RAND_VEL_MIN;
-        vel_rand(5,0) = rand()*(RAND_OMG_MAX-RAND_OMG_MIN)/RAND_MAX + RAND_OMG_MIN;   
-        counter = rand()*(RAND_SIG_MAX-RAND_SIG_MIN)/RAND_MAX + RAND_SIG_MIN;;       
+    
+    if(us_counter >= us_cycle_time) {  
+    	// choose random velocity	
+    	vel_rand(2,0) = rand()*(exp_settings.rand_vel_max-exp_settings.rand_vel_min)/RAND_MAX 
+    					+ exp_settings.rand_vel_min;
+        vel_rand(3,0) = rand()*(exp_settings.rand_vel_max-exp_settings.rand_vel_min)/RAND_MAX 
+        				+ exp_settings.rand_vel_min;
+        vel_rand(5,0) = rand()*(exp_settings.rand_omg_max-exp_settings.rand_omg_min)/RAND_MAX 
+        				+ exp_settings.rand_omg_min; 
+        
+        // choose random amount of time to apply signal and reset counter  
+        us_cycle_time = rand()*(exp_settings.rand_sig_max-exp_settings.rand_sig_min)/RAND_MAX 
+        				+ exp_settings.rand_sig_min; 
+        us_counter = 0;
     }
 
-    if( (state(0,0)>RAND_POS_MAX && vel_rand(2,0)>0) 
-        || (state(0,0)<RAND_POS_MIN && vel_rand(2,0)<0) ) {
+	// reverse velocity if holohover reached limits (and the velocity is not already reverted)
+    if( (state(0,0)>exp_settings.rand_pos_max && vel_rand(2,0)>0) 
+        || (state(0,0)<exp_settings.rand_pos_min && vel_rand(2,0)<0) ) {
         vel_rand(2,0) = -vel_rand(2,0);
     }    
-    if( (state(1,0)>RAND_POS_MAX && vel_rand(3,0)>0) 
-        || (state(1,0)<RAND_POS_MIN && vel_rand(3,0)<0) ) {
+    if( (state(1,0)>exp_settings.rand_pos_max && vel_rand(3,0)>0) 
+        || (state(1,0)<exp_settings.rand_pos_min && vel_rand(3,0)<0) ) {
         vel_rand(3,0) = -vel_rand(3,0);
     }
-    if( (state(4,0)>RAND_ANG_MAX && vel_rand(5,0)>0) 
-        || (state(4,0)<RAND_ANG_MIN && vel_rand(5,0)<0) ) {
+    if( (state(4,0)>exp_settings.rand_ang_max && vel_rand(5,0)>0) 
+        || (state(4,0)<exp_settings.rand_ang_min && vel_rand(5,0)<0) ) {
         vel_rand(5,0) = -vel_rand(5,0);
-    }  
-    
-    /*
-    static bool not_init = true;
-    if(not_init) {
-        vel_rand(2,0) = 0.3;
-        not_init = false;
-    }
-    
-
-    // if drone reached x border, choose a new velocity in x
-    if(state(0,0)>RAND_POS_MAX || state(0,0)<RAND_POS_MIN) {
-        if(state(0,0)>RAND_POS_MAX) {
-            vel_rand(2,0) = rand()*RAND_VEL_MIN/RAND_MAX;
-        } else {
-            vel_rand(2,0) = rand()*RAND_VEL_MAX/RAND_MAX;
-        }
-        vel_rand(3,0) = rand()*(RAND_VEL_MAX-RAND_VEL_MIN)/RAND_MAX + RAND_VEL_MIN;
-        vel_rand(5,0) = rand()*(RAND_OMG_MAX-RAND_OMG_MIN)/RAND_MAX + RAND_OMG_MIN;    
-    
-    }
-    
-    // if drone reached y border, choose a new velocity in y
-    if(state(1,0)>RAND_POS_MAX || state(1,0)<RAND_POS_MIN) {
-        if(state(1,0)>RAND_POS_MAX) {
-            vel_rand(3,0) = rand()*RAND_VEL_MIN/RAND_MAX;
-        } else {
-            vel_rand(3,0) = rand()*RAND_VEL_MAX/RAND_MAX;
-        }
-        vel_rand(2,0) = rand()*(RAND_VEL_MAX-RAND_VEL_MIN)/RAND_MAX + RAND_VEL_MIN;
-        vel_rand(5,0) = rand()*(RAND_OMG_MAX-RAND_OMG_MIN)/RAND_MAX + RAND_OMG_MIN;         
-    }
-    
-    // calc. next position in fct. of current one and velocity
-    vel_rand(0,0) = state(0,0) + vel_rand(2,0)*periode;
-    vel_rand(1,0) = state(1,0) + vel_rand(3,0)*periode;
-    vel_rand(4,0) = state(4,0) + vel_rand(5,0)*periode;*/
-
+    } 
+    std::cout << "vel = (" << state(2,0) << ", " << state(3,0) << ", " << state(5,0) << std::endl;
+    //std::cout << "check: " << exp_settings.rand_pos_max << std::endl;
+    //std::cout << "check2: " << control_settings.weight_w_z << std::endl;   
 }
 
-/*
-* Added by Nicolaj
-*/
-void HolohoverControlExpNode::random_state(Holohover::state_t<double>& state_rand)
-{
-    static int signal_length = 0;
-    static int counter = 0;
-    
-    if(counter<signal_length) {
-    	counter++;
-    	return;
-    }
-    
-    // choose random state for x, y and angle
-    state_rand(0,0) = rand()*(RAND_POS_MAX-RAND_POS_MIN)/RAND_MAX + RAND_POS_MIN;
-    state_rand(1,0) = rand()*(RAND_POS_MAX-RAND_POS_MIN)/RAND_MAX + RAND_POS_MIN;
-    state_rand(4,0) = rand()*(RAND_ANG_MAX-RAND_ANG_MIN)/RAND_MAX + RAND_ANG_MIN;
 
-    // choose random length of signal
-    signal_length = rand()*(RAND_STATE_SIG_MAX-RAND_STATE_SIG_MIN)/RAND_MAX + RAND_STATE_SIG_MIN;
-
-    // reset counter
-    counter = 0;
-}
-
-/*
-* Added by Nicolaj
-*/
-void HolohoverControlExpNode::random_control_acc(Holohover::control_acc_t<double>& u_acc_rand)
+/*void HolohoverControlExpNode::random_control_acc(Holohover::control_acc_t<double>& u_acc_rand)
 {
     static int signal_length = 0;
     static int counter = 0;
@@ -242,7 +187,7 @@ void HolohoverControlExpNode::random_control_acc(Holohover::control_acc_t<double
 
     // reset counter
     counter = 0;
-}
+}*/
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
