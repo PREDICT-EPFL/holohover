@@ -12,6 +12,9 @@
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "holohover_gnc/utils/load_holohover_props.hpp"
 
+#define IDLE_SIGNAL 		0.03 // signal always applied to keep motors moving
+#define EVALUATION_DIST_THR 0.03
+
 struct ControlLQRSettings
 {
     double period;
@@ -29,17 +32,8 @@ struct ControlLQRSettings
 };
 
 struct ControlExpSettings
-{
-    double rand_pos_max = 3.33;
-    double rand_pos_min;
-    double rand_ang_max;
-    double rand_ang_min;
-    
-    double rand_vel_max;
-    double rand_vel_min;
-    double rand_omg_max;
-    double rand_omg_min;
-    
+{   
+    double rand_sig_duration;
     double rand_sig_max;
     double rand_sig_min;
 };
@@ -69,14 +63,7 @@ ControlExpSettings load_control_exp_settings(rclcpp::Node &node)
 {
     ControlExpSettings settings2;
 
-    if (node.get_parameter("rand_pos_max", settings2.rand_pos_max) &&
-        node.get_parameter("rand_pos_min", settings2.rand_pos_min) &&
-        node.get_parameter("rand_ang_max", settings2.rand_ang_max) &&
-        node.get_parameter("rand_ang_min", settings2.rand_ang_min) &&
-        node.get_parameter("rand_vel_max", settings2.rand_vel_max) &&
-        node.get_parameter("rand_vel_min", settings2.rand_vel_min) &&
-        node.get_parameter("rand_omg_max", settings2.rand_omg_max) &&
-        node.get_parameter("rand_omg_min", settings2.rand_omg_min) &&
+    if (node.get_parameter("rand_sig_duration", settings2.rand_sig_duration) &&
         node.get_parameter("rand_sig_max", settings2.rand_sig_max) &&
         node.get_parameter("rand_sig_min", settings2.rand_sig_min)) {}
     else
@@ -112,10 +99,8 @@ private:
     void state_callback(const holohover_msgs::msg::HolohoverState &state_msg);
     void ref_callback(const geometry_msgs::msg::Pose2D &pose);
     
-    // added by Nicolaj
-    void random_control_acc(Holohover::control_acc_t<double>& u_acc_rand);
-    void random_state(Holohover::state_t<double>& state_rand);
-    void rand_vel(Holohover::state_t<double>& vel_rand, const Holohover::state_t<double>& state);
+    void rand_sig(Holohover::control_force_t<double>& u_signal);
+    void evaluation_pos(Holohover::state_t<double>& state_ref, const Holohover::state_t<double>& state);
 };
 
 #endif //HOLOHOVER_GNC_HOLOHOVER_CONTROL_EXP_NODE_HPP

@@ -16,6 +16,7 @@
 #define NB_MOTORS 	6
 #define CYCLE_TIME 	5000000 // in us, signal-on time + signal-off time
 #define OFF_TIME 	1000000 // in us, signal-off time
+#define IDLE_SIGNAL 0.03 // signal always applied to keep motors moving
 
 struct ControlLQRSettings
 {
@@ -75,8 +76,7 @@ private:
     void init_topics();
     void init_timer();
     void publish_control();
-    void signal_test1(Holohover::control_force_t<double>& u_signal, int comb);
-    void signal_test2(Holohover::control_force_t<double>& u_signal, int comb);
+    void comb2signal(Holohover::control_force_t<double>& u_signal, int comb);
     
 };
 

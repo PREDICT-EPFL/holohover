@@ -21,21 +21,20 @@ struct HolohoverProps
     double inertia;
     // max thrust of a single propeller
     double max_thrust;
-    // polynomial coefficients for signal [1000,2000] to thrust [mN] conversation (coeff of the highest order polynomial first)
+    // polynomial coefficients for signal [0,1] to thrust [N] conversation (coeff of the highest order polynomial first)
     std::vector<double> signal_to_thrust_coeffs_motor1;
     std::vector<double> signal_to_thrust_coeffs_motor2;
     std::vector<double> signal_to_thrust_coeffs_motor3;
     std::vector<double> signal_to_thrust_coeffs_motor4;
     std::vector<double> signal_to_thrust_coeffs_motor5;
     std::vector<double> signal_to_thrust_coeffs_motor6;
-    // polynomial coefficients for thrust [mN] to signal [1000,2000] conversation (coeff of the highest order polynomial first)
+    // polynomial coefficients for thrust [N] to signal [0,1] conversation (coeff of the highest order polynomial first)
     std::vector<double> thrust_to_signal_coeffs_motor1;
     std::vector<double> thrust_to_signal_coeffs_motor2;
     std::vector<double> thrust_to_signal_coeffs_motor3;
     std::vector<double> thrust_to_signal_coeffs_motor4;
     std::vector<double> thrust_to_signal_coeffs_motor5;
     std::vector<double> thrust_to_signal_coeffs_motor6;
-
     // half the angle between two propeller pairs
     double angle_propeller_pair;
     // distance from center to propeller
@@ -69,7 +68,7 @@ public:
 
     // continuous system dynamics for input u = (a_x, a_y, w_dot_z)
     Eigen::Matrix<double, NX, NX> A;
-    Eigen::Matrix<double, NX, NA>  B;
+    Eigen::Matrix<double, NX, NA> B;
 
     // discretized system dynamics for input u = (a_x, a_y, w_dot_z)
     double dt;
@@ -90,7 +89,7 @@ public:
              1, 0, 0,
              0, 1, 0,
              0, 0, 0,
-             0, 0, 1;
+             0, 0, 1;       
 
         calculate_discretized_system();
     }
@@ -302,9 +301,6 @@ public:
         									props.thrust_to_signal_coeffs_motor6[i]};
             u_motor_signal = u_motor_signal + coeffs;
         }
-        
-        std::cout << "thrust_to_signal: thrust = " << u_thrust << std::endl;
-        std::cout << "thrust_to_signal: signal = " << u_motor_signal << std::endl;
         
         //for (const double& coeff: props.thrust_to_signal_coeffs_motor1)
         //{

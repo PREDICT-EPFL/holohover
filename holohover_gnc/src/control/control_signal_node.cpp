@@ -42,41 +42,39 @@ void HolohoverControlSignalNode::publish_control()
     state_ref(1) = ref.y;
     state_ref(4) = ref.theta;
     
-	static int comb = 0;
+	static int comb = 0; // combination (counter) that is converted into a signal
 	
+	// elapse time measurement
 	static std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	
 	auto us_counter = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-
-	//std::cout << "Time difference = " << us_counter << "[µs]" << std::endl;
-	//std::cout << "counter = " << counter << "\n";
-	//std::cout << "comb = " << comb << "\n";
 	
     // output signal
     static Holohover::control_force_t<double> u_signal;
     static bool u_signal_init = false;
     
+    // init. u_signal for the first time
     if(!u_signal_init) {
     	for(int i=0; i<NB_MOTORS; i++) {
-			u_signal(i) = 0.0;
+			u_signal(i) = IDLE_SIGNAL;
 		}
     	u_signal_init = true;
     }
-	  
+    
+    // change signal if time is passed
     if(us_counter >= CYCLE_TIME) {
     	begin = std::chrono::steady_clock::now();
-    	signal_test1(u_signal, comb); // convert combination to signal
+    	comb2signal(u_signal, comb); // convert combination to signal
     	comb += 1;
     } else if(us_counter >= (CYCLE_TIME-OFF_TIME)) {
 		for(int i=0; i<NB_MOTORS; i++) {
-			u_signal(i) = 0.0;
+			u_signal(i) = IDLE_SIGNAL;
 		}
 	}
 
 
     // clip between 0 and 1
-    u_signal = u_signal.cwiseMax(0).cwiseMin(1);
+    u_signal = u_signal.cwiseMax(IDLE_SIGNAL).cwiseMin(1);
 
 	// publish control msg
     holohover_msgs::msg::HolohoverControl control_msg;
@@ -91,8 +89,9 @@ void HolohoverControlSignalNode::publish_control()
 
 /*
 *  Turn one motor after each other on with 16 signals in the range (0,1]
+*  Converts the current combination into a signal
 */
-void HolohoverControlSignalNode::signal_test1(Holohover::control_force_t<double>& u_signal, int comb)
+void HolohoverControlSignalNode::comb2signal(Holohover::control_force_t<double>& u_signal, int comb)
 {
 	uint16_t s = (comb & 0x000F); // masking bits 0-3
 	uint16_t m = (comb & 0x0070) >> 4; // masking bits 4-6 and shifting them to zero
@@ -104,9 +103,9 @@ void HolohoverControlSignalNode::signal_test1(Holohover::control_force_t<double>
 		motor_mask[m] = 1;
 	}
 	
-	// set ouput signal
+	// set ouput signal (all motors are always moving at IDLE_SIGNAL)
 	for(int i=0; i<NB_MOTORS; i++) {
-		u_signal(i) = signal * float(motor_mask[i]);
+		u_signal(i) = (signal-IDLE_SIGNAL) * float(motor_mask[i]) + IDLE_SIGNAL;
 	}
 	
 	// print resulting signal and mask
@@ -122,44 +121,6 @@ void HolohoverControlSignalNode::signal_test1(Holohover::control_force_t<double>
 		std::cout << u_signal(i) << ", ";
 	}
 	std::cout << "]" << std::endl;
-}
-
-void HolohoverControlSignalNode::signal_test2(Holohover::control_force_t<double>& u_signal, int comb)
-{
-	uint16_t ma = (comb & 0x0001);
-	uint16_t mb = (comb & 0x0002) >> 1;
-	uint16_t mc = (comb & 0x0004) >> 2;
-	uint16_t sa = (comb & 0x0038) >> 3;
-	uint16_t sb = (comb & 0x01C0) >> 6;
-	uint16_t sc = (comb & 0x0E00) >> 9;
-	
-	float signal_a = float(sa)/7;
-	float signal_b = float(sb)/7;
-	float signal_c = float(sc)/7;
-	
-	int motor_mask[6] = {0,0,0,0,0,0};
-	motor_mask[ma] = 1;
-	motor_mask[mb+2] = 1;
-	motor_mask[mc+4] = 1;
-	
-	float signal[6] = {signal_a,signal_a,signal_b,signal_b,signal_c,signal_c};
-	
-	std::cout << "signal = ";
-	for (int i=0; i<6; i++) {
-		std::cout << signal[i] << ", ";
-	}
-	std::cout << std::endl;
-	
-	std::cout << "mask = ";
-	for (int i=0; i<6; i++) {
-		std::cout << motor_mask[i];
-	}
-	std::cout << std::endl;
-	
-	// set ouput signal
-	for(int i=0; i<6; i++) {
-		u_signal(i) = signal[i] * motor_mask[i];
-	}
 }
 
 

@@ -1,4 +1,5 @@
 #include "control_exp_node.hpp"
+#include <cmath>
 
 HolohoverControlExpNode::HolohoverControlExpNode() :
         Node("control_lqr", rclcpp::NodeOptions().allow_undeclared_parameters(true)
@@ -67,18 +68,22 @@ void HolohoverControlExpNode::publish_control()
     state_ref(0) = ref.x;
     state_ref(1) = ref.y;
     state_ref(4) = ref.theta;
-    
-    static Holohover::state_t<double> vel_rand;
-    rand_vel(vel_rand, state);
 
-    Holohover::control_acc_t<double> u_acc = -K * (state - vel_rand); 
+	// calc. acc. using LQR controler
+    Holohover::control_acc_t<double> u_acc = -K * (state - state_ref); 
+    
+    // convert acc. to signal of motors
     Holohover::control_force_t<double> u_force;
     holohover.control_acceleration_to_force(state, u_acc, u_force);
     Holohover::control_force_t<double> u_signal;
     holohover.thrust_to_signal(u_force, u_signal);
 
+    // add random signal
+    rand_sig(u_signal);
+
     // clip between 0 and 1
-    u_signal = u_signal.cwiseMax(0).cwiseMin(1);
+    u_signal = u_signal.cwiseMax(IDLE_SIGNAL).cwiseMin(1);
+    
 
     holohover_msgs::msg::HolohoverControl control_msg;
     control_msg.motor_a_1 = u_signal(0);
@@ -105,89 +110,93 @@ void HolohoverControlExpNode::ref_callback(const geometry_msgs::msg::Pose2D &pos
     ref = pose;
 }
 
-void HolohoverControlExpNode::rand_vel(Holohover::state_t<double>& vel_rand, 
-				       const Holohover::state_t<double>& state)
-{
-	// static time variables
-    static int us_cycle_time = 3000000; // amount of time same signal is applied, in us
-    static std::chrono::microseconds::rep us_counter = 0; // amount of time signal is already applied, in us
-    static std::chrono::steady_clock::time_point 
-    						begin = std::chrono::steady_clock::now(); // amount of time since last fct. call
-    						
-    // measure current time and calc. time past since last fct. call in us
-	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-	std::chrono::microseconds::rep periode = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
-	
-	// update time variables
-	begin = end;
-	us_counter += periode;
-	
-	//std::cout << "periode = " << periode << ", \t";
-	//std::cout << "us_counter = " << us_counter << ", \t";
-	//std::cout << "us_cycle_time = " << us_cycle_time << std::endl;
-	
-    
-    // calc. next position in fct. of current one and velocity
-    vel_rand(0,0) = state(0,0) + vel_rand(2,0)*periode/1000000;
-    vel_rand(1,0) = state(1,0) + vel_rand(3,0)*periode/1000000;
-    vel_rand(4,0) = state(4,0) + vel_rand(5,0)*periode/1000000;
-    
-    
-    if(us_counter >= us_cycle_time) {  
-    	// choose random velocity	
-    	vel_rand(2,0) = rand()*(exp_settings.rand_vel_max-exp_settings.rand_vel_min)/RAND_MAX 
-    					+ exp_settings.rand_vel_min;
-        vel_rand(3,0) = rand()*(exp_settings.rand_vel_max-exp_settings.rand_vel_min)/RAND_MAX 
-        				+ exp_settings.rand_vel_min;
-        vel_rand(5,0) = rand()*(exp_settings.rand_omg_max-exp_settings.rand_omg_min)/RAND_MAX 
-        				+ exp_settings.rand_omg_min; 
-        
-        // choose random amount of time to apply signal and reset counter  
-        us_cycle_time = rand()*(exp_settings.rand_sig_max-exp_settings.rand_sig_min)/RAND_MAX 
-        				+ exp_settings.rand_sig_min; 
-        us_counter = 0;
-    }
 
-	// reverse velocity if holohover reached limits (and the velocity is not already reverted)
-    if( (state(0,0)>exp_settings.rand_pos_max && vel_rand(2,0)>0) 
-        || (state(0,0)<exp_settings.rand_pos_min && vel_rand(2,0)<0) ) {
-        vel_rand(2,0) = -vel_rand(2,0);
-    }    
-    if( (state(1,0)>exp_settings.rand_pos_max && vel_rand(3,0)>0) 
-        || (state(1,0)<exp_settings.rand_pos_min && vel_rand(3,0)<0) ) {
-        vel_rand(3,0) = -vel_rand(3,0);
-    }
-    if( (state(4,0)>exp_settings.rand_ang_max && vel_rand(5,0)>0) 
-        || (state(4,0)<exp_settings.rand_ang_min && vel_rand(5,0)<0) ) {
-        vel_rand(5,0) = -vel_rand(5,0);
-    } 
-    std::cout << "vel = (" << state(2,0) << ", " << state(3,0) << ", " << state(5,0) << std::endl;
-    //std::cout << "check: " << exp_settings.rand_pos_max << std::endl;
-    //std::cout << "check2: " << control_settings.weight_w_z << std::endl;   
+/*
+*	Add random signal to LQR-control-signal st. always only one motor of a motor pair is turned on
+*/
+void HolohoverControlExpNode::rand_sig(Holohover::control_force_t<double>& u_signal)
+{
+	// random signal that are added to u_signal
+	static float rand_sig_a = 0; // random signal of motor-pair A (motor 1 and 2)
+	static float rand_sig_b = 0; // random signal of motor-pair B (motor 3 and 4)
+	static float rand_sig_c = 0; // random signal of motor-pair C (motor 5 and 6)
+	
+	// measure current time and calc. time past since last signal change
+	static std::chrono::steady_clock::time_point 
+    					begin = std::chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	std::chrono::microseconds::rep 
+						elapse_time = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count();
+							
+	if(elapse_time > exp_settings.rand_sig_duration) {
+		// choose new random signals
+		rand_sig_a = rand()*(exp_settings.rand_sig_max-exp_settings.rand_sig_min)/RAND_MAX 
+    					+ exp_settings.rand_sig_min;
+        rand_sig_b = rand()*(exp_settings.rand_sig_max-exp_settings.rand_sig_min)/RAND_MAX 
+        				+ exp_settings.rand_sig_min;
+        rand_sig_c = rand()*(exp_settings.rand_sig_max-exp_settings.rand_sig_min)/RAND_MAX 
+        				+ exp_settings.rand_sig_min; 
+		
+		begin = end; // reset timer
+	}
+	
+	float u_sig_a = u_signal(0) - u_signal(1);
+	float u_sig_b = u_signal(2) - u_signal(3);
+	float u_sig_c = u_signal(4) - u_signal(5);
+	
+	// add random signals to LQR-controller signal
+	// if u_sig_a+rand_sig_a>0 add signal to first motor of motor-pair otherwise to second motor
+	if(u_sig_a+rand_sig_a > 0) {
+		u_signal(0) = u_sig_a + rand_sig_a;
+		u_signal(1) = 0;
+	} else {
+		u_signal(0) = 0;
+		u_signal(1) = -u_sig_a - rand_sig_a;
+	}
+	if(u_sig_b+rand_sig_b > 0) {
+		u_signal(2) = u_sig_b + rand_sig_b;
+		u_signal(3) = 0;
+	} else {
+		u_signal(2) = 0;
+		u_signal(3) = -u_sig_b - rand_sig_b;
+	}
+	if(u_sig_c+rand_sig_c > 0) {
+		u_signal(4) = u_sig_c + rand_sig_c;
+		u_signal(5) = 0;
+	} else {
+		u_signal(4) = 0;
+		u_signal(5) = -u_sig_c - rand_sig_c;
+	}
 }
 
-
-/*void HolohoverControlExpNode::random_control_acc(Holohover::control_acc_t<double>& u_acc_rand)
+/*
+*	Make trajectory defined by eva_pos_x and eva_pos_y
+*/
+void HolohoverControlExpNode::evaluation_pos(Holohover::state_t<double>& state_ref, 
+										const Holohover::state_t<double>& state)
 {
-    static int signal_length = 0;
-    static int counter = 0;
-    
-    if(counter<signal_length) {
-    	counter++;
-    	return;
-    }
-    
-    // choose random acceleration command
-    for(int i=0; i<u_acc_rand.rows(); i++) {		
-         u_acc_rand(i,0) = rand()*(RAND_ACC_MAX-RAND_ACC_MIN)/RAND_MAX + RAND_ACC_MIN;
-    }
-
-    // choose random length of signal
-    signal_length = rand()*(RAND_ACC_SIG_MAX-RAND_ACC_SIG_MIN)/RAND_MAX + RAND_ACC_SIG_MIN;
-
-    // reset counter
-    counter = 0;
-}*/
+	// evaluation position
+	static int eva_pos_counter = 0;
+	float eva_pos_x[8] = { 0.25, 0.25, 0.0, -0.25, -0.25, -0.25, 0.0, 0.25 };
+	float eva_pos_y[8] = { 0.0, 0.25, 0.25, 0.25, 0.0, -0.25, -0.25, -0.25};
+		
+	// calc. distance to random position			
+	float dist = std::sqrt( (state(0)-eva_pos_x[eva_pos_counter])*(state(0)-eva_pos_x[eva_pos_counter]) 
+							+ (state(1)-eva_pos_y[eva_pos_counter])*(state(1)-eva_pos_y[eva_pos_counter]) );
+							
+	// choose new random position if it is reached
+	if(dist < EVALUATION_DIST_THR) {
+       
+        // increase position counter if end is not yet reached
+        if(eva_pos_counter < 7) {
+        	eva_pos_counter++;
+        }
+	}
+	
+	// set evaluation position in reference state
+	state_ref(0) = eva_pos_x[eva_pos_counter];
+	state_ref(1) = eva_pos_y[eva_pos_counter];
+}
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
