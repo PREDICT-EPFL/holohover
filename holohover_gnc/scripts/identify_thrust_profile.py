@@ -4,7 +4,6 @@ import pandas as pd
 import cvxpy as cp
 import matplotlib.pyplot as plt
 
-
 def poly_string(coeff):
     s = str(coeff[0])
     for i in range(1, len(coeff)):
