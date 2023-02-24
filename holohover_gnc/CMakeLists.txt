@@ -17,6 +17,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs)
 find_package(ros_polympc REQUIRED)
 find_package(holohover_msgs REQUIRED)
@@ -24,11 +25,11 @@ find_package(holohover_msgs REQUIRED)
 include_directories(include)
 
 add_executable(simulation src/simulation/simulation_node.cpp)
-ament_target_dependencies(simulation rclcpp geometry_msgs holohover_msgs ros_polympc)
+ament_target_dependencies(simulation rclcpp tf2_ros geometry_msgs holohover_msgs ros_polympc)
 target_link_libraries(simulation Eigen3::Eigen)
 
 add_executable(navigation src/navigation/navigation_node.cpp)
-ament_target_dependencies(navigation rclcpp geometry_msgs holohover_msgs ros_polympc)
+ament_target_dependencies(navigation rclcpp tf2_ros geometry_msgs holohover_msgs ros_polympc)
 target_link_libraries(navigation Eigen3::Eigen)
 
 add_executable(control_lqr src/control/control_lqr_node.cpp)

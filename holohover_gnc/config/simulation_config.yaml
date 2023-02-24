@@ -21,7 +21,7 @@ simulation:
     sensor_mouse_noise_x: 1e-2
     sensor_mouse_noise_y: 1e-2
 
-    sensor_pose_period: 0.01 # 0 to disable sensor
-    sensor_pose_noise_x: 1e-3
-    sensor_pose_noise_y: 1e-3
-    sensor_pose_noise_yaw: 5e-3
+    sensor_pose_period: 0.004166666667 # 0 to disable sensor
+    sensor_pose_noise_x: 1e-6
+    sensor_pose_noise_y: 1e-6
+    sensor_pose_noise_yaw: 1e-6

@@ -1,6 +1,6 @@
 navigation:
   ros__parameters:
-    period: 0.001
+    period: 0.005
 
     state_cov_x: 1e-2
     state_cov_y: 1e-2

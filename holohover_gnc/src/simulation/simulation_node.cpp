@@ -1,4 +1,5 @@
 #include "simulation_node.hpp"
+#include <tf2/LinearMath/Quaternion.h>
 
 HolohoverSimulationNode::HolohoverSimulationNode() :
     Node("simulation", rclcpp::NodeOptions().allow_undeclared_parameters(true)
@@ -35,7 +36,7 @@ void HolohoverSimulationNode::init_topics()
     mouse_publisher = this->create_publisher<holohover_msgs::msg::HolohoverMouseStamped>(
             "drone/mouse",
             rclcpp::SensorDataQoS());
-    pose_publisher = this->create_publisher<geometry_msgs::msg::Pose2D>(
+    pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>(
             "optitrack/drone/pose",
             rclcpp::SensorDataQoS());
 
@@ -168,26 +169,36 @@ void HolohoverSimulationNode::mouse_callback()
 
 void HolohoverSimulationNode::pose_callback()
 {
-    geometry_msgs::msg::Pose2D pose_measurement;
-    pose_measurement.x = state(0);
-    pose_measurement.y = state(1);
-    pose_measurement.theta = state(4);
+    geometry_msgs::msg::PoseStamped pose_measurement;
+    pose_measurement.header.frame_id = "world";
+    pose_measurement.header.stamp = this->now();
+    pose_measurement.pose.position.x = state(0);
+    pose_measurement.pose.position.y = state(1);
+    pose_measurement.pose.position.z = 0;
+    double theta = state(4);
 
     std::normal_distribution<> pose_x_noise(0, simulation_settings.sensor_pose_noise_x);
     std::normal_distribution<> pose_y_noise(0, simulation_settings.sensor_pose_noise_y);
     std::normal_distribution<> pose_yaw_noise(0, simulation_settings.sensor_pose_noise_yaw);
-    pose_measurement.x += pose_x_noise(random_engine);
-    pose_measurement.y += pose_y_noise(random_engine);
-    pose_measurement.theta += pose_yaw_noise(random_engine);
+    pose_measurement.pose.position.x += pose_x_noise(random_engine);
+    pose_measurement.pose.position.y += pose_y_noise(random_engine);
+    theta += pose_yaw_noise(random_engine);
 
-    if (pose_measurement.theta < -M_PI)
+    if (theta < -M_PI)
     {
-        pose_measurement.theta += 2 * M_PI;
+        theta += 2 * M_PI;
     }
-    if (pose_measurement.theta > M_PI)
+    if (theta > M_PI)
     {
-        pose_measurement.theta -= 2 * M_PI;
+        theta -= 2 * M_PI;
     }
+
+    tf2::Quaternion q;
+    q.setRPY(0, 0, theta);
+    pose_measurement.pose.orientation.w = q.w();
+    pose_measurement.pose.orientation.x = q.x();
+    pose_measurement.pose.orientation.y = q.y();
+    pose_measurement.pose.orientation.z = q.z();
 
     pose_publisher->publish(pose_measurement);
 }

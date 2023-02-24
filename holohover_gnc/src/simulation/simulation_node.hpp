@@ -6,7 +6,7 @@
 #include <random>
 
 #include "rclcpp/rclcpp.hpp"
-#include "geometry_msgs/msg/pose2_d.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "holohover_msgs/msg/holohover_state_stamped.hpp"
 #include "holohover_msgs/msg/holohover_imu_stamped.hpp"
 #include "holohover_msgs/msg/holohover_mouse_stamped.hpp"
@@ -39,7 +39,7 @@ private:
     rclcpp::Publisher<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverIMUStamped>::SharedPtr imu_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverMouseStamped>::SharedPtr mouse_publisher;
-    rclcpp::Publisher<geometry_msgs::msg::Pose2D>::SharedPtr pose_publisher;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_subscription;
 
     void init_topics();

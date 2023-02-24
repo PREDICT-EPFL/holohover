@@ -7,15 +7,15 @@ OptitrackInterfaceNode::OptitrackInterfaceNode() : Node("optitrack_interface")
 
 void OptitrackInterfaceNode::init_topics()
 {
-    pose_publisher = this->create_publisher<geometry_msgs::msg::Pose2D>(
+    pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>(
             "optitrack/drone/pose", rclcpp::SensorDataQoS());
 
-    raw_pose_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
+    raw_pose_subscription = this->create_subscription<geometry_msgs::msg::PoseStamped>(
             "optitrack/drone/pose_raw", 10,
             std::bind(&OptitrackInterfaceNode::raw_pose_callback, this, std::placeholders::_1));
 }
 
-void OptitrackInterfaceNode::raw_pose_callback(const geometry_msgs::msg::Pose2D &raw_pose)
+void OptitrackInterfaceNode::raw_pose_callback(const geometry_msgs::msg::PoseStamped &raw_pose)
 {
     if (!is_initialized)
     {
@@ -23,18 +23,10 @@ void OptitrackInterfaceNode::raw_pose_callback(const geometry_msgs::msg::Pose2D 
         is_initialized = true;
     }
 
-    geometry_msgs::msg::Pose2D pose;
-    pose.x = raw_pose.x - initial_pose.x;
-    pose.y = raw_pose.y - initial_pose.y;
-    pose.theta = raw_pose.theta - initial_pose.theta;
-    if (pose.theta < -M_PI)
-    {
-        pose.theta += 2 * M_PI;
-    }
-    if (pose.theta > M_PI)
-    {
-        pose.theta -= 2 * M_PI;
-    }
+    geometry_msgs::msg::PoseStamped pose = raw_pose;
+    pose.pose.position.x = raw_pose.pose.position.x - initial_pose.pose.position.x;
+    pose.pose.position.y = raw_pose.pose.position.y - initial_pose.pose.position.y;
+    pose.pose.position.z = 0;
 
     pose_publisher->publish(pose);
 }

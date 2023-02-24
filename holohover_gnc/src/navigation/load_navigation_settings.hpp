@@ -11,10 +11,13 @@ NavigationSettings load_navigation_settings(rclcpp::Node &node)
     if (node.get_parameter("period", settings.period) &&
         node.get_parameter("state_cov_x", settings.state_cov_x) &&
         node.get_parameter("state_cov_y", settings.state_cov_y) &&
-        node.get_parameter("state_cov_v_x", settings.state_cov_v_x) &&
-        node.get_parameter("state_cov_v_y", settings.state_cov_v_y) &&
         node.get_parameter("state_cov_yaw", settings.state_cov_yaw) &&
-        node.get_parameter("state_cov_w_z", settings.state_cov_w_z) &&
+        node.get_parameter("state_cov_x_dot", settings.state_cov_x_dot) &&
+        node.get_parameter("state_cov_y_dot", settings.state_cov_y_dot) &&
+        node.get_parameter("state_cov_yaw_dot", settings.state_cov_yaw_dot) &&
+        node.get_parameter("state_cov_x_dot_dot", settings.state_cov_x_dot_dot) &&
+        node.get_parameter("state_cov_y_dot_dot", settings.state_cov_y_dot_dot) &&
+        node.get_parameter("state_cov_yaw_dot_dot", settings.state_cov_yaw_dot_dot) &&
         node.get_parameter("control_cov_a_x", settings.control_cov_a_x) &&
         node.get_parameter("control_cov_a_y", settings.control_cov_a_y) &&
         node.get_parameter("control_cov_w_dot_z", settings.control_cov_w_dot_z) &&
