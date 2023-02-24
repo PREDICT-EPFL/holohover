@@ -1,45 +1,41 @@
-#include <stdio.h>
-#include <unistd.h>
 #include <string.h>
-#include "math.h"
+#include <stdio.h>
+#include <math.h>
 
-#ifdef ESP_PLATFORM
+#include "nvs-manager.h"
+#include "wifi.h"
+#include "config-server.h"
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#endif
-
 #include "esp_log.h"
 #include "esp_system.h"
+#include "driver/gpio.h"
 #include "driver/uart.h"
 
 #include "msp.h"
 #include "PMW3389DM/spi_pmw3389dm.h"
 
-#include <std_msgs/msg/header.h>
-#include <holohover_msgs/msg/holohover_imu.h>
-#include <holohover_msgs/msg/holohover_mouse.h>
-#include <holohover_msgs/msg/holohover_control.h>
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
-
-#ifdef CONFIG_MICRO_ROS_ESP_XRCE_DDS_MIDDLEWARE
 #include <rmw_microros/rmw_microros.h>
-#endif
-#ifdef RMW_UXRCE_TRANSPORT_CUSTOM
-//#include "nvs_flash.h"
-//#include "bluetooth/esp32_bluetooth_serial_transport.h"
-#include "esp32_serial_transport.h"
-#elif defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
-#include <uros_network_interfaces.h>
-#endif
 
-#define TAG "HOLOHOVER_ESP32_MAIN"
+#include <std_msgs/msg/header.h>
+#include <holohover_msgs/msg/holohover_imu_stamped.h>
+#include <holohover_msgs/msg/holohover_mouse_stamped.h>
+#include <holohover_msgs/msg/holohover_control_stamped.h>
 
-#define STRING_BUFFER_LEN 50
+#include <micro_ros_utilities/type_utilities.h>
+#include <micro_ros_utilities/string_utilities.h>
 
-#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc); vTaskDelete(NULL);}}
+static const char *TAG = "MAIN";
+
+#define MSG_BUFFER_LEN 100
+
+#define CHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != 1)){printf("Failed on line %d. Aborting.\n",__LINE__);vTaskDelete(NULL);}}
+#define RCCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Aborting.\n",__LINE__,(int)temp_rc);vTaskDelete(NULL);}}
 #define RCSOFTCHECK(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);}}
 #define RCSOFTCHECKRET(fn) { rcl_ret_t temp_rc = fn; if((temp_rc != RCL_RET_OK)){printf("Failed status on line %d: %d. Continuing.\n",__LINE__,(int)temp_rc);return temp_rc;}}
 
@@ -57,6 +53,7 @@
 #define MOTOR_B_2  0
 #define MOTOR_C_1  4
 #define MOTOR_C_2  1
+
 // Time for watchdog to turn off motors if no commands arrive: 100ms
 #define MOTOR_WATCHDOG_TIMEOUT  100
 
@@ -81,6 +78,11 @@
 #define MOUSE_SAMPLE_TIME_MS 10
 
 pmw3389dm_handle_t pmw3389dm_handle;
+uint8_t pmw3389dm_burst_buffer[12];
+
+struct msp_attitude_t attitude;
+struct msp_raw_imu_t imu;
+struct msp_motor_t motors;
 
 rcl_init_options_t init_options;
 rclc_support_t support;
@@ -89,33 +91,31 @@ rclc_executor_t executor;
 rcl_allocator_t allocator;
 
 rcl_timer_t imu_timer;
-rcl_timer_t mouse_timer;
-
 rcl_publisher_t imu_publisher;
+holohover_msgs__msg__HolohoverIMUStamped outgoing_imu_measurement_msg;
+uint8_t outgoing_imu_measurement_msg_buffer[MSG_BUFFER_LEN];
+
+rcl_timer_t mouse_timer;
 rcl_publisher_t mouse_publisher;
+holohover_msgs__msg__HolohoverMouseStamped outgoing_mouse_measurement_msg;
+uint8_t outgoing_mouse_measurement_msg_buffer[MSG_BUFFER_LEN];
+
 rcl_subscription_t control_subscriber;
+holohover_msgs__msg__HolohoverControlStamped incoming_control_msg;
+uint8_t incoming_control_msg_buffer[MSG_BUFFER_LEN];
+int64_t last_control_time;
 
 rcl_publisher_t pong_publisher;
 rcl_subscription_t ping_subscriber;
-
-holohover_msgs__msg__HolohoverIMU outgoing_imu_measurement;
-holohover_msgs__msg__HolohoverMouse outgoing_mouse_measurement;
-holohover_msgs__msg__HolohoverControl incoming_control;
 std_msgs__msg__Header incoming_ping;
-
-struct msp_attitude_t attitude;
-struct msp_raw_imu_t imu;
-struct msp_motor_t motors;
-
-uint8_t burst_buffer[12];
-
-int64_t last_control_time;
+uint8_t incoming_ping_buffer[MSG_BUFFER_LEN];
 
 enum states {
-    WAITING_AGENT,
-    AGENT_AVAILABLE,
-    AGENT_CONNECTED,
-    AGENT_DISCONNECTED
+  WAITING_AGENT,
+  AGENT_AVAILABLE,
+  AGENT_CONNECTED_IDLE,
+  AGENT_CONNECTED_ACTIVE,
+  AGENT_DISCONNECTED
 } state;
 
 void imu_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
@@ -128,22 +128,26 @@ void imu_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
         int msp_raw_imu_result = msp_request(UART_PORT, MSP_RAW_IMU, &imu, sizeof(imu), UART_TIMEOUT);
 
         if (msp_attitude_result >= 0 && msp_raw_imu_result >= 0) {
-            outgoing_imu_measurement.atti.roll  = (double) attitude.pitch / 1800 * M_PI;
-            outgoing_imu_measurement.atti.pitch = -((double) attitude.roll / 1800 * M_PI);
-            outgoing_imu_measurement.atti.yaw   = -((double) attitude.yaw / 180 * M_PI);
-            if (outgoing_imu_measurement.atti.yaw < -M_PI) {
-                outgoing_imu_measurement.atti.yaw += 2 * M_PI;
+            int64_t nanos = rmw_uros_epoch_nanos();
+            outgoing_imu_measurement_msg.header.stamp.sec = nanos / 1000000000;
+            outgoing_imu_measurement_msg.header.stamp.nanosec = nanos % 1000000000;
+
+            outgoing_imu_measurement_msg.atti.roll  = (double) attitude.pitch / 1800 * M_PI;
+            outgoing_imu_measurement_msg.atti.pitch = -((double) attitude.roll / 1800 * M_PI);
+            outgoing_imu_measurement_msg.atti.yaw   = -((double) attitude.yaw / 180 * M_PI);
+            if (outgoing_imu_measurement_msg.atti.yaw < -M_PI) {
+                outgoing_imu_measurement_msg.atti.yaw += 2 * M_PI;
             }
 
-            outgoing_imu_measurement.acc.x = (double) imu.acc[1] / 32767 * 16 * 4 * 9.81;
-            outgoing_imu_measurement.acc.y = -((double) imu.acc[0] / 32767 * 16 * 4 * 9.81);
-            outgoing_imu_measurement.acc.z = -((double) imu.acc[2] / 32767 * 16 * 4 * 9.81);
+            outgoing_imu_measurement_msg.acc.x = (double) imu.acc[1] / 32767 * 16 * 4 * 9.81;
+            outgoing_imu_measurement_msg.acc.y = -((double) imu.acc[0] / 32767 * 16 * 4 * 9.81);
+            outgoing_imu_measurement_msg.acc.z = -((double) imu.acc[2] / 32767 * 16 * 4 * 9.81);
 
-            outgoing_imu_measurement.gyro.x = (double) imu.gyro[1] / 32767 * 2000 / 180 * M_PI;
-            outgoing_imu_measurement.gyro.y = -((double) imu.gyro[0] / 32767 * 2000 / 180 * M_PI);
-            outgoing_imu_measurement.gyro.z = (double) imu.gyro[2] / 32767 * 2000 / 180 * M_PI;
+            outgoing_imu_measurement_msg.gyro.x = (double) imu.gyro[1] / 32767 * 2000 / 180 * M_PI;
+            outgoing_imu_measurement_msg.gyro.y = -((double) imu.gyro[0] / 32767 * 2000 / 180 * M_PI);
+            outgoing_imu_measurement_msg.gyro.z = (double) imu.gyro[2] / 32767 * 2000 / 180 * M_PI;
 
-            RCSOFTCHECK(rcl_publish(&imu_publisher, (const void*) &outgoing_imu_measurement, NULL));
+            RCSOFTCHECK(rcl_publish(&imu_publisher, (const void*) &outgoing_imu_measurement_msg, NULL));
         } else {
             if (msp_attitude_result < 0) {
                 ESP_LOGW(TAG, "MSP attitude request failed.");
@@ -159,10 +163,14 @@ void mouse_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
     if (timer != NULL) {
 
-        esp_err_t err = spi_pmw3389dm_burst_read(pmw3389dm_handle, burst_buffer);
+        esp_err_t err = spi_pmw3389dm_burst_read(pmw3389dm_handle, pmw3389dm_burst_buffer);
         if (err == ESP_OK) {
-            bool motion = (burst_buffer[0] & 0x80) > 0;
-            bool lifted = (burst_buffer[0] & 0x08) > 0;
+            int64_t nanos = rmw_uros_epoch_nanos();
+            outgoing_mouse_measurement_msg.header.stamp.sec = nanos / 1000000000;
+            outgoing_mouse_measurement_msg.header.stamp.nanosec = nanos % 1000000000;
+
+            bool motion = (pmw3389dm_burst_buffer[0] & 0x80) > 0;
+            bool lifted = (pmw3389dm_burst_buffer[0] & 0x08) > 0;
 
             if (lifted) {
                 ESP_LOGI(TAG, "Holohover ist lifted.");
@@ -171,21 +179,21 @@ void mouse_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 
             if (motion) {
                 // movement count since last call
-                int16_t delta_x = (int16_t) ((burst_buffer[3] << 8) | burst_buffer[2]);
-                int16_t delta_y = (int16_t) ((burst_buffer[5] << 8) | burst_buffer[4]);
+                int16_t delta_x = (int16_t) ((pmw3389dm_burst_buffer[3] << 8) | pmw3389dm_burst_buffer[2]);
+                int16_t delta_y = (int16_t) ((pmw3389dm_burst_buffer[5] << 8) | pmw3389dm_burst_buffer[4]);
 
                 // last term convert inch to meters
                 double dist_x = (double) delta_x / 16000 * 0.0254;
                 double dist_y = (double) delta_y / 16000 * 0.0254;
 
-                outgoing_mouse_measurement.v_x = dist_x / (double) last_call_time * 1000 * 1000 * 1000;
-                outgoing_mouse_measurement.v_y = -dist_y / (double) last_call_time * 1000 * 1000 * 1000;
+                outgoing_mouse_measurement_msg.v_x = dist_x / (double) last_call_time * 1000 * 1000 * 1000;
+                outgoing_mouse_measurement_msg.v_y = -dist_y / (double) last_call_time * 1000 * 1000 * 1000;
             } else {
-                outgoing_mouse_measurement.v_x = 0;
-                outgoing_mouse_measurement.v_y = 0;
+                outgoing_mouse_measurement_msg.v_x = 0;
+                outgoing_mouse_measurement_msg.v_y = 0;
             }
 
-            RCSOFTCHECK(rcl_publish(&mouse_publisher, (const void*) &outgoing_mouse_measurement, NULL));
+            RCSOFTCHECK(rcl_publish(&mouse_publisher, (const void*) &outgoing_mouse_measurement_msg, NULL));
         } else {
             ESP_LOGW(TAG, "Burst read failed.");
         }
@@ -194,7 +202,7 @@ void mouse_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 
 void motor_control_subscription_callback(const void * msgin)
 {
-    const holohover_msgs__msg__HolohoverControl *msg = (const holohover_msgs__msg__HolohoverControl*) msgin;
+    const holohover_msgs__msg__HolohoverControlStamped *msg = (const holohover_msgs__msg__HolohoverControlStamped*) msgin;
 
     motors.motor[MOTOR_A_1] = 1000 + (int)(1000 * msg->motor_a_1);
     motors.motor[MOTOR_A_2] = 1000 + (int)(1000 * msg->motor_a_2);
@@ -211,9 +219,11 @@ void motor_control_subscription_callback(const void * msgin)
 
 void ping_subscription_callback(const void * msgin)
 {
-    const std_msgs__msg__Header *msg = (const std_msgs__msg__Header*) msgin;
+    int64_t nanos = rmw_uros_epoch_nanos();
+    incoming_ping.stamp.sec = nanos / 1000000000;
+    incoming_ping.stamp.nanosec = nanos % 1000000000;
 
-    RCSOFTCHECK(rcl_publish(&pong_publisher, (const void*) msg, NULL));
+    RCSOFTCHECK(rcl_publish(&pong_publisher, (const void*) &incoming_ping, NULL));
 }
 
 void configure_led()
@@ -243,13 +253,13 @@ rcl_ret_t create_entities()
     // create init_options
     RCSOFTCHECKRET(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
 
-    // Create node
+    // create node
     RCSOFTCHECKRET(rclc_node_init_default(&node, "holohover_firmware", "", &support));
 
     // Create publishers and subscribers for measurements and control commands
-    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverIMU), "/drone/imu"));
-    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&mouse_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverMouse), "/drone/mouse"));
-    RCSOFTCHECKRET(rclc_subscription_init_best_effort(&control_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverControl), "/drone/control"));
+    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverIMUStamped), "/drone/imu"));
+    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&mouse_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverMouseStamped), "/drone/mouse"));
+    RCSOFTCHECKRET(rclc_subscription_init_best_effort(&control_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverControlStamped), "/drone/control"));
 
     // Ping and pong publisher and subscriber
     RCSOFTCHECKRET(rclc_publisher_init_best_effort(&pong_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/pong"));
@@ -263,11 +273,11 @@ rcl_ret_t create_entities()
 
     ESP_LOGI(TAG, "Starting ros executor.");
 
-    // Create executor
-    RCSOFTCHECKRET(rclc_executor_init(&executor, &support.context, 5, &allocator));
+    // create executor
+    RCSOFTCHECKRET(rclc_executor_init(&executor, &support.context, 4, &allocator));
     RCSOFTCHECKRET(rclc_executor_add_timer(&executor, &imu_timer));
     RCSOFTCHECKRET(rclc_executor_add_timer(&executor, &mouse_timer));
-    RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &control_subscriber, &incoming_control, &motor_control_subscription_callback, ON_NEW_DATA));
+    RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &control_subscriber, &incoming_control_msg, &motor_control_subscription_callback, ON_NEW_DATA));
     RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &ping_subscriber, &incoming_ping, &ping_subscription_callback, ON_NEW_DATA));
 
     return RCL_RET_OK;
@@ -295,18 +305,45 @@ void destroy_entities()
 
 void micro_ros_task(void * arg)
 {
-    // set log level
-#ifdef RMW_UXRCE_TRANSPORT_CUSTOM
-    // Don't log with custom transport to not disturb serial communication
-    esp_log_level_set(TAG, ESP_LOG_NONE);
-#else
-    esp_log_level_set(TAG, ESP_LOG_INFO);
-#endif
+    static micro_ros_utilities_memory_conf_t conf = {0};
+    conf.max_string_capacity = 50;
+
+    CHECK(micro_ros_utilities_create_static_message_memory(
+        ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverIMUStamped),
+        &outgoing_imu_measurement_msg,
+        conf,
+        outgoing_imu_measurement_msg_buffer,
+        sizeof(outgoing_imu_measurement_msg_buffer)
+    ));
+    outgoing_imu_measurement_msg.header.frame_id = micro_ros_string_utilities_set(outgoing_imu_measurement_msg.header.frame_id, "body");
+
+    CHECK(micro_ros_utilities_create_static_message_memory(
+        ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverMouseStamped),
+        &outgoing_mouse_measurement_msg,
+        conf,
+        outgoing_mouse_measurement_msg_buffer,
+        sizeof(outgoing_mouse_measurement_msg_buffer)
+    ));
+    outgoing_mouse_measurement_msg.header.frame_id = micro_ros_string_utilities_set(outgoing_mouse_measurement_msg.header.frame_id, "body");
+
+    CHECK(micro_ros_utilities_create_static_message_memory(
+        ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverControlStamped),
+        &incoming_control_msg,
+        conf,
+        incoming_control_msg_buffer,
+        sizeof(incoming_control_msg_buffer)
+    ));
+
+    CHECK(micro_ros_utilities_create_static_message_memory(
+        ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header),
+        &incoming_ping,
+        conf,
+        incoming_ping_buffer,
+        sizeof(incoming_ping_buffer)
+    ));
 
     // Wait 2 sec for flight controller
-    vTaskDelay((2000 / portTICK_RATE_MS));
-
-    configure_led();
+    vTaskDelay(2000 / portTICK_RATE_MS);
 
     ESP_LOGI(TAG, "Configure UART.");
     uart_config_t uart_config = {
@@ -353,24 +390,18 @@ void micro_ros_task(void * arg)
 
     reset_motors();
 
-    char incoming_ping_buffer[STRING_BUFFER_LEN];
-    incoming_ping.frame_id.data = incoming_ping_buffer;
-    incoming_ping.frame_id.capacity = STRING_BUFFER_LEN;
+    state = WAITING_AGENT;
 
     allocator = rcl_get_default_allocator();
+    node = rcl_get_zero_initialized_node();
 
     init_options = rcl_get_zero_initialized_init_options();
     RCCHECK(rcl_init_options_init(&init_options, allocator));
+
     rmw_init_options_t* rmw_options = rcl_init_options_get_rmw_init_options(&init_options);
-#if defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
-    if (strcmp(CONFIG_MICRO_ROS_AGENT_IP, "0.0.0.0") == 0) {
-        // autodiscover
-        RCCHECK(rmw_uros_discover_agent(rmw_options));
-    } else {
-        // use static agent ip and port
-        RCCHECK(rmw_uros_options_set_udp_address(CONFIG_MICRO_ROS_AGENT_IP, CONFIG_MICRO_ROS_AGENT_PORT, rmw_options));
-    }
-#endif
+    char agent_port[10];
+    sprintf(agent_port, "%d", global_config.agent_port);
+    RCCHECK(rmw_uros_options_set_udp_address(global_config.agent_ip, agent_port, rmw_options));
 
     while(1) {
         switch (state) {
@@ -378,78 +409,65 @@ void micro_ros_task(void * arg)
                 EXECUTE_EVERY_N_MS(500, state = (RMW_RET_OK == rmw_uros_ping_agent_options(100, 1, rmw_options)) ? AGENT_AVAILABLE : WAITING_AGENT;);
                 break;
             case AGENT_AVAILABLE:
-                state = (RCL_RET_OK == create_entities()) ? AGENT_CONNECTED : WAITING_AGENT;
+                state = (RCL_RET_OK == create_entities()) ? AGENT_CONNECTED_IDLE : WAITING_AGENT;
 
-                if (state == AGENT_CONNECTED) {
-                    state = (RMW_RET_OK == rmw_uros_sync_session(500)) ? AGENT_CONNECTED : WAITING_AGENT;
+                if (state == AGENT_CONNECTED_IDLE) {
+                    state = (RMW_RET_OK == rmw_uros_sync_session(500)) ? AGENT_CONNECTED_IDLE : WAITING_AGENT;
+                }
+
+                if (state == AGENT_CONNECTED_IDLE) {
+                    gpio_set_level(GPIO_NUM_LED, 1);
                 }
 
                 if (state == WAITING_AGENT) {
                     destroy_entities();
                 }
                 break;
-            case AGENT_CONNECTED:
-                ESP_LOGI(TAG, "Agent is connected, ros is now spinning.");
-
+            case AGENT_CONNECTED_ACTIVE:
                 if (uxr_millis() - last_control_time > MOTOR_WATCHDOG_TIMEOUT) {
-                    reset_motors();
-                    EXECUTE_EVERY_N_MS(500, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 3)) ? AGENT_CONNECTED : AGENT_DISCONNECTED;);
-                }
+                    state = AGENT_CONNECTED_IDLE;
 
-                if (state == AGENT_CONNECTED) {
-                    rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+                    gpio_set_level(GPIO_NUM_LED, 1);
                 }
                 break;
+            case AGENT_CONNECTED_IDLE:
+                EXECUTE_EVERY_N_MS(500, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 3)) ? AGENT_CONNECTED_IDLE : AGENT_DISCONNECTED;);
+                break;
             case AGENT_DISCONNECTED:
-                reset_motors();
+                gpio_set_level(GPIO_NUM_LED, 0);
+
                 destroy_entities();
+
                 state = WAITING_AGENT;
                 break;
             default:
                 break;
         }
 
-        if (state == AGENT_CONNECTED) {
-            gpio_set_level(GPIO_NUM_LED, 1);
-        } else {
-            gpio_set_level(GPIO_NUM_LED, 0);
+        if (state == AGENT_CONNECTED_IDLE || state == AGENT_CONNECTED_ACTIVE) {
+            rclc_executor_spin_some(&executor, RCL_MS_TO_NS(100));
+        }
+
+        if (state != AGENT_CONNECTED_ACTIVE) {
+            // stop motors
+            reset_motors();
         }
     }
-}
 
-static size_t uart_port = UART_NUM_0;
+    vTaskDelete(NULL);
+}
 
 void app_main(void)
 {
-#ifdef RMW_UXRCE_TRANSPORT_CUSTOM
-//    esp_err_t ret = nvs_flash_init();
-//    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-//        ESP_ERROR_CHECK(nvs_flash_erase());
-//        ret = nvs_flash_init();
-//    }
-//    ESP_ERROR_CHECK(ret);
-//
-//    ESP_ERROR_CHECK(rmw_uros_set_custom_transport(
-//        true,
-//        (void *) "ESP32",
-//        esp32_bluetooth_serial_open,
-//        esp32_bluetooth_serial_close,
-//        esp32_bluetooth_serial_write,
-//        esp32_bluetooth_serial_read
-//    ));
-    ESP_ERROR_CHECK(rmw_uros_set_custom_transport(
-		true,
-		(void *) &uart_port,
-		esp32_serial_open,
-		esp32_serial_close,
-		esp32_serial_write,
-		esp32_serial_read
-	));
-#elif defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
-    ESP_ERROR_CHECK(uros_network_interface_initialize());
-#else
-#error micro-ROS transports misconfigured
+    configure_led();
+    nvs_init();
+    nvs_load_config();
+
+#if defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
+    ESP_ERROR_CHECK(network_interface_initialize());
 #endif
+
+    config_server_start();
 
     //pin micro-ros task in APP_CPU to make PRO_CPU to deal with wifi:
     xTaskCreate(micro_ros_task,

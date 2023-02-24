@@ -5,8 +5,11 @@
 	path = mocap_optitrack
 	url = https://github.com/PREDICT-EPFL/mocap_optitrack.git
 [submodule "micro_ros/micro-ROS-Agent"]
-	path = micro_ros/micro-ROS-Agent
+	path = micro_ros/micro_ros_agent
 	url = https://github.com/micro-ROS/micro-ROS-Agent.git
 [submodule "micro_ros/micro_ros_msgs"]
 	path = micro_ros/micro_ros_msgs
 	url = https://github.com/micro-ROS/micro_ros_msgs.git
+[submodule "firmware/src/micro_ros_espidf_component"]
+	path = firmware/src/micro_ros_espidf_component
+	url = https://github.com/micro-ROS/micro_ros_espidf_component.git
