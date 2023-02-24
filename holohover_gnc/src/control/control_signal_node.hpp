@@ -6,8 +6,8 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
-#include "holohover_msgs/msg/holohover_state.hpp"
-#include "holohover_msgs/msg/holohover_control.hpp"
+#include "holohover_msgs/msg/holohover_state_stamped.hpp"
+#include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "holohover_gnc/riccati_solver.hpp"
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "holohover_gnc/utils/load_holohover_props.hpp"
@@ -71,7 +71,7 @@ private:
     Eigen::Matrix<double, Holohover::NA, Holohover::NX> K;
 
     rclcpp::TimerBase::SharedPtr timer;
-    rclcpp::Publisher<holohover_msgs::msg::HolohoverControl>::SharedPtr control_publisher;
+    rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
 
     void init_topics();
     void init_timer();

@@ -47,7 +47,7 @@ install(TARGETS
         )
 
 install(PROGRAMS
-        holohover_utils/holohover_ping.py
+        holohover_utils/ping_estimator.py
         DESTINATION lib/${PROJECT_NAME}
         )
 

@@ -5,8 +5,8 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
-#include "holohover_msgs/msg/holohover_state.hpp"
-#include "holohover_msgs/msg/holohover_control.hpp"
+#include "holohover_msgs/msg/holohover_state_stamped.hpp"
+#include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "holohover_gnc/utils/load_holohover_props.hpp"
 
@@ -27,15 +27,15 @@ private:
 
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_publisher;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverState>::SharedPtr state_subscription;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverControl>::SharedPtr control_subscription;
+    rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
+    rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_subscription;
 
     void init_topics();
     void init_timer();
     visualization_msgs::msg::Marker create_marker(const std::string &ns, float r, float g, float b, float a = 1.0f, const std::string &frame_id = "world");
     void publish_visualization();
-    void state_callback(const holohover_msgs::msg::HolohoverState &state);
-    void control_callback(const holohover_msgs::msg::HolohoverControl &control);
+    void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state);
+    void control_callback(const holohover_msgs::msg::HolohoverControlStamped &control);
 };
 
 #endif //HOLOHOVER_UTILS_RVIZ_INTERFACE_NODE_HPP

@@ -9,6 +9,8 @@ HolohoverNavigationNode::HolohoverNavigationNode() :
     kalman(holohover, navigation_settings)
 {
     // init zero control
+    current_control.header.frame_id = "body";
+    current_control.header.stamp = this->now();
     current_control.motor_a_1 = 0;
     current_control.motor_a_2 = 0;
     current_control.motor_b_1 = 0;
@@ -22,15 +24,15 @@ HolohoverNavigationNode::HolohoverNavigationNode() :
 
 void HolohoverNavigationNode::init_topics()
 {
-    state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverState>("navigation/state", 10);
+    state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverStateStamped>("navigation/state", 10);
     control_accel_publisher = this->create_publisher<geometry_msgs::msg::Accel>("navigation/control_accel", 10);
     comp_time_publisher = this->create_publisher<std_msgs::msg::Float64>("navigation/debug/comp_time", 10);
 
-    imu_subscription = this->create_subscription<holohover_msgs::msg::HolohoverIMU>(
+    imu_subscription = this->create_subscription<holohover_msgs::msg::HolohoverIMUStamped>(
             "drone/imu",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::imu_callback, this, std::placeholders::_1));
-    mouse_subscription = this->create_subscription<holohover_msgs::msg::HolohoverMouse>(
+    mouse_subscription = this->create_subscription<holohover_msgs::msg::HolohoverMouseStamped>(
             "drone/mouse",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::mouse_callback, this, std::placeholders::_1));
@@ -38,7 +40,7 @@ void HolohoverNavigationNode::init_topics()
             "optitrack/drone/pose",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::pose_callback, this, std::placeholders::_1));
-    control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControl>(
+    control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
             "drone/control",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::control_callback, this, std::placeholders::_1));
@@ -85,7 +87,9 @@ void HolohoverNavigationNode::kalman_predict_step()
 
     rclcpp::Time end_time = this->now();
 
-    holohover_msgs::msg::HolohoverState estimated_state;
+    holohover_msgs::msg::HolohoverStateStamped estimated_state;
+    estimated_state.header.frame_id = "world";
+    estimated_state.header.stamp = this->now();
     estimated_state.x = kalman.x(0);
     estimated_state.y = kalman.x(1);
     estimated_state.v_x = kalman.x(2);
@@ -100,13 +104,13 @@ void HolohoverNavigationNode::kalman_predict_step()
     comp_time_publisher->publish(comp_time);
 }
 
-void HolohoverNavigationNode::imu_callback(const holohover_msgs::msg::HolohoverIMU &measurement)
+void HolohoverNavigationNode::imu_callback(const holohover_msgs::msg::HolohoverIMUStamped &measurement)
 {
     current_imu = measurement;
     received_imu = true;
 }
 
-void HolohoverNavigationNode::mouse_callback(const holohover_msgs::msg::HolohoverMouse &measurement)
+void HolohoverNavigationNode::mouse_callback(const holohover_msgs::msg::HolohoverMouseStamped &measurement)
 {
     HolohoverEKF::sensor_mouse_t mouse_measurement;
     mouse_measurement(0) = measurement.v_x;
@@ -123,7 +127,7 @@ void HolohoverNavigationNode::pose_callback(const geometry_msgs::msg::Pose2D &me
     kalman.update_sensor_pose(pose_measurement);
 }
 
-void HolohoverNavigationNode::control_callback(const holohover_msgs::msg::HolohoverControl &control)
+void HolohoverNavigationNode::control_callback(const holohover_msgs::msg::HolohoverControlStamped &control)
 {
     current_control = control;
     received_control = true;

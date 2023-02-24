@@ -22,7 +22,7 @@ HolohoverControlSignalNode::HolohoverControlSignalNode() :
 
 void HolohoverControlSignalNode::init_topics()
 {
-    control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControl>(
+    control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
             "drone/control",
             rclcpp::SensorDataQoS());
 }
@@ -77,7 +77,9 @@ void HolohoverControlSignalNode::publish_control()
     u_signal = u_signal.cwiseMax(IDLE_SIGNAL).cwiseMin(1);
 
 	// publish control msg
-    holohover_msgs::msg::HolohoverControl control_msg;
+    holohover_msgs::msg::HolohoverControlStamped control_msg;
+    control_msg.header.frame_id = "body";
+    control_msg.header.stamp = this->now();
     control_msg.motor_a_1 = u_signal(0);
     control_msg.motor_a_2 = u_signal(1);
     control_msg.motor_b_1 = u_signal(2);

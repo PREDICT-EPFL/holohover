@@ -12,6 +12,8 @@ HolohoverSimulationNode::HolohoverSimulationNode() :
     state.setZero();
 
     // init zero control
+    current_control.header.frame_id = "body";
+    current_control.header.stamp = this->now();
     current_control.motor_a_1 = 0;
     current_control.motor_a_2 = 0;
     current_control.motor_b_1 = 0;
@@ -26,18 +28,18 @@ HolohoverSimulationNode::HolohoverSimulationNode() :
 
 void HolohoverSimulationNode::init_topics()
 {
-    state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverState>("simulation/state", 10);
-    imu_publisher = this->create_publisher<holohover_msgs::msg::HolohoverIMU>(
+    state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverStateStamped>("simulation/state", 10);
+    imu_publisher = this->create_publisher<holohover_msgs::msg::HolohoverIMUStamped>(
             "drone/imu",
             rclcpp::SensorDataQoS());
-    mouse_publisher = this->create_publisher<holohover_msgs::msg::HolohoverMouse>(
+    mouse_publisher = this->create_publisher<holohover_msgs::msg::HolohoverMouseStamped>(
             "drone/mouse",
             rclcpp::SensorDataQoS());
     pose_publisher = this->create_publisher<geometry_msgs::msg::Pose2D>(
             "optitrack/drone/pose",
             rclcpp::SensorDataQoS());
 
-    control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControl>(
+    control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
             "drone/control",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverSimulationNode::control_callback, this, std::placeholders::_1));
@@ -96,7 +98,9 @@ void HolohoverSimulationNode::simulate_forward_callback()
 {
     state = holohover.Ad * state + holohover.Bd * current_control_acc;
 
-    holohover_msgs::msg::HolohoverState state_msg;
+    holohover_msgs::msg::HolohoverStateStamped state_msg;
+    state_msg.header.frame_id = "world";
+    state_msg.header.stamp = this->now();
     state_msg.x = state(0);
     state_msg.y = state(1);
     state_msg.v_x = state(2);
@@ -118,7 +122,9 @@ void HolohoverSimulationNode::simulate_forward_callback()
 
 void HolohoverSimulationNode::imu_callback()
 {
-    holohover_msgs::msg::HolohoverIMU imu_measurement;
+    holohover_msgs::msg::HolohoverIMUStamped imu_measurement;
+    imu_measurement.header.frame_id = "body";
+    imu_measurement.header.stamp = this->now();
     imu_measurement.atti.roll = 0;
     imu_measurement.atti.pitch = 0;
     imu_measurement.atti.yaw = state(4);
@@ -146,7 +152,9 @@ void HolohoverSimulationNode::mouse_callback()
     Eigen::Vector2d velocity_world = state.segment<2>(2);
     Eigen::Vector2d velocity_body = rotation_matrix * velocity_world;
 
-    holohover_msgs::msg::HolohoverMouse mouse_measurement;
+    holohover_msgs::msg::HolohoverMouseStamped mouse_measurement;
+    mouse_measurement.header.frame_id = "world";
+    mouse_measurement.header.stamp = this->now();
     mouse_measurement.v_x = velocity_body(0);
     mouse_measurement.v_y = velocity_body(1);
 
@@ -184,7 +192,7 @@ void HolohoverSimulationNode::pose_callback()
     pose_publisher->publish(pose_measurement);
 }
 
-void HolohoverSimulationNode::control_callback(const holohover_msgs::msg::HolohoverControl &control)
+void HolohoverSimulationNode::control_callback(const holohover_msgs::msg::HolohoverControlStamped &control)
 {
     current_control = control;
     calculate_control_acc();

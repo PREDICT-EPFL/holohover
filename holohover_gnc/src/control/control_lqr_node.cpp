@@ -40,11 +40,11 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
 
 void HolohoverControlLQRNode::init_topics()
 {
-    control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControl>(
+    control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
             "drone/control",
             rclcpp::SensorDataQoS());
 
-    state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
+    state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "navigation/state", 10,
             std::bind(&HolohoverControlLQRNode::state_callback, this, std::placeholders::_1));
     reference_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
@@ -76,7 +76,9 @@ void HolohoverControlLQRNode::publish_control()
     // clip between 0 and 1
     u_signal = u_signal.cwiseMax(0).cwiseMin(1);
 
-    holohover_msgs::msg::HolohoverControl control_msg;
+    holohover_msgs::msg::HolohoverControlStamped control_msg;
+    control_msg.header.frame_id = "body";
+    control_msg.header.stamp = this->now();
     control_msg.motor_a_1 = u_signal(0);
     control_msg.motor_a_2 = u_signal(1);
     control_msg.motor_b_1 = u_signal(2);
@@ -86,7 +88,7 @@ void HolohoverControlLQRNode::publish_control()
     control_publisher->publish(control_msg);
 }
 
-void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverState &state_msg)
+void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg)
 {
     state(0) = state_msg.x;
     state(1) = state_msg.y;
