@@ -14,8 +14,18 @@ HolohoverProps load_holohover_pros(rclcpp::Node &node)
         node.get_parameter("mass", props.mass) &&
         node.get_parameter("inertia", props.inertia) &&
         node.get_parameter("max_thrust", props.max_thrust) &&
-        node.get_parameter("signal_to_thrust_coeffs", props.signal_to_thrust_coeffs) &&
-        node.get_parameter("thrust_to_signal_coeffs", props.thrust_to_signal_coeffs))
+        node.get_parameter("signal_to_thrust_coeffs_motor1", props.signal_to_thrust_coeffs_motor1) &&
+        node.get_parameter("thrust_to_signal_coeffs_motor1", props.thrust_to_signal_coeffs_motor1) &&
+        node.get_parameter("signal_to_thrust_coeffs_motor2", props.signal_to_thrust_coeffs_motor2) &&
+        node.get_parameter("thrust_to_signal_coeffs_motor2", props.thrust_to_signal_coeffs_motor2) &&
+        node.get_parameter("signal_to_thrust_coeffs_motor3", props.signal_to_thrust_coeffs_motor3) &&
+        node.get_parameter("thrust_to_signal_coeffs_motor3", props.thrust_to_signal_coeffs_motor3) &&
+        node.get_parameter("signal_to_thrust_coeffs_motor4", props.signal_to_thrust_coeffs_motor4) &&
+        node.get_parameter("thrust_to_signal_coeffs_motor4", props.thrust_to_signal_coeffs_motor4) &&
+        node.get_parameter("signal_to_thrust_coeffs_motor5", props.signal_to_thrust_coeffs_motor5) &&
+        node.get_parameter("thrust_to_signal_coeffs_motor5", props.thrust_to_signal_coeffs_motor5) &&
+        node.get_parameter("signal_to_thrust_coeffs_motor6", props.signal_to_thrust_coeffs_motor6) &&
+        node.get_parameter("thrust_to_signal_coeffs_motor6", props.thrust_to_signal_coeffs_motor6))
     {
         props.angle_propeller_pair = atan2(props.propeller_pair_gap_distance / 2, props.propeller_pair_radial_distance);
         props.radius_propeller = sqrt(props.propeller_pair_radial_distance * props.propeller_pair_radial_distance + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);

@@ -45,7 +45,7 @@ def generate_launch_description():
     )
     controller_node = Node(
         package="holohover_gnc",
-        executable="control_lqr",
+        executable="control_exp",
         parameters=[holohover_params, control_lqr_config],
         output='screen'
     )

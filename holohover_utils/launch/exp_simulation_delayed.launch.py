@@ -45,7 +45,7 @@ def generate_launch_description():
     )
     controller_node = Node(
         package="holohover_gnc",
-        executable="control_lqr",
+        executable="control_exp",
         parameters=[holohover_params, control_lqr_config],
         output='screen'
     )
@@ -73,12 +73,20 @@ def generate_launch_description():
     	cmd=['ros2', 'bag', 'record', '-a'],
     	output='screen'
     )
+    
+    delay = launch.actions.TimerAction(
+        period=5.0,
+        actions=[
+        	simulation_node,
+        	navigation_node,
+        	controller_node,
+        ]
+	)
+        	
 
-    ld.add_action(simulation_node)
-    ld.add_action(navigation_node)
-    ld.add_action(controller_node)
+    ld.add_action(delay)
+    ld.add_action(recorder)
     ld.add_action(rviz_interface_node)
     ld.add_action(rviz_node)
-    ld.add_action(recorder)
 
     return ld

@@ -67,9 +67,9 @@ void HolohoverControlLQRNode::publish_control()
     state_ref(1) = ref.y;
     state_ref(4) = ref.theta;
 
-    Holohover::control_acc_t<double> u_acc = -K * (state - state_ref);
+    Holohover::control_acc_t<double> u_acc = -K * (state - state_ref);   
     Holohover::control_force_t<double> u_force;
-    holohover.control_acceleration_to_force(state, u_acc, u_force);
+    holohover.control_acceleration_to_force(state, u_acc, u_force);    
     Holohover::control_force_t<double> u_signal;
     holohover.thrust_to_signal(u_force, u_signal);
 

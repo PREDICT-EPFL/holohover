@@ -1,4 +1,5 @@
 import os
+
 import launch.actions
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -14,15 +15,21 @@ def generate_launch_description():
         'holohover_params.yaml'
     )
 
-    simulation_config = os.path.join(
-        get_package_share_directory('holohover_gnc'),
+    mocap_config = os.path.join(
+        get_package_share_directory('holohover_utils'),
         'config',
-        'simulation_config.yaml'
+        'mocap_config.yaml'
     )
-    simulation_node = Node(
-        package="holohover_gnc",
-        executable="simulation",
-        parameters=[holohover_params, simulation_config],
+    mocap_node = Node(
+        package='mocap_optitrack',
+        executable='mocap_node',
+        parameters=[mocap_config],
+        output='screen'
+    )
+
+    optitrack_interface_node = Node(
+        package="holohover_utils",
+        executable="optitrack_interface",
         output='screen'
     )
 
@@ -45,7 +52,7 @@ def generate_launch_description():
     )
     controller_node = Node(
         package="holohover_gnc",
-        executable="control_lqr",
+        executable="control_signal",
         parameters=[holohover_params, control_lqr_config],
         output='screen'
     )
@@ -68,17 +75,18 @@ def generate_launch_description():
         arguments=['-d', rviz_config],
         output='screen'
     )
-    
+
     recorder = launch.actions.ExecuteProcess(
-    	cmd=['ros2', 'bag', 'record', '-a'],
-    	output='screen'
+        cmd=['ros2', 'bag', 'record', '-a'],
+        output='screen'
     )
 
-    ld.add_action(simulation_node)
+    ld.add_action(mocap_node)
+    ld.add_action(optitrack_interface_node)
     ld.add_action(navigation_node)
     ld.add_action(controller_node)
-    ld.add_action(rviz_interface_node)
-    ld.add_action(rviz_node)
-    ld.add_action(recorder)
+    #ld.add_action(rviz_interface_node)
+    #ld.add_action(rviz_node)
+    #ld.add_action(recorder)
 
     return ld
