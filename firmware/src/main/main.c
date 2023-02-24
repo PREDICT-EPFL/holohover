@@ -275,10 +275,10 @@ rcl_ret_t create_entities()
 
     // create executor
     RCSOFTCHECKRET(rclc_executor_init(&executor, &support.context, 4, &allocator));
+    RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &ping_subscriber, &incoming_ping, &ping_subscription_callback, ON_NEW_DATA));
+    RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &control_subscriber, &incoming_control_msg, &motor_control_subscription_callback, ON_NEW_DATA));
     RCSOFTCHECKRET(rclc_executor_add_timer(&executor, &imu_timer));
     RCSOFTCHECKRET(rclc_executor_add_timer(&executor, &mouse_timer));
-    RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &control_subscriber, &incoming_control_msg, &motor_control_subscription_callback, ON_NEW_DATA));
-    RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &ping_subscriber, &incoming_ping, &ping_subscription_callback, ON_NEW_DATA));
 
     return RCL_RET_OK;
 }
