@@ -1,9 +1,12 @@
-[submodule "micro_ros_setup"]
-	path = micro_ros_setup
-	url = https://github.com/micro-ROS/micro_ros_setup.git
 [submodule "ros_polympc/submodules/polympc"]
 	path = ros_polympc/submodules/polympc
 	url = https://gitlab.epfl.ch/listov/polympc.git
 [submodule "mocap_optitrack"]
 	path = mocap_optitrack
 	url = https://github.com/PREDICT-EPFL/mocap_optitrack.git
+[submodule "micro_ros/micro-ROS-Agent"]
+	path = micro_ros/micro-ROS-Agent
+	url = https://github.com/micro-ROS/micro-ROS-Agent.git
+[submodule "micro_ros/micro_ros_msgs"]
+	path = micro_ros/micro_ros_msgs
+	url = https://github.com/micro-ROS/micro_ros_msgs.git
