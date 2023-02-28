@@ -72,6 +72,8 @@
 // Sampling frequency of 100Hz
 #define IMU_SAMPLE_TIME_MS 10
 
+
+
 #define SPI_MISO 19
 #define SPI_MOSI 18
 #define SPI_CLK  5
