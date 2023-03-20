@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "neopixel.h"
 #include "nvs-manager.h"
 #include "wifi.h"
 #include "config-server.h"
@@ -47,21 +48,26 @@ static const char *TAG = "MAIN";
 
 #define GPIO_NUM_LED GPIO_NUM_13
 
-#define MOTOR_A_1  3
-#define MOTOR_A_2  5
-#define MOTOR_B_1  2
-#define MOTOR_B_2  0
-#define MOTOR_C_1  4
-#define MOTOR_C_2  1
+#define GPIO_NUM_NEOPIXEL       GPIO_NUM_0
+#define GPIO_NUM_NEOPIXEL_POWER GPIO_NUM_2
+#define NEOPIXEL_NR_LED         1
+#define	NEOPIXEL_RMT_CHANNEL    RMT_CHANNEL_1
+
+#define MOTOR_A_1  0
+#define MOTOR_A_2  1
+#define MOTOR_B_1  4
+#define MOTOR_B_2  3
+#define MOTOR_C_1  2
+#define MOTOR_C_2  5
 
 // Time for watchdog to turn off motors if no commands arrive: 100ms
 #define MOTOR_WATCHDOG_TIMEOUT  100
 
 #define UART_PORT          UART_NUM_2
-#define UART_TXD           17
-#define UART_RXD           16
-#define UART_RTS           18
-#define UART_CTS           19
+#define UART_TXD           8
+#define UART_RXD           7
+#define UART_RTS           -1
+#define UART_CTS           -1
 #define UART_BAUD_RATE     1000000
 #define UART_BUF_SIZE      1024
 // Timeout of 100ms
@@ -69,13 +75,16 @@ static const char *TAG = "MAIN";
 // Sampling frequency of 100Hz
 #define IMU_SAMPLE_TIME_MS 10
 
-#define SPI_MISO 19
-#define SPI_MOSI 18
+#define SPI_MISO 21
+#define SPI_MOSI 19
 #define SPI_CLK  5
 #define SPI_CS   33
 #define SPI_RS   27
 // Sampling frequency of 100Hz
 #define MOUSE_SAMPLE_TIME_MS 10
+
+pixel_settings_t px;
+uint32_t pixels[NEOPIXEL_NR_LED];
 
 pmw3389dm_handle_t pmw3389dm_handle;
 uint8_t pmw3389dm_burst_buffer[12];
@@ -211,10 +220,17 @@ void motor_control_subscription_callback(const void * msgin)
     motors.motor[MOTOR_C_1] = 1000 + (int)(1000 * msg->motor_c_1);
     motors.motor[MOTOR_C_2] = 1000 + (int)(1000 * msg->motor_c_2);
 
-    last_control_time = uxr_millis();
     if (msp_command(UART_PORT, MSP_SET_MOTOR, &motors, sizeof(motors), UART_TIMEOUT) < 0) {
         ESP_LOGW(TAG, "MSP set motor command failed.");
     }
+
+    if (state != AGENT_CONNECTED_ACTIVE) {
+        state = AGENT_CONNECTED_ACTIVE;
+
+        np_set_pixel_rgbw(&px, 0, 0x00, 0x00, 0xFF, 0x00); // blue
+        np_show(&px, NEOPIXEL_RMT_CHANNEL);
+    }
+    last_control_time = uxr_millis();
 }
 
 void ping_subscription_callback(const void * msgin)
@@ -231,7 +247,39 @@ void configure_led()
     gpio_reset_pin(GPIO_NUM_LED);
     // Set the GPIO as a push/pull output
     gpio_set_direction(GPIO_NUM_LED, GPIO_MODE_OUTPUT);
-    gpio_set_level(GPIO_NUM_LED, 0);
+    gpio_set_level(GPIO_NUM_LED, 1);
+}
+
+void configure_neopixel()
+{
+    gpio_reset_pin(GPIO_NUM_NEOPIXEL_POWER);
+    // Set the GPIO as a push/pull output
+    gpio_set_direction(GPIO_NUM_NEOPIXEL_POWER, GPIO_MODE_OUTPUT);
+    gpio_set_level(GPIO_NUM_NEOPIXEL_POWER, 1);
+
+    ESP_ERROR_CHECK(neopixel_init(GPIO_NUM_NEOPIXEL, NEOPIXEL_RMT_CHANNEL));
+
+    for	(int i = 0; i < NEOPIXEL_NR_LED; i++) {
+        pixels[i] = 0;
+    }
+    px.pixels = (uint8_t*) pixels;
+    px.pixel_count = NEOPIXEL_NR_LED;
+    strcpy(px.color_order, "GRB");
+
+    memset(&px.timings, 0, sizeof(px.timings));
+    px.timings.mark.level0 = 1;
+    px.timings.space.level0 = 1;
+    px.timings.mark.duration0 = 12;
+    px.nbits = 24;
+    px.timings.mark.duration1 = 14;
+    px.timings.space.duration0 = 7;
+    px.timings.space.duration1 = 16;
+    px.timings.reset.duration0 = 600;
+    px.timings.reset.duration1 = 600;
+
+    px.brightness = 0x80;
+    np_set_pixel_rgbw(&px, 0, 0xFF, 0x00, 0x00, 0x00); // red
+    np_show(&px, NEOPIXEL_RMT_CHANNEL);
 }
 
 void reset_motors()
@@ -416,7 +464,8 @@ void micro_ros_task(void * arg)
                 }
 
                 if (state == AGENT_CONNECTED_IDLE) {
-                    gpio_set_level(GPIO_NUM_LED, 1);
+                    np_set_pixel_rgbw(&px, 0, 0x00, 0xFF, 0x00, 0x00); // green
+                    np_show(&px, NEOPIXEL_RMT_CHANNEL);
                 }
 
                 if (state == WAITING_AGENT) {
@@ -427,14 +476,16 @@ void micro_ros_task(void * arg)
                 if (uxr_millis() - last_control_time > MOTOR_WATCHDOG_TIMEOUT) {
                     state = AGENT_CONNECTED_IDLE;
 
-                    gpio_set_level(GPIO_NUM_LED, 1);
+                    np_set_pixel_rgbw(&px, 0, 0x00, 0xFF, 0x00, 0x00); // green
+                    np_show(&px, NEOPIXEL_RMT_CHANNEL);
                 }
                 break;
             case AGENT_CONNECTED_IDLE:
                 EXECUTE_EVERY_N_MS(500, state = (RMW_RET_OK == rmw_uros_ping_agent(100, 3)) ? AGENT_CONNECTED_IDLE : AGENT_DISCONNECTED;);
                 break;
             case AGENT_DISCONNECTED:
-                gpio_set_level(GPIO_NUM_LED, 0);
+                np_set_pixel_rgbw(&px, 0, 0xFF, 0x00, 0x00, 0x00); // red
+                np_show(&px, NEOPIXEL_RMT_CHANNEL);
 
                 destroy_entities();
 
@@ -460,6 +511,7 @@ void micro_ros_task(void * arg)
 void app_main(void)
 {
     configure_led();
+    configure_neopixel();
     nvs_init();
     nvs_load_config();
 
