@@ -1,10 +1,9 @@
-#ifndef HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP
-#define HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP
+#ifndef HOLOHOVER_GNC_HOLOHOVER_CONTROL_P_NODE_HPP
+#define HOLOHOVER_GNC_HOLOHOVER_CONTROL_P_NODE_HPP
 
 #include <chrono>
 #include <cmath>
 
-#include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include "holohover_msgs/msg/holohover_state_stamped.hpp"
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
@@ -12,7 +11,7 @@
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "holohover_gnc/utils/load_holohover_props.hpp"
 
-struct ControlLQRSettings
+struct ControlPSettings
 {
     double period;
 
@@ -28,9 +27,9 @@ struct ControlLQRSettings
     double weight_w_dot_z;
 };
 
-ControlLQRSettings load_control_lqr_settings(rclcpp::Node &node)
+ControlPSettings load_control_P_settings(rclcpp::Node &node)
 {
-    ControlLQRSettings settings;
+    ControlPSettings settings;
 
     if (node.get_parameter("period", settings.period) &&
         node.get_parameter("weight_x", settings.weight_x) &&
@@ -44,19 +43,19 @@ ControlLQRSettings load_control_lqr_settings(rclcpp::Node &node)
         node.get_parameter("weight_w_dot_z", settings.weight_w_dot_z)) {}
     else
     {
-        RCLCPP_INFO(node.get_logger(), "Failed to load control lqr settings");
+        RCLCPP_INFO(node.get_logger(), "Failed to load control P settings");
     }
 
     return settings;
 }
 
-class HolohoverControlLQRNode : public rclcpp::Node
+class HolohoverControlPNode : public rclcpp::Node
 {
 public:
-    HolohoverControlLQRNode();
+    HolohoverControlPNode();
 private:
     HolohoverProps holohover_props;
-    ControlLQRSettings control_settings;
+    ControlPSettings control_settings;
 
     Holohover holohover;
 
@@ -76,4 +75,4 @@ private:
     void ref_callback(const geometry_msgs::msg::Pose2D &pose);
 };
 
-#endif //HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP
+#endif //HOLOHOVER_GNC_HOLOHOVER_CONTROL_P_NODE_HPP

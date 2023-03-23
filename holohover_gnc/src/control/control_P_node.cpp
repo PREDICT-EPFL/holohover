@@ -1,10 +1,10 @@
-#include "control_lqr_node.hpp"
+#include "control_P_node.hpp"
 
-HolohoverControlLQRNode::HolohoverControlLQRNode() :
-        Node("control_lqr", rclcpp::NodeOptions().allow_undeclared_parameters(true)
+HolohoverControlPNode::HolohoverControlPNode() :
+        Node("control_P", rclcpp::NodeOptions().allow_undeclared_parameters(true)
                                                  .automatically_declare_parameters_from_overrides(true)),
         holohover_props(load_holohover_pros(*this)),
-        control_settings(load_control_lqr_settings(*this)),
+        control_settings(load_control_P_settings(*this)),
         holohover(holohover_props, control_settings.period)
 {
     // init state
@@ -15,30 +15,18 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     ref.y = 0;
     ref.theta = 0;
 
-    // calculate LQR gain
-    Eigen::Matrix<double, Holohover::NX, Holohover::NX> &Ad = holohover.Ad;
-    Eigen::Matrix<double, Holohover::NX, Holohover::NA> &Bd = holohover.Bd;
-
-    Eigen::Matrix<double, Holohover::NX, Holohover::NX> Q;
-    Q.setZero();
-    Q.diagonal() << control_settings.weight_x, control_settings.weight_y,
-                    control_settings.weight_v_x, control_settings.weight_v_y,
-                    control_settings.weight_yaw, control_settings.weight_w_z;
-
-    Eigen::Matrix<double, Holohover::NA, Holohover::NA> R;
-    R.setZero();
-    R.diagonal() << control_settings.weight_a_x, control_settings.weight_a_y, control_settings.weight_w_dot_z;
-
-    Eigen::Matrix<double, Holohover::NX, Holohover::NX> P;
-    solve_riccati_iteration_discrete(Ad, Bd, Q, R, P);
-
-    K = (R + Bd.transpose() * P * Bd).ldlt().solve(Bd.transpose() * P * Ad);
+    K = Kp* << 1, 0, 0, 0, 0, 0,
+              0, 1, 0, 0, 0, 0,
+              0, 0, 1, 0, 0, 0,
+              0, 0, 0, 1, 0, 0,
+              0, 0, 0, 0, 1, 0,
+              0, 0, 0, 0, 0, 1;;
 
     init_topics();
     init_timer();
 }
 
-void HolohoverControlLQRNode::init_topics()
+void HolohoverControlPNode::init_topics()
 {
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
             "drone/control",
@@ -46,20 +34,20 @@ void HolohoverControlLQRNode::init_topics()
 
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "navigation/state", 10,
-            std::bind(&HolohoverControlLQRNode::state_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverControlPNode::state_callback, this, std::placeholders::_1));
     reference_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
             "control/ref", 10,
-            std::bind(&HolohoverControlLQRNode::ref_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverControlPNode::ref_callback, this, std::placeholders::_1));
 }
 
-void HolohoverControlLQRNode::init_timer()
+void HolohoverControlPNode::init_timer()
 {
     timer = this->create_wall_timer(
             std::chrono::duration<double>(control_settings.period),
-            std::bind(&HolohoverControlLQRNode::publish_control, this));
+            std::bind(&HolohoverControlPNode::publish_control, this));
 }
 
-void HolohoverControlLQRNode::publish_control()
+void HolohoverControlPNode::publish_control()
 {
     Holohover::state_t<double> state_ref;
     state_ref.setZero();
@@ -88,7 +76,7 @@ void HolohoverControlLQRNode::publish_control()
     control_publisher->publish(control_msg);
 }
 
-void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg)
+void HolohoverControlPNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg)
 {
     state(0) = state_msg.x;
     state(1) = state_msg.y;
@@ -98,14 +86,14 @@ void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::Holohove
     state(5) = state_msg.w_z;
 }
 
-void HolohoverControlLQRNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)
+void HolohoverControlPNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)
 {
     ref = pose;
 }
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<HolohoverControlLQRNode>());
+    rclcpp::spin(std::make_shared<HolohoverControlPNode>());
     rclcpp::shutdown();
     return 0;
 }
