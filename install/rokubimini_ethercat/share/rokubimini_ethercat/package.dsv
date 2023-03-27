@@ -1,0 +1,8 @@
+source;share/rokubimini_ethercat/hook/cmake_prefix_path.ps1
+source;share/rokubimini_ethercat/hook/cmake_prefix_path.dsv
+source;share/rokubimini_ethercat/hook/cmake_prefix_path.sh
+source;share/rokubimini_ethercat/local_setup.bash
+source;share/rokubimini_ethercat/local_setup.dsv
+source;share/rokubimini_ethercat/local_setup.ps1
+source;share/rokubimini_ethercat/local_setup.sh
+source;share/rokubimini_ethercat/local_setup.zsh

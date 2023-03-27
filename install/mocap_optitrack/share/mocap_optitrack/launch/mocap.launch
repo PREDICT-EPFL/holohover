@@ -1,0 +1,6 @@
+<launch>
+  <arg name="mocap_config_file" default="$(find-pkg-share mocap_optitrack)/config/mocap.yaml" />
+  <node pkg="mocap_optitrack" exec="mocap_node">
+    <param from="$(var mocap_config_file)" />
+  </node>
+</launch>

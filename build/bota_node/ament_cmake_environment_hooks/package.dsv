@@ -1,0 +1,4 @@
+source;share/bota_node/local_setup.bash
+source;share/bota_node/local_setup.dsv
+source;share/bota_node/local_setup.sh
+source;share/bota_node/local_setup.zsh

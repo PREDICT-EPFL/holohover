@@ -1,0 +1,31 @@
+[0.070s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_signal_handler': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_signal_handler -- -j8 -l8
+[0.168s] [ 25%] Built target gtest_main
+[0.172s] [ 50%] Built target bota_signal_handler
+[0.190s] [ 75%] Built target gtest
+[0.264s] [100%] Built target test_bota_signal_handler
+[0.291s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_signal_handler' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_signal_handler -- -j8 -l8
+[0.437s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_signal_handler': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_signal_handler
+[0.453s] -- Install configuration: ""
+[0.454s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/include/bota_signal_handler
+[0.455s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/include/bota_signal_handler/SignalHandler.hpp
+[0.455s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/lib/libbota_signal_handler.a
+[0.455s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/environment/library_path.sh
+[0.455s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/environment/library_path.dsv
+[0.456s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/ament_index/resource_index/package_run_dependencies/bota_signal_handler
+[0.456s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/ament_index/resource_index/parent_prefix_path/bota_signal_handler
+[0.456s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/environment/ament_prefix_path.sh
+[0.456s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/environment/ament_prefix_path.dsv
+[0.456s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/environment/path.sh
+[0.456s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/environment/path.dsv
+[0.482s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/local_setup.bash
+[0.483s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/local_setup.sh
+[0.483s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/local_setup.zsh
+[0.483s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/local_setup.dsv
+[0.483s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/package.dsv
+[0.484s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/ament_index/resource_index/packages/bota_signal_handler
+[0.484s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/cmake/ament_cmake_export_include_directories-extras.cmake
+[0.484s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/cmake/ament_cmake_export_libraries-extras.cmake
+[0.484s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/cmake/bota_signal_handlerConfig.cmake
+[0.484s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/cmake/bota_signal_handlerConfig-version.cmake
+[0.484s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/package.xml
+[0.512s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_signal_handler' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_signal_handler

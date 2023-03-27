@@ -1,0 +1,66 @@
+/bus0:
+  ros__parameters:
+    set_reading_to_nan_on_disconnect: false
+
+    imu_acceleration_range: 3
+    imu_angular_rate_range: 3
+    imu_acceleration_filter: 1
+    imu_angular_rate_filter: 3
+
+    force_torque_filter/sinc_filter_size: 64
+    force_torque_filter/chop_enable: false
+    force_torque_filter/fir_disable: true
+    force_torque_filter/fast_enable: false
+
+    force_torque_offset/Fx: 0.0
+    force_torque_offset/Fy: 0.0
+    force_torque_offset/Fz: 0.0
+    force_torque_offset/Tx: 0.0
+    force_torque_offset/Ty: 0.0
+    force_torque_offset/Tz: 0.0
+
+    sensor_configuration/calibration_matrix_active: true
+    sensor_configuration/temperature_compensation_active: false
+    sensor_configuration/imu_active: 1   #0=no IMU, 1=internal, 2=external, 3=both
+    sensor_configuration/coordinate_system_active: false
+    sensor_configuration/inertia_compensation_active: 0
+    sensor_configuration/orientation_estimation_active: 0
+
+    use_custom_calibration: false
+
+    sensor_calibration/calibration_matrix/1_1: 0.0
+    sensor_calibration/calibration_matrix/1_2: 0.0
+    sensor_calibration/calibration_matrix/1_3: 0.0
+    sensor_calibration/calibration_matrix/1_4: 0.0
+    sensor_calibration/calibration_matrix/1_5: 0.0
+    sensor_calibration/calibration_matrix/1_6: 0.0
+    sensor_calibration/calibration_matrix/2_1: 0.0
+    sensor_calibration/calibration_matrix/2_2: 0.0
+    sensor_calibration/calibration_matrix/2_3: 0.0
+    sensor_calibration/calibration_matrix/2_4: 0.0
+    sensor_calibration/calibration_matrix/2_5: 0.0
+    sensor_calibration/calibration_matrix/2_6: 0.0
+    sensor_calibration/calibration_matrix/3_1: 0.0
+    sensor_calibration/calibration_matrix/3_2: 0.0
+    sensor_calibration/calibration_matrix/3_3: 0.0
+    sensor_calibration/calibration_matrix/3_4: 0.0
+    sensor_calibration/calibration_matrix/3_5: 0.0
+    sensor_calibration/calibration_matrix/3_6: 0.0
+    sensor_calibration/calibration_matrix/4_1: 0.0
+    sensor_calibration/calibration_matrix/4_2: 0.0
+    sensor_calibration/calibration_matrix/4_3: 0.0
+    sensor_calibration/calibration_matrix/4_4: 0.0
+    sensor_calibration/calibration_matrix/4_5: 0.0
+    sensor_calibration/calibration_matrix/4_6: 0.0
+    sensor_calibration/calibration_matrix/5_1: 0.0
+    sensor_calibration/calibration_matrix/5_2: 0.0
+    sensor_calibration/calibration_matrix/5_3: 0.0
+    sensor_calibration/calibration_matrix/5_4: 0.0
+    sensor_calibration/calibration_matrix/5_5: 0.0
+    sensor_calibration/calibration_matrix/5_6: 0.0
+    sensor_calibration/calibration_matrix/6_1: 0.0
+    sensor_calibration/calibration_matrix/6_2: 0.0
+    sensor_calibration/calibration_matrix/6_3: 0.0
+    sensor_calibration/calibration_matrix/6_4: 0.0
+    sensor_calibration/calibration_matrix/6_5: 0.0
+    sensor_calibration/calibration_matrix/6_6: 0.0

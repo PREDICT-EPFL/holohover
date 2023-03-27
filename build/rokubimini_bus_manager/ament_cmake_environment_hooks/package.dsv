@@ -1,0 +1,4 @@
+source;share/rokubimini_bus_manager/local_setup.bash
+source;share/rokubimini_bus_manager/local_setup.dsv
+source;share/rokubimini_bus_manager/local_setup.sh
+source;share/rokubimini_bus_manager/local_setup.zsh

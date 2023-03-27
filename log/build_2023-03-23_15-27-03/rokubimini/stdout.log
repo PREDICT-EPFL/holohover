@@ -1,0 +1,41 @@
+[  9%] Built target gtest_main
+[ 19%] Built target gtest
+[ 66%] Built target rokubimini
+[100%] Built target test_rokubimini
+-- Install configuration: ""
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/lib/librokubimini.a
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/configuration
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/configuration/Configuration.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/configuration/SensorConfiguration.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/configuration/ForceTorqueFilter.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/calibration
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/calibration/ForceTorqueCalibration.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/calibration/SensorCalibration.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/Rokubimini.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/Statusword.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/Reading.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/fsm
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/fsm/StateEnum.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/config
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/config/rokubimini_sensor.yaml
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/library_path.sh
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/library_path.dsv
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/ament_index/resource_index/package_run_dependencies/rokubimini
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/ament_index/resource_index/parent_prefix_path/rokubimini
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/ament_prefix_path.sh
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/ament_prefix_path.dsv
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/path.sh
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/path.dsv
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/local_setup.bash
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/local_setup.sh
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/local_setup.zsh
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/local_setup.dsv
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/package.dsv
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/ament_index/resource_index/packages/rokubimini
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/cmake/ament_cmake_export_libraries-extras.cmake
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/cmake/rokubiminiConfig.cmake
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/cmake/rokubiminiConfig-version.cmake
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/package.xml

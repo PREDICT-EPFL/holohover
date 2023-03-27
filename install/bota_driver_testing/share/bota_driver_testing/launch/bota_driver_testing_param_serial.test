@@ -1,0 +1,33 @@
+<launch>
+  <node name="bus0" pkg="rokubimini_serial" type="rokubimini_serial_bus_manager_node" output="screen" required="true">
+    <param name="num_spinners" type="int" value="1" />
+    <param name="port" type="string" value="/dev/ttyUSB0" />
+    <param name="rokubiminis/ft_sensor0/name" type="string" value="ft_sensor0" />
+    <param name="rokubiminis/ft_sensor0/product_name" type="string" value="BFT-SENS-SER-M8" />
+    <rosparam ns="rokubiminis/ft_sensor0" command="load" file="$(find rokubimini)/config/rokubimini_sensor.yaml" />
+  </node>
+  <test test-name="botaDriverParamTest_num_spinners_serial_async" pkg="rostest" type="paramtest" name="num_spinners_serial">
+    <param name="param_name_target" value="bus0/num_spinners" />
+    <param name="param_value_expected" value="1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_port_async" pkg="rostest" type="paramtest" name="port">
+    <param name="param_name_target" value="/bus0/port" />
+    <param name="param_value_expected" value="/dev/ttyUSB0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_name_serial_async" pkg="rostest" type="paramtest" name="name_serial">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/name" />
+    <param name="param_value_expected" value="ft_sensor0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_product_name_serial_async" pkg="rostest" type="paramtest" name="product_name_serial">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/product_name" />
+    <param name="param_value_expected" value="BFT-SENS-SER-M8" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+</launch>

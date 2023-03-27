@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>bota_driver</name>
+  <version>0.6.1</version>
+  <description>Meta package that contains all essential packages of BOTA driver.</description>
+  <maintainer email="sw-support@botasys.com">Bota Systems AG</maintainer>
+  <license>Apache 2.0</license>
+  <url>http://wiki.ros.org/bota_driver</url>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <exec_depend>rokubimini</exec_depend>
+  <exec_depend>rokubimini_bus_manager</exec_depend>
+  <exec_depend>rokubimini_ethercat</exec_depend>
+  <exec_depend>rokubimini_serial</exec_depend>
+  <exec_depend>rokubimini_msgs</exec_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

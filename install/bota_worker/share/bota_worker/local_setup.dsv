@@ -1,0 +1,3 @@
+source;share/bota_worker/environment/ament_prefix_path.sh
+source;share/bota_worker/environment/library_path.sh
+source;share/bota_worker/environment/path.sh

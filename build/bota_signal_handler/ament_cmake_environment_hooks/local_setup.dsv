@@ -1,0 +1,3 @@
+source;share/bota_signal_handler/environment/ament_prefix_path.sh
+source;share/bota_signal_handler/environment/library_path.sh
+source;share/bota_signal_handler/environment/path.sh

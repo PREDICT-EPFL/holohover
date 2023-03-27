@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<package format="2">
+
+    <name>rokubimini</name>
+    <version>0.6.1</version>
+    <description>C++ library deriving the abstract communication interface classes in the rokubimini library for
+        EtherCAT.
+    </description>
+
+    <license>Apache 2.0</license>
+    <url>http://wiki.ros.org/bota_driver</url>
+    <maintainer email="sw-support@botasys.com">Bota Systems AG</maintainer>
+
+    <buildtool_depend>ament_cmake</buildtool_depend>
+
+    <depend>rclcpp</depend>
+    <depend>sensor_msgs</depend>
+    <depend>geometry_msgs</depend>
+    <depend>eigen</depend>
+    <depend>boost</depend>
+    <depend>diagnostic_updater</depend>
+    <test_depend>ament_cmake_gtest</test_depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
+</package>

@@ -1,0 +1,46 @@
+[ 75%] Built target rokubimini_ethercat
+[100%] Built target rokubimini_ethercat_bus_manager_node
+-- Install configuration: ""
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/lib/librokubimini_ethercat.a
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/lib/rokubimini_ethercat/rokubimini_ethercat_bus_manager_node
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/PdoTypeEnum.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/ObjectDictionary.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/sdo
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/sdo/RxSdoCalibration.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/sdo/RxSdoAccelerationRange.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/sdo/RxSdoAngularRateRange.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/RokubiminiEthercat.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/TxPdoC.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/RokubiminiEthercatSlave.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/TxPdoA.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/RokubiminiEthercatBusManager.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/TxPdoB.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/TxPdoZ.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/soem_interface
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/soem_interface/EthercatSlaveBase.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/soem_interface/EthercatBusBase.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/include/rokubimini_ethercat/RxPdo.hpp
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat//launch
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat//launch/rokubimini_ethercat.launch
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat//launch/rokubimini_ethercat.launch.py
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/environment/library_path.sh
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/environment/library_path.dsv
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/ament_index/resource_index/package_run_dependencies/rokubimini_ethercat
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/ament_index/resource_index/parent_prefix_path/rokubimini_ethercat
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/environment/ament_prefix_path.sh
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/environment/ament_prefix_path.dsv
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/environment/path.sh
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/environment/path.dsv
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/local_setup.bash
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/local_setup.sh
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/local_setup.zsh
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/local_setup.dsv
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/package.dsv
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/ament_index/resource_index/packages/rokubimini_ethercat
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/cmake/ament_cmake_export_libraries-extras.cmake
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/cmake/rokubimini_ethercatConfig.cmake
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/cmake/rokubimini_ethercatConfig-version.cmake
+-- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_ethercat/share/rokubimini_ethercat/package.xml

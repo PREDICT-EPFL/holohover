@@ -1,0 +1,2 @@
+/usr/bin/ar qc librokubimini_serial.a CMakeFiles/rokubimini_serial.dir/src/rokubimini_serial/RokubiminiSerial.cpp.o CMakeFiles/rokubimini_serial.dir/src/rokubimini_serial/RokubiminiSerialImpl.cpp.o CMakeFiles/rokubimini_serial.dir/src/rokubimini_serial/RokubiminiSerialBusManager.cpp.o CMakeFiles/rokubimini_serial.dir/src/rokubimini_serial/RokubiminiSerialCommunication.cpp.o
+/usr/bin/ranlib librokubimini_serial.a

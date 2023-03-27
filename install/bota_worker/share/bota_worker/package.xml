@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+
+<package format="2">
+    
+    <name>bota_worker</name>
+    <version>0.6.1</version>
+    <description>High resolution version of the ROS worker.</description>
+
+    <license>BSD</license>
+    <url>http://wiki.ros.org/bota_driver</url>
+    <maintainer email="sw-support@botasys.com">Bota Systems AG</maintainer>
+
+    <buildtool_depend>ament_cmake</buildtool_depend>
+
+    <depend>rclcpp</depend>
+    <test_depend>ament_cmake_gtest</test_depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
+</package>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-1-g15f4949  Build Version: 1.6.7594.29634
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot xmlns:xacro="http://wiki.ros.org/xacro">
+  <xacro:macro name="realsense_adapter" >
+    <link
+      name="Realsense_adapter_mounting">
+      <inertial>
+        <origin
+          xyz="-1.07190034626115E-10 -0.00765070494697504 0.012931683544868"
+          rpy="0 0 0" />
+        <mass
+          value="0.0130819007211145" />
+        <inertia
+          ixx="1.55895543311133E-06"
+          ixy="1.03687107516174E-14"
+          ixz="-1.02445434981596E-14"
+          iyy="3.59150839505463E-06"
+          iyz="3.98543003023402E-07"
+          izz="2.72715744206325E-06" />
+      </inertial>
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://rokubimini_description/meshes/realsense_adapter/Realsense_adapter_mounting.STL" />
+        </geometry>
+        <material
+          name="">
+          <color
+            rgba="0.686274509803922 0.607843137254902 0.529411764705882 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin
+          xyz="0 -0.002 0.0075"
+          rpy="0 0 0" />
+        <geometry>
+          <box size="0.024 0.02 0.015" />
+        </geometry>
+      </collision>
+      <collision>
+        <origin
+          xyz="0 -0.009 0.022"
+          rpy="0 0 0" />
+        <geometry>
+          <box size="0.065 0.006 0.014" />
+        </geometry>
+      </collision>
+    </link>
+    <link
+      name="Realsense_camera_mount">
+    </link>
+    <joint
+      name="mount_to_camera"
+      type="fixed">
+      <origin
+        xyz="0 0.00115 0.0095"
+        rpy="0 0 1.5708" />
+      <parent
+        link="Realsense_adapter_mounting" />
+      <child
+        link="Realsense_camera_mount" />
+      <axis
+        xyz="0 0 0" />
+    </joint>
+  </xacro:macro>
+</robot>

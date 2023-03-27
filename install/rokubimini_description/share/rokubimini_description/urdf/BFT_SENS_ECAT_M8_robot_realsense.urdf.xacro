@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro"
+       name="sensor" >
+
+ 
+  <xacro:arg name="prefix" default="ft_sensor0"/>
+
+  <xacro:include filename="$(find rokubimini_description)/urdf/BFT_SENS_ECAT_M8.urdf.xacro" />
+  <xacro:include filename="$(find rokubimini_description)/urdf/realsense_adapter.urdf.xacro" />
+  <xacro:include filename="$(find realsense2_description)/urdf/_d435.urdf.xacro" />
+
+  <xacro:BFT_SENS_ECAT_M8 prefix="$(arg prefix)" />
+  <xacro:realsense_adapter/>
+
+  <link name="world" />
+
+  <joint name="world_joint" type="fixed">
+    <parent link="world" />
+    <child link = "$(arg prefix)_mounting" />
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+  </joint>
+
+  <joint name="realsense_joint" type="fixed">
+    <parent link="$(arg prefix)_mech3" />
+    <child link = "Realsense_adapter_mounting" />
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0" />
+  </joint>
+
+  <xacro:sensor_d435 parent="Realsense_camera_mount" use_nominal_extrinsics="false">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:sensor_d435>
+  
+</robot>

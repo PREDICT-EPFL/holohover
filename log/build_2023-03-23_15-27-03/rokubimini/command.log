@@ -1,0 +1,4 @@
+Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini -- -j8 -l8
+Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini -- -j8 -l8
+Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini
+Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini

@@ -1,0 +1,352 @@
+<launch>
+  <node name="bus0" pkg="rokubimini_ethercat" type="rokubimini_ethercat_bus_manager_node" output="screen" launch-prefix="ethercat_grant" required="true">
+    <param name="num_spinners" type="int" value="1" />
+    <param name="ethercat_bus" type="string" value="enx3c8cf8fb1b86" />
+    <param name="rokubiminis/ft_sensor0/name" type="string" value="ft_sensor0" />
+    <param name="rokubiminis/ft_sensor0/product_name" type="string" value="BFT-ROKA-ECAT-M8" />
+    <rosparam ns="rokubiminis/ft_sensor0" command="load" file="$(find rokubimini)/config/rokubimini_sensor.yaml" />
+    <param name="rokubiminis/ft_sensor0/ethercat_address" type="int" value="1" />
+  </node>
+  <test test-name="botaDriverParamTest_num_spinners_ethercat_async" pkg="rostest" type="paramtest" name="num_spinners_ethercat">
+    <param name="param_name_target" value="bus0/num_spinners" />
+    <param name="param_value_expected" value="1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_ethercat_bus_async" pkg="rostest" type="paramtest" name="ethercat_bus">
+    <param name="param_name_target" value="/bus0/ethercat_bus" />
+    <param name="param_value_expected" value="enx3c8cf8fb1b86" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_name_ethercat_async" pkg="rostest" type="paramtest" name="name_ethercat">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/name" />
+    <param name="param_value_expected" value="ft_sensor0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_product_name_ethercat_async" pkg="rostest" type="paramtest" name="product_name_ethercat">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/product_name" />
+    <param name="param_value_expected" value="BFT-ROKA-ECAT-M8" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_ethercat_address_async" pkg="rostest" type="paramtest" name="ethercat_address">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/ethercat_address" />
+    <param name="param_value_expected" value="1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_chop_enable_async" pkg="rostest" type="paramtest" name="chop_enable">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/force_torque_filter/chop_enable" />
+    <param name="param_value_expected" value="false" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_fast_enable_async" pkg="rostest" type="paramtest" name="fast_enable">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/force_torque_filter/fast_enable" />
+    <param name="param_value_expected" value="false" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_fir_disable_async" pkg="rostest" type="paramtest" name="fir_disable">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/force_torque_filter/fir_disable" />
+    <param name="param_value_expected" value="true" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_sinc_filter_size_async" pkg="rostest" type="paramtest" name="sinc_filter_size">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/force_torque_filter/sinc_filter_size" />
+    <param name="param_value_expected" value="512" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_fx_async" pkg="rostest" type="paramtest" name="fx">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/force_torque_offset/Fx" />
+    <param name="param_value_expected" value="0.0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_fy_async" pkg="rostest" type="paramtest" name="fy">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/force_torque_offset/Fy" />
+    <param name="param_value_expected" value="0.0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_fz_async" pkg="rostest" type="paramtest" name="fz">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/force_torque_offset/Fz" />
+    <param name="param_value_expected" value="0.0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_tx_async" pkg="rostest" type="paramtest" name="tx">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/force_torque_offset/Tx" />
+    <param name="param_value_expected" value="0.0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_ty_async" pkg="rostest" type="paramtest" name="ty">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/force_torque_offset/Ty" />
+    <param name="param_value_expected" value="0.0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_tz_async" pkg="rostest" type="paramtest" name="tz">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/force_torque_offset/Tz" />
+    <param name="param_value_expected" value="0.0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_imu_acceleration_filter_async" pkg="rostest" type="paramtest" name="imu_acceleration_filter">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/imu_acceleration_filter" />
+    <param name="param_value_expected" value="1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_imu_acceleration_range_async" pkg="rostest" type="paramtest" name="imu_acceleration_range">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/imu_acceleration_range" />
+    <param name="param_value_expected" value="3" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_imu_angular_rate_filter_async" pkg="rostest" type="paramtest" name="imu_angular_rate_filter">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/imu_angular_rate_filter" />
+    <param name="param_value_expected" value="3" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_imu_angular_rate_range_async" pkg="rostest" type="paramtest" name="imu_angular_rate_range">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/imu_angular_rate_range" />
+    <param name="param_value_expected" value="3" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_use_custom_calibration_async" pkg="rostest" type="paramtest" name="use_custom_calibration">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/use_custom_calibration" />
+    <param name="param_value_expected" value="false" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_set_reading_to_nan_on_disconnect_async" pkg="rostest" type="paramtest" name="set_reading_to_nan_on_disconnect">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/set_reading_to_nan_on_disconnect" />
+    <param name="param_value_expected" value="false" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_temperature_compensation_active_async" pkg="rostest" type="paramtest" name="temperature_compensation_active">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_configuration/temperature_compensation_active" />
+    <param name="param_value_expected" value="false" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_orientation_estimation_active_async" pkg="rostest" type="paramtest" name="orientation_estimation_active">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_configuration/orientation_estimation_active" />
+    <param name="param_value_expected" value="0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_inertia_compensation_active_async" pkg="rostest" type="paramtest" name="inertia_compensation_active">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_configuration/inertia_compensation_active" />
+    <param name="param_value_expected" value="0" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_imu_active_async" pkg="rostest" type="paramtest" name="imu_active">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_configuration/imu_active" />
+    <param name="param_value_expected" value="1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_coordinate_system_active_async" pkg="rostest" type="paramtest" name="coordinate_system_active">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_configuration/coordinate_system_active" />
+    <param name="param_value_expected" value="false" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_calibration_matrix_active_async" pkg="rostest" type="paramtest" name="calibration_matrix_active">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_configuration/calibration_matrix_active" />
+    <param name="param_value_expected" value="true" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_1_1_async" pkg="rostest" type="paramtest" name="cm1_1">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/1_1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_1_2_async" pkg="rostest" type="paramtest" name="cm1_2">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/1_2" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_1_3_async" pkg="rostest" type="paramtest" name="cm1_3">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/1_3" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_1_4_async" pkg="rostest" type="paramtest" name="cm1_4">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/1_4" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_1_5_async" pkg="rostest" type="paramtest" name="cm1_5">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/1_5" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_1_6_async" pkg="rostest" type="paramtest" name="cm1_6">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/1_6" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_2_1_async" pkg="rostest" type="paramtest" name="cm2_1">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/2_1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_2_2_async" pkg="rostest" type="paramtest" name="cm2_2">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/2_2" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_2_3_async" pkg="rostest" type="paramtest" name="cm2_3">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/2_3" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_2_4_async" pkg="rostest" type="paramtest" name="cm2_4">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/2_4" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_2_5_async" pkg="rostest" type="paramtest" name="cm2_5">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/2_5" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_2_6_async" pkg="rostest" type="paramtest" name="cm2_6">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/2_6" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_3_1_async" pkg="rostest" type="paramtest" name="cm3_1">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/3_1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_3_2_async" pkg="rostest" type="paramtest" name="cm3_2">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/3_2" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_3_3_async" pkg="rostest" type="paramtest" name="cm3_3">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/3_3" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_3_4_async" pkg="rostest" type="paramtest" name="cm3_4">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/3_4" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_3_5_async" pkg="rostest" type="paramtest" name="cm3_5">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/3_5" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_3_6_async" pkg="rostest" type="paramtest" name="cm3_6">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/3_6" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_4_1_async" pkg="rostest" type="paramtest" name="cm4_1">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/4_1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_4_2_async" pkg="rostest" type="paramtest" name="cm4_2">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/4_2" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_4_3_async" pkg="rostest" type="paramtest" name="cm4_3">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/4_3" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_4_4_async" pkg="rostest" type="paramtest" name="cm4_4">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/4_4" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_4_5_async" pkg="rostest" type="paramtest" name="cm4_5">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/4_5" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_4_6_async" pkg="rostest" type="paramtest" name="cm4_6">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/4_6" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_5_1_async" pkg="rostest" type="paramtest" name="cm5_1">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/5_1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_5_2_async" pkg="rostest" type="paramtest" name="cm5_2">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/5_2" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_5_3_async" pkg="rostest" type="paramtest" name="cm5_3">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/5_3" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_5_4_async" pkg="rostest" type="paramtest" name="cm5_4">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/5_4" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_5_5_async" pkg="rostest" type="paramtest" name="cm5_5">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/5_5" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_5_6_async" pkg="rostest" type="paramtest" name="cm5_6">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/5_6" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_6_1_async" pkg="rostest" type="paramtest" name="cm6_1">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/6_1" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_6_2_async" pkg="rostest" type="paramtest" name="cm6_2">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/6_2" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_6_3_async" pkg="rostest" type="paramtest" name="cm6_3">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/6_3" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_6_4_async" pkg="rostest" type="paramtest" name="cm6_4">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/6_4" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_6_5_async" pkg="rostest" type="paramtest" name="cm6_5">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/6_5" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+  <test test-name="botaDriverParamTest_6_6_async" pkg="rostest" type="paramtest" name="cm6_6">
+    <param name="param_name_target" value="/bus0/rokubiminis/ft_sensor0/sensor_calibration/calibration_matrix/6_6" />
+    <param name="test_duration" value="1.0" />
+    <param name="wait_time" value="1.0" />
+  </test>
+</launch>

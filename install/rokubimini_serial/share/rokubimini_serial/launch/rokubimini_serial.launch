@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="ft_sensor_a_name"                 default="ft_sensor0"/>
+  <node name="bus0" pkg="rokubimini_serial" type="rokubimini_serial_bus_manager_node"  output="screen" required="true">
+    <param name="num_spinners"                              type="int"      value="1"/>
+<!--    The time_step parameter sets the ROS publishing frequency, not the sensor update rate -->
+<!--    If no time_step is set, the topic is published with the frequency of the sensor. -->
+<!--    <param name="time_step"                                 type="double"   value="0.01"/>-->
+    <param name="port"  type="string"   value="/dev/ttyUSB0"/>
+    <param name="rokubiminis/$(arg ft_sensor_a_name)/name" type="string" value="$(arg ft_sensor_a_name)"/>
+    <param name="rokubiminis/$(arg ft_sensor_a_name)/product_name" type="string" value="BFF-xxx-xx-xx-xx"/>
+    <rosparam ns="rokubiminis/$(arg ft_sensor_a_name)" command="load" file="$(find rokubimini)/config/rokubimini_sensor.yaml" />
+  </node>
+</launch>

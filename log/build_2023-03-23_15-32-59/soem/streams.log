@@ -1,0 +1,68 @@
+[0.050s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/soem': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/soem -- -j8 -l8
+[0.173s] [ 68%] Built target soem
+[0.260s] [ 78%] Built target eepromtool
+[0.260s] [ 89%] Built target simple_test
+[0.263s] [100%] Built target slaveinfo
+[0.305s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/soem' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/soem -- -j8 -l8
+[0.409s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/soem': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/soem
+[0.421s] -- Install configuration: ""
+[0.421s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/environment/library_path.sh
+[0.422s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/environment/library_path.dsv
+[0.422s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercat.h
+[0.422s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercatbase.h
+[0.422s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercatcoe.h
+[0.423s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercatconfig.h
+[0.423s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercatconfiglist.h
+[0.423s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercatdc.h
+[0.423s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercateoe.h
+[0.423s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercatfoe.h
+[0.423s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercatmain.h
+[0.424s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercatprint.h
+[0.424s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercatsoe.h
+[0.424s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/ethercattype.h
+[0.424s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/osal_defs.h
+[0.424s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/osal.h
+[0.425s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/nicdrv.h
+[0.425s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/oshw.h
+[0.425s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/lib/libsoem.a
+[0.425s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/ament_index/resource_index/package_run_dependencies/soem
+[0.426s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/ament_index/resource_index/parent_prefix_path/soem
+[0.426s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/environment/ament_prefix_path.sh
+[0.426s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/environment/ament_prefix_path.dsv
+[0.426s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/environment/path.sh
+[0.426s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/environment/path.dsv
+[0.426s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/local_setup.bash
+[0.426s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/local_setup.sh
+[0.427s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/local_setup.zsh
+[0.427s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/local_setup.dsv
+[0.428s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/package.dsv
+[0.428s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/ament_index/resource_index/packages/soem
+[0.428s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/cmake/export_soemExport.cmake
+[0.428s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/cmake/export_soemExport-noconfig.cmake
+[0.428s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/cmake/ament_cmake_export_include_directories-extras.cmake
+[0.428s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/cmake/ament_cmake_export_libraries-extras.cmake
+[0.428s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/cmake/ament_cmake_export_targets-extras.cmake
+[0.429s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/cmake/soemConfig.cmake
+[0.429s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/cmake/soemConfig-version.cmake
+[0.429s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/share/soem/package.xml
+[0.429s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/lib/libsoem.a
+[0.429s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercat.h
+[0.429s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercatbase.h
+[0.430s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercatcoe.h
+[0.430s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercatconfig.h
+[0.430s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercatconfiglist.h
+[0.430s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercatdc.h
+[0.430s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercateoe.h
+[0.430s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercatfoe.h
+[0.430s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercatmain.h
+[0.430s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercatprint.h
+[0.431s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercatsoe.h
+[0.431s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/ethercattype.h
+[0.431s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/osal_defs.h
+[0.431s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/osal.h
+[0.431s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/nicdrv.h
+[0.431s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/include/soem/oshw.h
+[0.431s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/bin/slaveinfo
+[0.431s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/bin/eepromtool
+[0.431s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/soem/bin/simple_test
+[0.435s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/soem' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/soem

@@ -1,0 +1,281 @@
+[0.206s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake /home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack -DCMAKE_INSTALL_PREFIX=/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack
+[0.505s] -- The C compiler identification is GNU 11.3.0
+[0.756s] -- The CXX compiler identification is GNU 11.3.0
+[0.777s] -- Detecting C compiler ABI info
+[1.276s] -- Detecting C compiler ABI info - done
+[1.299s] -- Check for working C compiler: /usr/bin/cc - skipped
+[1.301s] -- Detecting C compile features
+[1.302s] -- Detecting C compile features - done
+[1.315s] -- Detecting CXX compiler ABI info
+[1.934s] -- Detecting CXX compiler ABI info - done
+[1.958s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[1.961s] -- Detecting CXX compile features
+[1.970s] -- Detecting CXX compile features - done
+[1.999s] -- Found ament_cmake: 1.3.3 (/opt/ros/humble/share/ament_cmake/cmake)
+[3.082s] -- Found Python3: /usr/bin/python3.10 (found version "3.10.6") found components: Interpreter 
+[4.067s] -- Found rclcpp: 16.0.3 (/opt/ros/humble/share/rclcpp/cmake)
+[4.675s] -- Found rosidl_generator_c: 3.1.4 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+[4.746s] -- Found rosidl_adapter: 3.1.4 (/opt/ros/humble/share/rosidl_adapter/cmake)
+[4.851s] -- Found rosidl_generator_cpp: 3.1.4 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+[5.054s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[5.315s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[6.131s] -- Found rmw_implementation_cmake: 6.1.1 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+[6.210s] -- Found rmw_fastrtps_cpp: 6.2.2 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+[7.461s] -- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+[7.681s] -- Found FastRTPS: /opt/ros/humble/include  
+[8.018s] -- Using RMW implementation 'rmw_fastrtps_cpp' as default
+[8.109s] -- Looking for pthread.h
+[8.826s] -- Looking for pthread.h - found
+[8.827s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[9.598s] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+[9.601s] -- Found Threads: TRUE  
+[10.838s] -- Found tf2_ros: 0.25.2 (/opt/ros/humble/share/tf2_ros/cmake)
+[12.719s] -- Found nav_msgs: 4.2.3 (/opt/ros/humble/share/nav_msgs/cmake)
+[13.038s] -- Found rosidl_default_generators: 1.2.0 (/opt/ros/humble/share/rosidl_default_generators/cmake)
+[14.868s] -- Found ament_cmake_ros: 0.10.0 (/opt/ros/humble/share/ament_cmake_ros/cmake)
+[17.136s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[18.028s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[18.105s] -- Found PythonInterp: /usr/bin/python3 (found suitable version "3.10.6", minimum required is "3.6") 
+[18.110s] -- Found python_cmake_module: 0.10.0 (/opt/ros/humble/share/python_cmake_module/cmake)
+[18.242s] -- Found PythonLibs: /usr/lib/x86_64-linux-gnu/libpython3.10.so (found suitable version "3.10.6", minimum required is "3.5") 
+[18.242s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[18.243s] -- Using PYTHON_INCLUDE_DIRS: /usr/include/python3.10
+[18.243s] -- Using PYTHON_LIBRARIES: /usr/lib/x86_64-linux-gnu/libpython3.10.so
+[18.391s] -- Found PythonExtra: .so  
+[18.728s] -- Configuring done
+[19.335s] -- Generating done
+[19.341s] -- Build files have been written to: /home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack
+[19.413s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake /home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack -DCMAKE_INSTALL_PREFIX=/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack
+[19.414s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack -- -j8 -l8
+[19.650s] [  2%] [34m[1mGenerating C++ code for ROS interfaces[0m
+[20.294s] [  2%] Built target mocap_optitrack__cpp
+[20.447s] [  2%] Built target ament_cmake_python_copy_mocap_optitrack
+[20.451s] [  4%] [34m[1mGenerating C++ introspection for ROS interfaces[0m
+[21.148s] [  7%] [32mBuilding CXX object CMakeFiles/mocap_optitrack__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/mocap_optitrack/msg/detail/point_array_stamped__type_support.cpp.o[0m
+[22.028s] [  9%] [32m[1mLinking CXX shared library libmocap_optitrack__rosidl_typesupport_introspection_cpp.so[0m
+[22.157s] [  9%] Built target mocap_optitrack__rosidl_typesupport_introspection_cpp
+[22.614s] running egg_info
+[22.631s] creating mocap_optitrack.egg-info
+[22.632s] writing mocap_optitrack.egg-info/PKG-INFO
+[22.632s] writing dependency_links to mocap_optitrack.egg-info/dependency_links.txt
+[22.632s] writing top-level names to mocap_optitrack.egg-info/top_level.txt
+[22.632s] writing manifest file 'mocap_optitrack.egg-info/SOURCES.txt'
+[22.632s] reading manifest file 'mocap_optitrack.egg-info/SOURCES.txt'
+[22.632s] writing manifest file 'mocap_optitrack.egg-info/SOURCES.txt'
+[22.667s] [  9%] Built target ament_cmake_python_build_mocap_optitrack_egg
+[22.687s] [ 12%] [34m[1mGenerating C++ type support for eProsima Fast-RTPS[0m
+[23.175s] [ 14%] [32mBuilding CXX object CMakeFiles/mocap_optitrack__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/mocap_optitrack/msg/detail/dds_fastrtps/point_array_stamped__type_support.cpp.o[0m
+[23.894s] [ 17%] [32m[1mLinking CXX shared library libmocap_optitrack__rosidl_typesupport_fastrtps_cpp.so[0m
+[24.049s] [ 17%] Built target mocap_optitrack__rosidl_typesupport_fastrtps_cpp
+[24.067s] [ 19%] [34m[1mGenerating C++ type support dispatch for ROS interfaces[0m
+[24.429s] [ 21%] [32mBuilding CXX object CMakeFiles/mocap_optitrack__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/mocap_optitrack/msg/point_array_stamped__type_support.cpp.o[0m
+[24.833s] [ 24%] [32m[1mLinking CXX shared library libmocap_optitrack__rosidl_typesupport_cpp.so[0m
+[24.885s] [ 24%] Built target mocap_optitrack__rosidl_typesupport_cpp
+[24.897s] [ 26%] [34m[1mGenerating C code for ROS interfaces[0m
+[25.278s] [ 29%] [32mBuilding C object CMakeFiles/mocap_optitrack__rosidl_generator_c.dir/rosidl_generator_c/mocap_optitrack/msg/detail/point_array_stamped__functions.c.o[0m
+[25.344s] [ 31%] [32m[1mLinking C shared library libmocap_optitrack__rosidl_generator_c.so[0m
+[25.383s] [ 31%] Built target mocap_optitrack__rosidl_generator_c
+[25.428s] [ 34%] [32mBuilding CXX object src/CMakeFiles/mocap_optitrack_mocap_node.dir/natnet/natnet_packet_definition.cpp.o[0m
+[25.459s] [ 36%] [32mBuilding CXX object src/CMakeFiles/mocap_optitrack_mocap_node.dir/mocap_node.cpp.o[0m
+[28.717s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/mocap_node.cpp:[m[K In member function ‘[01m[Kvoid mocap_optitrack::OptiTrackRosBridge::initialize()[m[K’:
+[28.717s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/mocap_node.cpp:81:15:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kret[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+[28.718s]    81 |           int [01;35m[Kret[m[K = multicastClientSocketPtr->send(
+[28.718s]       |               [01;35m[K^~~[m[K
+[29.543s] [ 39%] [32mBuilding CXX object src/CMakeFiles/mocap_optitrack_mocap_node.dir/mocap_config.cpp.o[0m
+[31.079s] In file included from [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/mocap_config.cpp:30[m[K:
+[31.079s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/include/mocap_optitrack/mocap_config.h:[m[K In constructor ‘[01m[Kmocap_optitrack::ServerDescription::ServerDescription()[m[K’:
+[31.079s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/include/mocap_optitrack/mocap_config.h:57:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kmocap_optitrack::ServerDescription::enableOptitrack[m[K’ will be initialized after [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder-Wreorder]8;;[m[K]
+[31.079s]    57 |   bool [01;35m[KenableOptitrack[m[K;
+[31.079s]       |        [01;35m[K^~~~~~~~~~~~~~~[m[K
+[31.079s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/include/mocap_optitrack/mocap_config.h:55:15:[m[K [01;35m[Kwarning: [m[K  ‘[01m[Kstd::string mocap_optitrack::ServerDescription::multicastIpAddress[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder-Wreorder]8;;[m[K]
+[31.080s]    55 |   std::string [01;35m[KmulticastIpAddress[m[K;
+[31.080s]       |               [01;35m[K^~~~~~~~~~~~~~~~~~[m[K
+[31.080s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/mocap_config.cpp:91:1:[m[K [01;35m[Kwarning: [m[K  when initialized here [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder-Wreorder]8;;[m[K]
+[31.080s]    91 | [01;35m[KServerDescription[m[K::ServerDescription() :
+[31.080s]       | [01;35m[K^~~~~~~~~~~~~~~~~[m[K
+[31.625s] [ 41%] [32mBuilding CXX object src/CMakeFiles/mocap_optitrack_mocap_node.dir/data_model.cpp.o[0m
+[31.961s] [ 43%] [32mBuilding CXX object src/CMakeFiles/mocap_optitrack_mocap_node.dir/rigid_body_publisher.cpp.o[0m
+[38.544s] [ 46%] [32mBuilding CXX object src/CMakeFiles/mocap_optitrack_mocap_node.dir/free_marker_publisher.cpp.o[0m
+[43.194s] [ 48%] [32mBuilding CXX object src/CMakeFiles/mocap_optitrack_mocap_node.dir/version.cpp.o[0m
+[43.511s] [ 51%] [32mBuilding CXX object src/CMakeFiles/mocap_optitrack_mocap_node.dir/socket.cpp.o[0m
+[45.334s] [ 53%] [32mBuilding CXX object src/CMakeFiles/mocap_optitrack_mocap_node.dir/natnet/natnet_messages.cpp.o[0m
+[45.991s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/natnet/natnet_messages.cpp:[m[K In function ‘[01m[Kvoid natnet::utilities::stringify_timecode(unsigned int, unsigned int, char*, int)[m[K’:
+[45.991s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/natnet/natnet_messages.cpp:84:10:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KbValid[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+[45.992s]    84 |     bool [01;35m[KbValid[m[K;
+[45.992s]       |          [01;35m[K^~~~~~[m[K
+[46.008s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/natnet/natnet_messages.cpp:[m[K In member function ‘[01m[Kvirtual void natnet::DataFrameMessage::deserialize(rclcpp::Logger, const MessageBuffer&, mocap_optitrack::DataModel*)[m[K’:
+[46.009s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/natnet/natnet_messages.cpp:494:8:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KbIsRecording[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+[46.009s]   494 |   bool [01;35m[KbIsRecording[m[K = (params & 0x01) != 0;
+[46.009s]       |        [01;35m[K^~~~~~~~~~~~[m[K
+[46.009s] [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/natnet/natnet_messages.cpp:496:8:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KbTrackedModelsChanged[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+[46.009s]   496 |   bool [01;35m[KbTrackedModelsChanged[m[K = (params & 0x02) != 0;
+[46.009s]       |        [01;35m[K^~~~~~~~~~~~~~~~~~~~~[m[K
+[46.326s] [ 56%] [32m[1mLinking CXX executable mocap_node[0m
+[49.585s] [ 56%] Built target mocap_optitrack_mocap_node
+[49.596s] [ 58%] [34m[1mGenerating C type support dispatch for ROS interfaces[0m
+[49.829s] [ 60%] [32mBuilding CXX object CMakeFiles/mocap_optitrack__rosidl_typesupport_c.dir/rosidl_typesupport_c/mocap_optitrack/msg/point_array_stamped__type_support.cpp.o[0m
+[49.861s] [ 63%] [32m[1mLinking CXX shared library libmocap_optitrack__rosidl_typesupport_c.so[0m
+[49.903s] [ 63%] Built target mocap_optitrack__rosidl_typesupport_c
+[49.913s] [ 65%] [34m[1mGenerating C introspection for ROS interfaces[0m
+[50.154s] [ 68%] [32mBuilding C object CMakeFiles/mocap_optitrack__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/mocap_optitrack/msg/detail/point_array_stamped__type_support.c.o[0m
+[50.197s] [ 70%] [32m[1mLinking C shared library libmocap_optitrack__rosidl_typesupport_introspection_c.so[0m
+[50.228s] [ 70%] Built target mocap_optitrack__rosidl_typesupport_introspection_c
+[50.239s] [ 73%] [34m[1mGenerating C type support for eProsima Fast-RTPS[0m
+[50.636s] [ 75%] [32mBuilding CXX object CMakeFiles/mocap_optitrack__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/mocap_optitrack/msg/detail/point_array_stamped__type_support_c.cpp.o[0m
+[51.093s] [ 78%] [32m[1mLinking CXX shared library libmocap_optitrack__rosidl_typesupport_fastrtps_c.so[0m
+[51.210s] [ 78%] Built target mocap_optitrack__rosidl_typesupport_fastrtps_c
+[51.232s] [ 78%] Built target mocap_optitrack
+[51.255s] [ 80%] [34m[1mGenerating Python code for ROS interfaces[0m
+[51.623s] [ 80%] Built target mocap_optitrack__py
+[51.646s] [ 82%] [32mBuilding C object CMakeFiles/mocap_optitrack__rosidl_generator_py.dir/rosidl_generator_py/mocap_optitrack/msg/_point_array_stamped_s.c.o[0m
+[51.769s] [ 85%] [32m[1mLinking C shared library rosidl_generator_py/mocap_optitrack/libmocap_optitrack__rosidl_generator_py.so[0m
+[51.824s] [ 85%] Built target mocap_optitrack__rosidl_generator_py
+[51.855s] [ 87%] [32mBuilding C object CMakeFiles/mocap_optitrack__rosidl_typesupport_fastrtps_c__pyext.dir/rosidl_generator_py/mocap_optitrack/_mocap_optitrack_s.ep.rosidl_typesupport_fastrtps_c.c.o[0m
+[51.860s] [ 90%] [32mBuilding C object CMakeFiles/mocap_optitrack__rosidl_typesupport_introspection_c__pyext.dir/rosidl_generator_py/mocap_optitrack/_mocap_optitrack_s.ep.rosidl_typesupport_introspection_c.c.o[0m
+[52.056s] [ 92%] [32m[1mLinking C shared library rosidl_generator_py/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so[0m
+[52.118s] [ 95%] [32m[1mLinking C shared library rosidl_generator_py/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so[0m
+[52.127s] [ 95%] Built target mocap_optitrack__rosidl_typesupport_fastrtps_c__pyext
+[52.171s] [ 97%] [32mBuilding C object CMakeFiles/mocap_optitrack__rosidl_typesupport_c__pyext.dir/rosidl_generator_py/mocap_optitrack/_mocap_optitrack_s.ep.rosidl_typesupport_c.c.o[0m
+[52.205s] [ 97%] Built target mocap_optitrack__rosidl_typesupport_introspection_c__pyext
+[52.415s] [100%] [32m[1mLinking C shared library rosidl_generator_py/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so[0m
+[52.481s] [100%] Built target mocap_optitrack__rosidl_typesupport_c__pyext
+[52.515s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack -- -j8 -l8
+[52.666s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack
+[52.690s] -- Install configuration: ""
+[52.691s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/ament_index/resource_index/rosidl_interfaces/mocap_optitrack
+[52.691s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack
+[52.691s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg
+[52.692s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/rosidl_generator_c__visibility_control.h
+[52.692s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail
+[52.692s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__functions.h
+[52.692s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__functions.c
+[52.692s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__type_support.h
+[52.693s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__struct.h
+[52.693s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/point_array_stamped.h
+[52.693s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/environment/library_path.sh
+[52.694s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/environment/library_path.dsv
+[52.694s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_generator_c.so
+[52.694s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_generator_c.so" to ""
+[52.695s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack
+[52.695s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg
+[52.695s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail
+[52.695s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__rosidl_typesupport_fastrtps_c.h
+[52.695s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[52.695s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_fastrtps_c.so
+[52.695s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_fastrtps_c.so" to ""
+[52.695s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack
+[52.695s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg
+[52.695s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/point_array_stamped.hpp
+[52.695s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail
+[52.696s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__struct.hpp
+[52.696s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__builder.hpp
+[52.696s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__traits.hpp
+[52.696s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack
+[52.696s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg
+[52.696s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[52.696s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail
+[52.696s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/dds_fastrtps
+[52.696s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__rosidl_typesupport_fastrtps_cpp.hpp
+[52.697s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_fastrtps_cpp.so
+[52.697s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_fastrtps_cpp.so" to ""
+[52.697s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack
+[52.697s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg
+[52.697s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail
+[52.697s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__type_support.c
+[52.697s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__rosidl_typesupport_introspection_c.h
+[52.697s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[52.697s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_introspection_c.so
+[52.697s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_introspection_c.so" to ""
+[52.698s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_c.so
+[52.698s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_c.so" to ""
+[52.698s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack
+[52.698s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg
+[52.698s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail
+[52.698s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__rosidl_typesupport_introspection_cpp.hpp
+[52.699s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/include/mocap_optitrack/mocap_optitrack/msg/detail/point_array_stamped__type_support.cpp
+[52.699s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_introspection_cpp.so
+[52.699s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_introspection_cpp.so" to ""
+[52.699s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_cpp.so
+[52.700s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_typesupport_cpp.so" to ""
+[52.700s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/environment/pythonpath.sh
+[52.700s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/environment/pythonpath.dsv
+[52.700s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack-0.1.2-py3.10.egg-info
+[52.700s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack-0.1.2-py3.10.egg-info/top_level.txt
+[52.701s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack-0.1.2-py3.10.egg-info/dependency_links.txt
+[52.701s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack-0.1.2-py3.10.egg-info/SOURCES.txt
+[52.701s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack-0.1.2-py3.10.egg-info/PKG-INFO
+[52.701s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack
+[52.701s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/_mocap_optitrack_s.ep.rosidl_typesupport_c.c
+[52.701s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[52.701s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/__init__.py
+[52.702s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[52.702s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/_mocap_optitrack_s.ep.rosidl_typesupport_introspection_c.c
+[52.702s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[52.702s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/_mocap_optitrack_s.ep.rosidl_typesupport_fastrtps_c.c
+[52.702s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/libmocap_optitrack__rosidl_generator_py.so
+[52.702s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/msg
+[52.702s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/msg/__init__.py
+[52.703s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/msg/_point_array_stamped.py
+[52.703s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/msg/_point_array_stamped_s.c
+[52.768s] Listing '/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack'...
+[52.769s] Compiling '/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/__init__.py'...
+[52.769s] Listing '/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/msg'...
+[52.769s] Compiling '/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/msg/__init__.py'...
+[52.769s] Compiling '/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/msg/_point_array_stamped.py'...
+[52.788s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[52.788s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so" to ""
+[52.788s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[52.789s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so" to ""
+[52.789s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[52.790s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/local/lib/python3.10/dist-packages/mocap_optitrack/mocap_optitrack_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so" to ""
+[52.790s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_generator_py.so
+[52.790s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/libmocap_optitrack__rosidl_generator_py.so" to ""
+[52.791s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/msg/PointArrayStamped.idl
+[52.791s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/msg/PointArrayStamped.msg
+[52.791s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack//launch
+[52.791s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack//launch/mocap.launch
+[52.791s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack//launch/mocap.launch.py
+[52.792s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack//config
+[52.792s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack//config/mocap.yaml
+[52.792s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/ament_index/resource_index/package_run_dependencies/mocap_optitrack
+[52.792s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/ament_index/resource_index/parent_prefix_path/mocap_optitrack
+[52.792s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/environment/ament_prefix_path.sh
+[52.793s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/environment/ament_prefix_path.dsv
+[52.793s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/environment/path.sh
+[52.793s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/environment/path.dsv
+[52.793s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/local_setup.bash
+[52.793s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/local_setup.sh
+[52.793s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/local_setup.zsh
+[52.794s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/local_setup.dsv
+[52.794s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/package.dsv
+[52.794s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/ament_index/resource_index/packages/mocap_optitrack
+[52.794s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/export_mocap_optitrack__rosidl_generator_cExport.cmake
+[52.795s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/export_mocap_optitrack__rosidl_generator_cExport-noconfig.cmake
+[52.795s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/export_mocap_optitrack__rosidl_typesupport_fastrtps_cExport.cmake
+[52.795s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/export_mocap_optitrack__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[52.795s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/export_mocap_optitrack__rosidl_generator_cppExport.cmake
+[52.796s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/export_mocap_optitrack__rosidl_typesupport_fastrtps_cppExport.cmake
+[52.796s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/export_mocap_optitrack__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[52.796s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/mocap_optitrack__rosidl_typesupport_introspection_cExport.cmake
+[52.796s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/mocap_optitrack__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[52.797s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/mocap_optitrack__rosidl_typesupport_cExport.cmake
+[52.797s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/mocap_optitrack__rosidl_typesupport_cExport-noconfig.cmake
+[52.797s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/mocap_optitrack__rosidl_typesupport_introspection_cppExport.cmake
+[52.797s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/mocap_optitrack__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[52.798s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/mocap_optitrack__rosidl_typesupport_cppExport.cmake
+[52.798s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/mocap_optitrack__rosidl_typesupport_cppExport-noconfig.cmake
+[52.799s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/export_mocap_optitrack__rosidl_generator_pyExport.cmake
+[52.799s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/export_mocap_optitrack__rosidl_generator_pyExport-noconfig.cmake
+[52.800s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/rosidl_cmake-extras.cmake
+[52.801s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/ament_cmake_export_dependencies-extras.cmake
+[52.801s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/ament_cmake_export_include_directories-extras.cmake
+[52.806s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/ament_cmake_export_libraries-extras.cmake
+[52.816s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/ament_cmake_export_targets-extras.cmake
+[52.816s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[52.822s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[52.823s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/mocap_optitrackConfig.cmake
+[52.823s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/cmake/mocap_optitrackConfig-version.cmake
+[52.823s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/share/mocap_optitrack/package.xml
+[52.823s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/mocap_optitrack/mocap_node
+[52.823s] -- Set runtime path of "/home/acl3-ubuntu/holohover_ws/src/holohover/install/mocap_optitrack/lib/mocap_optitrack/mocap_node" to ""
+[52.824s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/mocap_optitrack

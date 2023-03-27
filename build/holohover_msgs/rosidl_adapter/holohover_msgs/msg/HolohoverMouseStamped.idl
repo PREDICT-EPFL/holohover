@@ -1,0 +1,17 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from holohover_msgs/msg/HolohoverMouseStamped.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module holohover_msgs {
+  module msg {
+    struct HolohoverMouseStamped {
+      std_msgs::msg::Header header;
+
+      double v_x;
+
+      double v_y;
+    };
+  };
+};

@@ -1,0 +1,45 @@
+[0.059s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini -- -j8 -l8
+[0.174s] [  9%] Built target gtest_main
+[0.186s] [ 19%] Built target gtest
+[0.221s] [ 66%] Built target rokubimini
+[0.330s] [100%] Built target test_rokubimini
+[0.367s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini -- -j8 -l8
+[0.575s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini
+[0.597s] -- Install configuration: ""
+[0.598s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/lib/librokubimini.a
+[0.598s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini
+[0.598s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/configuration
+[0.598s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/configuration/Configuration.hpp
+[0.598s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/configuration/SensorConfiguration.hpp
+[0.598s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/configuration/ForceTorqueFilter.hpp
+[0.598s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/calibration
+[0.599s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/calibration/ForceTorqueCalibration.hpp
+[0.599s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/calibration/SensorCalibration.hpp
+[0.599s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/Rokubimini.hpp
+[0.599s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/Statusword.hpp
+[0.599s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/Reading.hpp
+[0.599s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/fsm
+[0.599s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/include/rokubimini/fsm/StateEnum.hpp
+[0.600s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/config
+[0.600s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/config/rokubimini_sensor.yaml
+[0.600s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/library_path.sh
+[0.600s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/library_path.dsv
+[0.600s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/ament_index/resource_index/package_run_dependencies/rokubimini
+[0.600s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/ament_index/resource_index/parent_prefix_path/rokubimini
+[0.601s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/ament_prefix_path.sh
+[0.601s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/ament_prefix_path.dsv
+[0.601s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/path.sh
+[0.601s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/environment/path.dsv
+[0.601s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/local_setup.bash
+[0.601s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/local_setup.sh
+[0.601s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/local_setup.zsh
+[0.602s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/local_setup.dsv
+[0.602s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/package.dsv
+[0.602s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/ament_index/resource_index/packages/rokubimini
+[0.602s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/cmake/ament_cmake_export_dependencies-extras.cmake
+[0.602s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/cmake/ament_cmake_export_include_directories-extras.cmake
+[0.602s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/cmake/ament_cmake_export_libraries-extras.cmake
+[0.603s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/cmake/rokubiminiConfig.cmake
+[0.603s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/cmake/rokubiminiConfig-version.cmake
+[0.603s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini/share/rokubimini/package.xml
+[0.655s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini

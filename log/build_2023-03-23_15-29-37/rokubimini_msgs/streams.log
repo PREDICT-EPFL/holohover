@@ -1,0 +1,263 @@
+[0.050s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs -- -j8 -l8
+[0.153s] [  1%] Built target rokubimini_msgs__cpp
+[0.161s] [ 12%] Built target rokubimini_msgs__rosidl_generator_c
+[0.170s] [ 12%] Built target ament_cmake_python_copy_rokubimini_msgs
+[0.256s] [ 23%] Built target rokubimini_msgs__rosidl_typesupport_cpp
+[0.257s] [ 35%] Built target rokubimini_msgs__rosidl_typesupport_introspection_cpp
+[0.268s] [ 46%] Built target rokubimini_msgs__rosidl_typesupport_fastrtps_cpp
+[0.272s] [ 57%] Built target rokubimini_msgs__rosidl_typesupport_fastrtps_c
+[0.282s] [ 69%] Built target rokubimini_msgs__rosidl_typesupport_c
+[0.300s] [ 80%] Built target rokubimini_msgs__rosidl_typesupport_introspection_c
+[0.345s] [ 80%] Built target rokubimini_msgs
+[0.414s] [ 81%] Built target rokubimini_msgs__py
+[0.456s] [ 91%] Built target rokubimini_msgs__rosidl_generator_py
+[0.511s] [ 94%] Built target rokubimini_msgs__rosidl_typesupport_fastrtps_c__pyext
+[0.511s] [ 97%] Built target rokubimini_msgs__rosidl_typesupport_introspection_c__pyext
+[0.518s] [100%] Built target rokubimini_msgs__rosidl_typesupport_c__pyext
+[0.802s] running egg_info
+[0.803s] writing rokubimini_msgs.egg-info/PKG-INFO
+[0.805s] writing dependency_links to rokubimini_msgs.egg-info/dependency_links.txt
+[0.805s] writing top-level names to rokubimini_msgs.egg-info/top_level.txt
+[0.807s] reading manifest file 'rokubimini_msgs.egg-info/SOURCES.txt'
+[0.814s] writing manifest file 'rokubimini_msgs.egg-info/SOURCES.txt'
+[0.894s] [100%] Built target ament_cmake_python_build_rokubimini_msgs_egg
+[0.974s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs -- -j8 -l8
+[1.170s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs
+[1.203s] -- Install configuration: ""
+[1.204s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/ament_index/resource_index/rosidl_interfaces/rokubimini_msgs
+[1.204s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs
+[1.204s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv
+[1.205s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail
+[1.205s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__functions.c
+[1.206s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__type_support.h
+[1.206s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__type_support.h
+[1.206s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__struct.h
+[1.206s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__functions.h
+[1.207s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__functions.h
+[1.207s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__type_support.h
+[1.207s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__functions.h
+[1.207s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__functions.h
+[1.207s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__functions.c
+[1.207s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__struct.h
+[1.207s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__functions.h
+[1.207s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__struct.h
+[1.207s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__functions.c
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__struct.h
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__type_support.h
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__functions.c
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__type_support.h
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__struct.h
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__functions.c
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/firmware_update_serial.h
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/get_sensor_configuration.h
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/set_sensor_configuration.h
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/reset_wrench.h
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/firmware_update_ethercat.h
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/rosidl_generator_c__visibility_control.h
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail
+[1.208s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__type_support.h
+[1.209s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__struct.h
+[1.209s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__functions.c
+[1.209s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__functions.h
+[1.209s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/reading.h
+[1.209s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/environment/library_path.sh
+[1.209s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/environment/library_path.dsv
+[1.211s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/lib/librokubimini_msgs__rosidl_generator_c.so
+[1.211s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs
+[1.211s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv
+[1.211s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail
+[1.211s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__rosidl_typesupport_fastrtps_c.h
+[1.211s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__rosidl_typesupport_fastrtps_c.h
+[1.211s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__rosidl_typesupport_fastrtps_c.h
+[1.211s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__rosidl_typesupport_fastrtps_c.h
+[1.211s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__rosidl_typesupport_fastrtps_c.h
+[1.217s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg
+[1.217s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail
+[1.217s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__rosidl_typesupport_fastrtps_c.h
+[1.218s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[1.218s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/lib/librokubimini_msgs__rosidl_typesupport_fastrtps_c.so
+[1.228s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs
+[1.229s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv
+[1.229s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail
+[1.229s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__type_support.c
+[1.229s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__rosidl_typesupport_introspection_c.h
+[1.229s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__type_support.c
+[1.229s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__rosidl_typesupport_introspection_c.h
+[1.229s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__rosidl_typesupport_introspection_c.h
+[1.229s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__type_support.c
+[1.229s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__rosidl_typesupport_introspection_c.h
+[1.230s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__type_support.c
+[1.230s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__rosidl_typesupport_introspection_c.h
+[1.230s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__type_support.c
+[1.230s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg
+[1.230s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail
+[1.230s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__rosidl_typesupport_introspection_c.h
+[1.230s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__type_support.c
+[1.230s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[1.232s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/lib/librokubimini_msgs__rosidl_typesupport_introspection_c.so
+[1.232s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/lib/librokubimini_msgs__rosidl_typesupport_c.so
+[1.232s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs
+[1.232s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv
+[1.232s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/firmware_update_serial.hpp
+[1.232s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/set_sensor_configuration.hpp
+[1.233s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail
+[1.233s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__builder.hpp
+[1.233s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__traits.hpp
+[1.233s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__traits.hpp
+[1.233s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__struct.hpp
+[1.233s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__traits.hpp
+[1.235s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__struct.hpp
+[1.235s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__builder.hpp
+[1.235s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__traits.hpp
+[1.235s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__builder.hpp
+[1.235s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__builder.hpp
+[1.235s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__struct.hpp
+[1.235s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__builder.hpp
+[1.236s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__struct.hpp
+[1.236s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__struct.hpp
+[1.236s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__traits.hpp
+[1.236s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/firmware_update_ethercat.hpp
+[1.236s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/reset_wrench.hpp
+[1.236s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/get_sensor_configuration.hpp
+[1.236s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg
+[1.236s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail
+[1.236s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__builder.hpp
+[1.236s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__struct.hpp
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__traits.hpp
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/reading.hpp
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__rosidl_typesupport_fastrtps_cpp.hpp
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/dds_fastrtps
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__rosidl_typesupport_fastrtps_cpp.hpp
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__rosidl_typesupport_fastrtps_cpp.hpp
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__rosidl_typesupport_fastrtps_cpp.hpp
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__rosidl_typesupport_fastrtps_cpp.hpp
+[1.237s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg
+[1.238s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[1.238s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail
+[1.238s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/dds_fastrtps
+[1.238s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__rosidl_typesupport_fastrtps_cpp.hpp
+[1.238s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/lib/librokubimini_msgs__rosidl_typesupport_fastrtps_cpp.so
+[1.238s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs
+[1.239s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv
+[1.239s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail
+[1.239s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__rosidl_typesupport_introspection_cpp.hpp
+[1.239s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__rosidl_typesupport_introspection_cpp.hpp
+[1.239s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__rosidl_typesupport_introspection_cpp.hpp
+[1.239s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_ethercat__type_support.cpp
+[1.239s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__type_support.cpp
+[1.240s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/set_sensor_configuration__rosidl_typesupport_introspection_cpp.hpp
+[1.240s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__type_support.cpp
+[1.240s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/reset_wrench__type_support.cpp
+[1.241s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/get_sensor_configuration__rosidl_typesupport_introspection_cpp.hpp
+[1.241s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/srv/detail/firmware_update_serial__type_support.cpp
+[1.242s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg
+[1.242s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail
+[1.242s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__type_support.cpp
+[1.243s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/include/rokubimini_msgs/rokubimini_msgs/msg/detail/reading__rosidl_typesupport_introspection_cpp.hpp
+[1.243s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/lib/librokubimini_msgs__rosidl_typesupport_introspection_cpp.so
+[1.243s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/lib/librokubimini_msgs__rosidl_typesupport_cpp.so
+[1.243s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/environment/pythonpath.sh
+[1.243s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/environment/pythonpath.dsv
+[1.243s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs-0.6.1-py3.10.egg-info
+[1.243s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs-0.6.1-py3.10.egg-info/top_level.txt
+[1.244s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs-0.6.1-py3.10.egg-info/dependency_links.txt
+[1.244s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs-0.6.1-py3.10.egg-info/SOURCES.txt
+[1.244s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs-0.6.1-py3.10.egg-info/PKG-INFO
+[1.244s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs
+[1.245s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/rokubimini_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[1.245s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/__init__.py
+[1.248s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/_rokubimini_msgs_s.ep.rosidl_typesupport_introspection_c.c
+[1.248s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv
+[1.248s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/_reset_wrench_s.c
+[1.248s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/__init__.py
+[1.248s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/_reset_wrench.py
+[1.248s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/_set_sensor_configuration_s.c
+[1.248s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/_firmware_update_serial_s.c
+[1.248s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/_firmware_update_serial.py
+[1.248s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/_firmware_update_ethercat.py
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/_get_sensor_configuration.py
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/_firmware_update_ethercat_s.c
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/_get_sensor_configuration_s.c
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv/_set_sensor_configuration.py
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/_rokubimini_msgs_s.ep.rosidl_typesupport_fastrtps_c.c
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/librokubimini_msgs__rosidl_generator_py.so
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/_rokubimini_msgs_s.ep.rosidl_typesupport_c.c
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/rokubimini_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/rokubimini_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/msg
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/msg/__init__.py
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/msg/_reading.py
+[1.249s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/msg/_reading_s.c
+[1.251s] Listing '/home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs'...
+[1.251s] Listing '/home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/msg'...
+[1.251s] Listing '/home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/srv'...
+[1.253s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/rokubimini_msgs_s__rosidl_typesupport_fastrtps_c.cpython-310-x86_64-linux-gnu.so
+[1.254s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/rokubimini_msgs_s__rosidl_typesupport_introspection_c.cpython-310-x86_64-linux-gnu.so
+[1.254s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/local/lib/python3.10/dist-packages/rokubimini_msgs/rokubimini_msgs_s__rosidl_typesupport_c.cpython-310-x86_64-linux-gnu.so
+[1.254s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/lib/librokubimini_msgs__rosidl_generator_py.so
+[1.255s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/msg/Reading.idl
+[1.255s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/GetSensorConfiguration.idl
+[1.255s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/SetSensorConfiguration.idl
+[1.255s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/FirmwareUpdateEthercat.idl
+[1.255s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/FirmwareUpdateSerial.idl
+[1.255s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/ResetWrench.idl
+[1.255s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/msg/Reading.msg
+[1.255s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/GetSensorConfiguration.srv
+[1.255s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/GetSensorConfiguration_Request.msg
+[1.257s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/GetSensorConfiguration_Response.msg
+[1.258s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/SetSensorConfiguration.srv
+[1.259s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/SetSensorConfiguration_Request.msg
+[1.259s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/SetSensorConfiguration_Response.msg
+[1.259s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/FirmwareUpdateEthercat.srv
+[1.259s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/FirmwareUpdateEthercat_Request.msg
+[1.259s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/FirmwareUpdateEthercat_Response.msg
+[1.260s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/FirmwareUpdateSerial.srv
+[1.260s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/FirmwareUpdateSerial_Request.msg
+[1.261s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/FirmwareUpdateSerial_Response.msg
+[1.263s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/ResetWrench.srv
+[1.263s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/ResetWrench_Request.msg
+[1.264s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/srv/ResetWrench_Response.msg
+[1.267s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/ament_index/resource_index/package_run_dependencies/rokubimini_msgs
+[1.267s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/ament_index/resource_index/parent_prefix_path/rokubimini_msgs
+[1.268s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/environment/ament_prefix_path.sh
+[1.268s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/environment/ament_prefix_path.dsv
+[1.269s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/environment/path.sh
+[1.270s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/environment/path.dsv
+[1.270s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/local_setup.bash
+[1.270s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/local_setup.sh
+[1.270s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/local_setup.zsh
+[1.270s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/local_setup.dsv
+[1.270s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/package.dsv
+[1.270s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/ament_index/resource_index/packages/rokubimini_msgs
+[1.270s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/export_rokubimini_msgs__rosidl_generator_cExport.cmake
+[1.270s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/export_rokubimini_msgs__rosidl_generator_cExport-noconfig.cmake
+[1.271s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/export_rokubimini_msgs__rosidl_typesupport_fastrtps_cExport.cmake
+[1.271s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/export_rokubimini_msgs__rosidl_typesupport_fastrtps_cExport-noconfig.cmake
+[1.271s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rokubimini_msgs__rosidl_typesupport_introspection_cExport.cmake
+[1.271s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rokubimini_msgs__rosidl_typesupport_introspection_cExport-noconfig.cmake
+[1.271s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rokubimini_msgs__rosidl_typesupport_cExport.cmake
+[1.271s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rokubimini_msgs__rosidl_typesupport_cExport-noconfig.cmake
+[1.271s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/export_rokubimini_msgs__rosidl_generator_cppExport.cmake
+[1.271s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/export_rokubimini_msgs__rosidl_typesupport_fastrtps_cppExport.cmake
+[1.271s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/export_rokubimini_msgs__rosidl_typesupport_fastrtps_cppExport-noconfig.cmake
+[1.272s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rokubimini_msgs__rosidl_typesupport_introspection_cppExport.cmake
+[1.272s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rokubimini_msgs__rosidl_typesupport_introspection_cppExport-noconfig.cmake
+[1.272s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rokubimini_msgs__rosidl_typesupport_cppExport.cmake
+[1.272s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rokubimini_msgs__rosidl_typesupport_cppExport-noconfig.cmake
+[1.272s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/export_rokubimini_msgs__rosidl_generator_pyExport.cmake
+[1.272s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/export_rokubimini_msgs__rosidl_generator_pyExport-noconfig.cmake
+[1.272s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rosidl_cmake-extras.cmake
+[1.272s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/ament_cmake_export_dependencies-extras.cmake
+[1.272s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/ament_cmake_export_include_directories-extras.cmake
+[1.272s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/ament_cmake_export_libraries-extras.cmake
+[1.273s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/ament_cmake_export_targets-extras.cmake
+[1.273s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[1.273s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[1.273s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rokubimini_msgsConfig.cmake
+[1.274s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/cmake/rokubimini_msgsConfig-version.cmake
+[1.274s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/rokubimini_msgs/share/rokubimini_msgs/package.xml
+[1.279s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs

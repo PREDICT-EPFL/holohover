@@ -1,0 +1,20 @@
+<launch>
+  <node name="bus1" pkg="rokubimini_ethercat" type="rokubimini_ethercat_bus_manager_node" output="screen" launch-prefix="ethercat_grant" required="true">
+    <param name="num_spinners" type="int" value="1" />
+    <param name="ethercat_bus" type="string" value="enx3c8cf8fb1b86" />
+    <param name="rokubiminis/ft_sensor1/name" type="string" value="ft_sensor1" />
+    <param name="rokubiminis/ft_sensor1/product_name" type="string" value="BFT-ROKA-ECAT-M8" />
+    <rosparam ns="rokubiminis/ft_sensor1" command="load" file="$(find rokubimini)/config/rokubimini_sensor.yaml" />
+    <param name="rokubiminis/ft_sensor1/ethercat_address" type="int" value="1" />
+  </node>
+  <test test-name="bota_driver_testing_signal_imu_ft_sensor1" pkg="bota_driver_testing" type="bota_driver_testing_signal_quality_imu">
+    <param name="topic_name" value="/bus1/ft_sensor1/ft_sensor_readings/imu" />
+    <param name="test_duration" value="30.0" />
+    <param name="max_sigma_axy" value="0.1" />
+    <param name="max_sigma_az" value="0.1" />
+    <param name="max_sigma_vxy" value="0.1" />
+    <param name="max_sigma_vz" value="0.1" />
+    <param name="mean_dev_ang_vel" value="0.2" />
+    <param name="mean_dev_lin_acc" value="1.5" />
+  </test>
+</launch>

@@ -1,0 +1,2 @@
+/usr/bin/ar qc librokubimini_ethercat.a CMakeFiles/rokubimini_ethercat.dir/src/rokubimini_ethercat/RokubiminiEthercat.cpp.o CMakeFiles/rokubimini_ethercat.dir/src/rokubimini_ethercat/RokubiminiEthercatBusManager.cpp.o CMakeFiles/rokubimini_ethercat.dir/src/rokubimini_ethercat/RokubiminiEthercatSlave.cpp.o CMakeFiles/rokubimini_ethercat.dir/src/rokubimini_ethercat/soem_interface/EthercatBusBase.cpp.o CMakeFiles/rokubimini_ethercat.dir/src/rokubimini_ethercat/soem_interface/EthercatSlaveBase.cpp.o
+/usr/bin/ranlib librokubimini_ethercat.a

@@ -44,16 +44,11 @@ def generate_launch_description():
         'control_lqr_config.yaml'
     )
 
-    control_P_config = os.path.join(
-        get_package_share_directory('holohover_gnc'),
-        'config',
-        'control_P_config.yaml'
-    )
 
     controller_node = Node(
         package="holohover_gnc",
         executable="control_exp",
-        parameters=[holohover_params, control_P_config],
+        parameters=[holohover_params, control_lqr_config],
         output='screen'
     )
 

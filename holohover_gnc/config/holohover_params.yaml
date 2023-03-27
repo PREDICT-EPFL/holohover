@@ -4,8 +4,8 @@
     propeller_pair_radial_distance: 44.048e-3
     phi_offset: 0.0
 
-    mass: 98.3e-3
-    inertia: 0.3599e-3 # 0.5 * mass^2 * (propeller_pair_radial_distance + 12.5e-3)
+    mass: 137.7e-3
+    inertia: 0.5356e-3 # 0.5 * mass^2 * (propeller_pair_radial_distance + 12.5e-3)
 
     max_thrust: 0.6
     signal_to_thrust_coeffs_motor1: [-0.6501016606674075, 1.3078587931596721, -0.04016251167742002, 0.0] 

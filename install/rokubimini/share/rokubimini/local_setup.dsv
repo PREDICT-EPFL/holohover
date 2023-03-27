@@ -1,0 +1,3 @@
+source;share/rokubimini/environment/ament_prefix_path.sh
+source;share/rokubimini/environment/library_path.sh
+source;share/rokubimini/environment/path.sh

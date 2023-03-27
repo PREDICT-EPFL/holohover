@@ -1,0 +1,27 @@
+simulation:
+  ros__parameters:
+    period: 0.001
+    seed: 0
+
+    drag_reference_area: 0.0021
+    drag_coefficient: 1.5
+
+    table_tilt_x: 0.0 # in degree
+    table_tilt_y: 0.0 # in degree
+
+    sensor_imu_period: 0.01 # 0 to disable sensor
+    sensor_acc_noise_x: 3.5e-1
+    sensor_acc_noise_y: 3.5e-1
+    sensor_acc_bias_x: 0.0
+    sensor_acc_bias_y: 0.0
+    sensor_gyro_noise_z: 1.5e-2
+    sensor_gyro_bias_z: 0.0
+
+    sensor_mouse_period: 0.01 # 0 to disable sensor
+    sensor_mouse_noise_x: 1e-2
+    sensor_mouse_noise_y: 1e-2
+
+    sensor_pose_period: 0.004166666667 # 0 to disable sensor
+    sensor_pose_noise_x: 1e-6
+    sensor_pose_noise_y: 1e-6
+    sensor_pose_noise_yaw: 1e-6

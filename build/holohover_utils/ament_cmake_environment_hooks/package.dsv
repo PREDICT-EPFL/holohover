@@ -1,0 +1,4 @@
+source;share/holohover_utils/local_setup.bash
+source;share/holohover_utils/local_setup.dsv
+source;share/holohover_utils/local_setup.sh
+source;share/holohover_utils/local_setup.zsh

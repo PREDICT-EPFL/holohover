@@ -1,0 +1,15 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from rokubimini_msgs/srv/GetSensorConfiguration.srv
+// generated code does not contain a copyright notice
+
+
+module rokubimini_msgs {
+  module srv {
+    struct GetSensorConfiguration_Request {
+      boolean a;
+    };
+    struct GetSensorConfiguration_Response {
+      boolean b;
+    };
+  };
+};

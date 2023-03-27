@@ -15,6 +15,8 @@ struct ControlPSettings
 {
     double period;
 
+    double Kp;
+
     double weight_x;
     double weight_y;
     double weight_v_x;
@@ -25,6 +27,7 @@ struct ControlPSettings
     double weight_a_x;
     double weight_a_y;
     double weight_w_dot_z;
+
 };
 
 ControlPSettings load_control_P_settings(rclcpp::Node &node)
@@ -32,15 +35,7 @@ ControlPSettings load_control_P_settings(rclcpp::Node &node)
     ControlPSettings settings;
 
     if (node.get_parameter("period", settings.period) &&
-        node.get_parameter("weight_x", settings.weight_x) &&
-        node.get_parameter("weight_y", settings.weight_y) &&
-        node.get_parameter("weight_v_x", settings.weight_v_x) &&
-        node.get_parameter("weight_v_y", settings.weight_v_y) &&
-        node.get_parameter("weight_yaw", settings.weight_yaw) &&
-        node.get_parameter("weight_w_z", settings.weight_w_z) &&
-        node.get_parameter("weight_a_x", settings.weight_a_x) &&
-        node.get_parameter("weight_a_y", settings.weight_a_y) &&
-        node.get_parameter("weight_w_dot_z", settings.weight_w_dot_z)) {}
+        node.get_parameter("Kp", settings.Kp) ) {}
     else
     {
         RCLCPP_INFO(node.get_logger(), "Failed to load control P settings");

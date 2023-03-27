@@ -1,0 +1,75 @@
+-- The C compiler identification is GNU 11.3.0
+-- The CXX compiler identification is GNU 11.3.0
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/c++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found ament_cmake: 1.3.3 (/opt/ros/humble/share/ament_cmake/cmake)
+-- Found Python3: /usr/bin/python3.10 (found version "3.10.6") found components: Interpreter 
+-- Found rclcpp: 16.0.3 (/opt/ros/humble/share/rclcpp/cmake)
+-- Found rosidl_generator_c: 3.1.4 (/opt/ros/humble/share/rosidl_generator_c/cmake)
+-- Found rosidl_adapter: 3.1.4 (/opt/ros/humble/share/rosidl_adapter/cmake)
+-- Found rosidl_generator_cpp: 3.1.4 (/opt/ros/humble/share/rosidl_generator_cpp/cmake)
+-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+-- Found rmw_implementation_cmake: 6.1.1 (/opt/ros/humble/share/rmw_implementation_cmake/cmake)
+-- Found rmw_fastrtps_cpp: 6.2.2 (/opt/ros/humble/share/rmw_fastrtps_cpp/cmake)
+-- Found OpenSSL: /usr/lib/x86_64-linux-gnu/libcrypto.so (found version "3.0.2")  
+-- Found FastRTPS: /opt/ros/humble/include  
+-- Using RMW implementation 'rmw_fastrtps_cpp' as default
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Found bota_worker: 0.6.1 (/home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/cmake)
+-- Found bota_signal_handler: 0.6.1 (/home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_signal_handler/share/bota_signal_handler/cmake)
+-- Found ament_cmake_gtest: 1.3.3 (/opt/ros/humble/share/ament_cmake_gtest/cmake)
+-- Found gtest sources under '/opt/ros/humble/src/gtest_vendor': C++ tests using 'Google Test' will be built
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_node
+[ 12%] [32mBuilding CXX object CMakeFiles/bota_node.dir/src/Node.cpp.o[0m
+[ 25%] [32m[1mLinking CXX static library libbota_node.a[0m
+[ 25%] Built target bota_node
+[ 37%] [32mBuilding CXX object gtest/CMakeFiles/gtest.dir/src/gtest-all.cc.o[0m
+[ 50%] [32m[1mLinking CXX static library libgtest.a[0m
+[ 50%] Built target gtest
+[ 62%] [32mBuilding CXX object gtest/CMakeFiles/gtest_main.dir/src/gtest_main.cc.o[0m
+[ 75%] [32m[1mLinking CXX static library libgtest_main.a[0m
+[ 75%] Built target gtest_main
+[ 87%] [32mBuilding CXX object CMakeFiles/test_bota_node.dir/test/EmptyTests.cpp.o[0m
+[100%] [32m[1mLinking CXX executable test_bota_node[0m
+[100%] Built target test_bota_node
+-- Install configuration: ""
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/include/bota_node
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/include/bota_node/Node.hpp
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/include/bota_node/bota_node.hpp
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/include/bota_node/Nodewrap.hpp
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/lib/libbota_node.a
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/environment/library_path.sh
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/environment/library_path.dsv
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/ament_index/resource_index/package_run_dependencies/bota_node
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/ament_index/resource_index/parent_prefix_path/bota_node
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/environment/ament_prefix_path.sh
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/environment/ament_prefix_path.dsv
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/environment/path.sh
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/environment/path.dsv
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/local_setup.bash
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/local_setup.sh
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/local_setup.zsh
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/local_setup.dsv
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/package.dsv
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/ament_index/resource_index/packages/bota_node
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/cmake/ament_cmake_export_dependencies-extras.cmake
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/cmake/ament_cmake_export_include_directories-extras.cmake
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/cmake/ament_cmake_export_libraries-extras.cmake
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/cmake/bota_nodeConfig.cmake
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/cmake/bota_nodeConfig-version.cmake
+-- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_node/share/bota_node/package.xml

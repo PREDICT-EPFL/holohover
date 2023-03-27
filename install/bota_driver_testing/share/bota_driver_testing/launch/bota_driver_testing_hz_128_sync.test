@@ -1,0 +1,51 @@
+<launch>
+  <node name="bus0" pkg="rokubimini_serial" type="rokubimini_serial_bus_manager_node" output="screen" required="true">
+    <param name="num_spinners" type="int" value="1" />
+    <param name="time_step" type="double" value="0.0025" />
+    <param name="port" type="string" value="/dev/ttyUSB0" />
+    <param name="rokubiminis/ft_sensor0/name" type="string" value="ft_sensor0" />
+    <param name="rokubiminis/ft_sensor0/product_name" type="string" value="BFT-SENS-SER-M8" />
+    <rosparam ns="rokubiminis/ft_sensor0" command="load" file="$(find bota_driver_testing)/config/rokubimini_sensor_test_128.yaml" />
+  </node>
+  <node name="bus1" pkg="rokubimini_ethercat" type="rokubimini_ethercat_bus_manager_node" output="screen" launch-prefix="ethercat_grant" required="true">
+    <param name="num_spinners" type="int" value="1" />
+    <param name="time_step" type="double" value="0.0025" />
+    <param name="ethercat_bus" type="string" value="enx3c8cf8fb1b86" />
+    <param name="rokubiminis/ft_sensor1/name" type="string" value="ft_sensor1" />
+    <param name="rokubiminis/ft_sensor1/product_name" type="string" value="BFT-ROKA-ECAT-M8" />
+    <rosparam ns="rokubiminis/ft_sensor1" command="load" file="$(find bota_driver_testing)/config/rokubimini_sensor_test_128.yaml" />
+    <param name="rokubiminis/ft_sensor1/ethercat_address" type="int" value="1" />
+  </node>
+
+  <test test-name="botaDriverHzTest_ft_sensor0_readings_wrench" pkg="rostest" type="hztest" name="ft_sensor0_readings_wrench">
+    <param name="topic" value="/bus0/ft_sensor0/ft_sensor_readings/wrench" />
+    <param name="hz" value="400" />
+    <param name="hzerror" value="10" />
+    <param name="test_duration" value="30.0" />
+  </test>
+  <test test-name="botaDriverHzTest_ft_sensor0_readings_temperature" pkg="rostest" type="hztest" name="ft_sensor0_readings_temperature">
+    <param name="topic" value="/bus0/ft_sensor0/ft_sensor_readings/temperature" />
+    <param name="hz" value="400" />
+    <param name="hzerror" value="10" />
+    <param name="test_duration" value="30.0" />
+  </test>
+  <test test-name="botaDriverHzTest_ft_sensor1_readings_wrench" pkg="rostest" type="hztest" name="ft_sensor1_readings_wrench">
+    <param name="topic" value="/bus1/ft_sensor1/ft_sensor_readings/wrench" />
+    <param name="hz" value="400" />
+    <param name="hzerror" value="10" />
+    <param name="test_duration" value="30.0" />
+  </test>
+  <test test-name="botaDriverHzTest_ft_sensor1_readings_temperature" pkg="rostest" type="hztest" name="ft_sensor1_readings_temperature">
+    <param name="topic" value="/bus1/ft_sensor1/ft_sensor_readings/temperature" />
+    <param name="hz" value="400" />
+    <param name="hzerror" value="10" />
+    <param name="test_duration" value="30.0" />
+  </test>
+  <test test-name="botaDriverHzTest_ft_sensor1_readings_imu" pkg="rostest" type="hztest" name="ft_sensor1_readings_imu">
+    <param name="topic" value="/bus1/ft_sensor1/ft_sensor_readings/imu" />
+    <param name="hz" value="400" />
+    <param name="hzerror" value="10" />
+    <param name="test_duration" value="30.0" />
+  </test>
+
+</launch>

@@ -1,0 +1,26 @@
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/mocap_node.cpp:[m[K In member function ‘[01m[Kvoid mocap_optitrack::OptiTrackRosBridge::initialize()[m[K’:
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/mocap_node.cpp:81:15:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[Kret[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+   81 |           int [01;35m[Kret[m[K = multicastClientSocketPtr->send(
+      |               [01;35m[K^~~[m[K
+In file included from [01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/mocap_config.cpp:30[m[K:
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/include/mocap_optitrack/mocap_config.h:[m[K In constructor ‘[01m[Kmocap_optitrack::ServerDescription::ServerDescription()[m[K’:
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/include/mocap_optitrack/mocap_config.h:57:8:[m[K [01;35m[Kwarning: [m[K‘[01m[Kmocap_optitrack::ServerDescription::enableOptitrack[m[K’ will be initialized after [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder-Wreorder]8;;[m[K]
+   57 |   bool [01;35m[KenableOptitrack[m[K;
+      |        [01;35m[K^~~~~~~~~~~~~~~[m[K
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/include/mocap_optitrack/mocap_config.h:55:15:[m[K [01;35m[Kwarning: [m[K  ‘[01m[Kstd::string mocap_optitrack::ServerDescription::multicastIpAddress[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder-Wreorder]8;;[m[K]
+   55 |   std::string [01;35m[KmulticastIpAddress[m[K;
+      |               [01;35m[K^~~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/mocap_config.cpp:91:1:[m[K [01;35m[Kwarning: [m[K  when initialized here [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wreorder-Wreorder]8;;[m[K]
+   91 | [01;35m[KServerDescription[m[K::ServerDescription() :
+      | [01;35m[K^~~~~~~~~~~~~~~~~[m[K
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/natnet/natnet_messages.cpp:[m[K In function ‘[01m[Kvoid natnet::utilities::stringify_timecode(unsigned int, unsigned int, char*, int)[m[K’:
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/natnet/natnet_messages.cpp:84:10:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KbValid[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+   84 |     bool [01;35m[KbValid[m[K;
+      |          [01;35m[K^~~~~~[m[K
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/natnet/natnet_messages.cpp:[m[K In member function ‘[01m[Kvirtual void natnet::DataFrameMessage::deserialize(rclcpp::Logger, const MessageBuffer&, mocap_optitrack::DataModel*)[m[K’:
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/natnet/natnet_messages.cpp:494:8:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KbIsRecording[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  494 |   bool [01;35m[KbIsRecording[m[K = (params & 0x01) != 0;
+      |        [01;35m[K^~~~~~~~~~~~[m[K
+[01m[K/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack/src/natnet/natnet_messages.cpp:496:8:[m[K [01;35m[Kwarning: [m[Kunused variable ‘[01m[KbTrackedModelsChanged[m[K’ [[01;35m[K]8;;https://gcc.gnu.org/onlinedocs/gcc/Warning-Options.html#index-Wunused-variable-Wunused-variable]8;;[m[K]
+  496 |   bool [01;35m[KbTrackedModelsChanged[m[K = (params & 0x02) != 0;
+      |        [01;35m[K^~~~~~~~~~~~~~~~~~~~~[m[K

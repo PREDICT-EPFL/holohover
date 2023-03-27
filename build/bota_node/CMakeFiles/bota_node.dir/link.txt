@@ -1,0 +1,2 @@
+/usr/bin/ar qc libbota_node.a CMakeFiles/bota_node.dir/src/Node.cpp.o
+/usr/bin/ranlib libbota_node.a

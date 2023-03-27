@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<package format="2">
+
+    <name>rokubimini_bus_manager</name>
+    <version>0.6.1</version>
+    <description>C++ library deriving the abstract communication interface classes in the rokubimini library for
+        EtherCAT.
+    </description>
+
+    <license>Apache 2.0</license>
+    <url>http://wiki.ros.org/bota_driver</url>
+    <maintainer email="sw-support@botasys.com">Bota Systems AG</maintainer>
+
+    <buildtool_depend>ament_cmake</buildtool_depend>
+
+    <depend>rclcpp</depend>
+    <depend>rokubimini</depend>
+    <depend>bota_node</depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
+</package>

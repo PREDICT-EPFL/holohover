@@ -1,0 +1,1 @@
+/usr/bin/c++ CMakeFiles/test_bota_signal_handler.dir/test/EmptyTests.cpp.o -o test_bota_signal_handler  gtest/libgtest_main.a gtest/libgtest.a libbota_signal_handler.a -pthread 

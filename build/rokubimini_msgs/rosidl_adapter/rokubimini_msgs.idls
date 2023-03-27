@@ -1,0 +1,6 @@
+/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs/rosidl_adapter/rokubimini_msgs:msg/Reading.idl
+/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs/rosidl_adapter/rokubimini_msgs:srv/GetSensorConfiguration.idl
+/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs/rosidl_adapter/rokubimini_msgs:srv/SetSensorConfiguration.idl
+/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs/rosidl_adapter/rokubimini_msgs:srv/FirmwareUpdateEthercat.idl
+/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs/rosidl_adapter/rokubimini_msgs:srv/FirmwareUpdateSerial.idl
+/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_msgs/rosidl_adapter/rokubimini_msgs:srv/ResetWrench.idl

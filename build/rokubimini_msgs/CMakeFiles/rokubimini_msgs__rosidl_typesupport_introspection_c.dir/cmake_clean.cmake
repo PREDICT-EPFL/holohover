@@ -1,0 +1,33 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/msg/detail/reading__type_support.c.o"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/msg/detail/reading__type_support.c.o.d"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/firmware_update_ethercat__type_support.c.o"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/firmware_update_ethercat__type_support.c.o.d"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/firmware_update_serial__type_support.c.o"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/firmware_update_serial__type_support.c.o.d"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/get_sensor_configuration__type_support.c.o"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/get_sensor_configuration__type_support.c.o.d"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/reset_wrench__type_support.c.o"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/reset_wrench__type_support.c.o.d"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/set_sensor_configuration__type_support.c.o"
+  "CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/set_sensor_configuration__type_support.c.o.d"
+  "librokubimini_msgs__rosidl_typesupport_introspection_c.pdb"
+  "librokubimini_msgs__rosidl_typesupport_introspection_c.so"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/msg/detail/reading__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/msg/detail/reading__type_support.c"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/firmware_update_ethercat__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/firmware_update_ethercat__type_support.c"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/firmware_update_serial__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/firmware_update_serial__type_support.c"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/get_sensor_configuration__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/get_sensor_configuration__type_support.c"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/reset_wrench__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/reset_wrench__type_support.c"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/set_sensor_configuration__rosidl_typesupport_introspection_c.h"
+  "rosidl_typesupport_introspection_c/rokubimini_msgs/srv/detail/set_sensor_configuration__type_support.c"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang C)
+  include(CMakeFiles/rokubimini_msgs__rosidl_typesupport_introspection_c.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

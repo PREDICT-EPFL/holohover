@@ -1,0 +1,37 @@
+[0.064s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_worker': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_worker -- -j8 -l8
+[0.161s] [ 18%] Built target gtest
+[0.174s] [ 36%] Built target gtest_main
+[0.182s] [ 72%] Built target bota_worker
+[0.238s] [100%] Built target test_bota_worker
+[0.280s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_worker' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_worker -- -j8 -l8
+[0.500s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_worker': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_worker
+[0.515s] -- Install configuration: ""
+[0.515s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/include/bota_worker
+[0.516s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/include/bota_worker/WorkerEvent.hpp
+[0.516s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/include/bota_worker/WorkerOptions.hpp
+[0.516s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/include/bota_worker/Rate.hpp
+[0.516s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/include/bota_worker/RateOptions.hpp
+[0.516s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/include/bota_worker/Worker.hpp
+[0.516s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/include/bota_worker/WorkerManager.hpp
+[0.516s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/lib/libbota_worker.a
+[0.516s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/environment/library_path.sh
+[0.517s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/environment/library_path.dsv
+[0.517s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/ament_index/resource_index/package_run_dependencies/bota_worker
+[0.517s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/ament_index/resource_index/parent_prefix_path/bota_worker
+[0.517s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/environment/ament_prefix_path.sh
+[0.517s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/environment/ament_prefix_path.dsv
+[0.517s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/environment/path.sh
+[0.517s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/environment/path.dsv
+[0.517s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/local_setup.bash
+[0.518s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/local_setup.sh
+[0.518s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/local_setup.zsh
+[0.518s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/local_setup.dsv
+[0.518s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/package.dsv
+[0.518s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/ament_index/resource_index/packages/bota_worker
+[0.518s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/cmake/ament_cmake_export_dependencies-extras.cmake
+[0.518s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/cmake/ament_cmake_export_include_directories-extras.cmake
+[0.518s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/cmake/ament_cmake_export_libraries-extras.cmake
+[0.519s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/cmake/bota_workerConfig.cmake
+[0.519s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/cmake/bota_workerConfig-version.cmake
+[0.519s] -- Up-to-date: /home/acl3-ubuntu/holohover_ws/src/holohover/install/bota_worker/share/bota_worker/package.xml
+[0.566s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_worker' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_worker

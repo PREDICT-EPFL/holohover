@@ -1,0 +1,3 @@
+string file_name
+string file_path
+uint32 password

@@ -1,0 +1,102 @@
+[0.038s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake /home/acl3-ubuntu/holohover_ws/src/holohover/ros_polympc -DCMAKE_INSTALL_PREFIX=/home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc
+[1.533s] -- The C compiler identification is GNU 11.3.0
+[1.533s] -- The CXX compiler identification is GNU 11.3.0
+[1.534s] -- Detecting C compiler ABI info
+[1.536s] -- Detecting C compiler ABI info - done
+[1.536s] -- Check for working C compiler: /usr/bin/cc - skipped
+[1.537s] -- Detecting C compile features
+[1.537s] -- Detecting C compile features - done
+[1.537s] -- Detecting CXX compiler ABI info
+[1.537s] -- Detecting CXX compiler ABI info - done
+[1.537s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[1.537s] -- Detecting CXX compile features
+[1.537s] -- Detecting CXX compile features - done
+[1.537s] -- Found ament_cmake: 1.3.3 (/opt/ros/humble/share/ament_cmake/cmake)
+[1.537s] -- Found Python3: /usr/bin/python3.10 (found version "3.10.6") found components: Interpreter 
+[1.538s] -- Configuring done
+[1.538s] -- Generating done
+[1.538s] -- Build files have been written to: /home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc
+[1.538s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake /home/acl3-ubuntu/holohover_ws/src/holohover/ros_polympc -DCMAKE_INSTALL_PREFIX=/home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc
+[1.541s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc -- -j8 -l8
+[1.618s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc -- -j8 -l8
+[1.858s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc
+[2.970s] -- Install configuration: ""
+[2.970s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include
+[2.971s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/utils
+[2.971s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/utils/helpers.hpp
+[2.971s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/utils/Reshaped.h
+[2.971s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/chebyshev_soft.hpp
+[2.971s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/nmpc.hpp
+[2.971s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/CMakeLists.txt
+[2.971s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/chebyshev.hpp
+[2.971s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/polymath.cpp
+[2.972s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/autodiff
+[2.972s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/autodiff/CMakeLists.txt
+[2.972s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/autodiff/rbf_kernel.hpp
+[2.972s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/autodiff/AutoDiffScalar.h
+[2.972s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/polynomials
+[2.972s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/polynomials/splines.hpp
+[2.972s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/polynomials/polynomial_math.hpp
+[2.972s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/polynomials/CMakeLists.txt
+[2.972s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/polynomials/legendre.hpp
+[2.972s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/polynomials/ebyshev.hpp
+[2.973s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/polynomials/projection.hpp
+[2.973s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers
+[2.973s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/utils.hpp
+[2.973s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/bfgs.hpp
+[2.973s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/admm.hpp
+[2.973s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/CMakeLists.txt
+[2.973s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/qp_preconditioners.hpp
+[2.973s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/nlproblem.hpp
+[2.973s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/qpmad_interface.hpp
+[2.974s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/osqp_interface.hpp
+[2.974s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/sr1.hpp
+[2.974s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/box_admm.hpp
+[2.974s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/line_search.hpp
+[2.974s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/trust_region_tests
+[2.974s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/trust_region_tests/trust_region_test.cpp
+[2.974s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/trust_region_tests/gradproj_test.cpp
+[2.974s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/qp_base.hpp
+[2.975s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/ipopt_interface.hpp
+[2.975s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/solvers/sqp_base.hpp
+[2.975s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/polymath.h
+[2.975s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/chebyshev_ms.hpp
+[2.975s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control
+[2.975s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/problem.hpp
+[2.975s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/simple_robot_model.hpp
+[2.975s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/lqr.hpp
+[2.975s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/nmpc.hpp
+[2.976s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/CMakeLists.txt
+[2.976s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/cost_collocation.hpp
+[2.976s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/mpc_wrapper.hpp
+[2.976s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/continuous_ocp.hpp
+[2.976s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/constraints_collocation.hpp
+[2.976s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/sparse_ode_collocation.hpp
+[2.976s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/control/ode_collocation.hpp
+[2.976s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/integration
+[2.977s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/integration/CMakeLists.txt
+[2.977s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/integration/integrator.cpp
+[2.977s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/integration/chebyshev_integrator.hpp
+[2.977s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/integration/integrator.h
+[2.977s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/nmpf.hpp
+[2.977s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/generic_ocp.hpp
+[2.977s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/casadi_test.cpp
+[2.977s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/experimental
+[2.978s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/include/experimental/psarc.hpp
+[2.978s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ament_index/resource_index/package_run_dependencies/ros_polympc
+[2.978s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ament_index/resource_index/parent_prefix_path/ros_polympc
+[2.978s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/environment/ament_prefix_path.sh
+[2.978s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/environment/ament_prefix_path.dsv
+[2.978s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/environment/path.sh
+[2.978s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/environment/path.dsv
+[2.978s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/local_setup.bash
+[2.979s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/local_setup.sh
+[2.979s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/local_setup.zsh
+[2.979s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/local_setup.dsv
+[2.979s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/package.dsv
+[2.979s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ament_index/resource_index/packages/ros_polympc
+[2.979s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/cmake/ament_cmake_export_include_directories-extras.cmake
+[2.979s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/cmake/ros_polympcConfig.cmake
+[2.979s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/cmake/ros_polympcConfig-version.cmake
+[2.980s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/ros_polympc/share/ros_polympc/package.xml
+[3.003s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc

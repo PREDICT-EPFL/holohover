@@ -15,12 +15,12 @@ HolohoverControlPNode::HolohoverControlPNode() :
     ref.y = 0;
     ref.theta = 0;
 
-    K = Kp* << 1, 0, 0, 0, 0, 0,
-              0, 1, 0, 0, 0, 0,
-              0, 0, 1, 0, 0, 0,
-              0, 0, 0, 1, 0, 0,
-              0, 0, 0, 0, 1, 0,
-              0, 0, 0, 0, 0, 1;;
+    K << control_settings.Kp, 0, 0, 0, 0, 0,
+              0, control_settings.Kp, 0, 0, 0, 0,
+              0, 0, control_settings.Kp, 0, 0, 0,
+              0, 0, 0, control_settings.Kp, 0, 0,
+              0, 0, 0, 0, control_settings.Kp, 0,
+              0, 0, 0, 0, 0, control_settings.Kp;;
 
     init_topics();
     init_timer();

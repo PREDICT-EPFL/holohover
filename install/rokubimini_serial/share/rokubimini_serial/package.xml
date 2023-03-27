@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<package format="2">
+    <name>rokubimini_serial</name>
+    <version>0.6.1</version>
+    <description>Rokubimini Serial implementation.</description>
+
+    <license>Apache 2.0</license>
+    <url>http://wiki.ros.org/bota_driver</url>
+    <maintainer email="sw-support@botasys.com">Bota Systems AG</maintainer>
+
+    <buildtool_depend>ament_cmake</buildtool_depend>
+
+    <depend>rclcpp</depend>
+    <depend>rokubimini</depend>
+    <depend>rokubimini_bus_manager</depend>
+    <depend>rokubimini_msgs</depend>
+    <depend>boost</depend>
+    <exec_depend>avrdude</exec_depend>
+
+    <export>
+        <build_type>ament_cmake</build_type>
+    </export>
+</package>
