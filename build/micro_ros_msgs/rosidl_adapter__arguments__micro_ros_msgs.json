@@ -1,8 +1,0 @@
-{
-  "package_name": "micro_ros_msgs",
-  "non_idl_tuples": [
-    "/home/acl3-ubuntu/holohover_ws/src/holohover/micro_ros/micro_ros_msgs:msg/Graph.msg",
-    "/home/acl3-ubuntu/holohover_ws/src/holohover/micro_ros/micro_ros_msgs:msg/Node.msg",
-    "/home/acl3-ubuntu/holohover_ws/src/holohover/micro_ros/micro_ros_msgs:msg/Entity.msg"
-  ]
-}

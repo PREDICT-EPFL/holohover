@@ -1,2 +1,0 @@
-/usr/bin/ar qc libbota_signal_handler.a CMakeFiles/bota_signal_handler.dir/src/SignalHandler.cpp.o
-/usr/bin/ranlib libbota_signal_handler.a

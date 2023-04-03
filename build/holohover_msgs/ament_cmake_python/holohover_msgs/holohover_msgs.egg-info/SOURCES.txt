@@ -1,6 +1,0 @@
-setup.py
-holohover_msgs/__init__.py
-holohover_msgs.egg-info/PKG-INFO
-holohover_msgs.egg-info/SOURCES.txt
-holohover_msgs.egg-info/dependency_links.txt
-holohover_msgs.egg-info/top_level.txt

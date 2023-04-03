@@ -1,4 +1,0 @@
-# generated from rosidl_cmake/cmake/rosidl_cmake-extras.cmake.in
-
-set(rokubimini_msgs_IDL_FILES "msg/Reading.idl;srv/GetSensorConfiguration.idl;srv/SetSensorConfiguration.idl;srv/FirmwareUpdateEthercat.idl;srv/FirmwareUpdateSerial.idl;srv/ResetWrench.idl")
-set(rokubimini_msgs_INTERFACE_FILES "msg/Reading.msg;srv/GetSensorConfiguration.srv;srv/GetSensorConfiguration_Request.msg;srv/GetSensorConfiguration_Response.msg;srv/SetSensorConfiguration.srv;srv/SetSensorConfiguration_Request.msg;srv/SetSensorConfiguration_Response.msg;srv/FirmwareUpdateEthercat.srv;srv/FirmwareUpdateEthercat_Request.msg;srv/FirmwareUpdateEthercat_Response.msg;srv/FirmwareUpdateSerial.srv;srv/FirmwareUpdateSerial_Request.msg;srv/FirmwareUpdateSerial_Response.msg;srv/ResetWrench.srv;srv/ResetWrench_Request.msg;srv/ResetWrench_Response.msg")

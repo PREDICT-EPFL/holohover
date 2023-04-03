@@ -102,7 +102,7 @@ def generate_launch_description():
         	mocap_node,
         	optitrack_interface_node,
         	navigation_node,
-        	controller_node,
+        	#controller_node,
         ]
 	)
 
@@ -119,7 +119,7 @@ def generate_launch_description():
     
     ld.add_action(micro_agent)  
     ld.add_action(visualization)   
-    ld.add_action(recorder)
+    #ld.add_action(recorder)
     ld.add_action(holohover)
     
 

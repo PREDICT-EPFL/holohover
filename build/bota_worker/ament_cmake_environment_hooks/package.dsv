@@ -1,4 +1,0 @@
-source;share/bota_worker/local_setup.bash
-source;share/bota_worker/local_setup.dsv
-source;share/bota_worker/local_setup.sh
-source;share/bota_worker/local_setup.zsh

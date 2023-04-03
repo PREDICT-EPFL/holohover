@@ -1,9 +1,0 @@
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc/CMakeFiles/uninstall.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc/CMakeFiles/ros_polympc_uninstall.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc/CMakeFiles/test.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc/CMakeFiles/edit_cache.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc/CMakeFiles/rebuild_cache.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc/CMakeFiles/list_install_components.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc/CMakeFiles/install.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc/CMakeFiles/install/local.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/ros_polympc/CMakeFiles/install/strip.dir

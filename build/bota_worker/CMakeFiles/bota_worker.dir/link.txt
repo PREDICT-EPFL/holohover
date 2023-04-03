@@ -1,2 +1,0 @@
-/usr/bin/ar qc libbota_worker.a CMakeFiles/bota_worker.dir/src/Rate.cpp.o CMakeFiles/bota_worker.dir/src/Worker.cpp.o CMakeFiles/bota_worker.dir/src/WorkerManager.cpp.o
-/usr/bin/ranlib libbota_worker.a

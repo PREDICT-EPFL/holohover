@@ -1,4 +1,0 @@
-Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/soem': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/soem -- -j8 -l8
-Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/soem' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/soem -- -j8 -l8
-Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/soem': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/soem
-Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/soem' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/soem

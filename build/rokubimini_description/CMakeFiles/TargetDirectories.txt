@@ -1,9 +1,0 @@
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_description/CMakeFiles/uninstall.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_description/CMakeFiles/rokubimini_description_uninstall.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_description/CMakeFiles/test.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_description/CMakeFiles/edit_cache.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_description/CMakeFiles/rebuild_cache.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_description/CMakeFiles/list_install_components.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_description/CMakeFiles/install.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_description/CMakeFiles/install/local.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/rokubimini_description/CMakeFiles/install/strip.dir

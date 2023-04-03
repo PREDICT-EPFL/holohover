@@ -1,9 +1,0 @@
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_driver/CMakeFiles/uninstall.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_driver/CMakeFiles/bota_driver_uninstall.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_driver/CMakeFiles/test.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_driver/CMakeFiles/edit_cache.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_driver/CMakeFiles/rebuild_cache.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_driver/CMakeFiles/list_install_components.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_driver/CMakeFiles/install.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_driver/CMakeFiles/install/local.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/bota_driver/CMakeFiles/install/strip.dir

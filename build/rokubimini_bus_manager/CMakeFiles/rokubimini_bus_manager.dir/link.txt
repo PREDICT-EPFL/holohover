@@ -1,2 +1,0 @@
-/usr/bin/ar qc librokubimini_bus_manager.a CMakeFiles/rokubimini_bus_manager.dir/src/rokubimini_bus_manager/BusManager.cpp.o
-/usr/bin/ranlib librokubimini_bus_manager.a

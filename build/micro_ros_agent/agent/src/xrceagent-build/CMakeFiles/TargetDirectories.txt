@@ -1,7 +1,0 @@
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_agent/agent/src/xrceagent-build/CMakeFiles/microxrcedds_agent.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_agent/agent/src/xrceagent-build/CMakeFiles/edit_cache.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_agent/agent/src/xrceagent-build/CMakeFiles/rebuild_cache.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_agent/agent/src/xrceagent-build/CMakeFiles/list_install_components.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_agent/agent/src/xrceagent-build/CMakeFiles/install.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_agent/agent/src/xrceagent-build/CMakeFiles/install/local.dir
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_agent/agent/src/xrceagent-build/CMakeFiles/install/strip.dir
