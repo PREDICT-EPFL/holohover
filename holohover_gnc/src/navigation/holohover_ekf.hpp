@@ -83,15 +83,15 @@ public:
         P = Q;
     }
 
-    void normalize_yaw()
+    void normalize_angle(double& angle)
     {
-        if (x(4) < -M_PI)
+        if (angle < -M_PI)
         {
-            x(4) += 2 * M_PI;
+            angle += 2 * M_PI;
         }
-        if (x(4) > M_PI)
+        if (angle > M_PI)
         {
-            x(4) -= 2 * M_PI;
+            angle -= 2 * M_PI;
         }
     }
 
@@ -99,7 +99,7 @@ public:
     {
         // integrate state estimate x using discretized dynamics
         x = holohover.Ad * x + holohover.Bd * u_acc;
-        normalize_yaw();
+        normalize_angle(x(4));
 
         // integrate covariance estimate P using RK4
         double dt = settings.period;
@@ -172,9 +172,8 @@ public:
         predict_control_acc_and_sensor_acc(u_acc, imu_sensor);
     }
 
-    template<int NZ>
-    void update_generic(const Eigen::Matrix<double, NZ, 1> &z,
-                        const Eigen::Matrix<double, NZ, NX> &h,
+    template<int NZ, typename InnovationFunctor>
+    void update_generic(InnovationFunctor innovation_f,
                         const Eigen::Matrix<double, NZ, NX> &H,
                         const Eigen::Matrix<double, NZ, NZ> &R)
     {
@@ -183,8 +182,9 @@ public:
         // kalman gain
         Eigen::Matrix<double, NX, NZ> K = S.transpose().ldlt().solve(H * P.transpose()).transpose();
         // update state estimate
-        x = x + K * (z - h * x);
-        normalize_yaw();
+        Eigen::Matrix<double, NZ, 1> innovation = innovation_f(x);
+        x = x + K * innovation;
+        normalize_angle(x(4));
         // update state covariance estimate
         P = (state_matrix_t::Identity() - K * H) * P;
     }
@@ -192,10 +192,12 @@ public:
     void update_sensor_gyro(const sensor_imu_t &imu_sensor)
     {
         Eigen::Matrix<double, 1, 1> z = imu_sensor.tail<1>();
-        Eigen::Matrix<double, 1, NX> h;
-        h << 0, 0, 0, 0, 0, 1;
+        Eigen::Matrix<double, 1, NX> H;
+        H << 0, 0, 0, 0, 0, 1;
 
-        update_generic(z, h, h, R_gyro);
+        update_generic([&](auto state) {
+            return z - H * state;
+        }, H, R_gyro);
     }
 
     void update_sensor_mouse(const sensor_mouse_t &mouse_sensor)
@@ -211,17 +213,23 @@ public:
         H(0, 4) = -sin(x(4)) * x(2) + cos(x(4)) * x(3);
         H(1, 4) = -cos(x(4)) * x(2) - sin(x(4)) * x(3);
 
-        update_generic(mouse_sensor, h, H, R_mouse);
+        update_generic([&](auto state) {
+            return mouse_sensor - h * state;
+        }, H, R_mouse);
     }
 
     void update_sensor_pose(const sensor_pose_t &pose_sensor)
     {
-        Eigen::Matrix<double, 3, NX> h;
-        h << 1, 0, 0, 0, 0, 0,
+        Eigen::Matrix<double, 3, NX> H;
+        H << 1, 0, 0, 0, 0, 0,
              0, 1, 0, 0, 0, 0,
              0, 0, 0, 0, 1, 0;
 
-        update_generic(pose_sensor, h, h, R_pose);
+        update_generic([&](auto state) {
+            Eigen::Matrix<double, 3, 1> innovation = pose_sensor - H * state;
+            normalize_angle(innovation(2));
+            return innovation;
+        }, H, R_pose);
     }
 };
 

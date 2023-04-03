@@ -84,11 +84,11 @@ void RvizInterfaceNode::publish_visualization()
     for (int i = 0; i < 3; i++) {
         // position vector for the propeller pair i
         Eigen::Vector2d position_1;
-        position_1(0) = holohover_props.radius_propeller * cos(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair);
-        position_1(1) = holohover_props.radius_propeller * sin(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair);
+        position_1(0) = holohover_props.radius_propeller_a * cos(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair_a);
+        position_1(1) = holohover_props.radius_propeller_a * sin(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair_a);
         Eigen::Vector2d position_2;
-        position_2(0) = holohover_props.radius_propeller * cos(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair);
-        position_2(1) = holohover_props.radius_propeller * sin(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair);
+        position_2(0) = holohover_props.radius_propeller_a * cos(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair_a);
+        position_2(1) = holohover_props.radius_propeller_a * sin(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair_a);
         // inverse propeller force direction for the propeller pair i
         Eigen::Vector2d direction_1;
         direction_1(0) = sin(holohover_props.phi_offset + holohover.phi * i);
