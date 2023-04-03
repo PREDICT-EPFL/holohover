@@ -28,6 +28,9 @@ struct SimulationSettings
     double sensor_pose_noise_x;
     double sensor_pose_noise_y;
     double sensor_pose_noise_yaw;
+
+    double Gx;
+    double Gy;
 };
 
 #endif //HOLOHOVER_GNC_HOLOHOVER_SIMULATION_SETTINGS_HPP

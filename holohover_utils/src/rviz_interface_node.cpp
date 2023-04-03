@@ -136,8 +136,8 @@ void RvizInterfaceNode::publish_visualization()
 
 void RvizInterfaceNode::state_callback(const holohover_msgs::msg::HolohoverState &state)
 {
-    current_state(0) = state.x;
-    current_state(1) = state.y;
+    current_state(0) = state.x ;
+    current_state(1) = state.y ;
     current_state(2) = state.v_x;
     current_state(3) = state.v_y;
     current_state(4) = state.yaw;

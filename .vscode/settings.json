@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "*.py ": "python",
+        "__node_handle": "cpp"
+    }
+}

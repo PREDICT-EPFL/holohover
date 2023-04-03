@@ -10,6 +10,9 @@ HolohoverProps load_holohover_pros(rclcpp::Node &node)
 
     if (node.get_parameter("propeller_pair_gap_distance", props.propeller_pair_gap_distance) &&
         node.get_parameter("propeller_pair_radial_distance", props.propeller_pair_radial_distance) &&
+        node.get_parameter("propeller_pair_radial_distance", props.propeller_pair_radial_distance_a) &&
+        node.get_parameter("propeller_pair_radial_distance", props.propeller_pair_radial_distance_b) &&
+        node.get_parameter("propeller_pair_radial_distance", props.propeller_pair_radial_distance_c) &&
         node.get_parameter("phi_offset", props.phi_offset) &&
         node.get_parameter("mass", props.mass) &&
         node.get_parameter("inertia", props.inertia) &&

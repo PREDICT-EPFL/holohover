@@ -161,8 +161,8 @@ void HolohoverSimulationNode::mouse_callback()
 void HolohoverSimulationNode::pose_callback()
 {
     geometry_msgs::msg::Pose2D pose_measurement;
-    pose_measurement.x = state(0);
-    pose_measurement.y = state(1);
+    pose_measurement.x = state(0) +simulation_settings.Gx ;
+    pose_measurement.y = state(1) +simulation_settings.Gy ;
     pose_measurement.theta = state(4);
 
     std::normal_distribution<> pose_x_noise(0, simulation_settings.sensor_pose_noise_x);

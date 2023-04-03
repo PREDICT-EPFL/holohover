@@ -39,6 +39,9 @@ struct HolohoverProps
     double angle_propeller_pair;
     // distance from center to propeller
     double radius_propeller;
+    double radius_propeller_a;
+    double radius_propeller_b;
+    double radius_propeller_c;
 };
 
 class Holohover
@@ -137,26 +140,65 @@ public:
         }
 
         Eigen::Matrix<T, 1, NU> force_to_moment;
-        for (int i = 0; i < 3; i++)
-        {
-            // position vector of the first propeller in the propeller pair i
-            double rx1 = props.radius_propeller * cos(props.phi_offset + phi * i - props.angle_propeller_pair);
-            double ry1 = props.radius_propeller * sin(props.phi_offset + phi * i - props.angle_propeller_pair);
-            // force vector of the first propeller in the propeller pair i
-            double Fx1 = force_to_total_force(0, 2 * i);
-            double Fy1 = force_to_total_force(1, 2 * i);
-            // moment induced by the first propeller in the propeller pair i
-            force_to_moment(0, 2 * i) = rx1 * Fy1 - ry1 * Fx1;
 
-            // position vector of the second propeller in the propeller pair i
-            double rx2 = props.radius_propeller * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
-            double ry2 = props.radius_propeller * sin(props.phi_offset + phi * i + props.angle_propeller_pair);
-            // force vector of the second propeller in the propeller pair i
-            double Fx2 = force_to_total_force(0, 2 * i + 1);
-            double Fy2 = force_to_total_force(1, 2 * i + 1);
-            // moment induced by the second propeller in the propeller pair i
-            force_to_moment(0, 2 * i + 1) = rx2 * Fy2 - ry2 * Fx2;
-        }
+        // A
+        int i =0 ; 
+        // position vector of the first propeller in the propeller pair i
+        double rx1 = props.radius_propeller_a * cos(props.phi_offset + phi * i - props.angle_propeller_pair);
+        double ry1 = props.radius_propeller_a * sin(props.phi_offset + phi * i - props.angle_propeller_pair);
+        // force vector of the first propeller in the propeller pair i
+        double Fx1 = force_to_total_force(0, 2 * i);
+        double Fy1 = force_to_total_force(1, 2 * i);
+        // moment induced by the first propeller in the propeller pair i
+        force_to_moment(0, 2 * i) = rx1 * Fy1 - ry1 * Fx1;
+
+        // position vector of the second propeller in the propeller pair i
+        double rx2 = props.radius_propeller_a * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
+        double ry2 = props.radius_propeller_a * sin(props.phi_offset + phi * i + props.angle_propeller_pair);
+        // force vector of the second propeller in the propeller pair i
+        double Fx2 = force_to_total_force(0, 2 * i + 1);
+        double Fy2 = force_to_total_force(1, 2 * i + 1);
+        // moment induced by the second propeller in the propeller pair i
+        force_to_moment(0, 2 * i + 1) = rx2 * Fy2 - ry2 * Fx2;
+        // B
+        int i =1 ; 
+        // position vector of the first propeller in the propeller pair i
+        double rx1 = props.radius_propeller_b * cos(props.phi_offset + phi * i - props.angle_propeller_pair);
+        double ry1 = props.radius_propeller_b * sin(props.phi_offset + phi * i - props.angle_propeller_pair);
+        // force vector of the first propeller in the propeller pair i
+        double Fx1 = force_to_total_force(0, 2 * i);
+        double Fy1 = force_to_total_force(1, 2 * i);
+        // moment induced by the first propeller in the propeller pair i
+        force_to_moment(0, 2 * i) = rx1 * Fy1 - ry1 * Fx1;
+
+        // position vector of the second propeller in the propeller pair i
+        double rx2 = props.radius_propeller_b * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
+        double ry2 = props.radius_propeller_b * sin(props.phi_offset + phi * i + props.angle_propeller_pair);
+        // force vector of the second propeller in the propeller pair i
+        double Fx2 = force_to_total_force(0, 2 * i + 1);
+        double Fy2 = force_to_total_force(1, 2 * i + 1);
+        // moment induced by the second propeller in the propeller pair i
+        force_to_moment(0, 2 * i + 1) = rx2 * Fy2 - ry2 * Fx2;
+        // C
+        int i =2 ; 
+        // position vector of the first propeller in the propeller pair i
+        double rx1 = props.radius_propeller_c * cos(props.phi_offset + phi * i - props.angle_propeller_pair);
+        double ry1 = props.radius_propeller_c * sin(props.phi_offset + phi * i - props.angle_propeller_pair);
+        // force vector of the first propeller in the propeller pair i
+        double Fx1 = force_to_total_force(0, 2 * i);
+        double Fy1 = force_to_total_force(1, 2 * i);
+        // moment induced by the first propeller in the propeller pair i
+        force_to_moment(0, 2 * i) = rx1 * Fy1 - ry1 * Fx1;
+
+        // position vector of the second propeller in the propeller pair i
+        double rx2 = props.radius_propeller_c * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
+        double ry2 = props.radius_propeller_c * sin(props.phi_offset + phi * i + props.angle_propeller_pair);
+        // force vector of the second propeller in the propeller pair i
+        double Fx2 = force_to_total_force(0, 2 * i + 1);
+        double Fy2 = force_to_total_force(1, 2 * i + 1);
+        // moment induced by the second propeller in the propeller pair i
+        force_to_moment(0, 2 * i + 1) = rx2 * Fy2 - ry2 * Fx2;
+        
 
         // rotation from body to world frame
         Eigen::Matrix<T, 2, 2> rotation_matrix;
