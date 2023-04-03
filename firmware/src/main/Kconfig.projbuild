@@ -1,4 +1,4 @@
-menu "micro-ROS holohover_esp32 settings"
+menu "la_racing firmware settings"
 
     config MICRO_ROS_APP_STACK
         int "Stack the micro-ROS app (Bytes)"

@@ -7,10 +7,13 @@ struct NavigationSettings
 
     double state_cov_x;
     double state_cov_y;
-    double state_cov_v_x;
-    double state_cov_v_y;
     double state_cov_yaw;
-    double state_cov_w_z;
+    double state_cov_x_dot;
+    double state_cov_y_dot;
+    double state_cov_yaw_dot;
+    double state_cov_x_dot_dot;
+    double state_cov_y_dot_dot;
+    double state_cov_yaw_dot_dot;
 
     double control_cov_a_x;
     double control_cov_a_y;

@@ -6,8 +6,8 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
-#include "holohover_msgs/msg/holohover_state.hpp"
-#include "holohover_msgs/msg/holohover_control.hpp"
+#include "holohover_msgs/msg/holohover_state_stamped.hpp"
+#include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "holohover_gnc/riccati_solver.hpp"
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "holohover_gnc/utils/load_holohover_props.hpp"
@@ -89,14 +89,14 @@ private:
     Eigen::Matrix<double, Holohover::NA, Holohover::NX> K;
 
     rclcpp::TimerBase::SharedPtr timer;
-    rclcpp::Publisher<holohover_msgs::msg::HolohoverControl>::SharedPtr control_publisher;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverState>::SharedPtr state_subscription;
+    rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
+    rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
     rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr reference_subscription;
 
     void init_topics();
     void init_timer();
     void publish_control();
-    void state_callback(const holohover_msgs::msg::HolohoverState &state_msg);
+    void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
     void ref_callback(const geometry_msgs::msg::Pose2D &pose);
     
     void rand_sig(Holohover::control_force_t<double>& u_signal);

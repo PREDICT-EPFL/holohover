@@ -27,9 +27,19 @@
   source install/local_setup.bash
   ```
 
-## ESP32 Setup
+## Firmware Setup
 
-### Install and set up ESP-IDF
+Again, there are two options to build the firmware for the ESP: using Docker or installing the ESP-IDF directly on the host. In general, Docker is recommended because of ease of use, but flashing and monitoring are [not supported](https://docs.docker.com/desktop/faqs/general/#can-i-pass-through-a-usb-device-to-a-container) on macOS since devices (USB connection) can't be attached to Docker.
+
+### Using Docker to build ESP-IDF
+
+Instead of installing the ESP-IDF it is also possible to build, flash, and monitor the ESP32 with docker. This has the advantage that both ROS2 and the ESP-IDF environment don't have to be installed. To build the project one just runs
+```
+docker run -it --rm --user espidf --volume="/etc/timezone:/etc/timezone:ro" -v  $(pwd):/micro_ros_espidf_component -v  /dev:/dev --privileged --workdir /micro_ros_espidf_component microros/esp-idf-microros:latest /bin/bash  -c "idf.py build"
+```
+Note that this command is just for building. To build, flash, and monitor just replace `idf.py build` with `idf.py build flash monitor`. Note that you still have to configure the WIFI Transport Layer before building.
+
+### Install and set up ESP-IDF on Host
 
 * Make sure you have installed all [prerequisites](https://docs.espressif.com/projects/esp-idf/en/release-v4.3/esp32/get-started/index.html#step-1-install-prerequisites).
 
@@ -40,13 +50,7 @@
     git clone -b release/v4.3 --recursive https://github.com/espressif/esp-idf.git
     ```
 
-* Clone [micro-ROS component for ESP-IDF](https://github.com/micro-ROS/micro_ros_espidf_component) into the components folder of ESP-IDF:
-    ```
-    cd ~/esp/esp-idf/components
-    git clone https://github.com/micro-ROS/micro_ros_espidf_component.git
-    ```
-
-* Setup ESP-IDF:
+* Install ESP-IDF:
     ```
     ~/esp/esp-idf/install.sh
     ```
@@ -56,52 +60,18 @@
     . ~/esp/esp-idf/export.sh
     ```
 
-* The component needs `colcon` and other Python 3 packages inside the IDF virtual environment in order to build micro-ROS packages:
+* The component needs `colcon` and other Python 3 packages inside the IDF virtual environment to build micro-ROS packages:
     ```
     pip3 install catkin_pkg lark-parser empy colcon-common-extensions importlib-resources
     ```
 
-### CLion setup (Optional)
+### Configuring WIFI Transport Layer
 
-The project may also be directly build using cmake. To set up CLion follow the guide [here](https://www.jetbrains.com/help/clion/esp-idf.html#cmake-setup).
-
-### Configuring the project
-
-* Cd into the esp32 project and set up the environment variables if not already done:
+* Cd into the firmware folder and set the target
     ```
-    cd ~/holohover_ws/src/holohover/esp32
-    . ~/esp/esp-idf/export.sh
-    ```
-
-* Set the target
-    ```
+    cd firmware
     idf.py set-target esp32
     ```
-There are two options for the transport layer. After changing the transportation layer you have to clean the micro-ROS build with
-```
-idf.py clean-microros
-```
-
-#### Bluetooth Transport Layer
-
-* Set `"-DRMW_UXRCE_TRANSPORT=custom"` in the file `app-colcon.meta`.
-
-* Open the micro-ROS configuration
-    ```
-    idf.py menuconfig
-    ```
-
-* Navigate to `Component config ---> Bluetooth --->` and enable `Bluetooth`.
-
-* Navigate to `Component config ---> Bluetooth ---> Bluetooth controller(ESP32 Dual Mode Bluetooth) ---> Bluetooth controller mode (BR/EDR/BLE/DUALMODE) (BR/EDR Only) --->` and select `BR/EDR Only`.
-
-* Navigate to `Component config ---> Bluetooth ---> Bluedroid Options --->` and enable `Classic Bluetooth` and `Classic Bluetooth -> SPP`.
-
-* Quit and save.
-
-#### WIFI Transport Layer
-
-* Set `"-DRMW_UXRCE_TRANSPORT=udp"` in the file `app-colcon.meta`.
 
 * Open the micro-ROS configuration
     ```
@@ -121,7 +91,7 @@ idf.py menuconfig
 ```
 navigate to `Component config  ---> mbedTLS  ---> Certificate Bundle  ---> Default certificate bundle options` and chose `Use only the most common certificates from the default bundles`.
 
-After fixing compilation errors it may be helpful to clean and rebuild all the micro-ROS library:
+After fixing compilation errors it may be helpful to clean and rebuild the micro-ROS library:
 ```
 idf.py clean-microros
 ```

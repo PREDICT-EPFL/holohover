@@ -32,10 +32,10 @@ void RvizInterfaceNode::init_topics()
     viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>(
             "visualization/drone", 10);
 
-    state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
+    state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "navigation/state", 10,
             std::bind(&RvizInterfaceNode::state_callback, this, std::placeholders::_1));
-    control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControl>(
+    control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
             "drone/control", rclcpp::SensorDataQoS(),
             std::bind(&RvizInterfaceNode::control_callback, this, std::placeholders::_1));
 }
@@ -134,7 +134,7 @@ void RvizInterfaceNode::publish_visualization()
     viz_publisher->publish(markers);
 }
 
-void RvizInterfaceNode::state_callback(const holohover_msgs::msg::HolohoverState &state)
+void RvizInterfaceNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state)
 {
     current_state(0) = state.x ;
     current_state(1) = state.y ;
@@ -144,7 +144,7 @@ void RvizInterfaceNode::state_callback(const holohover_msgs::msg::HolohoverState
     current_state(5) = state.w_z;
 }
 
-void RvizInterfaceNode::control_callback(const holohover_msgs::msg::HolohoverControl &control)
+void RvizInterfaceNode::control_callback(const holohover_msgs::msg::HolohoverControlStamped &control)
 {
     current_control(0) = control.motor_a_1;
     current_control(1) = control.motor_a_2;
