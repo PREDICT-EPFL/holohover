@@ -51,14 +51,14 @@ HolohoverProps load_holohover_pros(rclcpp::Node &node)
         //props.radius_propeller_b = sqrt(props.propeller_pair_radial_distance_b * props.propeller_pair_radial_distance_b + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
         //props.radius_propeller_c = sqrt(props.propeller_pair_radial_distance_c * props.propeller_pair_radial_distance_c + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
 
-        props.radius_propeller_a_1 = sqrt((props.CoM[1]-props.motor_pos_a_1[1])*(props.CoM[1]-props.motor_pos_a_1[1])+(props.CoM[2]-props.motor_pos_a_1[2])*(props.CoM[2]-props.motor_pos_a_1[2]));
-        props.radius_propeller_a_2 = sqrt((props.CoM[1]-props.motor_pos_a_2[1])*(props.CoM[1]-props.motor_pos_a_2[1])+(props.CoM[2]-props.motor_pos_a_2[2])*(props.CoM[2]-props.motor_pos_a_2[2]));
+        props.radius_propeller_a_1 = sqrt((props.CoM(1)-props.motor_pos_a_1(1))*(props.CoM(1)-props.motor_pos_a_1(1))+(props.CoM(2)-props.motor_pos_a_1(2))*(props.CoM(2)-props.motor_pos_a_1(2)));
+        props.radius_propeller_a_2 = sqrt((props.CoM(1)-props.motor_pos_a_2(1))*(props.CoM(1)-props.motor_pos_a_2(1))+(props.CoM(2)-props.motor_pos_a_2(2))*(props.CoM(2)-props.motor_pos_a_2(2)));
 
-        props.radius_propeller_b_1 = sqrt((props.CoM[1]-props.motor_pos_b_1[1])*(props.CoM[1]-props.motor_pos_b_1[1])+(props.CoM[2]-props.motor_pos_b_1[2])*(props.CoM[2]-props.motor_pos_b_1[2]));
-        props.radius_propeller_b_2 = sqrt((props.CoM[1]-props.motor_pos_b_2[1])*(props.CoM[1]-props.motor_pos_b_2[1])+(props.CoM[2]-props.motor_pos_b_2[2])*(props.CoM[2]-props.motor_pos_b_2[2]));
+        props.radius_propeller_b_1 = sqrt((props.CoM(1)-props.motor_pos_b_1(1))*(props.CoM(1)-props.motor_pos_b_1(1))+(props.CoM(2)-props.motor_pos_b_1(2))*(props.CoM(2)-props.motor_pos_b_1(2)));
+        props.radius_propeller_b_2 = sqrt((props.CoM(1)-props.motor_pos_b_2(1))*(props.CoM(1)-props.motor_pos_b_2(1))+(props.CoM(2)-props.motor_pos_b_2(2))*(props.CoM(2)-props.motor_pos_b_2(2)));
         
-        props.radius_propeller_c_1 = sqrt((props.CoM[1]-props.motor_pos_c_1[1])*(props.CoM[1]-props.motor_pos_c_1[1])+(props.CoM[2]-props.motor_pos_c_1[2])*(props.CoM[2]-props.motor_pos_c_1[2]));
-        props.radius_propeller_c_2 = sqrt((props.CoM[1]-props.motor_pos_c_2[1])*(props.CoM[1]-props.motor_pos_c_2[1])+(props.CoM[2]-props.motor_pos_c_2[2])*(props.CoM[2]-props.motor_pos_c_2[2]));
+        props.radius_propeller_c_1 = sqrt((props.CoM(1)-props.motor_pos_c_1(1))*(props.CoM(1)-props.motor_pos_c_1(1))+(props.CoM(2)-props.motor_pos_c_1(2))*(props.CoM(2)-props.motor_pos_c_1(2)));
+        props.radius_propeller_c_2 = sqrt((props.CoM(1)-props.motor_pos_c_2(1))*(props.CoM(1)-props.motor_pos_c_2(1))+(props.CoM(2)-props.motor_pos_c_2(2))*(props.CoM(2)-props.motor_pos_c_2(2)));
 
     
     }
