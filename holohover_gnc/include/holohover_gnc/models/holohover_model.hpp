@@ -404,6 +404,45 @@ public:
         u_thrust = u_motor_thrust;
     }
 
+    inline void thrust_to_signal_Newton(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
+    {
+        // 
+        control_force_t<T> u_motor_thrust = u_thrust.array();
+        control_force_t<T> u_motor_signal;
+        u_motor_signal.setZero();
+        
+        double x0 = 1.0; // Initial guess
+        double tol = 1e-6; // Tolerance for the root
+        int maxiter = 1000; // Maximum number of iterations
+        double x = x0; // Initialize x to the initial guess
+
+        double f(double x, double a, double b, double c, double d) { // Define the third order polynomial function
+            return a*pow(x, 3) + b*pow(x, 2) + c*x -d;
+            }
+
+        double fprime(double x,double a, double b, double c) { // Define the derivative of the third order polynomial function
+            return 3*a*pow(x, 2) + 2*b*x + c;
+            }
+
+        for (std::size_t i=0; i!=props.thrust_to_signal_coeffs_motor1.size(); ++i)
+        {
+            u_motor_signal.array() *= u_motor_thrust.array();
+                for (int i=0; i<maxiter; i++) {
+                    double fx = f(x,signal_to_thrust_coeffs_motor1[0],signal_to_thrust_coeffs_motor1[1],signal_to_thrust_coeffs_motor1[2],u_signal);
+                    double fxprime = fprime(x,signal_to_thrust_coeffs_motor1[0],signal_to_thrust_coeffs_motor1[1],signal_to_thrust_coeffs_motor1[2]);
+                    double dx = -fx/fxprime; // Calculate the change in x
+                    x = x + dx; // Update x
+                    if (abs(dx) < tol) { // Check convergence
+                        u_motor_signal[]
+                        }
+
+            u_motor_signal = u_motor_signal + coeffs;
+        }
+        
+        
+        u_signal.array() = u_motor_signal.array();
+    }
+
     template<typename T>
     inline void thrust_to_signal(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
     {
