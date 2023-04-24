@@ -43,9 +43,9 @@ def read_messages(input_bag: str):
     del reader
 
 def main():
-    serie = "validation_20221208"
-    #exp = "rosbag2_2022_10_25-11_18_00"
-    #file = exp + "_0.mcap"
+    serie = "holohover_20230404"
+    exp = "rosbag2_20230404"
+    file = exp + "_0.mcap"
 
     # loop through all files of all subfolders of the defined experiment series
     for root, dirs, files in os.walk(serie):

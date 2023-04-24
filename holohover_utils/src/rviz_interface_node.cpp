@@ -8,7 +8,7 @@ RvizInterfaceNode::RvizInterfaceNode() :
 {
     holohover_marker = create_marker("holohover", 0.75, 0.75, 0.75);
     holohover_marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
-    holohover_marker.mesh_resource = "package://holohover_utils/gui/holohover_old.stl";
+    holohover_marker.mesh_resource = "package://holohover_utils/gui/holohover.stl";
     holohover_marker.scale.x = 1;
     holohover_marker.scale.y = 1;
     holohover_marker.scale.z = 1;

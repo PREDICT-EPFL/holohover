@@ -1,0 +1,10 @@
+{
+  "package_name": "holohover_msgs",
+  "non_idl_tuples": [
+    "/home/acl3-ubuntu/holohover_ws/src/holohover/holohover_msgs:msg/Attitude.msg",
+    "/home/acl3-ubuntu/holohover_ws/src/holohover/holohover_msgs:msg/HolohoverIMUStamped.msg",
+    "/home/acl3-ubuntu/holohover_ws/src/holohover/holohover_msgs:msg/HolohoverMouseStamped.msg",
+    "/home/acl3-ubuntu/holohover_ws/src/holohover/holohover_msgs:msg/HolohoverControlStamped.msg",
+    "/home/acl3-ubuntu/holohover_ws/src/holohover/holohover_msgs:msg/HolohoverStateStamped.msg"
+  ]
+}

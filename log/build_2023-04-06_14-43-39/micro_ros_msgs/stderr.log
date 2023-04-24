@@ -1,0 +1,16 @@
+gmake[2]: *** [CMakeFiles/micro_ros_msgs__rosidl_typesupport_introspection_cpp.dir/build.make:119: CMakeFiles/micro_ros_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/micro_ros_msgs/msg/detail/node__type_support.cpp.o] Interrupt
+gmake[2]: *** [CMakeFiles/micro_ros_msgs__rosidl_typesupport_fastrtps_cpp.dir/build.make:119: CMakeFiles/micro_ros_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/micro_ros_msgs/msg/detail/dds_fastrtps/node__type_support.cpp.o] Interrupt
+gmake[2]: *** [CMakeFiles/micro_ros_msgs__rosidl_typesupport_cpp.dir/build.make:94: CMakeFiles/micro_ros_msgs__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/micro_ros_msgs/msg/graph__type_support.cpp.o] Interrupt
+gmake[2]: *** [CMakeFiles/micro_ros_msgs__rosidl_typesupport_fastrtps_cpp.dir/build.make:133: CMakeFiles/micro_ros_msgs__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/micro_ros_msgs/msg/detail/dds_fastrtps/entity__type_support.cpp.o] Interrupt
+gmake[2]: *** wait: No child processes.  Stop.
+gmake[2]: *** Waiting for unfinished jobs....
+gmake[2]: *** wait: No child processes.  Stop.
+gmake[2]: *** [CMakeFiles/micro_ros_msgs__rosidl_typesupport_introspection_cpp.dir/build.make:133: CMakeFiles/micro_ros_msgs__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/micro_ros_msgs/msg/detail/entity__type_support.cpp.o] Interrupt
+gmake[2]: *** wait: No child processes.  Stop.
+gmake[2]: *** Waiting for unfinished jobs....
+gmake[2]: *** wait: No child processes.  Stop.
+gmake[1]: *** [CMakeFiles/Makefile2:395: CMakeFiles/micro_ros_msgs__rosidl_typesupport_cpp.dir/all] Interrupt
+gmake[1]: *** [CMakeFiles/Makefile2:343: CMakeFiles/micro_ros_msgs__rosidl_typesupport_fastrtps_cpp.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:369: CMakeFiles/micro_ros_msgs__rosidl_typesupport_introspection_cpp.dir/all] Error 2
+gmake[1]: *** [CMakeFiles/Makefile2:238: CMakeFiles/micro_ros_msgs__rosidl_typesupport_fastrtps_c.dir/all] Interrupt
+gmake: *** [Makefile:146: all] Interrupt

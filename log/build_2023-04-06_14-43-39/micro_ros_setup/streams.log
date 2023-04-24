@@ -1,0 +1,210 @@
+[0.031s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake /home/acl3-ubuntu/holohover_ws/src/holohover/micro_ros_setup -DCMAKE_INSTALL_PREFIX=/home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup
+[0.875s] -- The C compiler identification is GNU 11.3.0
+[1.337s] -- The CXX compiler identification is GNU 11.3.0
+[1.429s] -- Detecting C compiler ABI info
+[1.566s] -- Detecting C compiler ABI info - done
+[1.574s] -- Check for working C compiler: /usr/bin/cc - skipped
+[1.574s] -- Detecting C compile features
+[1.606s] -- Detecting C compile features - done
+[1.609s] -- Detecting CXX compiler ABI info
+[1.744s] -- Detecting CXX compiler ABI info - done
+[1.755s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[1.755s] -- Detecting CXX compile features
+[1.756s] -- Detecting CXX compile features - done
+[1.854s] -- Found ament_cmake: 1.3.3 (/opt/ros/humble/share/ament_cmake/cmake)
+[2.155s] -- Found Python3: /usr/bin/python3.10 (found version "3.10.6") found components: Interpreter 
+[2.516s] -- Found ament_lint_auto: 0.12.5 (/opt/ros/humble/share/ament_lint_auto/cmake)
+[3.050s] -- Added test 'copyright' to check source files copyright and LICENSE
+[3.077s] -- Added test 'flake8' to check Python code syntax and style conventions
+[3.122s] -- Added test 'lint_cmake' to check CMake code style
+[3.124s] -- Added test 'pep257' to check Python code against some of the docstring style conventions in PEP 257
+[3.131s] -- Added test 'xmllint' to check XML markup files
+[3.133s] -- Configuring done
+[3.135s] -- Generating done
+[3.136s] -- Build files have been written to: /home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup
+[3.140s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake /home/acl3-ubuntu/holohover_ws/src/holohover/micro_ros_setup -DCMAKE_INSTALL_PREFIX=/home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup
+[3.142s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup -- -j8 -l8
+[3.177s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --build /home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup -- -j8 -l8
+[3.199s] Invoking command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup
+[3.205s] -- Install configuration: ""
+[3.206s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/ament_index/resource_index/package_run_dependencies/micro_ros_setup
+[3.206s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/ament_index/resource_index/parent_prefix_path/micro_ros_setup
+[3.206s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/environment/ament_prefix_path.sh
+[3.206s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/environment/ament_prefix_path.dsv
+[3.206s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/environment/path.sh
+[3.206s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/environment/path.dsv
+[3.207s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/local_setup.bash
+[3.207s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/local_setup.sh
+[3.207s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/local_setup.zsh
+[3.207s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/local_setup.dsv
+[3.207s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/package.dsv
+[3.207s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/ament_index/resource_index/packages/micro_ros_setup
+[3.208s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/cmake/micro_ros_setupConfig.cmake
+[3.208s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/cmake/micro_ros_setupConfig-version.cmake
+[3.208s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/share/micro_ros_setup/package.xml
+[3.208s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config
+[3.208s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/agent_uros_packages.repos
+[3.208s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/android
+[3.208s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/android/dev_uros_packages.repos
+[3.208s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/android/dev_ros2_packages.txt
+[3.249s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/android/generic
+[3.249s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/android/generic/flash.sh
+[3.252s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/android/generic/client-colcon.meta
+[3.252s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/android/generic/package.xml
+[3.253s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/android/generic/client_uros_packages.repos
+[3.253s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/android/generic/create.sh
+[3.254s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/android/generic/build.sh
+[3.299s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra
+[3.299s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/dev_uros_packages.repos
+[3.299s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/dev_ros2_packages.txt
+[3.300s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/ra6m5
+[3.300s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/ra6m5/configure.sh
+[3.301s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/ra6m5/flash.sh
+[3.304s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/ra6m5/client-colcon.meta
+[3.304s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/ra6m5/client_uros_packages.repos
+[3.304s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/ra6m5/create.sh
+[3.334s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/ra6m5/board.repos
+[3.334s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/ra6m5/build.sh
+[3.335s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/renesas_ra/list_apps.sh
+[3.335s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian
+[3.335s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian/dev_uros_packages.repos
+[3.335s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian/dev_ros2_packages.txt
+[3.335s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian/generic
+[3.336s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian/generic/configure.sh
+[3.342s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian/generic/supported_platforms
+[3.392s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian/generic/flash.sh
+[3.394s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian/generic/client-colcon.meta
+[3.394s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian/generic/client_uros_packages.repos
+[3.394s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian/generic/create.sh
+[3.459s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/raspbian/generic/build.sh
+[3.460s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/utils.sh
+[3.461s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos
+[3.461s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/dev_uros_packages.repos
+[3.461s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/olimex-stm32-e407
+[3.461s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/olimex-stm32-e407/configure.sh
+[3.496s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/olimex-stm32-e407/flash.sh
+[3.497s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/olimex-stm32-e407/client-colcon.meta
+[3.498s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/olimex-stm32-e407/package.xml
+[3.498s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/olimex-stm32-e407/client_uros_packages.repos
+[3.498s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/olimex-stm32-e407/create.sh
+[3.499s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/olimex-stm32-e407/board.repos
+[3.513s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/olimex-stm32-e407/build.sh
+[3.513s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f746zg
+[3.513s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f746zg/configure.sh
+[3.526s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f746zg/flash.sh
+[3.527s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f746zg/client-colcon.meta
+[3.527s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f746zg/package.xml
+[3.528s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f746zg/client_uros_packages.repos
+[3.528s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f746zg/create.sh
+[3.528s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f746zg/board.repos
+[3.529s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f746zg/build.sh
+[3.529s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/crazyflie21
+[3.529s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/crazyflie21/configure.sh
+[3.530s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/crazyflie21/flash.sh
+[3.575s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/crazyflie21/client-colcon.meta
+[3.579s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/crazyflie21/package.xml
+[3.579s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/crazyflie21/client_uros_packages.repos
+[3.579s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/crazyflie21/create.sh
+[3.580s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/crazyflie21/board.repos
+[3.583s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/crazyflie21/build.sh
+[3.584s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/dev_ros2_packages.txt
+[3.584s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/esp32
+[3.584s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/esp32/configure.sh
+[3.585s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/esp32/flash.sh
+[3.585s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/esp32/client-colcon.meta
+[3.585s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/esp32/package.xml
+[3.585s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/esp32/README.md
+[3.625s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/esp32/client_uros_packages.repos
+[3.625s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/esp32/create.sh
+[3.625s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/esp32/board.repos
+[3.626s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/esp32/build.sh
+[3.633s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/list_apps.sh
+[3.634s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446re
+[3.634s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446re/configure.sh
+[3.634s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446re/flash.sh
+[3.634s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446re/client-colcon.meta
+[3.634s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446re/package.xml
+[3.635s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446re/client_uros_packages.repos
+[3.635s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446re/create.sh
+[3.635s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446re/board.repos
+[3.635s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446re/build.sh
+[3.642s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446ze
+[3.642s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446ze/configure.sh
+[3.642s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446ze/flash.sh
+[3.644s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446ze/client-colcon.meta
+[3.644s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446ze/package.xml
+[3.651s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446ze/client_uros_packages.repos
+[3.651s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446ze/create.sh
+[3.652s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446ze/board.repos
+[3.653s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f446ze/build.sh
+[3.653s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f767zi
+[3.654s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f767zi/configure.sh
+[3.654s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f767zi/flash.sh
+[3.885s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f767zi/client-colcon.meta
+[3.994s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f767zi/package.xml
+[4.027s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f767zi/client_uros_packages.repos
+[4.027s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f767zi/create.sh
+[4.060s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f767zi/board.repos
+[4.068s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/freertos/nucleo_f767zi/build.sh
+[4.069s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed
+[4.069s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/dev_uros_packages.repos
+[4.070s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/dev_ros2_packages.txt
+[4.070s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/list_apps.sh
+[4.070s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/generic
+[4.070s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/generic/supported_platforms
+[4.070s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/generic/flash.sh
+[4.070s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/generic/package.xml
+[4.117s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/generic/client_uros_packages.repos
+[4.117s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/generic/create.sh
+[4.117s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/generic/board.repos
+[4.118s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/mbed/generic/build.sh
+[4.118s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/client_uros_packages.repos
+[4.118s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib
+[4.118s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib/dev_uros_packages.repos
+[4.118s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib/dev_ros2_packages.txt
+[4.122s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib/generic
+[4.122s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib/generic/flash.sh
+[4.122s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib/generic/client-colcon.meta
+[4.155s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib/generic/package.xml
+[4.155s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib/generic/demo_toolchain.cmake
+[4.157s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib/generic/client_uros_packages.repos
+[4.157s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib/generic/create.sh
+[4.157s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/generate_lib/generic/build.sh
+[4.157s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host
+[4.157s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host/dev_uros_packages.repos
+[4.157s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host/dev_ros2_packages.txt
+[4.205s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host/generic
+[4.205s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host/generic/flash.sh
+[4.206s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host/generic/package.xml
+[4.207s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host/generic/client_host_packages.repos
+[4.207s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host/generic/client-host-colcon.meta
+[4.207s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host/generic/create.sh
+[4.239s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host/generic/build.sh
+[4.239s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/host/client_ros2_packages.txt
+[4.239s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr
+[4.240s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/dev_uros_packages.repos
+[4.240s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/dev_ros2_packages.txt
+[4.242s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/list_apps.sh
+[4.299s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/generic
+[4.299s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/generic/configure.sh
+[4.299s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/generic/supported_platforms
+[4.299s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/generic/flash.sh
+[4.300s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/generic/client-colcon.meta
+[4.300s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/generic/package.xml
+[4.335s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/generic/client_uros_packages.repos
+[4.335s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/generic/create.sh
+[4.335s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/generic/board.repos
+[4.335s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/zephyr/generic/build.sh
+[4.336s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/client_ros2_packages.txt
+[4.336s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/./config/agent_ros2_packages.txt
+[4.375s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/lib/micro_ros_setup/create_ws.sh
+[4.383s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/lib/micro_ros_setup/create_agent_ws.sh
+[4.424s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/lib/micro_ros_setup/create_firmware_ws.sh
+[4.424s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/lib/micro_ros_setup/configure_firmware.sh
+[4.425s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/lib/micro_ros_setup/flash_firmware.sh
+[4.425s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/lib/micro_ros_setup/build_firmware.sh
+[4.426s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/lib/micro_ros_setup/build_agent.sh
+[4.474s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/lib/micro_ros_setup/yaml_filter.py
+[4.474s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/lib/micro_ros_setup/clean_env.sh
+[4.474s] -- Installing: /home/acl3-ubuntu/holohover_ws/src/holohover/install/micro_ros_setup/lib/micro_ros_setup/component
+[4.479s] Invoked command in '/home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/humble /usr/bin/cmake --install /home/acl3-ubuntu/holohover_ws/src/holohover/build/micro_ros_setup
