@@ -69,7 +69,7 @@ void RvizInterfaceNode::publish_visualization()
     holohover_marker.header.stamp = now();
     holohover_marker.pose.position.x = current_state(0);
     holohover_marker.pose.position.y = current_state(1);
-    holohover_marker.pose.position.z = 0;
+    holohover_marker.pose.position.z = 0.015; // center holohover 3d mdoel
     tf2::Quaternion q;
     q.setRPY(0, 0, current_state(4));
     holohover_marker.pose.orientation.x = q.getX();
@@ -80,15 +80,15 @@ void RvizInterfaceNode::publish_visualization()
     // thrust arrows
     double propeller_height = 0.045;
     double thrust_scaling = 0.2;
-    double min_display_force = 0.01;
+    double min_display_force = 0.01; 
     for (int i = 0; i < 3; i++) {
         // position vector for the propeller pair i
         Eigen::Vector2d position_1;
-        position_1(0) = holohover_props.radius_propeller_a * cos(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair_a);
-        position_1(1) = holohover_props.radius_propeller_a * sin(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair_a);
+        position_1(0) = holohover_props.propeller_pair_radial_distance_a * cos(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair_a);
+        position_1(1) = holohover_props.propeller_pair_radial_distance_a * sin(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair_a);
         Eigen::Vector2d position_2;
-        position_2(0) = holohover_props.radius_propeller_a * cos(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair_a);
-        position_2(1) = holohover_props.radius_propeller_a * sin(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair_a);
+        position_2(0) = holohover_props.propeller_pair_radial_distance_a * cos(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair_a);
+        position_2(1) = holohover_props.propeller_pair_radial_distance_a * sin(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair_a);
         // inverse propeller force direction for the propeller pair i
         Eigen::Vector2d direction_1;
         direction_1(0) = sin(holohover_props.phi_offset + holohover.phi * i);
