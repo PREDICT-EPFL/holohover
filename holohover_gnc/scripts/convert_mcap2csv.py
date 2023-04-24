@@ -43,8 +43,13 @@ def read_messages(input_bag: str):
     del reader
 
 def main():
+<<<<<<< HEAD
     serie = "holohover_20230404"
     exp = "rosbag2_20230404"
+=======
+    serie = "/Users/Etienne/Documents/GitHub/LearningStableDynamicModels/experiment/holohover_20230604/"
+    exp = "rosbag2_2023_04_06-14_03_31"
+>>>>>>> 265caefa6ba2ed3ceb2cd02dd7d6b3aebf9466b7
     file = exp + "_0.mcap"
 
     # loop through all files of all subfolders of the defined experiment series
@@ -74,6 +79,7 @@ def main():
                 
                 if topic == "/optitrack/drone/pose":
                     df_optitrack.loc[len(df_optitrack)] = [timestamp, msg.x, msg.y, msg.theta]
+                    print( msg.theta)
                 elif topic == "/drone/control":
                     df_control.loc[len(df_control)] = [timestamp, msg.motor_a_1, msg.motor_a_2, msg.motor_b_1, msg.motor_b_2, msg.motor_c_1, msg.motor_c_2]
                 elif topic == "/drone/imu":
