@@ -407,7 +407,8 @@ public:
         u_thrust = u_motor_thrust;
     }
 
-        inline void thrust_to_signal_Newton(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
+    template<typename T>
+    inline void thrust_to_signal_Newton(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
     {
         // 
         control_force_t<T> u_motor_thrust = u_thrust.array();
@@ -416,12 +417,12 @@ public:
         
         double tol = 1e-3; // Tolerance for the root
         int maxiter = 10; // Maximum number of iterations
-
-        auto f = [x, a, b, c, d] {
+        double x; double a; double; double c; double d;
+        auto f = [&x, &a, &b, &c, &d] {
             return a*pow(x, 3) + b*pow(x, 2) + c*x -d;
         };
         
-        auto fprime = [x, a, b, c] {
+        auto fprime = [&x, &a, &b, &c] {
             return 3*a*pow(x, 2) + 2*b*x + c;
         };
 
@@ -443,12 +444,12 @@ public:
                     double fxprime_6 = fprime(u_motor_signal(6),signal_to_thrust_coeffs_motor1[0],signal_to_thrust_coeffs_motor1[1],signal_to_thrust_coeffs_motor1[2]);
                     
 
-                    u_motor_signal(1) = u_motor_signal(1) -fx_1/fxprime_1; // Update x
-                    u_motor_signal(2) = u_motor_signal(1) -fx_2/fxprime_2; // Update x
-                    u_motor_signal(3) = u_motor_signal(1) -fx_3/fxprime_3; // Update x
-                    u_motor_signal(4) = u_motor_signal(1) -fx_4/fxprime_4; // Update x
-                    u_motor_signal(5) = u_motor_signal(1) -fx_5/fxprime_5; // Update x
-                    u_motor_signal(6) = u_motor_signal(1) -fx_6/fxprime_6; // Update x
+                    u_motor_signal[1] = u_motor_signal[1] -fx_1/fxprime_1; // Update x
+                    u_motor_signal[2] = u_motor_signal[2] -fx_2/fxprime_2; // Update x
+                    u_motor_signal[3] = u_motor_signal[3] -fx_3/fxprime_3; // Update x
+                    u_motor_signal[4] = u_motor_signal[4] -fx_4/fxprime_4; // Update x
+                    u_motor_signal[5] = u_motor_signal[5] -fx_5/fxprime_5; // Update x
+                    u_motor_signal[6] = u_motor_signal[6] -fx_6/fxprime_6; // Update x
                     
                     if (abs(fx_1/fxprime_1+fx_2/fxprime_2+fx_3/fxprime_3+fx_4/fxprime_4+fx_5/fxprime_5+fx_6/fxprime_6) < tol) { // Check convergence
                         u_motor_signal[]
