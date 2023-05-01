@@ -9,9 +9,7 @@ HolohoverProps load_holohover_pros(rclcpp::Node &node)
     HolohoverProps props;
 
     if (node.get_parameter("propeller_pair_gap_distance", props.propeller_pair_gap_distance) &&
-        node.get_parameter("propeller_pair_radial_distance_a", props.propeller_pair_radial_distance_a) &&
-        node.get_parameter("propeller_pair_radial_distance_b", props.propeller_pair_radial_distance_b) &&
-        node.get_parameter("propeller_pair_radial_distance_c", props.propeller_pair_radial_distance_c) &&
+        node.get_parameter("propeller_pair_radial_distance", props.propeller_pair_radial_distance) &&
         node.get_parameter("phi_offset", props.phi_offset) &&
         node.get_parameter("mass", props.mass) &&
         node.get_parameter("CoM", props.CoM) &&
@@ -40,34 +38,11 @@ HolohoverProps load_holohover_pros(rclcpp::Node &node)
         node.get_parameter("learned_motor_vec_b_1", props.learned_motor_vec_b_1) &&
         node.get_parameter("learned_motor_vec_b_2", props.learned_motor_vec_b_2) &&
         node.get_parameter("learned_motor_vec_c_1", props.learned_motor_vec_c_1) &&
-        node.get_parameter("learned_motor_vec_c_2", props.learned_motor_vec_c_2) &&
-        node.get_parameter("radius_propeller_a_1", props.radius_propeller_a_1) &&
-        node.get_parameter("radius_propeller_a_2", props.radius_propeller_a_2) &&
-        node.get_parameter("radius_propeller_b_1", props.radius_propeller_b_1) &&
-        node.get_parameter("radius_propeller_b_2", props.radius_propeller_b_2) &&
-        node.get_parameter("radius_propeller_c_1", props.radius_propeller_c_1) &&
-        node.get_parameter("radius_propeller_c_2", props.radius_propeller_c_2) &&
-        node.get_parameter("radius_propeller_a", props.radius_propeller_a) &&
-        node.get_parameter("radius_propeller_b", props.radius_propeller_b) &&
-        node.get_parameter("angle_propeller_pair_a", props.angle_propeller_pair_a) &&
-        node.get_parameter("angle_propeller_pair_b", props.angle_propeller_pair_b) &&
-        node.get_parameter("angle_propeller_pair_c", props.angle_propeller_pair_c) 
+        node.get_parameter("learned_motor_vec_c_2", props.learned_motor_vec_c_2) 
         )
     {
-        props.angle_propeller_pair_a = atan2(props.propeller_pair_gap_distance / 2, props.propeller_pair_radial_distance_a);
-        props.angle_propeller_pair_b = atan2(props.propeller_pair_gap_distance / 2, props.propeller_pair_radial_distance_b);
-        props.angle_propeller_pair_c = atan2(props.propeller_pair_gap_distance / 2, props.propeller_pair_radial_distance_c);
-
-        props.radius_propeller_a = sqrt(props.propeller_pair_radial_distance_a * props.propeller_pair_radial_distance_a + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
-        props.radius_propeller_b = sqrt(props.propeller_pair_radial_distance_b * props.propeller_pair_radial_distance_b + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
-        props.radius_propeller_c = sqrt(props.propeller_pair_radial_distance_c * props.propeller_pair_radial_distance_c + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
-
-        // props.radius_propeller_a_1 = sqrt(props.propeller_pair_radial_distance_a * props.propeller_pair_radial_distance_a + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
-        // props.radius_propeller_a_2 = sqrt(props.propeller_pair_radial_distance_a * props.propeller_pair_radial_distance_a + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
-        // props.radius_propeller_b_1 = sqrt(props.propeller_pair_radial_distance_a * props.propeller_pair_radial_distance_a + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
-        // props.radius_propeller_b_2 = sqrt(props.propeller_pair_radial_distance_a * props.propeller_pair_radial_distance_a + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
-        // props.radius_propeller_c_1 = sqrt(props.propeller_pair_radial_distance_a * props.propeller_pair_radial_distance_a + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
-        // props.radius_propeller_c_2 = sqrt(props.propeller_pair_radial_distance_a * props.propeller_pair_radial_distance_a + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
+        props.angle_propeller_pair = atan2(props.propeller_pair_gap_distance / 2, props.propeller_pair_radial_distance);
+        props.radius_propeller = sqrt(props.propeller_pair_radial_distance * props.propeller_pair_radial_distance + props.propeller_pair_gap_distance * props.propeller_pair_gap_distance / 4);
 
 
         // props.radius_propeller_a_1 = sqrt((props.CoM[1]-props.motor_pos_a_1[1])*(props.CoM[1]-props.motor_pos_a_1[1])+(props.CoM[2]-props.motor_pos_a_1[2])*(props.CoM[2]-props.motor_pos_a_1[2]));

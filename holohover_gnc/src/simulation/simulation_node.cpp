@@ -93,6 +93,9 @@ void HolohoverSimulationNode::calculate_control_acc()
     double g = 9.81;
     current_control_acc(0) += sin(simulation_settings.table_tilt_x * M_PI / 180.0) * g;
     current_control_acc(1) += sin(simulation_settings.table_tilt_y * M_PI / 180.0) * g;
+
+    std::cout << "acc = " << current_control_acc.transpose() << std::endl;
+    std::cout << "force = " << current_control_force.transpose() << std::endl;
 }
 
 void HolohoverSimulationNode::simulate_forward_callback()
@@ -130,7 +133,7 @@ void HolohoverSimulationNode::imu_callback()
     imu_measurement.atti.pitch = 0;
     imu_measurement.atti.yaw = state(4);
     imu_measurement.acc.x = current_control_acc(0);
-    imu_measurement.acc.x = current_control_acc(1);
+    imu_measurement.acc.y = current_control_acc(1);
     imu_measurement.acc.z = -9.81;
     imu_measurement.gyro.x = 0;
     imu_measurement.gyro.y = 0;
