@@ -416,7 +416,7 @@ public:
         u_motor_signal.setConstant(0.5);
         
         //double tol = 1e-3; // Tolerance for the root
-        int maxiter = 20; // Maximum number of iterations
+        int maxiter = 5; // Maximum number of iterations
         //double x; double a; double b; double c; double d;
 
         auto f = [](auto x, auto a, auto b, auto c, auto d) {
@@ -427,29 +427,73 @@ public:
             return 3*a*pow(x, 2) + 2*b*x + c;
         };
             //u_motor_signal.array() *= u_motor_thrust.array();
-                for (int i=0; i<maxiter; i++) {
-                    double fx_1 = f(u_motor_signal(0),props.signal_to_thrust_coeffs_motor1[0],props.signal_to_thrust_coeffs_motor1[1],props.signal_to_thrust_coeffs_motor1[2],u_motor_thrust(0));
-                    double fxprime_1 = fprime(u_motor_signal(0),props.signal_to_thrust_coeffs_motor1[0],props.signal_to_thrust_coeffs_motor1[1],props.signal_to_thrust_coeffs_motor1[2]);
-                    double fx_2 = f(u_motor_signal(1),props.signal_to_thrust_coeffs_motor2[0],props.signal_to_thrust_coeffs_motor2[1],props.signal_to_thrust_coeffs_motor2[2],u_motor_thrust(1));
-                    double fxprime_2 = fprime(u_motor_signal(1),props.signal_to_thrust_coeffs_motor2[0],props.signal_to_thrust_coeffs_motor2[1],props.signal_to_thrust_coeffs_motor2[2]);
-                    double fx_3 = f(u_motor_signal(2),props.signal_to_thrust_coeffs_motor3[0],props.signal_to_thrust_coeffs_motor3[1],props.signal_to_thrust_coeffs_motor3[2],u_motor_thrust(2));
-                    double fxprime_3 = fprime(u_motor_signal(2),props.signal_to_thrust_coeffs_motor3[0],props.signal_to_thrust_coeffs_motor3[1],props.signal_to_thrust_coeffs_motor3[2]);
-                    double fx_4 = f(u_motor_signal(3),props.signal_to_thrust_coeffs_motor4[0],props.signal_to_thrust_coeffs_motor4[1],props.signal_to_thrust_coeffs_motor4[2],u_motor_thrust(3));
-                    double fxprime_4 = fprime(u_motor_signal(3),props.signal_to_thrust_coeffs_motor4[0],props.signal_to_thrust_coeffs_motor4[1],props.signal_to_thrust_coeffs_motor4[2]);
-                    double fx_5 = f(u_motor_signal(4),props.signal_to_thrust_coeffs_motor5[0],props.signal_to_thrust_coeffs_motor5[1],props.signal_to_thrust_coeffs_motor5[2],u_motor_thrust(4));
-                    double fxprime_5 = fprime(u_motor_signal(4),props.signal_to_thrust_coeffs_motor5[0],props.signal_to_thrust_coeffs_motor5[1],props.signal_to_thrust_coeffs_motor5[2]);
-                    double fx_6 = f(u_motor_signal(5),props.signal_to_thrust_coeffs_motor6[0],props.signal_to_thrust_coeffs_motor6[1],props.signal_to_thrust_coeffs_motor6[2],u_motor_thrust(5));
-                    double fxprime_6 = fprime(u_motor_signal(5),props.signal_to_thrust_coeffs_motor6[0],props.signal_to_thrust_coeffs_motor6[1],props.signal_to_thrust_coeffs_motor6[2]);
+        if u_motor_thrust(0)>props.max_thrust {
+            u_motor_signal(0)=1
+        }
+        if u_motor_thrust(1)>props.max_thrust {
+            u_motor_signal(1)=1
+        }
+        if u_motor_thrust(2)>props.max_thrust {
+            u_motor_signal(2)=1
+        }
+        if u_motor_thrust(3)>props.max_thrust {
+            u_motor_signal(3)=1
+        }
+        if u_motor_thrust(4)>props.max_thrust {
+            u_motor_signal(4)=1
+        }
+        if u_motor_thrust(5)>props.max_thrust {
+            u_motor_signal(5)=1
+        }
+        if u_motor_thrust(6)>props.max_thrust {
+            u_motor_signal(6)=1
+        }
 
-                    double alpha = 0.3;
-                    u_motor_signal(0) = u_motor_signal(0) -alpha * fx_1/fxprime_1; // Update x1
-                    u_motor_signal(1) = u_motor_signal(1) -alpha * fx_2/fxprime_2; // Update x2
-                    u_motor_signal(2) = u_motor_signal(2) -alpha * fx_3/fxprime_3; // Update x3
-                    u_motor_signal(3) = u_motor_signal(3) -alpha * fx_4/fxprime_4; // Update x4
-                    u_motor_signal(4) = u_motor_signal(4) -alpha * fx_5/fxprime_5; // Update x5
-                    u_motor_signal(5) = u_motor_signal(5) -alpha * fx_6/fxprime_6; // Update x6
-                    u_motor_signal = u_motor_signal.cwiseMin(1.0).cwiseMax(0.0);
-                    }
+        if u_motor_thrust(0)<0 {
+            u_motor_signal(0)=0
+        }
+        if u_motor_thrust(1)<0 {
+            u_motor_signal(1)=0
+        }
+        if u_motor_thrust(2)<0 {
+            u_motor_signal(2)=0
+        }
+        if u_motor_thrust(3)<0 {
+            u_motor_signal(3)=0
+        }
+        if u_motor_thrust(4)<0 {
+            u_motor_signal(4)=0
+        }
+        if u_motor_thrust(5)<0 {
+            u_motor_signal(5)=0
+        }
+        if u_motor_thrust(6)<0 {
+            u_motor_signal(6)=0
+        }
+
+        for (int i=0; i<maxiter; i++) {
+            double fx_1 = f(u_motor_signal(0),props.signal_to_thrust_coeffs_motor1[0],props.signal_to_thrust_coeffs_motor1[1],props.signal_to_thrust_coeffs_motor1[2],u_motor_thrust(0));
+            double fxprime_1 = fprime(u_motor_signal(0),props.signal_to_thrust_coeffs_motor1[0],props.signal_to_thrust_coeffs_motor1[1],props.signal_to_thrust_coeffs_motor1[2]);
+            double fx_2 = f(u_motor_signal(1),props.signal_to_thrust_coeffs_motor2[0],props.signal_to_thrust_coeffs_motor2[1],props.signal_to_thrust_coeffs_motor2[2],u_motor_thrust(1));
+            double fxprime_2 = fprime(u_motor_signal(1),props.signal_to_thrust_coeffs_motor2[0],props.signal_to_thrust_coeffs_motor2[1],props.signal_to_thrust_coeffs_motor2[2]);
+            double fx_3 = f(u_motor_signal(2),props.signal_to_thrust_coeffs_motor3[0],props.signal_to_thrust_coeffs_motor3[1],props.signal_to_thrust_coeffs_motor3[2],u_motor_thrust(2));
+            double fxprime_3 = fprime(u_motor_signal(2),props.signal_to_thrust_coeffs_motor3[0],props.signal_to_thrust_coeffs_motor3[1],props.signal_to_thrust_coeffs_motor3[2]);
+            double fx_4 = f(u_motor_signal(3),props.signal_to_thrust_coeffs_motor4[0],props.signal_to_thrust_coeffs_motor4[1],props.signal_to_thrust_coeffs_motor4[2],u_motor_thrust(3));
+            double fxprime_4 = fprime(u_motor_signal(3),props.signal_to_thrust_coeffs_motor4[0],props.signal_to_thrust_coeffs_motor4[1],props.signal_to_thrust_coeffs_motor4[2]);
+            double fx_5 = f(u_motor_signal(4),props.signal_to_thrust_coeffs_motor5[0],props.signal_to_thrust_coeffs_motor5[1],props.signal_to_thrust_coeffs_motor5[2],u_motor_thrust(4));
+            double fxprime_5 = fprime(u_motor_signal(4),props.signal_to_thrust_coeffs_motor5[0],props.signal_to_thrust_coeffs_motor5[1],props.signal_to_thrust_coeffs_motor5[2]);
+            double fx_6 = f(u_motor_signal(5),props.signal_to_thrust_coeffs_motor6[0],props.signal_to_thrust_coeffs_motor6[1],props.signal_to_thrust_coeffs_motor6[2],u_motor_thrust(5));
+            double fxprime_6 = fprime(u_motor_signal(5),props.signal_to_thrust_coeffs_motor6[0],props.signal_to_thrust_coeffs_motor6[1],props.signal_to_thrust_coeffs_motor6[2]);
+
+            double alpha = 1;
+            u_motor_signal(0) = u_motor_signal(0) -alpha * fx_1/fxprime_1; // Update x1
+            u_motor_signal(1) = u_motor_signal(1) -alpha * fx_2/fxprime_2; // Update x2
+            u_motor_signal(2) = u_motor_signal(2) -alpha * fx_3/fxprime_3; // Update x3
+            u_motor_signal(3) = u_motor_signal(3) -alpha * fx_4/fxprime_4; // Update x4
+            u_motor_signal(4) = u_motor_signal(4) -alpha * fx_5/fxprime_5; // Update x5
+            u_motor_signal(5) = u_motor_signal(5) -alpha * fx_6/fxprime_6; // Update x6
+            u_motor_signal = u_motor_signal.cwiseMin(1.0).cwiseMax(0.0);
+            }
 
                     // if (abs(fx_1/fxprime_1+fx_2/fxprime_2+fx_3/fxprime_3+fx_4/fxprime_4+fx_5/fxprime_5+fx_6/fxprime_6) < tol) { // Check convergence
                     //     u_motor_signal[]
