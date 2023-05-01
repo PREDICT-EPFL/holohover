@@ -1,10 +1,9 @@
 /**:
   ros__parameters:
+
     propeller_pair_gap_distance: 30e-3
     # For a centered CoM: 
-    propeller_pair_radial_distance_a: 44.048e-3
-    propeller_pair_radial_distance_b: 44.048e-3
-    propeller_pair_radial_distance_c: 44.048e-3
+    propeller_pair_radial_distance: 44.048e-3
 
     phi_offset: 0.0 
 
@@ -24,7 +23,7 @@
     motor_pos_c_1: [-0.035014376044273376, -0.030646702274680138, 0.0]
     motor_pos_c_2: [-0.009033635258674622, -0.04564669355750084, 0.0]
 
-    # Learned motor vec
+    # # Learned motor vec
     # learned_motor_vec_a_1: [0.2083970159292221, 1.0047367811203003, 0.0]
     # learned_motor_vec_a_2: [-0.2260730117559433, -0.9895665645599365, 0.0]
     # learned_motor_vec_b_1: [-0.6381710767745972, -0.3652873635292053, 0.0]
@@ -32,7 +31,7 @@
     # learned_motor_vec_c_1: [1.0794661045074463, -0.5174805521965027, 0.0]
     # learned_motor_vec_c_2: [-1.022574782371521, 0.4252922832965851, 0.0]
 
-        # Learned motor vec normalized
+    # normalized learned motor vec 
     learned_motor_vec_a_1: [0.20309195, 0.97915967, 0.0]
     learned_motor_vec_a_2: [-0.22271841, -0.97488282,  0.0]
     learned_motor_vec_b_1: [-0.86788077, -0.49677256,  0.0]  

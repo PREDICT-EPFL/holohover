@@ -427,48 +427,48 @@ public:
             return 3*a*pow(x, 2) + 2*b*x + c;
         };
             //u_motor_signal.array() *= u_motor_thrust.array();
-        if u_motor_thrust(0)>props.max_thrust {
-            u_motor_signal(0)=1
+        if (u_motor_thrust(0)>props.max_thrust) {
+            u_motor_signal(0)=1;
         }
-        if u_motor_thrust(1)>props.max_thrust {
-            u_motor_signal(1)=1
+        if (u_motor_thrust(1)>props.max_thrust) {
+            u_motor_signal(1)=1;
         }
-        if u_motor_thrust(2)>props.max_thrust {
-            u_motor_signal(2)=1
+        if (u_motor_thrust(2)>props.max_thrust) {
+            u_motor_signal(2)=1;
         }
-        if u_motor_thrust(3)>props.max_thrust {
-            u_motor_signal(3)=1
+        if (u_motor_thrust(3)>props.max_thrust) {
+            u_motor_signal(3)=1;
         }
-        if u_motor_thrust(4)>props.max_thrust {
-            u_motor_signal(4)=1
+        if (u_motor_thrust(4)>props.max_thrust) {
+            u_motor_signal(4)=1;
         }
-        if u_motor_thrust(5)>props.max_thrust {
-            u_motor_signal(5)=1
+        if (u_motor_thrust(5)>props.max_thrust) {
+            u_motor_signal(5)=1;
         }
-        if u_motor_thrust(6)>props.max_thrust {
-            u_motor_signal(6)=1
+        if (u_motor_thrust(6)>props.max_thrust) {
+            u_motor_signal(6)=1;
         }
 
-        if u_motor_thrust(0)<0 {
-            u_motor_signal(0)=0
+        if (u_motor_thrust(0)<0) {
+            u_motor_signal(0)=0;
         }
-        if u_motor_thrust(1)<0 {
-            u_motor_signal(1)=0
+        if (u_motor_thrust(1)<0) {
+            u_motor_signal(1)=0;
         }
-        if u_motor_thrust(2)<0 {
-            u_motor_signal(2)=0
+        if (u_motor_thrust(2)<0) {
+            u_motor_signal(2)=0;
         }
-        if u_motor_thrust(3)<0 {
-            u_motor_signal(3)=0
+        if (u_motor_thrust(3)<0) {
+            u_motor_signal(3)=0;
         }
-        if u_motor_thrust(4)<0 {
-            u_motor_signal(4)=0
+        if (u_motor_thrust(4)<0) {
+            u_motor_signal(4)=0;
         }
-        if u_motor_thrust(5)<0 {
-            u_motor_signal(5)=0
+        if (u_motor_thrust(5)<0) {
+            u_motor_signal(5)=0;
         }
-        if u_motor_thrust(6)<0 {
-            u_motor_signal(6)=0
+        if (u_motor_thrust(6)<0) {
+            u_motor_signal(6)=0;
         }
 
         for (int i=0; i<maxiter; i++) {
