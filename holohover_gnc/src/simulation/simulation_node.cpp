@@ -11,6 +11,7 @@ HolohoverSimulationNode::HolohoverSimulationNode() :
 {
     // init state
     state.setZero();
+    nonlinear_state.setZero();
 
     // init zero control
     current_control.header.frame_id = "body";
@@ -94,13 +95,16 @@ void HolohoverSimulationNode::calculate_control_acc()
     current_control_acc(0) += sin(simulation_settings.table_tilt_x * M_PI / 180.0) * g;
     current_control_acc(1) += sin(simulation_settings.table_tilt_y * M_PI / 180.0) * g;
 
-    std::cout << "acc = " << current_control_acc.transpose() << std::endl;
-    std::cout << "force = " << current_control_force.transpose() << std::endl;
+    //std::cout << "acc = " << current_control_acc.transpose() << std::endl;
+    //std::cout << "force = " << current_control_force.transpose() << std::endl;
 }
 
 void HolohoverSimulationNode::simulate_forward_callback()
 {
     state = holohover.Ad * state + holohover.Bd * current_control_acc;
+    
+    //nonlinear_state = holohover.non_linear_state_dynamics_discrete(nonlinear_state, current_control_acc,nonlinear_state);
+    //std::cout << "model difference = " << state-nonlinear_state << std::endl;
 
     holohover_msgs::msg::HolohoverStateStamped state_msg;
     state_msg.header.frame_id = "world";

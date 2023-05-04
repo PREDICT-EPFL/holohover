@@ -29,6 +29,7 @@ private:
     std::mt19937 random_engine;
 
     Holohover::state_t<double> state;
+    Holohover::state_t<double> nonlinear_state;
     holohover_msgs::msg::HolohoverControlStamped current_control;
     Holohover::control_acc_t<double> current_control_acc;
 

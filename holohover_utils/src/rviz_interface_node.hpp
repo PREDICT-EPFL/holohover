@@ -19,16 +19,19 @@ private:
     Holohover holohover;
 
     Holohover::state_t<double> current_state;
+    Holohover::state_t<double> current_ref;
     Holohover::control_force_t<double> current_control;
 
     int marker_id_counter = 0;
     visualization_msgs::msg::Marker holohover_marker;
+    visualization_msgs::msg::Marker trajectory_marker;
     visualization_msgs::msg::Marker thrust_vector_markers[6];
 
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_subscription;
+
 
     void init_topics();
     void init_timer();

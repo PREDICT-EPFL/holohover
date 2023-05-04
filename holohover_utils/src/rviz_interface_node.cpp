@@ -22,6 +22,11 @@ RvizInterfaceNode::RvizInterfaceNode() :
         thrust_vector_markers[i].scale.z = 0.02;
         thrust_vector_markers[i].points.resize(2);
     }
+    trajectory_marker = create_marker("trajectory", 0, 0.75, 0);
+    trajectory_marker.type = visualization_msgs::msg::Marker::CUBE;
+    trajectory_marker.scale.x = 0.005;
+    trajectory_marker.scale.y = 0.005;
+    trajectory_marker.scale.z = 0.005;
 
     init_topics();
     init_timer();
@@ -35,9 +40,11 @@ void RvizInterfaceNode::init_topics()
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "navigation/state", 10,
             std::bind(&RvizInterfaceNode::state_callback, this, std::placeholders::_1));
+    
     control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
             "drone/control", rclcpp::SensorDataQoS(),
             std::bind(&RvizInterfaceNode::control_callback, this, std::placeholders::_1));
+    
 }
 
 void RvizInterfaceNode::init_timer()
@@ -76,6 +83,11 @@ void RvizInterfaceNode::publish_visualization()
     holohover_marker.pose.orientation.y = q.getY();
     holohover_marker.pose.orientation.z = q.getZ();
     holohover_marker.pose.orientation.w = q.getW();
+
+    // Trajectory
+    //trajectory_marker.header.stamp = now();
+    trajectory_marker.pose.position.x = current_ref(0);
+    trajectory_marker.pose.position.y = current_ref(1);
 
     // thrust arrows
     double propeller_height = 0.045;
@@ -125,8 +137,9 @@ void RvizInterfaceNode::publish_visualization()
 
     // publish markers
     visualization_msgs::msg::MarkerArray markers;
-    markers.markers.reserve(7);
+    markers.markers.reserve(8);
     markers.markers.push_back(holohover_marker);
+    markers.markers.push_back(trajectory_marker);
     for (auto &thrust_vector_marker : thrust_vector_markers)
     {
         markers.markers.push_back(thrust_vector_marker);
@@ -152,6 +165,8 @@ void RvizInterfaceNode::control_callback(const holohover_msgs::msg::HolohoverCon
     current_control(3) = control.motor_b_2;
     current_control(4) = control.motor_c_1;
     current_control(5) = control.motor_c_2;
+
+    //current_ref(0) = control.ref;
 }
 
 int main(int argc, char **argv) {

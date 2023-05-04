@@ -145,7 +145,58 @@ public:
         rotation_matrix << cos(x(4)), sin(x(4)),
                            -sin(x(4)), cos(x(4));
     }
+    
+    
+    template<typename T>
+    inline void nonlinear_state_dynamics(const state_t<T> &x,
+                               const control_force_t<T> &u,
+                               state_t<T> &x_dot) const noexcept
+    {
+        control_acc_t<T> u_acc;
+        //control_force_to_acceleration(x, u, u_acc);
+        Holohover::control_force_t<double> force;
+        //signal_to_thrust(u, force);
 
+        x_dot(0) = x(2); //x
+        x_dot(1) = x(3); //y
+
+        double thrust_1 = props.signal_to_thrust_coeffs_motor1[0]*pow(u(0), 3) + props.signal_to_thrust_coeffs_motor1[1]*pow(u(0), 2) + props.signal_to_thrust_coeffs_motor1[2]*u(0);
+        double thrust_2 = props.signal_to_thrust_coeffs_motor2[0]*pow(u(1), 3) + props.signal_to_thrust_coeffs_motor2[1]*pow(u(1), 2) + props.signal_to_thrust_coeffs_motor2[2]*u(1);
+        double thrust_3 = props.signal_to_thrust_coeffs_motor3[0]*pow(u(2), 3) + props.signal_to_thrust_coeffs_motor3[1]*pow(u(2), 2) + props.signal_to_thrust_coeffs_motor3[2]*u(2);
+        double thrust_4 = props.signal_to_thrust_coeffs_motor4[0]*pow(u(3), 3) + props.signal_to_thrust_coeffs_motor4[1]*pow(u(3), 2) + props.signal_to_thrust_coeffs_motor4[2]*u(3);
+        double thrust_5 = props.signal_to_thrust_coeffs_motor5[0]*pow(u(4), 3) + props.signal_to_thrust_coeffs_motor5[1]*pow(u(4), 2) + props.signal_to_thrust_coeffs_motor5[2]*u(4);
+        double thrust_6 = props.signal_to_thrust_coeffs_motor6[0]*pow(u(5), 3) + props.signal_to_thrust_coeffs_motor6[1]*pow(u(5), 2) + props.signal_to_thrust_coeffs_motor6[2]*u(5);
+
+        double Fx1 = props.learned_motor_vec_a_1[0]*(thrust_1) ;
+        double Fx2 = props.learned_motor_vec_a_2[0]*(thrust_2) ;
+        double Fx3 = props.learned_motor_vec_b_1[0]*(thrust_3) ;
+        double Fx4 = props.learned_motor_vec_b_2[0]*(thrust_4) ;
+        double Fx5 = props.learned_motor_vec_c_1[0]*(thrust_5) ;
+        double Fx6 = props.learned_motor_vec_c_2[0]*(thrust_6) ;
+        
+        double Fy1 = props.learned_motor_vec_a_1[1]*(thrust_1) ;
+        double Fy2 = props.learned_motor_vec_a_2[1]*(thrust_2) ;
+        double Fy3 = props.learned_motor_vec_b_1[1]*(thrust_3) ;
+        double Fy4 = props.learned_motor_vec_b_2[1]*(thrust_4) ;
+        double Fy5 = props.learned_motor_vec_c_1[1]*(thrust_5) ;
+        double Fy6 = props.learned_motor_vec_c_2[1]*(thrust_6) ; // y dot
+
+        double Fx = cos(x(5))*(Fx1+Fx2+Fx3+Fx4+Fx4+Fx6) -sin(x(5))*(Fy1+Fy2+Fy3+Fy4+Fy5+Fy6);
+        double Fy = sin(x(5))*(Fx1+Fx2+Fx3+Fx4+Fx4+Fx6) -cos(x(5))*(Fy1+Fy2+Fy3+Fy4+Fy5+Fy6);
+
+        x_dot(2) = Fx/props.mass ; // x dot
+        x_dot(3) = Fy/props.mass ;//y dot
+        x_dot(4) = x(5); //theta
+
+        double Mz1 = (props.motor_pos_a_1[0]-props.CoM[0])*Fx1 - (props.motor_pos_a_1[1]-props.CoM[1])*Fy1;
+        double Mz2 = (props.motor_pos_a_2[0]-props.CoM[0])*Fx1 - (props.motor_pos_a_2[1]-props.CoM[1])*Fy2;
+        double Mz3 = (props.motor_pos_b_1[0]-props.CoM[0])*Fx1 - (props.motor_pos_b_1[1]-props.CoM[1])*Fy3;
+        double Mz4 = (props.motor_pos_b_2[0]-props.CoM[0])*Fx1 - (props.motor_pos_b_2[1]-props.CoM[1])*Fy4;
+        double Mz5 = (props.motor_pos_c_1[0]-props.CoM[0])*Fx1 - (props.motor_pos_c_1[1]-props.CoM[1])*Fy5;
+        double Mz6 = (props.motor_pos_c_2[0]-props.CoM[0])*Fx1 - (props.motor_pos_c_2[1]-props.CoM[1])*Fy6;
+
+        x_dot(5) = (Mz1+Mz2+Mz3+Mz4+Mz5+Mz6)/props.inertia; //theta dot
+    }
     template<typename T>
     inline void control_force_to_acceleration_mapping(const state_t<T> &x, Eigen::Matrix<T, NA, NU> &map) const noexcept
     {
@@ -178,9 +229,7 @@ public:
 
         // position vector of the first propeller in the propeller pair i if CoM centered
         //double rx1 = props.radius_propeller * cos(props.phi_offset + phi * i - props.angle_propeller_pair);
-        //double ry1 = props.radius_propeller * sin(props.phi_offset + phi * i - props.angle_propeller_pair);
-
-        // Learned position
+        //double ry1 = props.radius_propeller * sin(props.phi_offset + phi * i - props.angle_propeller_pai                               
         double rx1 = props.motor_pos_a_1[0]-props.CoM[0];
         double ry1 = props.motor_pos_a_1[1]-props.CoM[1];
 
@@ -368,6 +417,18 @@ public:
     }
 
     template<typename T>
+    inline void non_linear_state_dynamics_discrete(const state_t<T> &x,
+                                        const control_force_t<T> &u,
+                                        state_t<T> &x_next) const noexcept
+    {
+        // control_acc_t<T> u_acc;
+        //control_force_to_acceleration(x, u, u_acc);
+        Holohover::state_t<double> xdot;
+        nonlinear_state_dynamics(x,u, xdot);
+        x_next = x + xdot*dt;
+    }
+
+    template<typename T>
     inline void state_dynamics_discrete(const state_t<T> &x,
                                         const control_force_t<T> &u,
                                         state_t<T> &x_next) const noexcept
@@ -413,7 +474,8 @@ public:
         // 
         control_force_t<T> u_motor_thrust = u_thrust.array();
         control_force_t<T> u_motor_signal;
-        u_motor_signal.setConstant(0.5);
+        //u_motor_signal.setConstant(1);
+        u_motor_signal = 0.6*u_motor_thrust;
         
         //double tol = 1e-3; // Tolerance for the root
         int maxiter = 5; // Maximum number of iterations
@@ -451,49 +513,8 @@ public:
             u_motor_signal(5) = u_motor_signal(5) -alpha * fx_6/fxprime_6; // Update x6
             u_motor_signal = u_motor_signal.cwiseMin(1.0).cwiseMax(0.0);
         }
-        if (u_motor_thrust(0)>props.max_thrust) {
-            u_motor_signal(0)=1;
-        }
-        if (u_motor_thrust(1)>props.max_thrust) {
-            u_motor_signal(1)=1;
-        }
-        if (u_motor_thrust(2)>props.max_thrust) {
-            u_motor_signal(2)=1;
-        }
-        if (u_motor_thrust(3)>props.max_thrust) {
-            u_motor_signal(3)=1;
-        }
-        if (u_motor_thrust(4)>props.max_thrust) {
-            u_motor_signal(4)=1;
-        }
-        if (u_motor_thrust(5)>props.max_thrust) {
-            u_motor_signal(5)=1;
-        }
-        if (u_motor_thrust(6)>props.max_thrust) {
-            u_motor_signal(6)=1;
-        }
-        if (u_motor_thrust(0)<0) {
-            u_motor_signal(0)=0;
-        }
-        if (u_motor_thrust(1)<0) {
-            u_motor_signal(1)=0;
-        }
-        if (u_motor_thrust(2)<0) {
-            u_motor_signal(2)=0;
-        }
-        if (u_motor_thrust(3)<0) {
-            u_motor_signal(3)=0;
-        }
-        if (u_motor_thrust(4)<0) {
-            u_motor_signal(4)=0;
-        }
-        if (u_motor_thrust(5)<0) {
-            u_motor_signal(5)=0;
-        }
-        if (u_motor_thrust(6)<0) {
-            u_motor_signal(6)=0;
-        }
 
+    
                     // if (abs(fx_1/fxprime_1+fx_2/fxprime_2+fx_3/fxprime_3+fx_4/fxprime_4+fx_5/fxprime_5+fx_6/fxprime_6) < tol) { // Check convergence
                     //     u_motor_signal[]
                     //     }
