@@ -27,6 +27,7 @@ RvizInterfaceNode::RvizInterfaceNode() :
     trajectory_marker.scale.x = 0.005;
     trajectory_marker.scale.y = 0.005;
     trajectory_marker.scale.z = 0.005;
+    trajectory_marker.lifetime = rclcpp::Duration(10,0);
 
     init_topics();
     init_timer();
@@ -86,8 +87,15 @@ void RvizInterfaceNode::publish_visualization()
 
     // Trajectory
     //trajectory_marker.header.stamp = now();
-    trajectory_marker.pose.position.x = current_ref(0);
-    trajectory_marker.pose.position.y = current_ref(1);
+    trajectory_marker = create_marker("trajectory", 0, 0.75, 0);
+    trajectory_marker.type = visualization_msgs::msg::Marker::CUBE;
+    trajectory_marker.scale.x = 0.005;
+    trajectory_marker.scale.y = 0.005;
+    trajectory_marker.scale.z = 0.005;
+    trajectory_marker.lifetime = rclcpp::Duration(10,0);
+    trajectory_marker.pose.position.x = current_state(0);
+    trajectory_marker.pose.position.y = current_state(1);
+
 
     // thrust arrows
     double propeller_height = 0.045;

@@ -475,7 +475,10 @@ public:
         control_force_t<T> u_motor_thrust = u_thrust.array();
         control_force_t<T> u_motor_signal;
         //u_motor_signal.setConstant(1);
+        u_motor_thrust = u_motor_thrust.cwiseMin(props.max_thrust).cwiseMax(0.0);
+        std::cout << "thrust = " << u_motor_thrust << std::endl;
         u_motor_signal = 0.6*u_motor_thrust;
+        
         
         //double tol = 1e-3; // Tolerance for the root
         int maxiter = 5; // Maximum number of iterations
