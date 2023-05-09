@@ -103,8 +103,8 @@ void HolohoverSimulationNode::simulate_forward_callback()
 {
     state = holohover.Ad * state + holohover.Bd * current_control_acc;
     
-    //nonlinear_state = holohover.non_linear_state_dynamics_discrete(nonlinear_state, current_control_acc,nonlinear_state);
-    //std::cout << "model difference = " << state-nonlinear_state << std::endl;
+    nonlinear_state = holohover.template non_linear_state_dynamics_discrete<double>(nonlinear_state, current_control_acc,nonlinear_state);
+    std::cout << "model difference = " << state-nonlinear_state << std::endl;
 
     holohover_msgs::msg::HolohoverStateStamped state_msg;
     state_msg.header.frame_id = "world";
