@@ -1,0 +1,16 @@
+control_mpc:
+  ros__parameters:
+    period: 0.01
+
+    weight_x: 140.0
+    weight_y: 140.0
+    weight_v_x: 1.0
+    weight_v_y: 1.0
+    weight_yaw: 1.0
+    weight_w_z: 1.0
+
+    weight_motor: 0.1
+    
+    rand_sig_duration: 100000.0
+    rand_sig_max: 0.6
+    rand_sig_min: -0.6

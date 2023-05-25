@@ -97,14 +97,14 @@ void HolohoverControlExpNode::publish_control()
     control_publisher->publish(control_msg);
 }
 
-void HolohoverControlExpNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg)
+void HolohoverControlExpNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state)
 {
-    state(0) = state_msg.x;
-    state(1) = state_msg.y;
-    state(2) = state_msg.v_x;
-    state(3) = state_msg.v_y;
-    state(4) = state_msg.yaw;
-    state(5) = state_msg.w_z;
+    state(0) = msg_state.state_msg.x;
+    state(1) = msg_state.state_msg.y;
+    state(2) = msg_state.state_msg.v_x;
+    state(3) = msg_state.state_msg.v_y;
+    state(4) = msg_state.state_msg.yaw;
+    state(5) = msg_state.state_msg.w_z;
 }
 
 void HolohoverControlExpNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)

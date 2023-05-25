@@ -47,6 +47,7 @@ void HolohoverControlLQRNode::init_topics()
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "navigation/state", 10,
             std::bind(&HolohoverControlLQRNode::state_callback, this, std::placeholders::_1));
+            
     reference_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
             "control/ref", 10,
             std::bind(&HolohoverControlLQRNode::ref_callback, this, std::placeholders::_1));
@@ -88,14 +89,14 @@ void HolohoverControlLQRNode::publish_control()
     control_publisher->publish(control_msg);
 }
 
-void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg)
+void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state)
 {
-    state(0) = state_msg.x;
-    state(1) = state_msg.y;
-    state(2) = state_msg.v_x;
-    state(3) = state_msg.v_y;
-    state(4) = state_msg.yaw;
-    state(5) = state_msg.w_z;
+    state(0) = msg_state.state_msg.x;
+    state(1) = msg_state.state_msg.y;
+    state(2) = msg_state.state_msg.v_x;
+    state(3) = msg_state.state_msg.v_y;
+    state(4) = msg_state.state_msg.yaw;
+    state(5) = msg_state.state_msg.w_z;
 }
 
 void HolohoverControlLQRNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)

@@ -64,6 +64,7 @@ Visualization Manager:
         thrust vector 3: true
         thrust vector 4: true
         thrust vector 5: true
+        trajectory: true
       Topic:
         Depth: 5
         Durability Policy: Volatile

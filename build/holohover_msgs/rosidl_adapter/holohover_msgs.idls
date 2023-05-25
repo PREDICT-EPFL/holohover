@@ -1,5 +1,0 @@
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/holohover_msgs/rosidl_adapter/holohover_msgs:msg/Attitude.idl
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/holohover_msgs/rosidl_adapter/holohover_msgs:msg/HolohoverIMUStamped.idl
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/holohover_msgs/rosidl_adapter/holohover_msgs:msg/HolohoverMouseStamped.idl
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/holohover_msgs/rosidl_adapter/holohover_msgs:msg/HolohoverControlStamped.idl
-/home/acl3-ubuntu/holohover_ws/src/holohover/build/holohover_msgs/rosidl_adapter/holohover_msgs:msg/HolohoverStateStamped.idl

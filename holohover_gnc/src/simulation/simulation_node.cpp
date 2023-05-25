@@ -102,30 +102,45 @@ void HolohoverSimulationNode::calculate_control_acc()
 void HolohoverSimulationNode::simulate_forward_callback()
 {
     state = holohover.Ad * state + holohover.Bd * current_control_acc;
+
+    Holohover::control_force_t<double> current_control_signal;
+    current_control_signal(0) = current_control.motor_a_1;
+    current_control_signal(1) = current_control.motor_a_2;
+    current_control_signal(2) = current_control.motor_b_1;
+    current_control_signal(3) = current_control.motor_b_2;
+    current_control_signal(4) = current_control.motor_c_1;
+    current_control_signal(5) = current_control.motor_c_2;
     
-    nonlinear_state = holohover.template non_linear_state_dynamics_discrete<double>(nonlinear_state, current_control_acc,nonlinear_state);
-    std::cout << "model difference = " << state-nonlinear_state << std::endl;
+    
+    holohover.template non_linear_state_dynamics_discrete<double>(nonlinear_state, current_control_signal,nonlinear_state);
+    //state = nonlinear_state;
+    //std::cout << "models difference = " << (state-nonlinear_state) << std::endl;
+    // std::cout << "state = " << (state) << std::endl;
+    // std::cout << "nonlinear_state = " << (nonlinear_state) << std::endl;
+    // std::cout << "state- nonlinear_state = " << (state-nonlinear_state) << std::endl;
+    // std::cout << "norm of models difference = " << (state-nonlinear_state).norm() << std::endl;
 
-    holohover_msgs::msg::HolohoverStateStamped state_msg;
-    state_msg.header.frame_id = "world";
-    state_msg.header.stamp = this->now();
-    state_msg.x = state(0);
-    state_msg.y = state(1);
-    state_msg.v_x = state(2);
-    state_msg.v_y = state(3);
-    state_msg.yaw = state(4);
-    state_msg.w_z = state(5);
 
-    if (state_msg.yaw < -M_PI)
+    holohover_msgs::msg::HolohoverStateStamped msg_state;
+    msg_state.header.frame_id = "world";
+    msg_state.header.stamp = this->now();
+    msg_state.state_msg.x = state(0)-holohover_props.CoM[0];
+    msg_state.state_msg.y = state(1)-holohover_props.CoM[1];
+    msg_state.state_msg.v_x = state(2);
+    msg_state.state_msg.v_y = state(3);
+    msg_state.state_msg.yaw = state(4);
+    msg_state.state_msg.w_z = state(5);
+
+    if (msg_state.state_msg.yaw < -M_PI)
     {
-        state_msg.yaw += 2 * M_PI;
+        msg_state.state_msg.yaw += 2 * M_PI;
     }
-    if (state_msg.yaw > M_PI)
+    if (msg_state.state_msg.yaw > M_PI)
     {
-        state_msg.yaw -= 2 * M_PI;
+        msg_state.state_msg.yaw -= 2 * M_PI;
     }
 
-    state_publisher->publish(state_msg);
+    state_publisher->publish(msg_state);
 }
 
 void HolohoverSimulationNode::imu_callback()

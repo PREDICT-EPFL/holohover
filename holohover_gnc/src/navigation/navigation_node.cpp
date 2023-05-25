@@ -80,12 +80,12 @@ void HolohoverNavigationNode::kalman_predict_step()
     holohover_msgs::msg::HolohoverStateStamped state_msg;
     state_msg.header.frame_id = "world";
     state_msg.header.stamp = current_time;
-    state_msg.x = state(0);
-    state_msg.y = state(1);
-    state_msg.yaw = state(2);
-    state_msg.v_x = state(3);
-    state_msg.v_y = state(4);
-    state_msg.w_z = state(5);
+    state_msg.state_msg.x = state(0);
+    state_msg.state_msg.y = state(1);
+    state_msg.state_msg.yaw = state(2);
+    state_msg.state_msg.v_x = state(3);
+    state_msg.state_msg.v_y = state(4);
+    state_msg.state_msg.w_z = state(5);
 
     geometry_msgs::msg::Vector3Stamped state_acc_msg;
     state_acc_msg.header.frame_id = "world";
