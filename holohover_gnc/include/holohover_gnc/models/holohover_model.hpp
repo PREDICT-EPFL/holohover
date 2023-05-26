@@ -233,10 +233,10 @@ public:
         double ry1 = props.motor_pos_a_1[1]-props.CoM[1];
 
         // force vector of the first propeller in the propeller pair i
-        double Fx1 = force_to_total_force(0, 2 * i);
-        double Fy1 = force_to_total_force(1, 2 * i);
+        T Fx1 = force_to_total_force(0, 2 * i);
+        T Fy1 = force_to_total_force(1, 2 * i);
         // moment induced by the first propeller in the propeller pair i
-        force_to_moment(0, 2 * i) = rx1 * Fy1 - ry1 * Fx1;
+        force_to_moment(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
 
         // position vector of the second propeller in the propeller pair i
         // double rx2 = props.radius_propeller * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
@@ -247,10 +247,10 @@ public:
         double ry2 = props.motor_pos_a_2[1]-props.CoM[1];
 
         // force vector of the second propeller in the propeller pair i
-        double Fx2 = force_to_total_force(0, 2 * i + 1);
-        double Fy2 = force_to_total_force(1, 2 * i + 1);
+        T Fx2 = force_to_total_force(0, 2 * i + 1);
+        T Fy2 = force_to_total_force(1, 2 * i + 1);
         // moment induced by the second propeller in the propeller pair i
-        force_to_moment(0, 2 * i + 1) = rx2 * Fy2 - ry2 * Fx2;
+        force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
         // B
         i =1 ; 
 
@@ -275,7 +275,7 @@ public:
         Fx1 = force_to_total_force(0, 2 * i);
         Fy1 = force_to_total_force(1, 2 * i);
         // moment induced by the first propeller in the propeller pair i
-        force_to_moment(0, 2 * i) = rx1 * Fy1 - ry1 * Fx1;
+        force_to_moment(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
 
         // position vector of the second propeller in the propeller pair i
         // rx2 = props.radius_propeller * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
@@ -289,7 +289,7 @@ public:
         Fx2 = force_to_total_force(0, 2 * i + 1);
         Fy2 = force_to_total_force(1, 2 * i + 1);
         // moment induced by the second propeller in the propeller pair i
-        force_to_moment(0, 2 * i + 1) = rx2 * Fy2 - ry2 * Fx2;
+        force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
         // C
         i =2 ;
 
@@ -314,7 +314,7 @@ public:
         Fx1 = force_to_total_force(0, 2 * i);
         Fy1 = force_to_total_force(1, 2 * i);
         // moment induced by the first propeller in the propeller pair i
-        force_to_moment(0, 2 * i) = rx1 * Fy1 - ry1 * Fx1;
+        force_to_moment(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
 
         // position vector of the second propeller in the propeller pair i
         // rx2 = props.radius_propeller * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
@@ -328,7 +328,7 @@ public:
         Fx2 = force_to_total_force(0, 2 * i + 1);
         Fy2 = force_to_total_force(1, 2 * i + 1);
         // moment induced by the second propeller in the propeller pair i
-        force_to_moment(0, 2 * i + 1) = rx2 * Fy2 - ry2 * Fx2;
+        force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
         
 
         // rotation from body to world frame
@@ -461,12 +461,13 @@ public:
         for (std::size_t i=0; i!=props.signal_to_thrust_coeffs_motor1.size(); ++i)
         {
             u_motor_thrust.array() *= u_motor_signal.array();
-        	Eigen::Matrix<T, NU, 1> coeffs {props.signal_to_thrust_coeffs_motor1[i],
-        									props.signal_to_thrust_coeffs_motor2[i],
-        									props.signal_to_thrust_coeffs_motor3[i],
-        									props.signal_to_thrust_coeffs_motor4[i],
-        									props.signal_to_thrust_coeffs_motor5[i],
-        									props.signal_to_thrust_coeffs_motor6[i]};
+        	Eigen::Matrix<T, NU, 1> coeffs;
+            coeffs << static_cast<T>(props.signal_to_thrust_coeffs_motor1[i]),
+                      static_cast<T>(props.signal_to_thrust_coeffs_motor2[i]),
+                      static_cast<T>(props.signal_to_thrust_coeffs_motor3[i]),
+                      static_cast<T>(props.signal_to_thrust_coeffs_motor4[i]),
+                      static_cast<T>(props.signal_to_thrust_coeffs_motor5[i]),
+                      static_cast<T>(props.signal_to_thrust_coeffs_motor6[i]);
             u_motor_thrust = u_motor_thrust + coeffs;
         }
         

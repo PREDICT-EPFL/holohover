@@ -102,34 +102,34 @@ public:
                              const Eigen::Ref<const input_t<T>> &u,
                              const Eigen::Ref<const param_t<T>> &p)
     {
-        holohover_props(load_holohover_pros(*this));
-        holohover(HolohoverProps, simulation_settings.period);
-        Holohover::control_force_t<double> current_control_force;
-        holohover.signal_to_thrust(u, current_control_force);
-        Holohover::control_acc_t<double> current_control_acc;
-        holohover.control_force_to_acceleration(x, current_control_force, current_control_acc);
+
+        // Holohover::control_force_t<T> current_control_force;
+        // holohover.template signal_to_thrust<T>(u, current_control_force);
+        // Holohover::control_acc_t<T> current_control_acc;
+        // holohover.template control_force_to_acceleration<T>(x, current_control_force, current_control_acc);
 
 
-        // continuous system dynamics for input u = (a_x, a_y, w_dot_z)
-        Eigen::Matrix<double, NX, NX> A;
-        Eigen::Matrix<double, NX, 3> B;
-        A << 0, 0, 1, 0, 0, 0,
-             0, 0, 0, 1, 0, 0,
-             0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 1,
-             0, 0, 0, 0, 0, 0;
+        // // continuous system dynamics for input u = (a_x, a_y, w_dot_z)
+        // Eigen::Matrix<double, NX, NX> A;
+        // Eigen::Matrix<double, NX, 3> B;
+        // A << 0, 0, 1, 0, 0, 0,
+        //      0, 0, 0, 1, 0, 0,
+        //      0, 0, 0, 0, 0, 0,
+        //      0, 0, 0, 0, 0, 0,
+        //      0, 0, 0, 0, 0, 1,
+        //      0, 0, 0, 0, 0, 0;
 
-        B << 0, 0, 0,
-             0, 0, 0,
-             1, 0, 0,
-             0, 1, 0,
-             0, 0, 0,
-             0, 0, 1;  
+        // B << 0, 0, 0,
+        //      0, 0, 0,
+        //      1, 0, 0,
+        //      0, 1, 0,
+        //      0, 0, 0,
+        //      0, 0, 1;  
         
-        state_t<T> x_dot = A * x + B * current_control_acc;
-        // state_t<T> x_dot;
-        // holohover.template nonlinear_state_dynamics<T>(x, u, x_dot);
+        // state_t<T> x_dot = A * x + B * current_control_acc;
+        state_t<T> x_dot;
+        holohover.template nonlinear_state_dynamics<T>(x, u, x_dot);
+
         return x_dot;
     }
 
@@ -138,7 +138,7 @@ public:
 class HolohoverControlMPCNode : public rclcpp::Node
 {
 public:
-    static constexpr int N = 25;
+    static constexpr int N = 20;
 
     using Ocp = HolohoverOcp;
     using Transcription = laopt_tools::MultipleShooting<Ocp, N>;
@@ -159,20 +159,21 @@ private:
     Solver solver;
 
     Holohover::state_t<double> state;
-    geometry_msgs::msg::Pose2D ref;
+    holohover_msgs::msg::HolohoverState ref;
+    //geometry_msgs::msg::Pose2D ref;
 
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverTrajectory>::SharedPtr HolohoverTrajectory_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
-    rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr reference_subscription;
+    rclcpp::Subscription<holohover_msgs::msg::HolohoverState>::SharedPtr reference_subscription;
 
     void init_topics();
     void init_timer();
     void publish_control();
     void publish_trajectory();
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
-    void ref_callback(const geometry_msgs::msg::Pose2D &pose);
+    void ref_callback(const holohover_msgs::msg::HolohoverState &pose);
 };
 
 

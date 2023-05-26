@@ -25,6 +25,16 @@ find_package(holohover_msgs REQUIRED)
 
 include_directories(include)
 
+# Set build type to RELEASE by default
+# if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
+#         if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+#                set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+#         endif()
+# endif()
+
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+message(STATUS "Building ${CMAKE_BUILD_TYPE}")
+
 add_executable(simulation src/simulation/simulation_node.cpp)
 ament_target_dependencies(simulation rclcpp tf2_ros geometry_msgs holohover_msgs ros_polympc)
 target_link_libraries(simulation Eigen3::Eigen)
@@ -50,6 +60,13 @@ target_include_directories(control_mpc PRIVATE external/laopt/include)
 ament_target_dependencies(control_mpc rclcpp geometry_msgs holohover_msgs ros_polympc)
 target_link_libraries(control_mpc Eigen3::Eigen piqp)
 target_compile_options(control_mpc PRIVATE "-Wno-unused-parameter")
+
+# add_executable(control_mpc_ipot src/mpc/holohover_mpc_node_ipopt.cpp)
+# target_include_directories(control_mpc_ipot PRIVATE external/laopt/include)
+# ament_target_dependencies(control_mpc_ipot rclcpp geometry_msgs holohover_msgs ros_polympc)
+# target_link_libraries(control_mpc_ipot Eigen3::Eigen piqp)
+# target_compile_options(control_mpc_ipot PRIVATE "-Wno-unused-parameter")
+
 
 add_executable(double_integrator_test src/mpc/double_integrator_test.cpp)
 target_include_directories(double_integrator_test PRIVATE external/laopt/include)

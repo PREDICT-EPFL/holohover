@@ -31,8 +31,8 @@ RvizInterfaceNode::RvizInterfaceNode() :
 
     reference_marker = create_marker("reference", 0.75, 0, 0);
     reference_marker.type = visualization_msgs::msg::Marker::CYLINDER;
-    reference_marker.scale.x = 0.02;
-    reference_marker.scale.y = 0.02;
+    reference_marker.scale.x = 0.01;
+    reference_marker.scale.y = 0.01;
     reference_marker.scale.z = 0.02;
 
     reference_direction_marker = create_marker("reference_direction", 0.75, 0.75, 0);
@@ -42,14 +42,34 @@ RvizInterfaceNode::RvizInterfaceNode() :
     reference_direction_marker.scale.z = 0.02;
     reference_direction_marker.points.resize(2);
 
+    reference_velocity_marker = create_marker("velocity", 0.75, 0.25, 0);
+    reference_velocity_marker.type = visualization_msgs::msg::Marker::ARROW;
+    reference_velocity_marker.scale.x = 0.01;
+    reference_velocity_marker.scale.y = 0.02;
+    reference_velocity_marker.scale.z = 0.02;
+    reference_velocity_marker.points.resize(2);
+
+    reference_holohover_marker = create_marker("holohover", 0.5, 0.5, 0.5);
+    reference_holohover_marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
+    reference_holohover_marker.mesh_resource = "package://holohover_utils/gui/holohover.stl";
+    reference_holohover_marker.scale.x = 0.3;
+    reference_holohover_marker.scale.y = 0.3;
+    reference_holohover_marker.scale.z = 0.3;
+
     for (int i = 0; i < 20; i++)
     {
-        next_state_marker[i] = create_marker("next_state"+ std::to_string(i), 0, 0, 0.75);
-        next_state_marker[i].type = visualization_msgs::msg::Marker::CYLINDER;
-        next_state_marker[i].scale.x = 0.005;
-        next_state_marker[i].scale.y = 0.005;
-        next_state_marker[i].scale.z = 0.1;
-        //next_state_marker[i].lifetime = rclcpp::Duration(2,0);
+        next_pos_marker[i] = create_marker("next_state"+ std::to_string(i), 0, 0, 0.75);
+        next_pos_marker[i].type = visualization_msgs::msg::Marker::CYLINDER;
+        next_pos_marker[i].scale.x = 0.005;
+        next_pos_marker[i].scale.y = 0.005;
+        next_pos_marker[i].scale.z = 0.05;
+
+        next_vel_marker[i] = create_marker("next_vel"+ std::to_string(i), 0.75, 0, 0.75);
+        next_vel_marker[i].type = visualization_msgs::msg::Marker::ARROW;
+        next_vel_marker[i].scale.x = 0.01;
+        next_vel_marker[i].scale.y = 0.01;
+        next_vel_marker[i].scale.z = 0.01;
+        next_vel_marker[i].points.resize(2);
     }
 
     init_topics();
@@ -69,8 +89,8 @@ void RvizInterfaceNode::init_topics()
             "control/HolohoverTrajectory", rclcpp::SensorDataQoS(),
             std::bind(&RvizInterfaceNode::trajectory_callback, this, std::placeholders::_1));
     
-    reference_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
-            "control/ref", 10,
+    reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
+            "control/state_ref", 10,
             std::bind(&RvizInterfaceNode::ref_callback, this, std::placeholders::_1));
     
     control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
@@ -116,6 +136,18 @@ void RvizInterfaceNode::publish_visualization()
     holohover_marker.pose.orientation.z = q.getZ();
     holohover_marker.pose.orientation.w = q.getW();
 
+    // reference model
+    reference_holohover_marker.header.stamp = now();
+    reference_holohover_marker.pose.position.x = ref.x;
+    reference_holohover_marker.pose.position.y = ref.y;
+    reference_holohover_marker.pose.position.z = 0.005; // center holohover 3d mdoel
+    tf2::Quaternion q_ref;
+    q_ref.setRPY(0, 0, ref.yaw);
+    reference_holohover_marker.pose.orientation.x = q_ref.getX();
+    reference_holohover_marker.pose.orientation.y = q_ref.getY();
+    reference_holohover_marker.pose.orientation.z = q_ref.getZ();
+    reference_holohover_marker.pose.orientation.w = q_ref.getW();
+
     // past_trajectory
     //past_trajectory_marker.header.stamp = now();
     past_trajectory_marker = create_marker("past_trajectory", 0.75, 0.5, 0);
@@ -126,15 +158,19 @@ void RvizInterfaceNode::publish_visualization()
     past_trajectory_marker.lifetime = rclcpp::Duration(10,0);
     past_trajectory_marker.pose.position.x = current_state(0);
     past_trajectory_marker.pose.position.y = current_state(1);
-
+    // REFERENCE POITN
     reference_marker.pose.position.x = ref.x;
     reference_marker.pose.position.y = ref.y;
-
+    //REFERENCE DIRECTION
     reference_direction_marker.points[0].x = ref.x;
     reference_direction_marker.points[0].y = ref.y;
-    reference_direction_marker.points[1].x = ref.x+0.05*cos(ref.theta);
-    reference_direction_marker.points[1].y = ref.y+0.05*sin(ref.theta);
-
+    reference_direction_marker.points[1].x = ref.x+0.05*cos(ref.yaw);
+    reference_direction_marker.points[1].y = ref.y+0.05*sin(ref.yaw);
+    // REFERENCE VELOCITY
+    reference_velocity_marker.points[0].x = ref.x;
+    reference_velocity_marker.points[0].y = ref.y;
+    reference_velocity_marker.points[1].x = ref.x+ref.v_x;
+    reference_velocity_marker.points[1].y = ref.y+ref.v_y;
 
     // thrust arrows
     double propeller_height = 0.045;
@@ -183,28 +219,44 @@ void RvizInterfaceNode::publish_visualization()
     }
 
     for (int i = 0; i < 20; i++) {
-        // next_state_marker[i].lifetime = rclcpp::Duration(2,0);
-        next_state_marker[i].pose.position.x = next_state[i](0);
-        next_state_marker[i].pose.position.y = next_state[i](1);
+        // next_pos_marker[i].lifetime = rclcpp::Duration(2,0);
+        next_pos_marker[i].pose.position.x = next_state[i](0);
+        next_pos_marker[i].pose.position.y = next_state[i](1);
+        next_pos_marker[i].pose.position.z = 0.025;
+
+        next_vel_marker[i].points[0].x = next_state[i](0);
+        next_vel_marker[i].points[0].y = next_state[i](1);
+        next_vel_marker[i].points[0].z = 0;
+        next_vel_marker[i].points[1].x = next_state[i](0)+next_state[i](2);
+        next_vel_marker[i].points[1].y = next_state[i](1)+next_state[i](3);
+        next_vel_marker[i].points[1].z = 0;
+
     }
 
     // publish markers
     visualization_msgs::msg::MarkerArray markers;
     markers.markers.reserve(10);
     markers.markers.push_back(holohover_marker);
+    markers.markers.push_back(reference_holohover_marker);
     markers.markers.push_back(past_trajectory_marker);
     markers.markers.push_back(reference_marker);
     markers.markers.push_back(reference_direction_marker);
-    //markers.markers.push_back(next_state_marker);
+    markers.markers.push_back(reference_velocity_marker);
+    //markers.markers.push_back(next_pos_marker);
 
     for (auto &thrust_vector_marker : thrust_vector_markers)
     {
         markers.markers.push_back(thrust_vector_marker);
     }
 
-    for (auto &next_state_marker : next_state_marker)
+    for (auto &next_pos_marker : next_pos_marker)
     {
-        markers.markers.push_back(next_state_marker);
+        markers.markers.push_back(next_pos_marker);
+    }
+
+    for (auto &next_vel_marker : next_vel_marker)
+    {
+        markers.markers.push_back(next_vel_marker);
     }
 
     viz_publisher->publish(markers);
@@ -243,7 +295,7 @@ void RvizInterfaceNode::control_callback(const holohover_msgs::msg::HolohoverCon
     current_control(5) = control.motor_c_2;
 }
 
-void RvizInterfaceNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)
+void RvizInterfaceNode::ref_callback(const holohover_msgs::msg::HolohoverState &pose)
 {
     ref = pose;
 }

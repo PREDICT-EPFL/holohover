@@ -8,7 +8,15 @@
 #include "laopt/tools/multiple_shooting.hpp"
 #include "laopt/solvers/sqp_solver.hpp"
 #include "laopt/solvers/piqp_interface.hpp"
+#define LAOPT_WITH_IPOPT 1;
+#define LAOPT_WITH_OSQP 1;
 
+#ifdef LAOPT_WITH_IPOPT
+#include "laopt/ipopt_interface/ipopt_wrapper.hpp"
+#endif
+#ifdef LAOPT_WITH_OSQP
+#include "laopt/solvers/osqp_interface.hpp"
+#endif
 
 using namespace std::chrono;
 
@@ -27,11 +35,11 @@ HolohoverControlMPCNode::HolohoverControlMPCNode() :
 
         ocp.set_tf(1);
 
-        ocp.u_ub << 0.8, 0.8, 0.8, 0.8, 0.8, 0.8;
+        ocp.u_ub << 0.5, 0.5, 0.5, 0.5, 0.5, 0.5;
         ocp.u_lb << IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL;
         //ocp.u_lb << 0, 0, 0, 0, 0, 0;
-        ocp.x_lb << -1, -1, -0.4, -0.4, -3, -1;
-        ocp.x_ub << 1, 1, 0.4, 0.4, 3, 1;
+        ocp.x_lb << -1, -1, -0.1, -0.1, -3, -1;
+        ocp.x_ub << 1, 1, 0.1, 0.1, 3, 1;
         ref.x = 0;
         ref.y = 0;
         ref.yaw = 0;
@@ -40,10 +48,10 @@ HolohoverControlMPCNode::HolohoverControlMPCNode() :
         ocp.set_x0({0, 0, 0, 0, 0, 0});
 
         /* Resampling test parameters */
-        // const double Ts_max = 0.01;
-        // const double t_test = 0.166;
+        const double Ts_max = 0.01;
+        const double t_test = 0.166;
 
-        solver.settings().verbose = false;
+        solver.settings().verbose = true;
         solver.settings().hessian_approximation = laopt::hessian_approximation_t::EXACT_NO_CONSTRAINTS;
         // solver.settings().max_watchdog_steps = 0;
 
@@ -110,25 +118,11 @@ void HolohoverControlMPCNode::publish_control()
     state_ref(0) = ref.x;
     state_ref(1) = ref.y;
     state_ref(4) = ref.yaw;
-    state_ref(2) = ref.v_x;
-    state_ref(3) = ref.v_y;
-    state_ref(5) = ref.w_z;
     //state_ref = ocp.x_ref;
     ocp.x_ref = state_ref;
     std::cout << "CURRENT STATE =" << state << std::endl;
 
     ocp.set_x0(state);
-
-    holohover_msgs::msg::HolohoverControlStamped control_msg;
-    control_msg.header.frame_id = "body";
-    control_msg.header.stamp = this->now();
-    control_msg.motor_a_1 = 0;
-    control_msg.motor_a_2 = 0;
-    control_msg.motor_b_1 = 0;
-    control_msg.motor_b_2 = 0;
-    control_msg.motor_c_1 = 0;
-    control_msg.motor_c_2 = 0;
-    control_publisher->publish(control_msg);
 
     // LOOP
     const steady_clock::time_point t_start = steady_clock::now();
@@ -156,7 +150,7 @@ void HolohoverControlMPCNode::publish_control()
 
     publish_trajectory();
 
-    //holohover_msgs::msg::HolohoverControlStamped control_msg;
+    holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";
     control_msg.header.stamp = this->now();
     control_msg.motor_a_1 = u_signal(0);
@@ -191,4 +185,154 @@ int main(int argc, char **argv) {
     rclcpp::shutdown();
     return 0;
 }
+
+#ifdef LAOPT_WITH_IPOPT
+        {
+            std::cout << "Multiple Shooting - Ipopt\n";
+
+            using Solver = laopt::IpoptWrapper<OptProblem>;
+            Solver solver(opt_problem);
+
+            solve_and_print(transcription, opt_problem, solver);
+        }
+#endif
+
+#ifdef LAOPT_WITH_OSQP
+        {
+            std::cout << "Multiple Shooting - SQP\n";
+
+            using Solver = laopt::SQPSolver<OptProblem, laopt::OSQPSolver<OptProblem::scalar_t>>;
+            Solver solver(opt_problem);
+            solver.settings().verbose = true;
+            solver.settings().hessian_approximation = laopt::hessian_approximation_t::EXACT_NO_CONSTRAINTS;
+
+            solve_and_print(transcription, opt_problem, solver);
+        }
+#endif
+    }
+
+    /* Solve with Radau Collocation transcription */#include <iostream>
+#include <chrono>
+
+#include "laopt/laopt.hpp"
+
+#include "double_integrator_ocp.hpp"
+#include "laopt/tools/multiple_shooting.hpp"
+#include "laopt/tools/radau_collocation.hpp"
+#ifdef LAOPT_WITH_IPOPT
+#include "laopt/ipopt_interface/ipopt_wrapper.hpp"
+#endif
+#include "laopt/solvers/sqp_solver.hpp"
+#ifdef LAOPT_WITH_OSQP
+#include "laopt/solvers/osqp_interface.hpp"
+#endif
+
+#include "examples_helper.hpp"
+
+int main()
+{
+    using namespace std::chrono;
+
+    /* Choose OCP and Transcription */
+    using Ocp = DoubleIntegratorOcp;
+
+    /* Construct OCP and set OCP-specific properties */
+    Ocp ocp;
+
+    ocp.set_tf(1.2);
+
+    ocp.u_ub << 10;
+    ocp.u_lb << -3;
+
+    ocp.x_ref << 1, 0;
+
+    ocp.set_x0({0.1, 0.2});               // for demonstration, last setting counts
+    ocp.x0_lb = ocp.x0_ub = {0.1, 0.2};   // for demonstration, last setting counts
+    ocp.x0_ub << 0.1, 0.2;                // for demonstration, last setting counts
+    ocp.x0_lb << -0.1, -0.2;
+
+    /* Resampling test parameters */
+    const double Ts_max = 0.02;
+    const double t_test = 0.166;
+
+    auto solve_and_print = [&](auto& transcription, auto& opt_problem, auto& solver)
+    {
+        const steady_clock::time_point t_start = steady_clock::now();
+        solver.solve();
+        const steady_clock::time_point t_end = steady_clock::now();
+        const long duration_us = duration_cast<microseconds>(t_end - t_start).count();
+
+        solver.solve(); // Call second time to test repeatability
+        const steady_clock::time_point t_end2 = steady_clock::now();
+        const long duration2_us = duration_cast<microseconds>(t_end2 - t_end).count();
+
+        /* Print out the solution */
+        print_solution(transcription, opt_problem, duration_us, duration2_us);
+        print_sampled_solution(transcription, Ts_max, t_test);
+    };
+
+    /* Solve with Multiple Shooting transcription */
+    if (true)
+    {
+        const int N = 20;
+        using Transcription = laopt_tools::MultipleShooting<Ocp, N>;
+
+        /* Define specific Tape, laOPT, and IPOPT problem types for the resulting NLP */
+        using Tape = laopt::TapeInfo<Transcription>;
+        using OptProblem = laopt::Problem<Transcription>;
+
+        /* Construct transcription for OCP, optionally generate/store tape for that combination */
+        Transcription transcription(ocp);
+        Tape tape = laopt::generate_tape(transcription, laopt::generate_sparsity(transcription));
+
+        /* Construct laOPT problem for transcribed OCP using according tape */
+        OptProblem opt_problem(transcription, tape); // Tape is optional here and could also be generated internally
+
+
+
+    return 0;
+}
+    if (true)
+    {
+        const int D_poly = 4;
+        const int N_segs = 3;
+        using Transcription = laopt_tools::RadauCollocation<Ocp, N_segs, D_poly>;
+
+        /* Define specific Tape and laOPT problem types for the resulting NLP */
+        using Tape = laopt::TapeInfo<Transcription>;
+        using OptProblem = laopt::Problem<Transcription>;
+
+        /* Construct transcription for OCP, optionally generate/store tape for that combination */
+        Transcription transcription(ocp);
+        Tape tape = laopt::generate_tape(transcription, laopt::generate_sparsity(transcription));
+
+        /* Construct laOPT problem for transcribed OCP using according tape */
+        OptProblem opt_problem(transcription, tape); // Tape is optional here and could also be generated internally
+
+#ifdef LAOPT_WITH_IPOPT
+        {
+            std::cout << "Radau Collocation - Ipopt\n";
+
+            using Solver = laopt::IpoptWrapper<OptProblem>;
+            Solver solver(opt_problem);
+
+            solve_and_print(transcription, opt_problem, solver);
+        }
+#endif
+
+#ifdef LAOPT_WITH_OSQP
+        {
+            std::cout << "Radau Collocation - SQP\n";
+
+            using Solver = laopt::SQPSolver<OptProblem, laopt::OSQPSolver<OptProblem::scalar_t>>;
+            Solver solver(opt_problem);
+            solver.settings().verbose = true;
+            solver.settings().hessian_approximation = laopt::hessian_approximation_t::EXACT_NO_CONSTRAINTS;
+
+            solve_and_print(transcription, opt_problem, solver);
+        }
+#endif
+    }
+
+
 
