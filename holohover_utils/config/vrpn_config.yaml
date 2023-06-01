@@ -5,7 +5,7 @@
 
 vrpn_mocap/client:
     ros__parameters:
-        server: 192.168.0.215
+        server: 192.168.0.127
         port: 3883
         frame_id: world
         update_freq: 100.0

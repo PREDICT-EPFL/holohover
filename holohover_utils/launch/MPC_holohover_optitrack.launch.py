@@ -45,15 +45,17 @@ def generate_launch_description():
         output='screen'
     )
 
-    control_lqr_config = os.path.join(
+
+    control_mpc_config = os.path.join(
         get_package_share_directory('holohover_gnc'),
         'config',
-        'control_lqr_config.yaml'
+        'control_mpc_config.yaml'
     )
+
     controller_node = Node(
         package="holohover_gnc",
-        executable="control_lqr",
-        parameters=[holohover_params, control_lqr_config],
+        executable="control_mpc",
+        parameters=[holohover_params, control_mpc_config],
         output='screen'
     )
 

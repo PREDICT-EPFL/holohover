@@ -19,6 +19,7 @@
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "holohover_gnc/utils/load_holohover_props.hpp"
 #include "holohover_msgs/msg/holohover_trajectory.hpp"
+#include "holohover_msgs/msg/holohover_laopt_speed_stamped.hpp"
 
 
 #define IDLE_SIGNAL 0.03 // signal always applied to keep motors moving
@@ -160,9 +161,12 @@ private:
 
     Holohover::state_t<double> state;
     holohover_msgs::msg::HolohoverState ref;
+    //holohover_msgs::msg::HolohoverLaoptSpeedStamped speed;
+    holohover_msgs::msg::HolohoverLaoptSpeedStamped speed_msg;
     //geometry_msgs::msg::Pose2D ref;
 
     rclcpp::TimerBase::SharedPtr timer;
+    rclcpp::Publisher<holohover_msgs::msg::HolohoverLaoptSpeedStamped>::SharedPtr laopt_frequency_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverTrajectory>::SharedPtr HolohoverTrajectory_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
@@ -172,6 +176,7 @@ private:
     void init_timer();
     void publish_control();
     void publish_trajectory();
+    void publish_laopt_speed(const long &duration_us );
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverState &pose);
 };

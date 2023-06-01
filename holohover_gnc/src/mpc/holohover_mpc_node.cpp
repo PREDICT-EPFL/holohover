@@ -27,11 +27,11 @@ HolohoverControlMPCNode::HolohoverControlMPCNode() :
 
         ocp.set_tf(1);
 
-        ocp.u_ub << 0.8, 0.8, 0.8, 0.8, 0.8, 0.8;
+        ocp.u_ub << 0.2, 0.2, 0.2, 0.2, 0.2, 0.2;
         ocp.u_lb << IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL;
         //ocp.u_lb << 0, 0, 0, 0, 0, 0;
-        ocp.x_lb << -1, -1, -0.4, -0.4, -3, -1;
-        ocp.x_ub << 1, 1, 0.4, 0.4, 3, 1;
+        ocp.x_lb << -0.4, -0.4, -0.5, -0.5, -2, -0.5;
+        ocp.x_ub << 0.4, 0.4, 0.5, 0.5, 2, 0.5;
         ref.x = 0;
         ref.y = 0;
         ref.yaw = 0;
@@ -56,6 +56,10 @@ void HolohoverControlMPCNode::init_topics()
 {
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
             "drone/control",
+            rclcpp::SensorDataQoS());
+
+    laopt_frequency_publisher = this->create_publisher<holohover_msgs::msg::HolohoverLaoptSpeedStamped>(
+            "control/laopt_speed",
             rclcpp::SensorDataQoS());
 
     HolohoverTrajectory_publisher = this->create_publisher<holohover_msgs::msg::HolohoverTrajectory>(
@@ -115,48 +119,35 @@ void HolohoverControlMPCNode::publish_control()
     state_ref(5) = ref.w_z;
     //state_ref = ocp.x_ref;
     ocp.x_ref = state_ref;
-    std::cout << "CURRENT STATE =" << state << std::endl;
+    //std::cout << "CURRENT STATE =" << state << std::endl;
 
     ocp.set_x0(state);
 
     holohover_msgs::msg::HolohoverControlStamped control_msg;
-    control_msg.header.frame_id = "body";
-    control_msg.header.stamp = this->now();
-    control_msg.motor_a_1 = 0;
-    control_msg.motor_a_2 = 0;
-    control_msg.motor_b_1 = 0;
-    control_msg.motor_b_2 = 0;
-    control_msg.motor_c_1 = 0;
-    control_msg.motor_c_2 = 0;
-    control_publisher->publish(control_msg);
-
     // LOOP
     const steady_clock::time_point t_start = steady_clock::now();
+    solver.settings().max_iter = 35;
     solver.solve();
     const steady_clock::time_point t_end = steady_clock::now();
     const long duration_us = duration_cast<microseconds>(t_end - t_start).count();
+    publish_laopt_speed(duration_us);
     std::cout << "duration_ms  =" <<duration_us/1000 << std::endl;
 //     solver.solve(); // Call second time to test repeatability
 //     const steady_clock::time_point t_end2 = steady_clock::now();
-//     const long duration2_us = duration_cast<microseconds>(t_end2 - t_end).count();
-
-    /* Print out the solution */
-    //print_solution(transcription, opt_problem, duration_us, duration2_us);
-    //print_sampled_solution(transcription, Ts_max, t_test);
-
+//     const long duration2_us = duration_cast<duration_us
     Holohover::control_force_t<double> u_signal;
     u_signal = transcription.get_u_at(0);
 
     //std::cout << "STATE =" <<state << std::endl;
-    std::cout << "FUTURE STATE =" <<transcription.get_X_opt() << std::endl;
-    std::cout << "First OUTPUT =" <<transcription.get_U_opt() << std::endl;
+    //std::cout << "FUTURE STATE =" <<transcription.get_X_opt() << std::endl;
+    //std::cout << "First OUTPUT =" <<transcription.get_U_opt() << std::endl;
     //u_signal.setConstant(0.5);
     // clip between 0 and 1
     //u_signal = u_signal.cwiseMax(0).cwiseMin(1);
 
     publish_trajectory();
 
-    //holohover_msgs::msg::HolohoverControlStamped control_msg;
+    
     control_msg.header.frame_id = "body";
     control_msg.header.stamp = this->now();
     control_msg.motor_a_1 = u_signal(0);
@@ -166,6 +157,15 @@ void HolohoverControlMPCNode::publish_control()
     control_msg.motor_c_1 = u_signal(4);
     control_msg.motor_c_2 = u_signal(5);
     control_publisher->publish(control_msg);
+}
+
+void HolohoverControlMPCNode::publish_laopt_speed(const long &duration_us )
+{
+    speed_msg.header.stamp = this->now();
+
+    float msg_frequency = duration_us;
+    speed_msg.duration_msg = msg_frequency/1000;
+    laopt_frequency_publisher->publish(speed_msg);
 }
 
 

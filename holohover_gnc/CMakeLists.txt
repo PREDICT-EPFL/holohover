@@ -25,14 +25,15 @@ find_package(holohover_msgs REQUIRED)
 
 include_directories(include)
 
-# Set build type to RELEASE by default
-# if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
-#         if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
-#                set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
-#         endif()
-# endif()
+#set build type to RELEASE by default
+if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
+        if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
+               set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+        endif()
+endif()
 
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+#set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(simulation src/simulation/simulation_node.cpp)

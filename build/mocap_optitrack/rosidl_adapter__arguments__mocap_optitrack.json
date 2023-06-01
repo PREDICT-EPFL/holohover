@@ -1,6 +1,0 @@
-{
-  "package_name": "mocap_optitrack",
-  "non_idl_tuples": [
-    "/home/acl3-ubuntu/holohover_ws/src/holohover/mocap_optitrack:msg/PointArrayStamped.msg"
-  ]
-}
