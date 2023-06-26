@@ -103,6 +103,7 @@ void HolohoverSimulationNode::simulate_forward_callback()
 {
     state = holohover.Ad * state + holohover.Bd * current_control_acc;
 
+    // To use the non_linear_state_dynamics_discrete function :
     Holohover::control_force_t<double> current_control_signal;
     current_control_signal(0) = current_control.motor_a_1;
     current_control_signal(1) = current_control.motor_a_2;
@@ -110,7 +111,6 @@ void HolohoverSimulationNode::simulate_forward_callback()
     current_control_signal(3) = current_control.motor_b_2;
     current_control_signal(4) = current_control.motor_c_1;
     current_control_signal(5) = current_control.motor_c_2;
-    
     
     holohover.template non_linear_state_dynamics_discrete<double>(nonlinear_state, current_control_signal,nonlinear_state);
     //state = nonlinear_state;

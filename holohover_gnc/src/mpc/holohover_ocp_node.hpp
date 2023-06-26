@@ -60,10 +60,7 @@ class HolohoverOcp : public laopt_tools::ControlProblemBase</*Scalar*/ double, /
 {
 public:
     /* Static parameters */
-    // Eigen::Matrix<Scalar, NX, NX> A{{0, 1},
-    //                                 {0, 0}};
-    // Eigen::Matrix<Scalar, NX, NU> B{{0},
-    //                                 {1}};
+
     State x_ref{0, 0, 0, 0, 0, 0};
 
     Eigen::Vector<Scalar, NX> Q;
@@ -104,30 +101,6 @@ public:
                              const Eigen::Ref<const param_t<T>> &p)
     {
 
-        // Holohover::control_force_t<T> current_control_force;
-        // holohover.template signal_to_thrust<T>(u, current_control_force);
-        // Holohover::control_acc_t<T> current_control_acc;
-        // holohover.template control_force_to_acceleration<T>(x, current_control_force, current_control_acc);
-
-
-        // // continuous system dynamics for input u = (a_x, a_y, w_dot_z)
-        // Eigen::Matrix<double, NX, NX> A;
-        // Eigen::Matrix<double, NX, 3> B;
-        // A << 0, 0, 1, 0, 0, 0,
-        //      0, 0, 0, 1, 0, 0,
-        //      0, 0, 0, 0, 0, 0,
-        //      0, 0, 0, 0, 0, 0,
-        //      0, 0, 0, 0, 0, 1,
-        //      0, 0, 0, 0, 0, 0;
-
-        // B << 0, 0, 0,
-        //      0, 0, 0,
-        //      1, 0, 0,
-        //      0, 1, 0,
-        //      0, 0, 0,
-        //      0, 0, 1;  
-        
-        // state_t<T> x_dot = A * x + B * current_control_acc;
         state_t<T> x_dot;
         holohover.template nonlinear_state_dynamics<T>(x, u, x_dot);
 

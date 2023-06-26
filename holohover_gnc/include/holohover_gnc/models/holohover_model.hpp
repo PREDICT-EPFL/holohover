@@ -153,9 +153,7 @@ public:
                                state_t<T> &x_dot) const noexcept
     {
         control_acc_t<T> u_acc;
-        //control_force_to_acceleration(x, u, u_acc);
         Holohover::control_force_t<double> force;
-        //signal_to_thrust(u, force);
 
         x_dot(0) = x(2); //x
         x_dot(1) = x(3); //y
@@ -202,19 +200,9 @@ public:
     inline void control_force_to_acceleration_mapping(const state_t<T> &x, Eigen::Matrix<T, NA, NU> &map) const noexcept
     {
         Eigen::Matrix<T, 2, NU> force_to_total_force;
-        // for (int i = 0; i < 3; i++) {
-        //     x force component of the first propeller in the propeller pair i
-        //     force_to_total_force(0, 2 * i) = -sin(props.phi_offset + phi * i);
-        //     y force component of the first propeller in the propeller pair i
-        //     force_to_total_force(1, 2 * i) = cos(props.phi_offset + phi * i);
-        //     x force component of the second propeller in the propeller pair i
-        //     force_to_total_force(0, 2 * i + 1) = sin(props.phi_offset + phi * i);
-        //     y force component of the second propeller in the propeller pair i
-        //     force_to_total_force(1, 2 * i + 1) = -cos(props.phi_offset + phi * i);
-        //}
         
         Eigen::Matrix<T, 1, NU> force_to_moment;
-        // A
+        // A motors
         int i =0 ;
 
         // x force component of the first propeller in the propeller pair 1
@@ -226,9 +214,7 @@ public:
         // y force component of the second propeller in the propeller pair 1
         force_to_total_force(1, 2 * i + 1) = props.learned_motor_vec_a_2[1];
 
-        // position vector of the first propeller in the propeller pair i if CoM centered
-        //double rx1 = props.radius_propeller * cos(props.phi_offset + phi * i - props.angle_propeller_pair);
-        //double ry1 = props.radius_propeller * sin(props.phi_offset + phi * i - props.angle_propeller_pai                               
+        // position vector of the first propeller in the propeller pair i if CoM centered                        
         double rx1 = props.motor_pos_a_1[0]-props.CoM[0];
         double ry1 = props.motor_pos_a_1[1]-props.CoM[1];
 
@@ -237,10 +223,6 @@ public:
         T Fy1 = force_to_total_force(1, 2 * i);
         // moment induced by the first propeller in the propeller pair i
         force_to_moment(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
-
-        // position vector of the second propeller in the propeller pair i
-        // double rx2 = props.radius_propeller * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
-        // double ry2 = props.radius_propeller * sin(props.phi_offset + phi * i + props.angle_propeller_pair);
 
         // Learned position
         double rx2 = props.motor_pos_a_2[0]-props.CoM[0];
@@ -251,7 +233,8 @@ public:
         T Fy2 = force_to_total_force(1, 2 * i + 1);
         // moment induced by the second propeller in the propeller pair i
         force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
-        // B
+
+        // B motors
         i =1 ; 
 
         // x force component of the first propeller in the propeller pair 1
@@ -263,10 +246,6 @@ public:
         // y force component of the second propeller in the propeller pair 1
         force_to_total_force(1, 2 * i + 1) = props.learned_motor_vec_b_2[1];
 
-        // position vector of the first propeller in the propeller pair i
-        // rx1 = props.radius_propeller * cos(props.phi_offset + phi * i - props.angle_propeller_pair);
-        // ry1 = props.radius_propeller * sin(props.phi_offset + phi * i - props.angle_propeller_pair);
-
         // Learned position
         rx1 = props.motor_pos_b_1[0]-props.CoM[0];
         ry1 = props.motor_pos_b_1[1]-props.CoM[1];
@@ -277,10 +256,6 @@ public:
         // moment induced by the first propeller in the propeller pair i
         force_to_moment(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
 
-        // position vector of the second propeller in the propeller pair i
-        // rx2 = props.radius_propeller * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
-        // ry2 = props.radius_propeller * sin(props.phi_offset + phi * i + props.angle_propeller_pair);
-
         // Learned position
         rx2 = props.motor_pos_b_2[0]-props.CoM[0];
         ry2 = props.motor_pos_b_2[1]-props.CoM[1];
@@ -290,7 +265,8 @@ public:
         Fy2 = force_to_total_force(1, 2 * i + 1);
         // moment induced by the second propeller in the propeller pair i
         force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
-        // C
+
+        // C motors
         i =2 ;
 
         // x force component of the first propeller in the propeller pair 1
@@ -302,10 +278,6 @@ public:
         // y force component of the second propeller in the propeller pair 1
         force_to_total_force(1, 2 * i + 1) = props.learned_motor_vec_c_2[1];
 
-        // position vector of the first propeller in the propeller pair i
-        // rx1 = props.radius_propeller * cos(props.phi_offset + phi * i - props.angle_propeller_pair);
-        // ry1 = props.radius_propeller * sin(props.phi_offset + phi * i - props.angle_propeller_pair);
-
         // Learned position
         rx1 = props.motor_pos_c_1[0]-props.CoM[0];
         ry1 = props.motor_pos_c_1[1]-props.CoM[1];
@@ -316,10 +288,6 @@ public:
         // moment induced by the first propeller in the propeller pair i
         force_to_moment(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
 
-        // position vector of the second propeller in the propeller pair i
-        // rx2 = props.radius_propeller * cos(props.phi_offset + phi * i + props.angle_propeller_pair);
-        // ry2 = props.radius_propeller * sin(props.phi_offset + phi * i + props.angle_propeller_pair);
-
         // Learned position
         rx2 = props.motor_pos_c_2[0]-props.CoM[0];
         ry2 = props.motor_pos_c_2[1]-props.CoM[1];
@@ -329,7 +297,6 @@ public:
         Fy2 = force_to_total_force(1, 2 * i + 1);
         // moment induced by the second propeller in the propeller pair i
         force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
-        
 
         // rotation from body to world frame
         Eigen::Matrix<T, 2, 2> rotation_matrix;
@@ -420,8 +387,6 @@ public:
                                         const control_force_t<T> &u,
                                         state_t<T> &x_next) const noexcept
     {
-        // control_acc_t<T> u_acc;
-        //control_force_to_acceleration(x, u, u_acc);
 
         // RK4
         Holohover::state_t<double> k1;
@@ -486,26 +451,20 @@ public:
         // 
         control_force_t<T> u_motor_thrust = u_thrust.array();
         control_force_t<T> u_motor_signal;
-        //u_motor_signal.setConstant(1);
         u_motor_thrust = u_motor_thrust.cwiseMin(props.max_thrust).cwiseMax(0.0);
         //std::cout << "thrust = " << u_motor_thrust << std::endl;
-        u_motor_signal = 0.6*u_motor_thrust;
-        
+        u_motor_signal = 0.6*u_motor_thrust; // First linear guess
         
         //double tol = 1e-3; // Tolerance for the root
         int maxiter = 5; // Maximum number of iterations
-        //double x; double a; double b; double c; double d;
 
         auto f = [](auto x, auto a, auto b, auto c, auto d) {
             return x*(x*(a*x+b)+c)-d;
-            //return a*pow(x, 3) + b*pow(x, 2) + c*x -d;
         };
         
         auto fprime = [](auto x, auto a, auto b, auto c) {
-            //return 3*a*pow(x, 2) + 2*b*x + c;
             return x*(3*a*x+2*b)+c;
         };
-            //u_motor_signal.array() *= u_motor_thrust.array();
 
         for (int i=0; i<maxiter; i++) {
             double fx_1 = f(u_motor_signal(0),props.signal_to_thrust_coeffs_motor1[0],props.signal_to_thrust_coeffs_motor1[1],props.signal_to_thrust_coeffs_motor1[2],u_motor_thrust(0));
@@ -530,11 +489,7 @@ public:
             u_motor_signal(5) = u_motor_signal(5) -alpha * fx_6/fxprime_6; // Update x6
             u_motor_signal = u_motor_signal.cwiseMin(1.0).cwiseMax(0.0);
         }
-    
-                    // if (abs(fx_1/fxprime_1+fx_2/fxprime_2+fx_3/fxprime_3+fx_4/fxprime_4+fx_5/fxprime_5+fx_6/fxprime_6) < tol) { // Check convergence
-                    //     u_motor_signal[]
-                    //     }
-                    //u_motor_signal = u_motor_signal + coeffs;
+
         u_signal.array() = u_motor_signal.array();
     }
 
@@ -560,12 +515,6 @@ public:
             u_motor_signal = u_motor_signal + coeffs;
         }
         
-        //for (const double& coeff: props.thrust_to_signal_coeffs_motor1)
-        //{
-        //    u_motor_signal.array() *= u_thrust_mN.array();
-        //    u_motor_signal.array() += coeff;
-        //    std::cout << coeff << ", ";
-        //}
         
         u_signal.array() = u_motor_signal.array();
     }
