@@ -75,15 +75,8 @@ static const char *TAG = "MAIN";
 // Sampling frequency of 100Hz
 #define IMU_SAMPLE_TIME_MS 10
 
-<<<<<<< HEAD:firmware/main/main.c
-
-
-#define SPI_MISO 19
-#define SPI_MOSI 18
-=======
 #define SPI_MISO 21
 #define SPI_MOSI 19
->>>>>>> main:firmware/src/main/main.c
 #define SPI_CLK  5
 #define SPI_CS   33
 #define SPI_RS   27
