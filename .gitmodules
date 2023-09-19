@@ -13,3 +13,6 @@
 [submodule "firmware/src/micro_ros_espidf_component"]
 	path = firmware/src/micro_ros_espidf_component
 	url = https://github.com/micro-ROS/micro_ros_espidf_component.git
+[submodule "holohover_gnc/external/laopt"]
+	path = holohover_gnc/external/laopt
+	url = git@github.com:PREDICT-EPFL/laopt.git

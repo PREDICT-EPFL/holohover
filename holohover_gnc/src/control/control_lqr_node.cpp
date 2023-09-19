@@ -11,9 +11,9 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     state.setZero();
 
     // init ref
-    ref.x = 0;
-    ref.y = 0;
-    ref.theta = 0;
+    ref.x = holohover_props.CoM[0];
+    ref.y = holohover_props.CoM[1];
+    ref.yaw = 0;
 
     // calculate LQR gain
     Eigen::Matrix<double, Holohover::NX, Holohover::NX> &Ad = holohover.Ad;
@@ -47,8 +47,9 @@ void HolohoverControlLQRNode::init_topics()
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "navigation/state", 10,
             std::bind(&HolohoverControlLQRNode::state_callback, this, std::placeholders::_1));
-    reference_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
-            "control/ref", 10,
+            
+    reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
+            "control/state_ref", 10,
             std::bind(&HolohoverControlLQRNode::ref_callback, this, std::placeholders::_1));
 }
 
@@ -65,7 +66,7 @@ void HolohoverControlLQRNode::publish_control()
     state_ref.setZero();
     state_ref(0) = ref.x;
     state_ref(1) = ref.y;
-    state_ref(4) = ref.theta;
+    state_ref(4) = ref.yaw;
 
     Holohover::control_acc_t<double> u_acc = -K * (state - state_ref);   
     Holohover::control_force_t<double> u_force;
@@ -74,7 +75,7 @@ void HolohoverControlLQRNode::publish_control()
     holohover.thrust_to_signal(u_force, u_signal);
 
     // clip between 0 and 1
-    u_signal = u_signal.cwiseMax(0).cwiseMin(1);
+    u_signal = u_signal.cwiseMax(IDLE_SIGNAL).cwiseMin(1);
 
     holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";
@@ -88,17 +89,17 @@ void HolohoverControlLQRNode::publish_control()
     control_publisher->publish(control_msg);
 }
 
-void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg)
+void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state)
 {
-    state(0) = state_msg.x;
-    state(1) = state_msg.y;
-    state(2) = state_msg.v_x;
-    state(3) = state_msg.v_y;
-    state(4) = state_msg.yaw;
-    state(5) = state_msg.w_z;
+    state(0) = msg_state.state_msg.x;
+    state(1) = msg_state.state_msg.y;
+    state(2) = msg_state.state_msg.v_x;
+    state(3) = msg_state.state_msg.v_y;
+    state(4) = msg_state.state_msg.yaw;
+    state(5) = msg_state.state_msg.w_z;
 }
 
-void HolohoverControlLQRNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)
+void HolohoverControlLQRNode::ref_callback(const holohover_msgs::msg::HolohoverState &pose)
 {
     ref = pose;
 }

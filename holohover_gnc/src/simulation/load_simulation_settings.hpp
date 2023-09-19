@@ -27,7 +27,10 @@ SimulationSettings load_simulation_settings(rclcpp::Node &node)
         node.get_parameter("sensor_pose_period", settings.sensor_pose_period) &&
         node.get_parameter("sensor_pose_noise_x", settings.sensor_pose_noise_x) &&
         node.get_parameter("sensor_pose_noise_y", settings.sensor_pose_noise_y) &&
-        node.get_parameter("sensor_pose_noise_yaw", settings.sensor_pose_noise_yaw)) {}
+        node.get_parameter("sensor_pose_noise_yaw", settings.sensor_pose_noise_yaw)&&
+        node.get_parameter("sensor_pose_noise_yaw", settings.Gx)&&
+        node.get_parameter("sensor_pose_noise_yaw", settings.Gy)
+        ) {}
     else
     {
         RCLCPP_INFO(node.get_logger(), "Failed to load navigation settings");

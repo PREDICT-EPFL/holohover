@@ -8,8 +8,6 @@ from launch_ros.actions import Node
 def generate_launch_description():
     ld = LaunchDescription()
 
-
-    
     micro_agent = Node(
         package="micro_ros_agent",
         executable="micro_ros_agent",

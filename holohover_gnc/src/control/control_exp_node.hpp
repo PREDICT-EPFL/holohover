@@ -85,20 +85,19 @@ private:
     Holohover holohover;
 
     Holohover::state_t<double> state;
-    geometry_msgs::msg::Pose2D ref;
+    holohover_msgs::msg::HolohoverState ref;
     Eigen::Matrix<double, Holohover::NA, Holohover::NX> K;
 
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
-    rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr reference_subscription;
+    rclcpp::Subscription<holohover_msgs::msg::HolohoverState>::SharedPtr reference_subscription;
 
     void init_topics();
     void init_timer();
     void publish_control();
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
-    void ref_callback(const geometry_msgs::msg::Pose2D &pose);
-    
+    void ref_callback(const holohover_msgs::msg::HolohoverState &pose);
     void rand_sig(Holohover::control_force_t<double>& u_signal);
     void evaluation_pos(Holohover::state_t<double>& state_ref, const Holohover::state_t<double>& state);
 };

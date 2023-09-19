@@ -9,9 +9,9 @@ RvizInterfaceNode::RvizInterfaceNode() :
     holohover_marker = create_marker("holohover", 0.75, 0.75, 0.75);
     holohover_marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
     holohover_marker.mesh_resource = "package://holohover_utils/gui/holohover.stl";
-    holohover_marker.scale.x = 1.0;
-    holohover_marker.scale.y = 1.0;
-    holohover_marker.scale.z = 1.0;
+    holohover_marker.scale.x = 1;
+    holohover_marker.scale.y = 1;
+    holohover_marker.scale.z = 1;
 
     for (int i = 0; i < 6; i++)
     {
@@ -21,6 +21,55 @@ RvizInterfaceNode::RvizInterfaceNode() :
         thrust_vector_markers[i].scale.y = 0.02;
         thrust_vector_markers[i].scale.z = 0.02;
         thrust_vector_markers[i].points.resize(2);
+    }
+    past_trajectory_marker = create_marker("past_trajectory", 0.75, 0.5, 0);
+    past_trajectory_marker.type = visualization_msgs::msg::Marker::CUBE;
+    past_trajectory_marker.scale.x = 0.005;
+    past_trajectory_marker.scale.y = 0.005;
+    past_trajectory_marker.scale.z = 0.005;
+    past_trajectory_marker.lifetime = rclcpp::Duration(10,0);
+
+    reference_marker = create_marker("reference", 0.75, 0, 0);
+    reference_marker.type = visualization_msgs::msg::Marker::CYLINDER;
+    reference_marker.scale.x = 0.01;
+    reference_marker.scale.y = 0.01;
+    reference_marker.scale.z = 0.02;
+
+    reference_direction_marker = create_marker("reference_direction", 0.75, 0.75, 0);
+    reference_direction_marker.type = visualization_msgs::msg::Marker::ARROW;
+    reference_direction_marker.scale.x = 0.01;
+    reference_direction_marker.scale.y = 0.02;
+    reference_direction_marker.scale.z = 0.02;
+    reference_direction_marker.points.resize(2);
+
+    reference_velocity_marker = create_marker("velocity", 0.75, 0.25, 0);
+    reference_velocity_marker.type = visualization_msgs::msg::Marker::ARROW;
+    reference_velocity_marker.scale.x = 0.01;
+    reference_velocity_marker.scale.y = 0.02;
+    reference_velocity_marker.scale.z = 0.02;
+    reference_velocity_marker.points.resize(2);
+
+    reference_holohover_marker = create_marker("holohover", 0.5, 0.5, 0.5);
+    reference_holohover_marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
+    reference_holohover_marker.mesh_resource = "package://holohover_utils/gui/holohover.stl";
+    reference_holohover_marker.scale.x = 0.3;
+    reference_holohover_marker.scale.y = 0.3;
+    reference_holohover_marker.scale.z = 0.3;
+
+    for (int i = 0; i < 20; i++)
+    {
+        next_pos_marker[i] = create_marker("next_state"+ std::to_string(i), 0, 0, 0.75);
+        next_pos_marker[i].type = visualization_msgs::msg::Marker::CYLINDER;
+        next_pos_marker[i].scale.x = 0.005;
+        next_pos_marker[i].scale.y = 0.005;
+        next_pos_marker[i].scale.z = 0.05;
+
+        next_vel_marker[i] = create_marker("next_vel"+ std::to_string(i), 0.75, 0, 0.75);
+        next_vel_marker[i].type = visualization_msgs::msg::Marker::ARROW;
+        next_vel_marker[i].scale.x = 0.01;
+        next_vel_marker[i].scale.y = 0.01;
+        next_vel_marker[i].scale.z = 0.01;
+        next_vel_marker[i].points.resize(2);
     }
 
     init_topics();
@@ -35,9 +84,19 @@ void RvizInterfaceNode::init_topics()
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "navigation/state", 10,
             std::bind(&RvizInterfaceNode::state_callback, this, std::placeholders::_1));
+    
+    trajectory_subscription = this->create_subscription<holohover_msgs::msg::HolohoverTrajectory>(
+            "control/HolohoverTrajectory", rclcpp::SensorDataQoS(),
+            std::bind(&RvizInterfaceNode::trajectory_callback, this, std::placeholders::_1));
+    
+    reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
+            "control/state_ref", 10,
+            std::bind(&RvizInterfaceNode::ref_callback, this, std::placeholders::_1));
+    
     control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
             "drone/control", rclcpp::SensorDataQoS(),
             std::bind(&RvizInterfaceNode::control_callback, this, std::placeholders::_1));
+    
 }
 
 void RvizInterfaceNode::init_timer()
@@ -67,9 +126,9 @@ void RvizInterfaceNode::publish_visualization()
 {
     // Holohover model
     holohover_marker.header.stamp = now();
-    holohover_marker.pose.position.x = current_state(0);
-    holohover_marker.pose.position.y = current_state(1);
-    holohover_marker.pose.position.z = 0;
+    holohover_marker.pose.position.x = current_state(0)-holohover_props.CoM[0];
+    holohover_marker.pose.position.y = current_state(1)-holohover_props.CoM[1];
+    holohover_marker.pose.position.z = 0.015; // center holohover 3d mdoel
     tf2::Quaternion q;
     q.setRPY(0, 0, current_state(4));
     holohover_marker.pose.orientation.x = q.getX();
@@ -77,18 +136,54 @@ void RvizInterfaceNode::publish_visualization()
     holohover_marker.pose.orientation.z = q.getZ();
     holohover_marker.pose.orientation.w = q.getW();
 
+    // reference model
+    reference_holohover_marker.header.stamp = now();
+    reference_holohover_marker.pose.position.x = ref.x;
+    reference_holohover_marker.pose.position.y = ref.y;
+    reference_holohover_marker.pose.position.z = 0.005; // center holohover 3d mdoel
+    tf2::Quaternion q_ref;
+    q_ref.setRPY(0, 0, ref.yaw);
+    reference_holohover_marker.pose.orientation.x = q_ref.getX();
+    reference_holohover_marker.pose.orientation.y = q_ref.getY();
+    reference_holohover_marker.pose.orientation.z = q_ref.getZ();
+    reference_holohover_marker.pose.orientation.w = q_ref.getW();
+
+    // past_trajectory
+    //past_trajectory_marker.header.stamp = now();
+    past_trajectory_marker = create_marker("past_trajectory", 0.75, 0.5, 0);
+    past_trajectory_marker.type = visualization_msgs::msg::Marker::CUBE;
+    past_trajectory_marker.scale.x = 0.005;
+    past_trajectory_marker.scale.y = 0.005;
+    past_trajectory_marker.scale.z = 0.005;
+    past_trajectory_marker.lifetime = rclcpp::Duration(10,0);
+    past_trajectory_marker.pose.position.x = current_state(0);
+    past_trajectory_marker.pose.position.y = current_state(1);
+    // REFERENCE POITN
+    reference_marker.pose.position.x = ref.x;
+    reference_marker.pose.position.y = ref.y;
+    //REFERENCE DIRECTION
+    reference_direction_marker.points[0].x = ref.x;
+    reference_direction_marker.points[0].y = ref.y;
+    reference_direction_marker.points[1].x = ref.x+0.05*cos(ref.yaw);
+    reference_direction_marker.points[1].y = ref.y+0.05*sin(ref.yaw);
+    // REFERENCE VELOCITY
+    reference_velocity_marker.points[0].x = ref.x;
+    reference_velocity_marker.points[0].y = ref.y;
+    reference_velocity_marker.points[1].x = ref.x+ref.v_x;
+    reference_velocity_marker.points[1].y = ref.y+ref.v_y;
+
     // thrust arrows
     double propeller_height = 0.045;
     double thrust_scaling = 0.2;
-    double min_display_force = 0.01;
+    double min_display_force = 0.01; 
     for (int i = 0; i < 3; i++) {
         // position vector for the propeller pair i
         Eigen::Vector2d position_1;
-        position_1(0) = holohover_props.radius_propeller * cos(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair);
-        position_1(1) = holohover_props.radius_propeller * sin(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair);
+        position_1(0) = holohover_props.propeller_pair_radial_distance * cos(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair);
+        position_1(1) = holohover_props.propeller_pair_radial_distance * sin(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair);
         Eigen::Vector2d position_2;
-        position_2(0) = holohover_props.radius_propeller * cos(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair);
-        position_2(1) = holohover_props.radius_propeller * sin(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair);
+        position_2(0) = holohover_props.propeller_pair_radial_distance * cos(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair);
+        position_2(1) = holohover_props.propeller_pair_radial_distance * sin(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair);
         // inverse propeller force direction for the propeller pair i
         Eigen::Vector2d direction_1;
         direction_1(0) = sin(holohover_props.phi_offset + holohover.phi * i);
@@ -123,25 +218,71 @@ void RvizInterfaceNode::publish_visualization()
         thrust_vector_markers[2 * i + 1].points[1].z = propeller_height;
     }
 
+    for (int i = 0; i < 20; i++) {
+        // next_pos_marker[i].lifetime = rclcpp::Duration(2,0);
+        next_pos_marker[i].pose.position.x = next_state[i](0);
+        next_pos_marker[i].pose.position.y = next_state[i](1);
+        next_pos_marker[i].pose.position.z = 0.025;
+
+        next_vel_marker[i].points[0].x = next_state[i](0);
+        next_vel_marker[i].points[0].y = next_state[i](1);
+        next_vel_marker[i].points[0].z = 0;
+        next_vel_marker[i].points[1].x = next_state[i](0)+next_state[i](2);
+        next_vel_marker[i].points[1].y = next_state[i](1)+next_state[i](3);
+        next_vel_marker[i].points[1].z = 0;
+
+    }
+
     // publish markers
     visualization_msgs::msg::MarkerArray markers;
-    markers.markers.reserve(7);
+    markers.markers.reserve(10);
     markers.markers.push_back(holohover_marker);
+    markers.markers.push_back(reference_holohover_marker);
+    markers.markers.push_back(past_trajectory_marker);
+    markers.markers.push_back(reference_marker);
+    markers.markers.push_back(reference_direction_marker);
+    markers.markers.push_back(reference_velocity_marker);
+    //markers.markers.push_back(next_pos_marker);
+
     for (auto &thrust_vector_marker : thrust_vector_markers)
     {
         markers.markers.push_back(thrust_vector_marker);
     }
+
+    for (auto &next_pos_marker : next_pos_marker)
+    {
+        markers.markers.push_back(next_pos_marker);
+    }
+
+    for (auto &next_vel_marker : next_vel_marker)
+    {
+        markers.markers.push_back(next_vel_marker);
+    }
+
     viz_publisher->publish(markers);
 }
 
-void RvizInterfaceNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state)
+void RvizInterfaceNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg)
 {
-    current_state(0) = state.x;
-    current_state(1) = state.y;
-    current_state(2) = state.v_x;
-    current_state(3) = state.v_y;
-    current_state(4) = state.yaw;
-    current_state(5) = state.w_z;
+    current_state(0) = state_msg.state_msg.x ;
+    current_state(1) = state_msg.state_msg.y ;
+    current_state(2) = state_msg.state_msg.v_x;
+    current_state(3) = state_msg.state_msg.v_y;
+    current_state(4) = state_msg.state_msg.yaw;
+    current_state(5) = state_msg.state_msg.w_z;
+}
+
+void RvizInterfaceNode::trajectory_callback(const holohover_msgs::msg::HolohoverTrajectory &state_trajectory)
+{
+    //next_state = state_trajectory.state_trajectory[0];
+    for (int i = 0; i < 20; i++) {
+        next_state[i](0) = state_trajectory.state_trajectory[i].x ;
+        next_state[i](1) = state_trajectory.state_trajectory[i].y ;
+        next_state[i](2) = state_trajectory.state_trajectory[i].v_x ;
+        next_state[i](3) = state_trajectory.state_trajectory[i].v_y ;
+        next_state[i](4) = state_trajectory.state_trajectory[i].yaw ;
+        next_state[i](5) = state_trajectory.state_trajectory[i].w_z ;
+    }
 }
 
 void RvizInterfaceNode::control_callback(const holohover_msgs::msg::HolohoverControlStamped &control)
@@ -152,6 +293,11 @@ void RvizInterfaceNode::control_callback(const holohover_msgs::msg::HolohoverCon
     current_control(3) = control.motor_b_2;
     current_control(4) = control.motor_c_1;
     current_control(5) = control.motor_c_2;
+}
+
+void RvizInterfaceNode::ref_callback(const holohover_msgs::msg::HolohoverState &pose)
+{
+    ref = pose;
 }
 
 int main(int argc, char **argv) {

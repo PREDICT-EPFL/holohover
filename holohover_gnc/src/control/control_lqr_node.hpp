@@ -12,6 +12,8 @@
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "holohover_gnc/utils/load_holohover_props.hpp"
 
+#define IDLE_SIGNAL 0.03 // signal always applied to keep motors moving
+
 struct ControlLQRSettings
 {
     double period;
@@ -61,19 +63,20 @@ private:
     Holohover holohover;
 
     Holohover::state_t<double> state;
-    geometry_msgs::msg::Pose2D ref;
+    //geometry_msgs::msg::Pose2D ref;
+    holohover_msgs::msg::HolohoverState ref;
     Eigen::Matrix<double, Holohover::NA, Holohover::NX> K;
 
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
-    rclcpp::Subscription<geometry_msgs::msg::Pose2D>::SharedPtr reference_subscription;
+    rclcpp::Subscription<holohover_msgs::msg::HolohoverState>::SharedPtr reference_subscription;
 
     void init_topics();
     void init_timer();
     void publish_control();
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
-    void ref_callback(const geometry_msgs::msg::Pose2D &pose);
+    void ref_callback(const  holohover_msgs::msg::HolohoverState &pose);
 };
 
 #endif //HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP

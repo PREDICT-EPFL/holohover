@@ -2,6 +2,7 @@ from rclpy.serialization import deserialize_message
 from rosidl_runtime_py.utilities import get_message
 import rosbag2_py
 import pandas as pd
+import math
 import os
 
 def read_messages(input_bag: str):
@@ -42,10 +43,32 @@ def read_messages(input_bag: str):
             yield topic, msg, timestamp
     del reader
 
+def euler_from_quaternion(x, y, z, w):
+    """
+    Convert a quaternion into euler angles (roll, pitch, yaw)
+    roll is rotation around x in radians (counterclockwise)
+    pitch is rotation around y in radians (counterclockwise)
+    yaw is rotation around z in radians (counterclockwise)
+    """
+    t0 = +2.0 * (w * x + y * z)
+    t1 = +1.0 - 2.0 * (x * x + y * y)
+    roll_x = math.atan2(t0, t1)
+    
+    t2 = +2.0 * (w * y - z * x)
+    t2 = +1.0 if t2 > +1.0 else t2
+    t2 = -1.0 if t2 < -1.0 else t2
+    pitch_y = math.asin(t2)
+    
+    t3 = +2.0 * (w * z + x * y)
+    t4 = +1.0 - 2.0 * (y * y + z * z)
+    yaw_z = math.atan2(t3, t4)
+    
+    return roll_x, pitch_y, yaw_z # in radians
+
 def main():
-    serie = "validation_20221208"
-    #exp = "rosbag2_2022_10_25-11_18_00"
-    #file = exp + "_0.mcap"
+    serie = "holohover_20230404"
+    exp = "rosbag2_2023_04_03-13_10_11"
+    file = exp + "_0.mcap"
 
     # loop through all files of all subfolders of the defined experiment series
     for root, dirs, files in os.walk(serie):
@@ -73,7 +96,8 @@ def main():
                 #print(f"{topic} ({type(msg).__name__}) [{timestamp}]: '{msg}'")
                 
                 if topic == "/optitrack/drone/pose":
-                    df_optitrack.loc[len(df_optitrack)] = [timestamp, msg.x, msg.y, msg.theta]
+                    roll, pitch, yaw = euler_from_quaternion(msg.pose.orientation.x,msg.pose.orientation.y,msg.pose.orientation.z,msg.pose.orientation.w)
+                    df_optitrack.loc[len(df_optitrack)] = [timestamp, msg.pose.position.x, msg.pose.position.y, yaw]
                 elif topic == "/drone/control":
                     df_control.loc[len(df_control)] = [timestamp, msg.motor_a_1, msg.motor_a_2, msg.motor_b_1, msg.motor_b_2, msg.motor_c_1, msg.motor_c_2]
                 elif topic == "/drone/imu":

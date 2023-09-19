@@ -9,10 +9,10 @@ control_lqr:
     weight_yaw: 10.0
     weight_w_z: 1.0
 
-    weight_a_x: 0.01
-    weight_a_y: 0.01
-    weight_w_dot_z: 0.01
-    
+    weight_a_x: 0.1
+    weight_a_y: 0.1
+    weight_w_dot_z: 0.1
+
     rand_sig_duration: 100000.0
     rand_sig_max: 0.6
     rand_sig_min: -0.6

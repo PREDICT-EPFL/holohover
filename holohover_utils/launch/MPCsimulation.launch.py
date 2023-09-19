@@ -31,6 +31,7 @@ def generate_launch_description():
         'config',
         'navigation_config.yaml'
     )
+
     navigation_node = Node(
         package="holohover_gnc",
         executable="navigation",
@@ -38,17 +39,16 @@ def generate_launch_description():
         output='screen'
     )
 
-    control_lqr_config = os.path.join(
+    control_mpc_config = os.path.join(
         get_package_share_directory('holohover_gnc'),
         'config',
-        'control_lqr_config.yaml'
+        'control_mpc_config.yaml'
     )
-
 
     controller_node = Node(
         package="holohover_gnc",
-        executable="control_exp",
-        parameters=[holohover_params, control_lqr_config],
+        executable="control_mpc",
+        parameters=[holohover_params, control_mpc_config],
         output='screen'
     )
 
@@ -81,6 +81,6 @@ def generate_launch_description():
     ld.add_action(controller_node)
     ld.add_action(rviz_interface_node)
     ld.add_action(rviz_node)
-    #ld.add_action(recorder)
+    ld.add_action(recorder)
 
     return ld

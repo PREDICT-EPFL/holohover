@@ -15,7 +15,7 @@ HolohoverControlExpNode::HolohoverControlExpNode() :
     // init ref
     ref.x = 0;
     ref.y = 0;
-    ref.theta = 0;
+    ref.yaw = 0;
 
     // calculate LQR gain
     Eigen::Matrix<double, Holohover::NX, Holohover::NX> &Ad = holohover.Ad;
@@ -49,7 +49,8 @@ void HolohoverControlExpNode::init_topics()
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "navigation/state", 10,
             std::bind(&HolohoverControlExpNode::state_callback, this, std::placeholders::_1));
-    reference_subscription = this->create_subscription<geometry_msgs::msg::Pose2D>(
+
+    reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
             "control/ref", 10,
             std::bind(&HolohoverControlExpNode::ref_callback, this, std::placeholders::_1));
 }
@@ -67,7 +68,7 @@ void HolohoverControlExpNode::publish_control()
     state_ref.setZero();
     state_ref(0) = ref.x;
     state_ref(1) = ref.y;
-    state_ref(4) = ref.theta;
+    state_ref(4) = ref.yaw;
 
 	// calc. acc. using LQR controler
     Holohover::control_acc_t<double> u_acc = -K * (state - state_ref); 
@@ -97,17 +98,17 @@ void HolohoverControlExpNode::publish_control()
     control_publisher->publish(control_msg);
 }
 
-void HolohoverControlExpNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg)
+void HolohoverControlExpNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state)
 {
-    state(0) = state_msg.x;
-    state(1) = state_msg.y;
-    state(2) = state_msg.v_x;
-    state(3) = state_msg.v_y;
-    state(4) = state_msg.yaw;
-    state(5) = state_msg.w_z;
+    state(0) = msg_state.state_msg.x;
+    state(1) = msg_state.state_msg.y;
+    state(2) = msg_state.state_msg.v_x;
+    state(3) = msg_state.state_msg.v_y;
+    state(4) = msg_state.state_msg.yaw;
+    state(5) = msg_state.state_msg.w_z;
 }
 
-void HolohoverControlExpNode::ref_callback(const geometry_msgs::msg::Pose2D &pose)
+void HolohoverControlExpNode::ref_callback(const holohover_msgs::msg::HolohoverState &pose)
 {
     ref = pose;
 }

@@ -31,6 +31,7 @@ def generate_launch_description():
         'config',
         'navigation_config.yaml'
     )
+
     navigation_node = Node(
         package="holohover_gnc",
         executable="navigation",
@@ -43,6 +44,7 @@ def generate_launch_description():
         'config',
         'control_lqr_config.yaml'
     )
+
     controller_node = Node(
         package="holohover_gnc",
         executable="control_lqr",

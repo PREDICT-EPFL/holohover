@@ -1,21 +1,46 @@
 /**:
   ros__parameters:
-    propeller_pair_gap_distance: 30e-3
-    propeller_pair_radial_distance: 44.048e-3
-    phi_offset: 0.0
 
-    mass: 98.3e-3
-    inertia: 0.3599e-3 # 0.5 * mass^2 * (propeller_pair_radial_distance + 12.5e-3)
+    propeller_pair_gap_distance: 30e-3
+    # For a centered CoM: 
+    propeller_pair_radial_distance: 44.048e-3
+
+    phi_offset: 0.0 
+
+    mass: 137.7e-3
+
+    # Learned CoM
+    CoM: [-0.0004534188483376056, -0.007589168380945921, 0.0]
+    #inertia: 0.5356e-3 # 0.5 * mass^2 * (propeller_pair_radial_distance + 12.5e-3)
+    ## Inertia learned by identification
+    inertia: 0.0002575
+
+    # Motor pos
+    motor_pos_a_1: [0.044048011302948, -0.014999988488852978, 0.0]
+    motor_pos_a_2: [0.044048011302948, 0.014999988488852978, 0.0]
+    motor_pos_b_1: [-0.009033635258674622, 0.04564669355750084, 0.0]
+    motor_pos_b_2: [-0.035014376044273376, 0.030646702274680138, 0.0]
+    motor_pos_c_1: [-0.035014376044273376, -0.030646702274680138, 0.0]
+    motor_pos_c_2: [-0.009033635258674622, -0.04564669355750084, 0.0]
+
+    # normalized learned motor vec 
+    learned_motor_vec_a_1: [0.20309195, 0.97915967, 0.0]
+    learned_motor_vec_a_2: [-0.22271841, -0.97488282,  0.0]
+    learned_motor_vec_b_1: [-0.86788077, -0.49677256,  0.0]  
+    learned_motor_vec_b_2: [0.78614841, 0.61803777, 0.0]
+    learned_motor_vec_c_1: [ 0.90173907, -0.43228076,  0.0]
+    learned_motor_vec_c_2: [-0.92332695,  0.38401478,  0.0]
 
     max_thrust: 0.6
-    signal_to_thrust_coeffs_motor1: [-0.6501016606674075, 1.3078587931596721, -0.04016251167742002, 0.0] 
+    #signal_to_thrust_coeffs_motor1: [-0.6501016606674075, 1.3078587931596721, -0.04016251167742002, 0.0]
+    signal_to_thrust_coeffs_motor1: [-0.43371886420836747, 1.050842947701885, 0.026828422632851595, 0.0]  
     signal_to_thrust_coeffs_motor2: [-0.43371886420836747, 1.050842947701885, 0.026828422632851595, 0.0] 
     signal_to_thrust_coeffs_motor3: [-0.4314325561246988, 0.9734173280950021, 0.06897398735413296, 0.0]
     signal_to_thrust_coeffs_motor4: [-0.3806616655050825, 0.9019586934278533, 0.1131439882582147, 0.0]
-    signal_to_thrust_coeffs_motor5: [-0.6295276270648476, 1.2944916719119886, -0.018477980448020626, 0.0]
+    #signal_to_thrust_coeffs_motor5: [-0.6295276270648476, 1.2944916719119886, -0.018477980448020626, 0.0]
+    signal_to_thrust_coeffs_motor5: [-0.3851267274962138, 0.9252123806815016, 0.12654605007354636, 0.0]
     signal_to_thrust_coeffs_motor6: [-0.3851267274962138, 0.9252123806815016, 0.12654605007354636, 0.0]
      
-    
     thrust_to_signal_coeffs_motor1: [6.702733687265958, -7.429134286715521, 3.670891277300514, 0.0]
     thrust_to_signal_coeffs_motor2: [5.632697369602757, -6.733585457837144, 3.5811056803023287, 0.0]
     thrust_to_signal_coeffs_motor3: [5.269938003461095, -6.122320230844099, 3.420726977700959, 0.0]

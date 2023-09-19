@@ -11,6 +11,7 @@ HolohoverSimulationNode::HolohoverSimulationNode() :
 {
     // init state
     state.setZero();
+    nonlinear_state.setZero();
 
     // init zero control
     current_control.header.frame_id = "body";
@@ -93,32 +94,53 @@ void HolohoverSimulationNode::calculate_control_acc()
     double g = 9.81;
     current_control_acc(0) += sin(simulation_settings.table_tilt_x * M_PI / 180.0) * g;
     current_control_acc(1) += sin(simulation_settings.table_tilt_y * M_PI / 180.0) * g;
+
+    //std::cout << "acc = " << current_control_acc.transpose() << std::endl;
+    //std::cout << "force = " << current_control_force.transpose() << std::endl;
 }
 
 void HolohoverSimulationNode::simulate_forward_callback()
 {
     state = holohover.Ad * state + holohover.Bd * current_control_acc;
 
-    holohover_msgs::msg::HolohoverStateStamped state_msg;
-    state_msg.header.frame_id = "world";
-    state_msg.header.stamp = this->now();
-    state_msg.x = state(0);
-    state_msg.y = state(1);
-    state_msg.v_x = state(2);
-    state_msg.v_y = state(3);
-    state_msg.yaw = state(4);
-    state_msg.w_z = state(5);
+    // To use the non_linear_state_dynamics_discrete function :
+    Holohover::control_force_t<double> current_control_signal;
+    current_control_signal(0) = current_control.motor_a_1;
+    current_control_signal(1) = current_control.motor_a_2;
+    current_control_signal(2) = current_control.motor_b_1;
+    current_control_signal(3) = current_control.motor_b_2;
+    current_control_signal(4) = current_control.motor_c_1;
+    current_control_signal(5) = current_control.motor_c_2;
+    
+    holohover.template non_linear_state_dynamics_discrete<double>(nonlinear_state, current_control_signal,nonlinear_state);
+    //state = nonlinear_state;
+    //std::cout << "models difference = " << (state-nonlinear_state) << std::endl;
+    // std::cout << "state = " << (state) << std::endl;
+    // std::cout << "nonlinear_state = " << (nonlinear_state) << std::endl;
+    // std::cout << "state- nonlinear_state = " << (state-nonlinear_state) << std::endl;
+    // std::cout << "norm of models difference = " << (state-nonlinear_state).norm() << std::endl;
 
-    if (state_msg.yaw < -M_PI)
+
+    holohover_msgs::msg::HolohoverStateStamped msg_state;
+    msg_state.header.frame_id = "world";
+    msg_state.header.stamp = this->now();
+    msg_state.state_msg.x = state(0)-holohover_props.CoM[0];
+    msg_state.state_msg.y = state(1)-holohover_props.CoM[1];
+    msg_state.state_msg.v_x = state(2);
+    msg_state.state_msg.v_y = state(3);
+    msg_state.state_msg.yaw = state(4);
+    msg_state.state_msg.w_z = state(5);
+
+    if (msg_state.state_msg.yaw < -M_PI)
     {
-        state_msg.yaw += 2 * M_PI;
+        msg_state.state_msg.yaw += 2 * M_PI;
     }
-    if (state_msg.yaw > M_PI)
+    if (msg_state.state_msg.yaw > M_PI)
     {
-        state_msg.yaw -= 2 * M_PI;
+        msg_state.state_msg.yaw -= 2 * M_PI;
     }
 
-    state_publisher->publish(state_msg);
+    state_publisher->publish(msg_state);
 }
 
 void HolohoverSimulationNode::imu_callback()
@@ -130,7 +152,7 @@ void HolohoverSimulationNode::imu_callback()
     imu_measurement.atti.pitch = 0;
     imu_measurement.atti.yaw = state(4);
     imu_measurement.acc.x = current_control_acc(0);
-    imu_measurement.acc.x = current_control_acc(1);
+    imu_measurement.acc.y = current_control_acc(1);
     imu_measurement.acc.z = -9.81;
     imu_measurement.gyro.x = 0;
     imu_measurement.gyro.y = 0;
@@ -172,8 +194,8 @@ void HolohoverSimulationNode::pose_callback()
     geometry_msgs::msg::PoseStamped pose_measurement;
     pose_measurement.header.frame_id = "world";
     pose_measurement.header.stamp = this->now();
-    pose_measurement.pose.position.x = state(0);
-    pose_measurement.pose.position.y = state(1);
+    pose_measurement.pose.position.x = state(0) + simulation_settings.Gx;
+    pose_measurement.pose.position.y = state(1) + simulation_settings.Gy;
     pose_measurement.pose.position.z = 0;
     double theta = state(4);
 

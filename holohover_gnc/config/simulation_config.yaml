@@ -25,3 +25,7 @@ simulation:
     sensor_pose_noise_x: 1e-6
     sensor_pose_noise_y: 1e-6
     sensor_pose_noise_yaw: 1e-6
+
+    # position of center of inertia
+    Gx: -0.000453
+    Gy: -0.007589
