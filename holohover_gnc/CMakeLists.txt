@@ -59,20 +59,20 @@ target_link_libraries(control_exp Eigen3::Eigen)
 add_executable(control_mpc src/mpc/holohover_mpc_node.cpp)
 target_include_directories(control_mpc PRIVATE external/laopt/include)
 ament_target_dependencies(control_mpc rclcpp geometry_msgs holohover_msgs ros_polympc)
-target_link_libraries(control_mpc Eigen3::Eigen piqp)
+target_link_libraries(control_mpc Eigen3::Eigen piqp::piqp)
 target_compile_options(control_mpc PRIVATE "-Wno-unused-parameter")
 
 # add_executable(control_mpc_ipot src/mpc/holohover_mpc_node_ipopt.cpp)
 # target_include_directories(control_mpc_ipot PRIVATE external/laopt/include)
 # ament_target_dependencies(control_mpc_ipot rclcpp geometry_msgs holohover_msgs ros_polympc)
-# target_link_libraries(control_mpc_ipot Eigen3::Eigen piqp)
+# target_link_libraries(control_mpc_ipot Eigen3::Eigen piqp::piqp)
 # target_compile_options(control_mpc_ipot PRIVATE "-Wno-unused-parameter")
 
 
 add_executable(double_integrator_test src/mpc/double_integrator_test.cpp)
 target_include_directories(double_integrator_test PRIVATE external/laopt/include)
 ament_target_dependencies(double_integrator_test ros_polympc)
-target_link_libraries(double_integrator_test Eigen3::Eigen piqp)
+target_link_libraries(double_integrator_test Eigen3::Eigen piqp::piqp)
 target_compile_options(double_integrator_test PRIVATE "-Wno-unused-parameter")
 
 
