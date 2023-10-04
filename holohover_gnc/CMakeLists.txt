@@ -20,7 +20,6 @@ find_package(piqp REQUIRED)
 
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs)
-find_package(ros_polympc REQUIRED)
 find_package(holohover_msgs REQUIRED)
 
 include_directories(include)
@@ -37,41 +36,39 @@ endif()
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(simulation src/simulation/simulation_node.cpp)
-ament_target_dependencies(simulation rclcpp tf2_ros geometry_msgs holohover_msgs ros_polympc)
-target_link_libraries(simulation Eigen3::Eigen)
+ament_target_dependencies(simulation rclcpp tf2_ros geometry_msgs holohover_msgs)
+target_link_libraries(simulation Eigen3::Eigen piqp::piqp)
 
 add_executable(navigation src/navigation/navigation_node.cpp)
-ament_target_dependencies(navigation rclcpp tf2_ros geometry_msgs holohover_msgs ros_polympc)
-target_link_libraries(navigation Eigen3::Eigen)
+ament_target_dependencies(navigation rclcpp tf2_ros geometry_msgs holohover_msgs)
+target_link_libraries(navigation Eigen3::Eigen piqp::piqp)
 
 add_executable(control_lqr src/control/control_lqr_node.cpp)
-ament_target_dependencies(control_lqr rclcpp geometry_msgs holohover_msgs ros_polympc)
-target_link_libraries(control_lqr Eigen3::Eigen)
+ament_target_dependencies(control_lqr rclcpp geometry_msgs holohover_msgs)
+target_link_libraries(control_lqr Eigen3::Eigen piqp::piqp)
 
 add_executable(control_signal src/control/control_signal_node.cpp)
-ament_target_dependencies(control_signal rclcpp geometry_msgs holohover_msgs ros_polympc)
-target_link_libraries(control_signal Eigen3::Eigen)
+ament_target_dependencies(control_signal rclcpp geometry_msgs holohover_msgs)
+target_link_libraries(control_signal Eigen3::Eigen piqp::piqp)
 
 add_executable(control_exp src/control/control_exp_node.cpp)
-ament_target_dependencies(control_exp rclcpp geometry_msgs holohover_msgs ros_polympc)
-target_link_libraries(control_exp Eigen3::Eigen)
+ament_target_dependencies(control_exp rclcpp geometry_msgs holohover_msgs)
+target_link_libraries(control_exp Eigen3::Eigen piqp::piqp)
 
 add_executable(control_mpc src/mpc/holohover_mpc_node.cpp)
 target_include_directories(control_mpc PRIVATE external/laopt/include)
-ament_target_dependencies(control_mpc rclcpp geometry_msgs holohover_msgs ros_polympc)
+ament_target_dependencies(control_mpc rclcpp geometry_msgs holohover_msgs)
 target_link_libraries(control_mpc Eigen3::Eigen piqp::piqp)
 target_compile_options(control_mpc PRIVATE "-Wno-unused-parameter")
 
 # add_executable(control_mpc_ipot src/mpc/holohover_mpc_node_ipopt.cpp)
-# target_include_directories(control_mpc_ipot PRIVATE external/laopt/include)
-# ament_target_dependencies(control_mpc_ipot rclcpp geometry_msgs holohover_msgs ros_polympc)
+# ament_target_dependencies(control_mpc_ipot rclcpp geometry_msgs holohover_msgs)
 # target_link_libraries(control_mpc_ipot Eigen3::Eigen piqp::piqp)
 # target_compile_options(control_mpc_ipot PRIVATE "-Wno-unused-parameter")
 
 
 add_executable(double_integrator_test src/mpc/double_integrator_test.cpp)
 target_include_directories(double_integrator_test PRIVATE external/laopt/include)
-ament_target_dependencies(double_integrator_test ros_polympc)
 target_link_libraries(double_integrator_test Eigen3::Eigen piqp::piqp)
 target_compile_options(double_integrator_test PRIVATE "-Wno-unused-parameter")
 

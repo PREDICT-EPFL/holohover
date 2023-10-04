@@ -1,6 +1,3 @@
-[submodule "ros_polympc/submodules/polympc"]
-	path = ros_polympc/submodules/polympc
-	url = https://gitlab.epfl.ch/listov/polympc.git
 [submodule "mocap_optitrack"]
 	path = mocap_optitrack
 	url = https://github.com/PREDICT-EPFL/mocap_optitrack.git

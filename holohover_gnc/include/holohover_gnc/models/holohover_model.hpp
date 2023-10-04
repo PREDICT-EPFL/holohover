@@ -5,7 +5,7 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <cmath>
 #include <vector>
-#include "solvers/box_admm.hpp"
+#include "piqp/piqp.hpp"
 
 struct HolohoverProps
 {
@@ -99,6 +99,9 @@ public:
     double dt;
     Eigen::Matrix<double, NX, NX> Ad;
     Eigen::Matrix<double, NX, NA> Bd;
+
+    piqp::DenseSolver<double> solver;
+    bool solver_initialized = false;
 
     explicit Holohover(HolohoverProps &_props, double _dt = 0.01) : props(_props), dt(_dt)
     {
@@ -323,7 +326,7 @@ public:
     template<typename T>
     inline void control_acceleration_to_force(const state_t<T> &x,
                                               const control_acc_t<T> &u_acc,
-                                              control_force_t<T> &u_force) const noexcept
+                                              control_force_t<T> &u_force) noexcept
     {
         // We solve a QP to find the minimum energy mapping satisfying max thrust constraints
         // Slacks are added to make sure the QP is always feasible
@@ -333,8 +336,8 @@ public:
         //       0 <= F_i <= F_max
         //
         // translated into standard form
-        // min   0.5 * x'Hx + h'x
-        // s.t.  Alb <= Ax <= Aub
+        // min   0.5 * x'Px + c'x
+        // s.t.  Ax = b
         //       lb <= x <= ub
         //
         // with x = (F_i, eps)
@@ -343,27 +346,33 @@ public:
         control_force_to_acceleration_mapping(x, control_force_to_acceleration_map);
 
         double mu = 1e6;
-        Eigen::Matrix<T, NU + NA, NU + NA> H;
-        Eigen::Matrix<T, NU + NA, 1> h;
+        Eigen::Matrix<T, NU + NA, NU + NA> P;
+        Eigen::Matrix<T, NU + NA, 1> c;
         Eigen::Matrix<T, NA, NU + NA> A;
-        Eigen::Matrix<T, NA, 1> Alb, Aub;
+        Eigen::Matrix<T, NA, 1> b;
+        Eigen::Matrix<T, 0, NU + NA> G;
+        Eigen::Matrix<T, 0, 1> h;
         Eigen::Matrix<T, NU + NA, 1> lb, ub;
 
-        H.setIdentity();
-        H.diagonal().template tail<NA>().setConstant(mu);
-        h.setZero();
+        P.setIdentity();
+        P.diagonal().template tail<NA>().setConstant(mu);
+        c.setZero();
         A.template topLeftCorner<NA, NU>() = control_force_to_acceleration_map;
         A.template topRightCorner<NA, NA>().setIdentity();
-        Alb = u_acc;
-        Aub = u_acc;
+        b = u_acc;
         lb.template head<NU>().setZero();
         lb.template tail<NA>().setConstant(-1e6);
         ub.template head<NU>().setConstant(props.max_thrust);
         ub.template tail<NA>().setConstant(1e6);
 
-        boxADMM<NU + NA, NA, T> solver;
-        solver.solve(H, h, A, Alb, Aub, lb, ub);
-        u_force = solver.primal_solution().template head<NU>();
+        if (!solver_initialized) {
+            solver.setup(P, c, A, b, G, h, lb, ub);
+        } else {
+            solver.update(piqp::nullopt, piqp::nullopt, A, b);
+        }
+        solver.settings().verbose = false;
+        solver.solve();
+        u_force = solver.result().x.template head<NU>();
     }
 
     template<typename T>
