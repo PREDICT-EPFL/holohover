@@ -21,8 +21,6 @@ struct HolohoverProps
     std::vector<double> CoM;
     // inertia in the z-direction
     double inertia;
-    // max thrust of a single propeller
-    double max_thrust;
     // polynomial coefficients for signal [0,1] to thrust [N] conversation (coeff of the highest order polynomial first)
     std::vector<double> signal_to_thrust_coeffs_motor1;
     std::vector<double> signal_to_thrust_coeffs_motor2;
@@ -90,6 +88,7 @@ public:
 
     // holohover properties
     HolohoverProps props;
+    control_force_t<double> max_thrust;
 
     // continuous system dynamics for input u = (a_x, a_y, w_dot_z)
     Eigen::Matrix<double, NX, NX> A;
@@ -105,6 +104,10 @@ public:
 
     explicit Holohover(HolohoverProps &_props, double _dt = 0.01) : props(_props), dt(_dt)
     {
+        control_force_t<double> max_signal = control_force_t<double>::Constant(1.0);
+        signal_to_thrust(max_signal, max_thrust);
+        // std::cout << "hovercraft max thrust: " << max_thrust.transpose() << std::endl;
+
         A << 0, 0, 1, 0, 0, 0,
              0, 0, 0, 1, 0, 0,
              0, 0, 0, 0, 0, 0,
@@ -117,7 +120,7 @@ public:
              1, 0, 0,
              0, 1, 0,
              0, 0, 0,
-             0, 0, 1;       
+             0, 0, 1;
 
         calculate_discretized_system();
     }
@@ -362,7 +365,7 @@ public:
         b = u_acc;
         lb.template head<NU>().setZero();
         lb.template tail<NA>().setConstant(-1e6);
-        ub.template head<NU>().setConstant(props.max_thrust);
+        ub.template head<NU>() = max_thrust;
         ub.template tail<NA>().setConstant(1e6);
 
         if (!solver_initialized) {
@@ -460,7 +463,7 @@ public:
         // 
         control_force_t<T> u_motor_thrust = u_thrust.array();
         control_force_t<T> u_motor_signal;
-        u_motor_thrust = u_motor_thrust.cwiseMin(props.max_thrust).cwiseMax(0.0);
+        u_motor_thrust = u_motor_thrust.cwiseMin(max_thrust).cwiseMax(0.0);
         //std::cout << "thrust = " << u_motor_thrust << std::endl;
         u_motor_signal = 0.6*u_motor_thrust; // First linear guess
         

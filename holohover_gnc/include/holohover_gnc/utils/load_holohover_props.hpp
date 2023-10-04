@@ -14,7 +14,6 @@ HolohoverProps load_holohover_pros(rclcpp::Node &node)
         node.get_parameter("mass", props.mass) &&
         node.get_parameter("CoM", props.CoM) &&
         node.get_parameter("inertia", props.inertia) &&
-        node.get_parameter("max_thrust", props.max_thrust) &&
         node.get_parameter("signal_to_thrust_coeffs_motor1", props.signal_to_thrust_coeffs_motor1) &&
         node.get_parameter("thrust_to_signal_coeffs_motor1", props.thrust_to_signal_coeffs_motor1) &&
         node.get_parameter("signal_to_thrust_coeffs_motor2", props.signal_to_thrust_coeffs_motor2) &&
