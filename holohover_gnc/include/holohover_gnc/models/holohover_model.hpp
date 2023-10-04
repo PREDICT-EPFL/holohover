@@ -9,12 +9,6 @@
 
 struct HolohoverProps
 {
-    // distance between a propeller pairs
-    double propeller_pair_gap_distance;
-    // radial distance from the center to the midpoint between a propeller pair
-    double propeller_pair_radial_distance;
-    // angle of first set of propellers
-    double phi_offset;
     // mass of the hovercraft
     double mass;
     // Learned CoM 
@@ -37,19 +31,6 @@ struct HolohoverProps
     std::vector<double> thrust_to_signal_coeffs_motor4;
     std::vector<double> thrust_to_signal_coeffs_motor5;
     std::vector<double> thrust_to_signal_coeffs_motor6;
-    // half the angle between two propeller pairs
-    double angle_propeller_pair;
-    // distance from center to propeller
-    double radius_propeller;
-    double radius_propeller_a;
-    double radius_propeller_b;
-    double radius_propeller_c;
-    double radius_propeller_a_1;
-    double radius_propeller_b_1;
-    double radius_propeller_c_1;
-    double radius_propeller_a_2;
-    double radius_propeller_b_2;
-    double radius_propeller_c_2;
     // Position of the motor
     std::vector<double> motor_pos_a_1;
     std::vector<double> motor_pos_a_2;
@@ -84,9 +65,6 @@ public:
     // u = (a_x, a_y, w_dot_z)
     template<typename T>
     using control_acc_t = Eigen::Matrix<T, NA, 1>;
-
-    // separation angle between the sets of propellers
-    const double phi = 2.0 * M_PI / 3.0;
 
     // holohover properties
     HolohoverProps props;
@@ -164,7 +142,6 @@ public:
                                const control_force_t<T> &u,
                                state_t<T> &x_dot) const noexcept
     {
-        control_acc_t<T> u_acc;
         Holohover::control_force_t<double> force;
 
         x_dot(0) = x(2); //x
@@ -215,7 +192,7 @@ public:
         
         Eigen::Matrix<T, 1, NU> force_to_moment;
         // A motors
-        int i =0 ;
+        int i = 0;
 
         // x force component of the first propeller in the propeller pair 1
         force_to_total_force(0, 2 * i) = props.learned_motor_vec_a_1[0];
@@ -247,7 +224,7 @@ public:
         force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
 
         // B motors
-        i =1 ; 
+        i = 1; 
 
         // x force component of the first propeller in the propeller pair 1
         force_to_total_force(0, 2 * i) = props.learned_motor_vec_b_1[0];
@@ -279,7 +256,7 @@ public:
         force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
 
         // C motors
-        i =2 ;
+        i = 2;
 
         // x force component of the first propeller in the propeller pair 1
         force_to_total_force(0, 2 * i) = props.learned_motor_vec_c_1[0];
@@ -355,24 +332,27 @@ public:
         control_force_to_acceleration_mapping(x, control_force_to_acceleration_map);
 
         double mu = 1e6;
-        Eigen::Matrix<T, NU + NA, NU + NA> P;
-        Eigen::Matrix<T, NU + NA, 1> c;
-        Eigen::Matrix<T, NA, NU + NA> A;
+        Eigen::Matrix<T, NU + 2, NU + 2> P;
+        Eigen::Matrix<T, NU + 2, 1> c;
+        Eigen::Matrix<T, NA, NU + 2> A;
         Eigen::Matrix<T, NA, 1> b;
-        Eigen::Matrix<T, 0, NU + NA> G;
+        Eigen::Matrix<T, 0, NU + 2> G;
         Eigen::Matrix<T, 0, 1> h;
-        Eigen::Matrix<T, NU + NA, 1> lb, ub;
+        Eigen::Matrix<T, NU + 2, 1> lb, ub;
 
         P.setIdentity();
-        P.diagonal().template tail<NA>().setConstant(mu);
+        P.diagonal().template tail<2>().setConstant(mu);
         c.setZero();
+        c.template tail<2>().setConstant(-mu);
         A.template topLeftCorner<NA, NU>() = control_force_to_acceleration_map;
-        A.template topRightCorner<NA, NA>().setIdentity();
-        b = u_acc;
+        A.template topRightCorner<NA, 2>() << -u_acc(0), 0.0,
+                                              -u_acc(1), 0.0,
+                                              0,         -u_acc(2);
+        b.setZero();
         lb.template head<NU>() = min_thrust;
-        lb.template tail<NA>().setConstant(-1e6);
+        lb.template tail<2>().setConstant(0.0);
         ub.template head<NU>() = max_thrust;
-        ub.template tail<NA>().setConstant(1e6);
+        ub.template tail<2>().setConstant(1.0);
 
         if (!solver_initialized) {
             solver.setup(P, c, A, b, G, h, lb, ub);

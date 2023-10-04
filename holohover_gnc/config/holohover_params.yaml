@@ -1,12 +1,5 @@
 /**:
   ros__parameters:
-
-    propeller_pair_gap_distance: 30e-3
-    # For a centered CoM: 
-    propeller_pair_radial_distance: 44.048e-3
-
-    phi_offset: 0.0 
-
     mass: 137.7e-3
 
     # Learned CoM

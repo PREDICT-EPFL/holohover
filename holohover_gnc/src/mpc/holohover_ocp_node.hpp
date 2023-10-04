@@ -21,9 +21,6 @@
 #include "holohover_msgs/msg/holohover_trajectory.hpp"
 #include "holohover_msgs/msg/holohover_laopt_speed_stamped.hpp"
 
-
-#define IDLE_SIGNAL 0.03 // signal always applied to keep motors moving
-
 struct ControlMPCSettings
 {
     double period;

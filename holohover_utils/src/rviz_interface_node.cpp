@@ -15,7 +15,7 @@ RvizInterfaceNode::RvizInterfaceNode() :
 
     for (int i = 0; i < 6; i++)
     {
-        thrust_vector_markers[i] = create_marker("thrust vector " + std::to_string(i), 1.0, 0.5, 0.0);
+        thrust_vector_markers[i] = create_marker("thrust_vectors", 1.0, 0.5, 0.0);
         thrust_vector_markers[i].type = visualization_msgs::msg::Marker::ARROW;
         thrust_vector_markers[i].scale.x = 0.01;
         thrust_vector_markers[i].scale.y = 0.02;
@@ -49,7 +49,7 @@ RvizInterfaceNode::RvizInterfaceNode() :
     reference_velocity_marker.scale.z = 0.02;
     reference_velocity_marker.points.resize(2);
 
-    reference_holohover_marker = create_marker("holohover", 0.5, 0.5, 0.5);
+    reference_holohover_marker = create_marker("holohover_reference", 0.5, 0.5, 0.5);
     reference_holohover_marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
     reference_holohover_marker.mesh_resource = "package://holohover_utils/gui/holohover.stl";
     reference_holohover_marker.scale.x = 0.3;
@@ -58,13 +58,13 @@ RvizInterfaceNode::RvizInterfaceNode() :
 
     for (int i = 0; i < 20; i++)
     {
-        next_pos_marker[i] = create_marker("next_state"+ std::to_string(i), 0, 0, 0.75);
+        next_pos_marker[i] = create_marker("mpc_traj_pos", 0, 0, 0.75);
         next_pos_marker[i].type = visualization_msgs::msg::Marker::CYLINDER;
         next_pos_marker[i].scale.x = 0.005;
         next_pos_marker[i].scale.y = 0.005;
         next_pos_marker[i].scale.z = 0.05;
 
-        next_vel_marker[i] = create_marker("next_vel"+ std::to_string(i), 0.75, 0, 0.75);
+        next_vel_marker[i] = create_marker("mpc_traj_vel", 0.75, 0, 0.75);
         next_vel_marker[i].type = visualization_msgs::msg::Marker::ARROW;
         next_vel_marker[i].scale.x = 0.01;
         next_vel_marker[i].scale.y = 0.01;
@@ -124,10 +124,17 @@ visualization_msgs::msg::Marker RvizInterfaceNode::create_marker(const std::stri
 
 void RvizInterfaceNode::publish_visualization()
 {
+    // body to world rotation matrix
+    Eigen::Matrix2d rotation_matrix;
+    holohover.body_to_world_rotation_matrix(current_state, rotation_matrix);
+
+    Eigen::Vector2d rotated_CoM; rotated_CoM << holohover_props.CoM[0], holohover_props.CoM[1];
+    rotated_CoM = rotation_matrix * rotated_CoM;
+
     // Holohover model
     holohover_marker.header.stamp = now();
-    holohover_marker.pose.position.x = current_state(0)-holohover_props.CoM[0];
-    holohover_marker.pose.position.y = current_state(1)-holohover_props.CoM[1];
+    holohover_marker.pose.position.x = current_state(0) - rotated_CoM(0);
+    holohover_marker.pose.position.y = current_state(1) - rotated_CoM(1);
     holohover_marker.pose.position.z = 0.015; // center holohover 3d mdoel
     tf2::Quaternion q;
     q.setRPY(0, 0, current_state(4));
@@ -149,7 +156,6 @@ void RvizInterfaceNode::publish_visualization()
     reference_holohover_marker.pose.orientation.w = q_ref.getW();
 
     // past_trajectory
-    //past_trajectory_marker.header.stamp = now();
     past_trajectory_marker = create_marker("past_trajectory", 0.75, 0.5, 0);
     past_trajectory_marker.type = visualization_msgs::msg::Marker::CUBE;
     past_trajectory_marker.scale.x = 0.005;
@@ -176,30 +182,43 @@ void RvizInterfaceNode::publish_visualization()
     double propeller_height = 0.045;
     double thrust_scaling = 0.2;
     double min_display_force = 0.01; 
+
+    // position vector for the propeller pairs
+    Eigen::Matrix<double, 2, 6> motor_pos;
+    motor_pos(0, 0) = holohover_props.motor_pos_a_1[0] - holohover_props.CoM[0];
+    motor_pos(1, 0) = holohover_props.motor_pos_a_1[1] - holohover_props.CoM[1];
+    motor_pos(0, 1) = holohover_props.motor_pos_a_2[0] - holohover_props.CoM[0];
+    motor_pos(1, 1) = holohover_props.motor_pos_a_2[1] - holohover_props.CoM[1];
+    motor_pos(0, 2) = holohover_props.motor_pos_b_1[0] - holohover_props.CoM[0];
+    motor_pos(1, 2) = holohover_props.motor_pos_b_1[1] - holohover_props.CoM[1];
+    motor_pos(0, 3) = holohover_props.motor_pos_b_2[0] - holohover_props.CoM[0];
+    motor_pos(1, 3) = holohover_props.motor_pos_b_2[1] - holohover_props.CoM[1];
+    motor_pos(0, 4) = holohover_props.motor_pos_c_1[0] - holohover_props.CoM[0];
+    motor_pos(1, 4) = holohover_props.motor_pos_c_1[1] - holohover_props.CoM[1];
+    motor_pos(0, 5) = holohover_props.motor_pos_c_2[0] - holohover_props.CoM[0];
+    motor_pos(1, 5) = holohover_props.motor_pos_c_2[1] - holohover_props.CoM[1];
+
+    // motor force direction vectors
+    Eigen::Matrix<double, 2, 6> motor_dir;
+    motor_dir(0, 0) = holohover_props.learned_motor_vec_a_1[0];
+    motor_dir(1, 0) = holohover_props.learned_motor_vec_a_1[1];
+    motor_dir(0, 1) = holohover_props.learned_motor_vec_a_2[0];
+    motor_dir(1, 1) = holohover_props.learned_motor_vec_a_2[1];
+    motor_dir(0, 2) = holohover_props.learned_motor_vec_b_1[0];
+    motor_dir(1, 2) = holohover_props.learned_motor_vec_b_1[1];
+    motor_dir(0, 3) = holohover_props.learned_motor_vec_b_2[0];
+    motor_dir(1, 3) = holohover_props.learned_motor_vec_b_2[1];
+    motor_dir(0, 4) = holohover_props.learned_motor_vec_c_1[0];
+    motor_dir(1, 4) = holohover_props.learned_motor_vec_c_1[1];
+    motor_dir(0, 5) = holohover_props.learned_motor_vec_c_2[0];
+    motor_dir(1, 5) = holohover_props.learned_motor_vec_c_2[1];
+
     for (int i = 0; i < 3; i++) {
-        // position vector for the propeller pair i
-        Eigen::Vector2d position_1;
-        position_1(0) = holohover_props.propeller_pair_radial_distance * cos(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair);
-        position_1(1) = holohover_props.propeller_pair_radial_distance * sin(holohover_props.phi_offset + holohover.phi * i - holohover_props.angle_propeller_pair);
-        Eigen::Vector2d position_2;
-        position_2(0) = holohover_props.propeller_pair_radial_distance * cos(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair);
-        position_2(1) = holohover_props.propeller_pair_radial_distance * sin(holohover_props.phi_offset + holohover.phi * i + holohover_props.angle_propeller_pair);
-        // inverse propeller force direction for the propeller pair i
-        Eigen::Vector2d direction_1;
-        direction_1(0) = sin(holohover_props.phi_offset + holohover.phi * i);
-        direction_1(1) = -cos(holohover_props.phi_offset + holohover.phi * i);
-        Eigen::Vector2d direction_2;
-        direction_2(0) = -sin(holohover_props.phi_offset + holohover.phi * i);
-        direction_2(1) = cos(holohover_props.phi_offset + holohover.phi * i);
-        // body to world rotation matrix
-        Eigen::Matrix2d rotation_matrix;
-        holohover.body_to_world_rotation_matrix(current_state, rotation_matrix);
+        Eigen::Vector2d start_point_1 = rotation_matrix * motor_pos.col(2 * i);
+        Eigen::Vector2d start_point_2 = rotation_matrix * motor_pos.col(2 * i + 1);
 
-        Eigen::Vector2d start_point_1 = rotation_matrix * position_1;
-        Eigen::Vector2d start_point_2 = rotation_matrix * position_2;
-
-        Eigen::Vector2d end_point_1 = rotation_matrix * (position_1 + direction_1 * fmax(current_control(2 * i), min_display_force) * thrust_scaling);
-        Eigen::Vector2d end_point_2 = rotation_matrix * (position_2 + direction_2 * fmax(current_control(2 * i + 1), min_display_force) * thrust_scaling);
+        Eigen::Vector2d end_point_1 = rotation_matrix * (motor_pos.col(2 * i) - motor_dir.col(2 * i) * fmax(current_control(2 * i), min_display_force) * thrust_scaling);
+        Eigen::Vector2d end_point_2 = rotation_matrix * (motor_pos.col(2 * i + 1) - motor_dir.col(2 * i + 1) * fmax(current_control(2 * i + 1), min_display_force) * thrust_scaling);
 
         thrust_vector_markers[2 * i].header.stamp = now();
         thrust_vector_markers[2 * i].points[0].x = start_point_1(0) + current_state(0);

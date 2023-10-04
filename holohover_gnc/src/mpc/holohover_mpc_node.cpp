@@ -27,8 +27,8 @@ HolohoverControlMPCNode::HolohoverControlMPCNode() :
 
         ocp.set_tf(1);
 
-        ocp.u_ub << 0.2, 0.2, 0.2, 0.2, 0.2, 0.2;
-        ocp.u_lb << IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL, IDLE_SIGNAL;
+        ocp.u_ub.setConstant(0.2);
+        ocp.u_lb.setConstant(holohover_props.idle_signal);
         //ocp.u_lb << 0, 0, 0, 0, 0, 0;
         ocp.x_lb << -0.4, -0.4, -0.5, -0.5, -2, -0.5;
         ocp.x_ub << 0.4, 0.4, 0.5, 0.5, 2, 0.5;
@@ -126,6 +126,7 @@ void HolohoverControlMPCNode::publish_control()
     holohover_msgs::msg::HolohoverControlStamped control_msg;
     // LOOP
     const steady_clock::time_point t_start = steady_clock::now();
+    solver.settings().verbose = true;
     solver.settings().max_iter = 35;
     solver.solve();
     const steady_clock::time_point t_end = steady_clock::now();
@@ -137,13 +138,11 @@ void HolohoverControlMPCNode::publish_control()
 //     const long duration2_us = duration_cast<duration_us
     Holohover::control_force_t<double> u_signal;
     u_signal = transcription.get_u_at(0);
+    u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);
 
     //std::cout << "STATE =" <<state << std::endl;
     //std::cout << "FUTURE STATE =" <<transcription.get_X_opt() << std::endl;
     //std::cout << "First OUTPUT =" <<transcription.get_U_opt() << std::endl;
-    //u_signal.setConstant(0.5);
-    // clip between 0 and 1
-    //u_signal = u_signal.cwiseMax(0).cwiseMin(1);
 
     publish_trajectory();
 
