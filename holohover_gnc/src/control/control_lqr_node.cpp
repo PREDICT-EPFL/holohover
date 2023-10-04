@@ -75,7 +75,7 @@ void HolohoverControlLQRNode::publish_control()
     holohover.thrust_to_signal(u_force, u_signal);
 
     // clip between 0 and 1
-    u_signal = u_signal.cwiseMax(IDLE_SIGNAL).cwiseMin(1);
+    u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);
 
     holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";

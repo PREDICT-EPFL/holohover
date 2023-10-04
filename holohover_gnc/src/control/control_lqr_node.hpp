@@ -12,8 +12,6 @@
 #include "holohover_gnc/models/holohover_model.hpp"
 #include "holohover_gnc/utils/load_holohover_props.hpp"
 
-#define IDLE_SIGNAL 0.03 // signal always applied to keep motors moving
-
 struct ControlLQRSettings
 {
     double period;

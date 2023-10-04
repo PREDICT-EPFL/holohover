@@ -21,6 +21,8 @@ struct HolohoverProps
     std::vector<double> CoM;
     // inertia in the z-direction
     double inertia;
+    // minimum idle signal
+    double idle_signal;
     // polynomial coefficients for signal [0,1] to thrust [N] conversation (coeff of the highest order polynomial first)
     std::vector<double> signal_to_thrust_coeffs_motor1;
     std::vector<double> signal_to_thrust_coeffs_motor2;
@@ -88,6 +90,7 @@ public:
 
     // holohover properties
     HolohoverProps props;
+    control_force_t<double> min_thrust;
     control_force_t<double> max_thrust;
 
     // continuous system dynamics for input u = (a_x, a_y, w_dot_z)
@@ -104,8 +107,11 @@ public:
 
     explicit Holohover(HolohoverProps &_props, double _dt = 0.01) : props(_props), dt(_dt)
     {
+        control_force_t<double> min_signal = control_force_t<double>::Constant(props.idle_signal);
         control_force_t<double> max_signal = control_force_t<double>::Constant(1.0);
+        signal_to_thrust(min_signal, min_thrust);
         signal_to_thrust(max_signal, max_thrust);
+        // std::cout << "hovercraft min thrust: " << min_thrust.transpose() << std::endl;
         // std::cout << "hovercraft max thrust: " << max_thrust.transpose() << std::endl;
 
         A << 0, 0, 1, 0, 0, 0,
@@ -363,7 +369,7 @@ public:
         A.template topLeftCorner<NA, NU>() = control_force_to_acceleration_map;
         A.template topRightCorner<NA, NA>().setIdentity();
         b = u_acc;
-        lb.template head<NU>().setZero();
+        lb.template head<NU>() = min_thrust;
         lb.template tail<NA>().setConstant(-1e6);
         ub.template head<NU>() = max_thrust;
         ub.template tail<NA>().setConstant(1e6);
