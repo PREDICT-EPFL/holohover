@@ -317,8 +317,8 @@ public:
         // We solve a QP to find the minimum energy mapping satisfying max thrust constraints
         // Slacks are added to make sure the QP is always feasible
         //
-        // min   ||F_i||^2_2 + mu * ||eps||^2_2
-        // s.t.  (a_x,a_y,w_dot_z) = A @ (F_1,...,F_6) + eps
+        // min   ||F_i||^2_2 + mu * (1 - alpha)^2 + mu * (1 - beta)^2
+        // s.t.  (alpha * a_x, alpha * a_y, beta * w_dot_z) = A @ (F_1,...,F_6)
         //       0 <= F_i <= F_max
         //
         // translated into standard form
@@ -326,7 +326,7 @@ public:
         // s.t.  Ax = b
         //       lb <= x <= ub
         //
-        // with x = (F_i, eps)
+        // with x = (F_i, alpha, beta)
 
         Eigen::Matrix<T, NA, NU> control_force_to_acceleration_map;
         control_force_to_acceleration_mapping(x, control_force_to_acceleration_map);
