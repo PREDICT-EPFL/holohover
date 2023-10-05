@@ -11,8 +11,8 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     state.setZero();
 
     // init ref
-    ref.x = holohover_props.CoM[0];
-    ref.y = holohover_props.CoM[1];
+    ref.x = 0;
+    ref.y = 0;
     ref.yaw = 0;
 
     // calculate LQR gain

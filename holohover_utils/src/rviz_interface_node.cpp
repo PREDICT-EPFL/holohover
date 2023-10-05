@@ -128,13 +128,10 @@ void RvizInterfaceNode::publish_visualization()
     Eigen::Matrix2d rotation_matrix;
     holohover.body_to_world_rotation_matrix(current_state, rotation_matrix);
 
-    Eigen::Vector2d rotated_CoM; rotated_CoM << holohover_props.CoM[0], holohover_props.CoM[1];
-    rotated_CoM = rotation_matrix * rotated_CoM;
-
     // Holohover model
     holohover_marker.header.stamp = now();
-    holohover_marker.pose.position.x = current_state(0) - rotated_CoM(0);
-    holohover_marker.pose.position.y = current_state(1) - rotated_CoM(1);
+    holohover_marker.pose.position.x = current_state(0);
+    holohover_marker.pose.position.y = current_state(1);
     holohover_marker.pose.position.z = 0.015; // center holohover 3d mdoel
     tf2::Quaternion q;
     q.setRPY(0, 0, current_state(4));
@@ -185,18 +182,18 @@ void RvizInterfaceNode::publish_visualization()
 
     // position vector for the propeller pairs
     Eigen::Matrix<double, 2, 6> motor_pos;
-    motor_pos(0, 0) = holohover_props.motor_pos_a_1[0] - holohover_props.CoM[0];
-    motor_pos(1, 0) = holohover_props.motor_pos_a_1[1] - holohover_props.CoM[1];
-    motor_pos(0, 1) = holohover_props.motor_pos_a_2[0] - holohover_props.CoM[0];
-    motor_pos(1, 1) = holohover_props.motor_pos_a_2[1] - holohover_props.CoM[1];
-    motor_pos(0, 2) = holohover_props.motor_pos_b_1[0] - holohover_props.CoM[0];
-    motor_pos(1, 2) = holohover_props.motor_pos_b_1[1] - holohover_props.CoM[1];
-    motor_pos(0, 3) = holohover_props.motor_pos_b_2[0] - holohover_props.CoM[0];
-    motor_pos(1, 3) = holohover_props.motor_pos_b_2[1] - holohover_props.CoM[1];
-    motor_pos(0, 4) = holohover_props.motor_pos_c_1[0] - holohover_props.CoM[0];
-    motor_pos(1, 4) = holohover_props.motor_pos_c_1[1] - holohover_props.CoM[1];
-    motor_pos(0, 5) = holohover_props.motor_pos_c_2[0] - holohover_props.CoM[0];
-    motor_pos(1, 5) = holohover_props.motor_pos_c_2[1] - holohover_props.CoM[1];
+    motor_pos(0, 0) = holohover_props.motor_pos_a_1[0];
+    motor_pos(1, 0) = holohover_props.motor_pos_a_1[1];
+    motor_pos(0, 1) = holohover_props.motor_pos_a_2[0];
+    motor_pos(1, 1) = holohover_props.motor_pos_a_2[1];
+    motor_pos(0, 2) = holohover_props.motor_pos_b_1[0];
+    motor_pos(1, 2) = holohover_props.motor_pos_b_1[1];
+    motor_pos(0, 3) = holohover_props.motor_pos_b_2[0];
+    motor_pos(1, 3) = holohover_props.motor_pos_b_2[1];
+    motor_pos(0, 4) = holohover_props.motor_pos_c_1[0];
+    motor_pos(1, 4) = holohover_props.motor_pos_c_1[1];
+    motor_pos(0, 5) = holohover_props.motor_pos_c_2[0];
+    motor_pos(1, 5) = holohover_props.motor_pos_c_2[1];
 
     // motor force direction vectors
     Eigen::Matrix<double, 2, 6> motor_dir;
