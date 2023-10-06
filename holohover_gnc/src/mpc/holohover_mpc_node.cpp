@@ -2,19 +2,13 @@
 #include <iomanip>
 #include <chrono>
 
-#include "laopt/laopt.hpp"
-
-#include "holohover_ocp_node.hpp"
-#include "laopt/tools/multiple_shooting.hpp"
-#include "laopt/solvers/sqp_solver.hpp"
-#include "laopt/solvers/piqp_interface.hpp"
+#include "holohover_mpc_node.hpp"
 
 
 using namespace std::chrono;
 
 HolohoverControlMPCNode::HolohoverControlMPCNode() :
-        Node("control_mpc", rclcpp::NodeOptions().allow_undeclared_parameters(true)
-                                                 .automatically_declare_parameters_from_overrides(true)),
+        Node("control_mpc"),
         holohover_props(load_holohover_pros(*this)),
         control_settings(load_control_mpc_settings(*this)),
         holohover(holohover_props, control_settings.period),

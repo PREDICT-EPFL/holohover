@@ -2,8 +2,7 @@
 #include <tf2/LinearMath/Quaternion.h>
 
 HolohoverSimulationNode::HolohoverSimulationNode() :
-    Node("simulation", rclcpp::NodeOptions().allow_undeclared_parameters(true)
-                                            .automatically_declare_parameters_from_overrides(true)),
+    Node("simulation"),
     holohover_props(load_holohover_pros(*this)),
     simulation_settings(load_simulation_settings(*this)),
     holohover(holohover_props, simulation_settings.period),

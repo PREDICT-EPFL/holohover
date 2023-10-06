@@ -1,7 +1,5 @@
 control_lqr:
   ros__parameters:
-    period: 0.01
-    Kp: 1
     rand_sig_duration: 100000.0
     rand_sig_max: 0.6
     rand_sig_min: -0.6

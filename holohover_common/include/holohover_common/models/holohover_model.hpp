@@ -1,51 +1,12 @@
 #ifndef HOLOHOVER_COMMON_HOLOHOVER_MODEL_HPP
 #define HOLOHOVER_COMMON_HOLOHOVER_MODEL_HPP
 
-#include <Eigen/Dense>
-#include <unsupported/Eigen/MatrixFunctions>
 #include <cmath>
 #include <vector>
+#include <Eigen/Dense>
+#include <unsupported/Eigen/MatrixFunctions>
 #include "piqp/piqp.hpp"
-
-struct HolohoverProps
-{
-    // mass of the hovercraft
-    double mass;
-    // Learned CoM 
-    std::vector<double> CoM;
-    // inertia in the z-direction
-    double inertia;
-    // minimum idle signal
-    double idle_signal;
-    // polynomial coefficients for signal [0,1] to thrust [N] conversation (coeff of the highest order polynomial first)
-    std::vector<double> signal_to_thrust_coeffs_motor1;
-    std::vector<double> signal_to_thrust_coeffs_motor2;
-    std::vector<double> signal_to_thrust_coeffs_motor3;
-    std::vector<double> signal_to_thrust_coeffs_motor4;
-    std::vector<double> signal_to_thrust_coeffs_motor5;
-    std::vector<double> signal_to_thrust_coeffs_motor6;
-    // polynomial coefficients for thrust [N] to signal [0,1] conversation (coeff of the highest order polynomial first)
-    std::vector<double> thrust_to_signal_coeffs_motor1;
-    std::vector<double> thrust_to_signal_coeffs_motor2;
-    std::vector<double> thrust_to_signal_coeffs_motor3;
-    std::vector<double> thrust_to_signal_coeffs_motor4;
-    std::vector<double> thrust_to_signal_coeffs_motor5;
-    std::vector<double> thrust_to_signal_coeffs_motor6;
-    // Position of the motor
-    std::vector<double> motor_pos_a_1;
-    std::vector<double> motor_pos_a_2;
-    std::vector<double> motor_pos_b_1;
-    std::vector<double> motor_pos_b_2;
-    std::vector<double> motor_pos_c_1;
-    std::vector<double> motor_pos_c_2;
-    // Learned vectors of the motor
-    std::vector<double> learned_motor_vec_a_1;
-    std::vector<double> learned_motor_vec_a_2;
-    std::vector<double> learned_motor_vec_b_1;
-    std::vector<double> learned_motor_vec_b_2;
-    std::vector<double> learned_motor_vec_c_1;
-    std::vector<double> learned_motor_vec_c_2;
-};
+#include "holohover_common/utils/holohover_props.hpp"
 
 class Holohover
 {
@@ -147,12 +108,12 @@ public:
         x_dot(0) = x(2); //x
         x_dot(1) = x(3); //y
 
-        T thrust_1 = u(0)*(u(0)*(u(0)*props.signal_to_thrust_coeffs_motor1[0] + props.signal_to_thrust_coeffs_motor1[1]) + props.signal_to_thrust_coeffs_motor1[2]);
-        T thrust_2 = u(1)*(u(1)*(u(1)*props.signal_to_thrust_coeffs_motor2[0] + props.signal_to_thrust_coeffs_motor2[1]) + props.signal_to_thrust_coeffs_motor2[2]);
-        T thrust_3 = u(2)*(u(2)*(u(2)*props.signal_to_thrust_coeffs_motor3[0] + props.signal_to_thrust_coeffs_motor3[1]) + props.signal_to_thrust_coeffs_motor3[2]);
-        T thrust_4 = u(3)*(u(3)*(u(3)*props.signal_to_thrust_coeffs_motor4[0] + props.signal_to_thrust_coeffs_motor4[1]) + props.signal_to_thrust_coeffs_motor4[2]);
-        T thrust_5 = u(4)*(u(4)*(u(4)*props.signal_to_thrust_coeffs_motor5[0] + props.signal_to_thrust_coeffs_motor5[1]) + props.signal_to_thrust_coeffs_motor5[2]);
-        T thrust_6 = u(5)*(u(5)*(u(5)*props.signal_to_thrust_coeffs_motor6[0] + props.signal_to_thrust_coeffs_motor6[1]) + props.signal_to_thrust_coeffs_motor6[2]);
+        T thrust_1 = u(0)*(u(0)*(u(0)*props.signal_to_thrust_coeffs_motor_1[0] + props.signal_to_thrust_coeffs_motor_1[1]) + props.signal_to_thrust_coeffs_motor_1[2]);
+        T thrust_2 = u(1)*(u(1)*(u(1)*props.signal_to_thrust_coeffs_motor_2[0] + props.signal_to_thrust_coeffs_motor_2[1]) + props.signal_to_thrust_coeffs_motor_2[2]);
+        T thrust_3 = u(2)*(u(2)*(u(2)*props.signal_to_thrust_coeffs_motor_3[0] + props.signal_to_thrust_coeffs_motor_3[1]) + props.signal_to_thrust_coeffs_motor_3[2]);
+        T thrust_4 = u(3)*(u(3)*(u(3)*props.signal_to_thrust_coeffs_motor_4[0] + props.signal_to_thrust_coeffs_motor_4[1]) + props.signal_to_thrust_coeffs_motor_4[2]);
+        T thrust_5 = u(4)*(u(4)*(u(4)*props.signal_to_thrust_coeffs_motor_5[0] + props.signal_to_thrust_coeffs_motor_5[1]) + props.signal_to_thrust_coeffs_motor_5[2]);
+        T thrust_6 = u(5)*(u(5)*(u(5)*props.signal_to_thrust_coeffs_motor_6[0] + props.signal_to_thrust_coeffs_motor_6[1]) + props.signal_to_thrust_coeffs_motor_6[2]);
 
         T Fx1 = props.learned_motor_vec_a_1[0]*(thrust_1) ;
         T Fx2 = props.learned_motor_vec_a_2[0]*(thrust_2) ;
@@ -421,20 +382,20 @@ public:
         control_force_t<T> u_motor_thrust;
         u_motor_thrust.setZero();
 
-        for (std::size_t i=0; i!=props.signal_to_thrust_coeffs_motor1.size(); ++i)
+        for (std::size_t i=0; i!=props.signal_to_thrust_coeffs_motor_1.size(); ++i)
         {
             u_motor_thrust.array() *= u_motor_signal.array();
         	Eigen::Matrix<T, NU, 1> coeffs;
-            coeffs << static_cast<T>(props.signal_to_thrust_coeffs_motor1[i]),
-                      static_cast<T>(props.signal_to_thrust_coeffs_motor2[i]),
-                      static_cast<T>(props.signal_to_thrust_coeffs_motor3[i]),
-                      static_cast<T>(props.signal_to_thrust_coeffs_motor4[i]),
-                      static_cast<T>(props.signal_to_thrust_coeffs_motor5[i]),
-                      static_cast<T>(props.signal_to_thrust_coeffs_motor6[i]);
+            coeffs << static_cast<T>(props.signal_to_thrust_coeffs_motor_1[i]),
+                      static_cast<T>(props.signal_to_thrust_coeffs_motor_2[i]),
+                      static_cast<T>(props.signal_to_thrust_coeffs_motor_3[i]),
+                      static_cast<T>(props.signal_to_thrust_coeffs_motor_4[i]),
+                      static_cast<T>(props.signal_to_thrust_coeffs_motor_5[i]),
+                      static_cast<T>(props.signal_to_thrust_coeffs_motor_6[i]);
             u_motor_thrust = u_motor_thrust + coeffs;
         }
         
-        //for (const double& coeff: props.signal_to_thrust_coeffs_motor1)
+        //for (const double& coeff: props.signal_to_thrust_coeffs_motor_1)
         //{
         //    u_thrust_mN.array() *= u_motor_signal.array();
         //    u_thrust_mN.array() += coeff;
@@ -465,18 +426,18 @@ public:
         };
 
         for (int i=0; i<maxiter; i++) {
-            double fx_1 = f(u_motor_signal(0),props.signal_to_thrust_coeffs_motor1[0],props.signal_to_thrust_coeffs_motor1[1],props.signal_to_thrust_coeffs_motor1[2],u_motor_thrust(0));
-            double fxprime_1 = fprime(u_motor_signal(0),props.signal_to_thrust_coeffs_motor1[0],props.signal_to_thrust_coeffs_motor1[1],props.signal_to_thrust_coeffs_motor1[2]);
-            double fx_2 = f(u_motor_signal(1),props.signal_to_thrust_coeffs_motor2[0],props.signal_to_thrust_coeffs_motor2[1],props.signal_to_thrust_coeffs_motor2[2],u_motor_thrust(1));
-            double fxprime_2 = fprime(u_motor_signal(1),props.signal_to_thrust_coeffs_motor2[0],props.signal_to_thrust_coeffs_motor2[1],props.signal_to_thrust_coeffs_motor2[2]);
-            double fx_3 = f(u_motor_signal(2),props.signal_to_thrust_coeffs_motor3[0],props.signal_to_thrust_coeffs_motor3[1],props.signal_to_thrust_coeffs_motor3[2],u_motor_thrust(2));
-            double fxprime_3 = fprime(u_motor_signal(2),props.signal_to_thrust_coeffs_motor3[0],props.signal_to_thrust_coeffs_motor3[1],props.signal_to_thrust_coeffs_motor3[2]);
-            double fx_4 = f(u_motor_signal(3),props.signal_to_thrust_coeffs_motor4[0],props.signal_to_thrust_coeffs_motor4[1],props.signal_to_thrust_coeffs_motor4[2],u_motor_thrust(3));
-            double fxprime_4 = fprime(u_motor_signal(3),props.signal_to_thrust_coeffs_motor4[0],props.signal_to_thrust_coeffs_motor4[1],props.signal_to_thrust_coeffs_motor4[2]);
-            double fx_5 = f(u_motor_signal(4),props.signal_to_thrust_coeffs_motor5[0],props.signal_to_thrust_coeffs_motor5[1],props.signal_to_thrust_coeffs_motor5[2],u_motor_thrust(4));
-            double fxprime_5 = fprime(u_motor_signal(4),props.signal_to_thrust_coeffs_motor5[0],props.signal_to_thrust_coeffs_motor5[1],props.signal_to_thrust_coeffs_motor5[2]);
-            double fx_6 = f(u_motor_signal(5),props.signal_to_thrust_coeffs_motor6[0],props.signal_to_thrust_coeffs_motor6[1],props.signal_to_thrust_coeffs_motor6[2],u_motor_thrust(5));
-            double fxprime_6 = fprime(u_motor_signal(5),props.signal_to_thrust_coeffs_motor6[0],props.signal_to_thrust_coeffs_motor6[1],props.signal_to_thrust_coeffs_motor6[2]);
+            double fx_1 = f(u_motor_signal(0),props.signal_to_thrust_coeffs_motor_1[0],props.signal_to_thrust_coeffs_motor_1[1],props.signal_to_thrust_coeffs_motor_1[2],u_motor_thrust(0));
+            double fxprime_1 = fprime(u_motor_signal(0),props.signal_to_thrust_coeffs_motor_1[0],props.signal_to_thrust_coeffs_motor_1[1],props.signal_to_thrust_coeffs_motor_1[2]);
+            double fx_2 = f(u_motor_signal(1),props.signal_to_thrust_coeffs_motor_2[0],props.signal_to_thrust_coeffs_motor_2[1],props.signal_to_thrust_coeffs_motor_2[2],u_motor_thrust(1));
+            double fxprime_2 = fprime(u_motor_signal(1),props.signal_to_thrust_coeffs_motor_2[0],props.signal_to_thrust_coeffs_motor_2[1],props.signal_to_thrust_coeffs_motor_2[2]);
+            double fx_3 = f(u_motor_signal(2),props.signal_to_thrust_coeffs_motor_3[0],props.signal_to_thrust_coeffs_motor_3[1],props.signal_to_thrust_coeffs_motor_3[2],u_motor_thrust(2));
+            double fxprime_3 = fprime(u_motor_signal(2),props.signal_to_thrust_coeffs_motor_3[0],props.signal_to_thrust_coeffs_motor_3[1],props.signal_to_thrust_coeffs_motor_3[2]);
+            double fx_4 = f(u_motor_signal(3),props.signal_to_thrust_coeffs_motor_4[0],props.signal_to_thrust_coeffs_motor_4[1],props.signal_to_thrust_coeffs_motor_4[2],u_motor_thrust(3));
+            double fxprime_4 = fprime(u_motor_signal(3),props.signal_to_thrust_coeffs_motor_4[0],props.signal_to_thrust_coeffs_motor_4[1],props.signal_to_thrust_coeffs_motor_4[2]);
+            double fx_5 = f(u_motor_signal(4),props.signal_to_thrust_coeffs_motor_5[0],props.signal_to_thrust_coeffs_motor_5[1],props.signal_to_thrust_coeffs_motor_5[2],u_motor_thrust(4));
+            double fxprime_5 = fprime(u_motor_signal(4),props.signal_to_thrust_coeffs_motor_5[0],props.signal_to_thrust_coeffs_motor_5[1],props.signal_to_thrust_coeffs_motor_5[2]);
+            double fx_6 = f(u_motor_signal(5),props.signal_to_thrust_coeffs_motor_6[0],props.signal_to_thrust_coeffs_motor_6[1],props.signal_to_thrust_coeffs_motor_6[2],u_motor_thrust(5));
+            double fxprime_6 = fprime(u_motor_signal(5),props.signal_to_thrust_coeffs_motor_6[0],props.signal_to_thrust_coeffs_motor_6[1],props.signal_to_thrust_coeffs_motor_6[2]);
 
             double alpha = 1;
             u_motor_signal(0) = u_motor_signal(0) -alpha * fx_1/fxprime_1; // Update x1
@@ -501,15 +462,15 @@ public:
         control_force_t<T> u_motor_signal;
         u_motor_signal.setZero();
         
-        for (std::size_t i=0; i!=props.thrust_to_signal_coeffs_motor1.size(); ++i)
+        for (std::size_t i=0; i!=props.thrust_to_signal_coeffs_motor_1.size(); ++i)
         {
             u_motor_signal.array() *= u_motor_thrust.array();
-        	Eigen::Matrix<T, NU, 1> coeffs {props.thrust_to_signal_coeffs_motor1[i],
-        									props.thrust_to_signal_coeffs_motor2[i],
-        									props.thrust_to_signal_coeffs_motor3[i],
-        									props.thrust_to_signal_coeffs_motor4[i],
-        									props.thrust_to_signal_coeffs_motor5[i],
-        									props.thrust_to_signal_coeffs_motor6[i]};
+        	Eigen::Matrix<T, NU, 1> coeffs {props.thrust_to_signal_coeffs_motor_1[i],
+        									props.thrust_to_signal_coeffs_motor_2[i],
+        									props.thrust_to_signal_coeffs_motor_3[i],
+        									props.thrust_to_signal_coeffs_motor_4[i],
+        									props.thrust_to_signal_coeffs_motor_5[i],
+        									props.thrust_to_signal_coeffs_motor_6[i]};
             u_motor_signal = u_motor_signal + coeffs;
         }
         

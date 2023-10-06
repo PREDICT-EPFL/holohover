@@ -1,8 +1,7 @@
 #include "control_lqr_node.hpp"
 
 HolohoverControlLQRNode::HolohoverControlLQRNode() :
-        Node("control_lqr", rclcpp::NodeOptions().allow_undeclared_parameters(true)
-                                                 .automatically_declare_parameters_from_overrides(true)),
+        Node("control_lqr"),
         holohover_props(load_holohover_pros(*this)),
         control_settings(load_control_lqr_settings(*this)),
         holohover(holohover_props, control_settings.period)

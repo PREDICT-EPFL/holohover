@@ -56,7 +56,7 @@ target_compile_options(control_mpc PRIVATE "-Wno-unused-parameter")
 
 add_executable(double_integrator_test src/mpc/double_integrator_test.cpp)
 target_include_directories(double_integrator_test PRIVATE external/laopt/include)
-ament_target_dependencies(double_integrator_test holohover_common)
+ament_target_dependencies(double_integrator_test rclcpp holohover_common)
 target_compile_options(double_integrator_test PRIVATE "-Wno-unused-parameter")
 
 install(DIRECTORY

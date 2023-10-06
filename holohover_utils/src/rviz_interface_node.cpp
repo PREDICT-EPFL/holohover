@@ -1,8 +1,7 @@
 #include "rviz_interface_node.hpp"
 
 RvizInterfaceNode::RvizInterfaceNode() :
-        Node("rviz_interface", rclcpp::NodeOptions().allow_undeclared_parameters(true)
-                                                    .automatically_declare_parameters_from_overrides(true)),
+        Node("rviz_interface"),
         holohover_props(load_holohover_pros(*this)),
         holohover(holohover_props)
 {

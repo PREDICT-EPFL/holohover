@@ -13,7 +13,6 @@
 #include "holohover_msgs/msg/holohover_state_stamped.hpp"
 #include "rigid_body_2d_ekf.hpp"
 #include "navigation_settings.hpp"
-#include "load_navigation_settings.hpp"
 
 class HolohoverNavigationNode : public rclcpp::Node
 {

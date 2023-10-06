@@ -3,8 +3,7 @@
 #include "tf2/utils.h"
 
 HolohoverNavigationNode::HolohoverNavigationNode() :
-    Node("navigation", rclcpp::NodeOptions().allow_undeclared_parameters(true)
-                                            .automatically_declare_parameters_from_overrides(true)),
+    Node("navigation"),
     navigation_settings(load_navigation_settings(*this))
 {
     // init zero control

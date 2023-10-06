@@ -2,8 +2,7 @@
 #include <cmath>
 
 HolohoverControlExpNode::HolohoverControlExpNode() :
-        Node("control_lqr", rclcpp::NodeOptions().allow_undeclared_parameters(true)
-                                                 .automatically_declare_parameters_from_overrides(true)),
+        Node("control_lqr"),
         holohover_props(load_holohover_pros(*this)),
         control_settings(load_control_lqr_settings(*this)),
         exp_settings(load_control_exp_settings(*this)),
@@ -83,7 +82,7 @@ void HolohoverControlExpNode::publish_control()
     rand_sig(u_signal);
 
     // clip between 0 and 1
-    u_signal = u_signal.cwiseMax(IDLE_SIGNAL).cwiseMin(1);
+    u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);
     
 
     holohover_msgs::msg::HolohoverControlStamped control_msg;
