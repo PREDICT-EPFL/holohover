@@ -8,7 +8,7 @@
 #include "laopt/laopt.hpp"
 #include "laopt/tools/control_problem_base.hpp"
 
-#include "holohover_gnc/models/holohover_model.hpp"
+#include "holohover_common/models/holohover_model.hpp"
 
 
 class DoubleIntegratorOcp : public laopt_tools::ControlProblemBase</*Scalar*/ double, /*NX*/ 6, /*NU*/ 6>

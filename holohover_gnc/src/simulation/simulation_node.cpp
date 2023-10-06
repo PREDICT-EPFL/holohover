@@ -112,9 +112,9 @@ void HolohoverSimulationNode::simulate_forward_callback()
     current_control_signal(4) = current_control.motor_c_1;
     current_control_signal(5) = current_control.motor_c_2;
     
-    holohover.template non_linear_state_dynamics_discrete<double>(nonlinear_state, current_control_signal,nonlinear_state);
+    holohover.template non_linear_state_dynamics_discrete<double>(nonlinear_state, current_control_signal, nonlinear_state);
     //state = nonlinear_state;
-    //std::cout << "models difference = " << (state-nonlinear_state) << std::endl;
+    // std::cout << "models difference = " << (state-nonlinear_state) << std::endl;
     // std::cout << "state = " << (state) << std::endl;
     // std::cout << "nonlinear_state = " << (nonlinear_state) << std::endl;
     // std::cout << "state- nonlinear_state = " << (state-nonlinear_state) << std::endl;

@@ -1,8 +1,8 @@
-#ifndef HOLOHOVER_GNC_HOLOHOVER_LOAD_HOLOHOVER_PROPS_HPP
-#define HOLOHOVER_GNC_HOLOHOVER_LOAD_HOLOHOVER_PROPS_HPP
+#ifndef HOLOHOVER_COMMON_LOAD_HOLOHOVER_PROPS_HPP
+#define HOLOHOVER_COMMON_LOAD_HOLOHOVER_PROPS_HPP
 
 #include "rclcpp/rclcpp.hpp"
-#include "holohover_gnc/models/holohover_model.hpp"
+#include "holohover_common/models/holohover_model.hpp"
 
 HolohoverProps load_holohover_pros(rclcpp::Node &node)
 {
@@ -44,4 +44,4 @@ HolohoverProps load_holohover_pros(rclcpp::Node &node)
     return props;
 }
 
-#endif //HOLOHOVER_GNC_HOLOHOVER_LOAD_HOLOHOVER_PROPS_HPP
+#endif //HOLOHOVER_COMMON_LOAD_HOLOHOVER_PROPS_HPP

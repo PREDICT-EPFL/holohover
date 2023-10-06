@@ -1,7 +1,7 @@
 #ifndef HOLOHOVER_GNC_HOLOHOVER_EKF_HPP
 #define HOLOHOVER_GNC_HOLOHOVER_EKF_HPP
 
-#include "holohover_gnc/models/holohover_model.hpp"
+#include "holohover_common/models/holohover_model.hpp"
 #include "navigation_settings.hpp"
 
 class HolohoverEKF {

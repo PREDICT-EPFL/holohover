@@ -10,7 +10,7 @@ def generate_launch_description():
     ld = LaunchDescription()
 
     holohover_params = os.path.join(
-        get_package_share_directory('holohover_gnc'),
+        get_package_share_directory('holohover_common'),
         'config',
         'holohover_params.yaml'
     )
@@ -89,6 +89,6 @@ def generate_launch_description():
     ld.add_action(controller_node)
     ld.add_action(rviz_interface_node)
     ld.add_action(rviz_node)
-    ld.add_action(recorder)
+    # ld.add_action(recorder)
 
     return ld

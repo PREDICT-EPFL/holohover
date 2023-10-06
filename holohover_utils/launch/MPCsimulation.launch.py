@@ -81,6 +81,6 @@ def generate_launch_description():
     ld.add_action(controller_node)
     ld.add_action(rviz_interface_node)
     ld.add_action(rviz_node)
-    ld.add_action(recorder)
+    # ld.add_action(recorder)
 
     return ld

@@ -11,9 +11,9 @@
 #include "holohover_msgs/msg/holohover_imu_stamped.hpp"
 #include "holohover_msgs/msg/holohover_mouse_stamped.hpp"
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
-#include "holohover_gnc/models/holohover_model.hpp"
+#include "holohover_common/models/holohover_model.hpp"
 #include "simulation_settings.hpp"
-#include "holohover_gnc/utils/load_holohover_props.hpp"
+#include "holohover_common/utils/load_holohover_props.hpp"
 #include "load_simulation_settings.hpp"
 
 class HolohoverSimulationNode : public rclcpp::Node
