@@ -13,9 +13,9 @@ imu.time = imu.header_stamp_sec + imu.header_stamp_nanosec * 10^-9;
 mouse.time = mouse.header_stamp_sec + mouse.header_stamp_nanosec * 10^-9;
 
 optitrack_plot = optitrack;
-optitrack = optitrack(1:30:end,:);
+optitrack = optitrack(1:20:end,:);
 
-%% List creation (not usefull for now)
+%% List creation
 imu_mes = [imu.time, ones(length(imu.time),1)];
 opt_mes = [optitrack.time, 2*ones(length(optitrack.time),1)];
 mouse_mes = [mouse.time, 3*ones(length(mouse.time),1)];
@@ -30,10 +30,10 @@ R1 = 0.25; % IMU update
 R2 = [0.001, 0, 0; % Optitrack update
       0, 0.001, 0;
       0, 0, 0.05];
-R3 = [0.05, 0; % Mouse update
-      0, 0.05];
+R3 = [0.1, 0; % Mouse update
+      0, 0.1];
 
-Q = diag([ones(3,1)*1e-2; ones(2,1)*1e-1; 1.0; ones(2,1)*1e-2]);
+Q = diag([ones(3,1)*1e-2; ones(2,1) * 1e-1; 1.0; ones(2,1)*1e-2]);
 
 
 P_k_k = Q;
@@ -71,6 +71,8 @@ for l = 2:size(mes,1)
             [x_k_k1{l},P_k_k1,acc{l},gamma] = Kalman_predict(P_k_k,Q,x_k_k{l-1},i,imu,dt);
             z = [mouse.v_x(k); mouse.v_y(k)];
             [x_k_k{l},P_k_k] = Kalman_update(P_k_k1,gamma,R3,x_k_k1{l},z,"mouse",j,k);
+            mouse.v_x(k) = cos(gamma) * mouse.v_x(k) - sin(gamma) * mouse.v_y(k);
+            mouse.v_y(k) = sin(gamma) * mouse.v_x(k) + cos(gamma) * mouse.v_y(k);
             continue;
     end
     std{l} = (Standard_deviation(P_k_k))';
@@ -156,7 +158,7 @@ legend(h);clear h;
 
 %% Functions
 
-function [x_k_k1,P_k_k1,acc,gamma] = Kalman_predict(P,Q,x,i,imu,h)
+function [x_k_k1,P_k_k1,acc,gamma] = Kalman_predict(P,Q,x,i,imu,dt)
     [vx,vy,wz,ax,ay,bx,by,gamma] = Update_var(x,i,imu);
 
     MatF1 = [-sin(gamma), -cos(gamma);
@@ -185,23 +187,26 @@ function [x_k_k1,P_k_k1,acc,gamma] = Kalman_predict(P,Q,x,i,imu,h)
              0;
              0];
 
-    x_k_k1 = h * x_dot + x;
+    x_k_k1 = dt * x_dot + x;
     x_k_k1(3) = wrapToPi(x_k_k1(3));
     
-    P_k_k1 = h * (F * P + P * F' + Q) + P;
+    P_k_k1 = dt * (F * P + P * F' + Q) + P;
 end
 
 function [x_k_k,P_k_k] = Kalman_update(P_k_k1,gamma,R,x_k_k1,z,type,j,k)
-    MatR = [cos(gamma), -sin(gamma);
+    Matb2w = [cos(gamma), -sin(gamma);
             sin(gamma), cos(gamma)];
+    Matw2b = [cos(gamma), sin(gamma);
+            -sin(gamma), cos(gamma)];
     std = Standard_deviation(P_k_k1);
 
     if(type == "mouse")
-        z_mouse_check = MatR * z;
+        z_mouse_check = Matb2w * z;
     end
 
     switch(type)
         case "imu"
+            h = x_k_k1(6);
             H = [0 0 0 0 0 1 0 0];
         case "optitrack"
             if((z(1) < x_k_k1(1) - 5 * std(1)) || (z(1) > x_k_k1(1) + 5 * std(1))|| ...
@@ -212,6 +217,7 @@ function [x_k_k,P_k_k] = Kalman_update(P_k_k1,gamma,R,x_k_k1,z,type,j,k)
                 disp("ignored optitrack measurement " + j)
                 return
             end
+            h = x_k_k1(1:3);
             H = [eye(3), zeros(3,5)];
         case "mouse"
             if((z_mouse_check(1) < x_k_k1(4) - 3 * std(4)) || (z_mouse_check(1) > x_k_k1(4) + 3 * std(4))|| ...
@@ -221,14 +227,15 @@ function [x_k_k,P_k_k] = Kalman_update(P_k_k1,gamma,R,x_k_k1,z,type,j,k)
                 disp("ignored mouse measurement " + k)
                 return
             end
-            vect = [sin(gamma) * z(1) - cos(gamma) * z(2);
-                    cos(gamma) * z(1) - sin(gamma) * z(2)];
-            H = [zeros(2),vect , MatR,zeros(2,3)];
+            h = Matw2b * x_k_k1(4:5);
+            vect = [-sin(gamma) * z(1) + cos(gamma) * z(2);
+                    -cos(gamma) * z(1) - sin(gamma) * z(2)];
+            H = [zeros(2), vect, Matw2b, zeros(2,3)];
     end
 
     
     K = P_k_k1 * H' / (H * P_k_k1 * H' + R);
-    y = z- H*x_k_k1;
+    y = z - h;
 
     if(type == "optitrack") 
         y(3) = wrapToPi(y(3));
