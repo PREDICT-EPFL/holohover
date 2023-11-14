@@ -11,6 +11,9 @@
     # Minimum idle signal
     idle_signal: 0.03
 
+    # Minimum idle signal
+    motor_tau: 0.02835
+
     # Motor pos
     motor_pos_a_1: [0.044048011302948, -0.014999988488852978, 0.0]
     motor_pos_a_2: [0.044048011302948, 0.014999988488852978, 0.0]

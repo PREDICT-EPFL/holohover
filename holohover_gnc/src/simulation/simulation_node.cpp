@@ -1,3 +1,4 @@
+#include <cmath>
 #include "simulation_node.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 
@@ -21,6 +22,7 @@ HolohoverSimulationNode::HolohoverSimulationNode() :
     current_control.motor_b_2 = 0;
     current_control.motor_c_1 = 0;
     current_control.motor_c_2 = 0;
+    motor_velocities.setZero();
     calculate_control_acc();
 
     init_topics();
@@ -73,15 +75,8 @@ void HolohoverSimulationNode::init_timers()
 
 void HolohoverSimulationNode::calculate_control_acc()
 {
-    Holohover::control_force_t<double> current_control_signal;
-    current_control_signal(0) = current_control.motor_a_1;
-    current_control_signal(1) = current_control.motor_a_2;
-    current_control_signal(2) = current_control.motor_b_1;
-    current_control_signal(3) = current_control.motor_b_2;
-    current_control_signal(4) = current_control.motor_c_1;
-    current_control_signal(5) = current_control.motor_c_2;
     Holohover::control_force_t<double> current_control_force;
-    holohover.signal_to_thrust(current_control_signal, current_control_force);
+    holohover.signal_to_thrust(motor_velocities, current_control_force);
     holohover.control_force_to_acceleration(state, current_control_force, current_control_acc);
 
     // add drag force
@@ -100,9 +95,7 @@ void HolohoverSimulationNode::calculate_control_acc()
 
 void HolohoverSimulationNode::simulate_forward_callback()
 {
-    state = holohover.Ad * state + holohover.Bd * current_control_acc;
-
-    // To use the non_linear_state_dynamics_discrete function :
+    // integrate motor velocities
     Holohover::control_force_t<double> current_control_signal;
     current_control_signal(0) = current_control.motor_a_1;
     current_control_signal(1) = current_control.motor_a_2;
@@ -110,8 +103,14 @@ void HolohoverSimulationNode::simulate_forward_callback()
     current_control_signal(3) = current_control.motor_b_2;
     current_control_signal(4) = current_control.motor_c_1;
     current_control_signal(5) = current_control.motor_c_2;
-    
-    holohover.template non_linear_state_dynamics_discrete<double>(nonlinear_state, current_control_signal, nonlinear_state);
+    double A_motor = std::exp(-simulation_settings.period / holohover_props.motor_tau);
+    double B_motor = 1.0 - A_motor;
+    motor_velocities = A_motor * motor_velocities + B_motor * current_control_signal;
+    calculate_control_acc();
+
+    state = holohover.Ad * state + holohover.Bd * current_control_acc;
+
+    holohover.template non_linear_state_dynamics_discrete<double>(nonlinear_state, motor_velocities, nonlinear_state);
     //state = nonlinear_state;
     // std::cout << "models difference = " << (state-nonlinear_state) << std::endl;
     // std::cout << "state = " << (state) << std::endl;
@@ -227,7 +226,6 @@ void HolohoverSimulationNode::pose_callback()
 void HolohoverSimulationNode::control_callback(const holohover_msgs::msg::HolohoverControlStamped &control)
 {
     current_control = control;
-    calculate_control_acc();
 }
 
 int main(int argc, char **argv) {
