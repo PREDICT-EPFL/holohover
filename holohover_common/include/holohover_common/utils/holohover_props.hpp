@@ -14,6 +14,8 @@ struct HolohoverProps
     double inertia;
     // minimum idle signal
     double idle_signal;
+    // first order time constant of motor
+    double motor_tau;
     // polynomial coefficients for signal [0,1] to thrust [N] conversation (coeff of the highest order polynomial first)
     std::vector<double> signal_to_thrust_coeffs_motor_1;
     std::vector<double> signal_to_thrust_coeffs_motor_2;
@@ -52,6 +54,7 @@ HolohoverProps load_holohover_pros(rclcpp::Node &node)
     props.CoM = node.declare_parameter<std::vector<double>>("CoM");
     props.inertia = node.declare_parameter<double>("inertia");
     props.idle_signal = node.declare_parameter<double>("idle_signal");
+    props.motor_tau = node.declare_parameter<double>("motor_tau");
 
     props.signal_to_thrust_coeffs_motor_1 = node.declare_parameter<std::vector<double>>("signal_to_thrust_coeffs_motor_1");
     props.signal_to_thrust_coeffs_motor_2 = node.declare_parameter<std::vector<double>>("signal_to_thrust_coeffs_motor_2");

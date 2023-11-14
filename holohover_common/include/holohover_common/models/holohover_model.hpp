@@ -100,58 +100,70 @@ public:
     
     template<typename T>
     inline void nonlinear_state_dynamics(const state_t<T> &x,
-                               const control_force_t<T> &u,
-                               state_t<T> &x_dot) const noexcept
+                                         const control_force_t<T> &u,
+                                         state_t<T> &x_dot) const noexcept
     {
-        Holohover::control_force_t<double> force;
+        Holohover::control_force_t<T> force;
 
-        x_dot(0) = x(2); //x
-        x_dot(1) = x(3); //y
+        force(0) = u(0)*(u(0)*(u(0)*props.signal_to_thrust_coeffs_motor_1[0] + props.signal_to_thrust_coeffs_motor_1[1]) + props.signal_to_thrust_coeffs_motor_1[2]);
+        force(1) = u(1)*(u(1)*(u(1)*props.signal_to_thrust_coeffs_motor_2[0] + props.signal_to_thrust_coeffs_motor_2[1]) + props.signal_to_thrust_coeffs_motor_2[2]);
+        force(2) = u(2)*(u(2)*(u(2)*props.signal_to_thrust_coeffs_motor_3[0] + props.signal_to_thrust_coeffs_motor_3[1]) + props.signal_to_thrust_coeffs_motor_3[2]);
+        force(3) = u(3)*(u(3)*(u(3)*props.signal_to_thrust_coeffs_motor_4[0] + props.signal_to_thrust_coeffs_motor_4[1]) + props.signal_to_thrust_coeffs_motor_4[2]);
+        force(4) = u(4)*(u(4)*(u(4)*props.signal_to_thrust_coeffs_motor_5[0] + props.signal_to_thrust_coeffs_motor_5[1]) + props.signal_to_thrust_coeffs_motor_5[2]);
+        force(5) = u(5)*(u(5)*(u(5)*props.signal_to_thrust_coeffs_motor_6[0] + props.signal_to_thrust_coeffs_motor_6[1]) + props.signal_to_thrust_coeffs_motor_6[2]);
 
-        T thrust_1 = u(0)*(u(0)*(u(0)*props.signal_to_thrust_coeffs_motor_1[0] + props.signal_to_thrust_coeffs_motor_1[1]) + props.signal_to_thrust_coeffs_motor_1[2]);
-        T thrust_2 = u(1)*(u(1)*(u(1)*props.signal_to_thrust_coeffs_motor_2[0] + props.signal_to_thrust_coeffs_motor_2[1]) + props.signal_to_thrust_coeffs_motor_2[2]);
-        T thrust_3 = u(2)*(u(2)*(u(2)*props.signal_to_thrust_coeffs_motor_3[0] + props.signal_to_thrust_coeffs_motor_3[1]) + props.signal_to_thrust_coeffs_motor_3[2]);
-        T thrust_4 = u(3)*(u(3)*(u(3)*props.signal_to_thrust_coeffs_motor_4[0] + props.signal_to_thrust_coeffs_motor_4[1]) + props.signal_to_thrust_coeffs_motor_4[2]);
-        T thrust_5 = u(4)*(u(4)*(u(4)*props.signal_to_thrust_coeffs_motor_5[0] + props.signal_to_thrust_coeffs_motor_5[1]) + props.signal_to_thrust_coeffs_motor_5[2]);
-        T thrust_6 = u(5)*(u(5)*(u(5)*props.signal_to_thrust_coeffs_motor_6[0] + props.signal_to_thrust_coeffs_motor_6[1]) + props.signal_to_thrust_coeffs_motor_6[2]);
-
-        T Fx1 = props.learned_motor_vec_a_1[0]*(thrust_1) ;
-        T Fx2 = props.learned_motor_vec_a_2[0]*(thrust_2) ;
-        T Fx3 = props.learned_motor_vec_b_1[0]*(thrust_3) ;
-        T Fx4 = props.learned_motor_vec_b_2[0]*(thrust_4) ;
-        T Fx5 = props.learned_motor_vec_c_1[0]*(thrust_5) ;
-        T Fx6 = props.learned_motor_vec_c_2[0]*(thrust_6) ;
-        
-        T Fy1 = props.learned_motor_vec_a_1[1]*(thrust_1) ;
-        T Fy2 = props.learned_motor_vec_a_2[1]*(thrust_2) ;
-        T Fy3 = props.learned_motor_vec_b_1[1]*(thrust_3) ;
-        T Fy4 = props.learned_motor_vec_b_2[1]*(thrust_4) ;
-        T Fy5 = props.learned_motor_vec_c_1[1]*(thrust_5) ;
-        T Fy6 = props.learned_motor_vec_c_2[1]*(thrust_6) ; // y dot
-
-        T Fx = cos(x(4))*(Fx1+Fx2+Fx3+Fx4+Fx5+Fx6) -sin(x(4))*(Fy1+Fy2+Fy3+Fy4+Fy5+Fy6);
-        T Fy = sin(x(4))*(Fx1+Fx2+Fx3+Fx4+Fx5+Fx6) +cos(x(4))*(Fy1+Fy2+Fy3+Fy4+Fy5+Fy6);
-
-        x_dot(2) = Fx/props.mass ; // x dot
-        x_dot(3) = Fy/props.mass ;//y dot
-        x_dot(4) = x(5); //theta
-
-        T Mz1 = - (props.motor_pos_a_1[1]-props.CoM[1])*Fx1 + (props.motor_pos_a_1[0]-props.CoM[0])*Fy1;
-        T Mz2 = - (props.motor_pos_a_2[1]-props.CoM[1])*Fx2 + (props.motor_pos_a_2[0]-props.CoM[0])*Fy2;
-        T Mz3 = - (props.motor_pos_b_1[1]-props.CoM[1])*Fx3 + (props.motor_pos_b_1[0]-props.CoM[0])*Fy3;
-        T Mz4 = - (props.motor_pos_b_2[1]-props.CoM[1])*Fx4 + (props.motor_pos_b_2[0]-props.CoM[0])*Fy4;
-        T Mz5 = - (props.motor_pos_c_1[1]-props.CoM[1])*Fx5 + (props.motor_pos_c_1[0]-props.CoM[0])*Fy5;
-        T Mz6 = - (props.motor_pos_c_2[1]-props.CoM[1])*Fx6 + (props.motor_pos_c_2[0]-props.CoM[0])*Fy6;
-
-        x_dot(5) = (Mz1+Mz2+Mz3+Mz4+Mz5+Mz6)/props.inertia; //theta dot
+        nonlinear_state_dynamics_force<T>(x, force, x_dot);
     }
 
     template<typename T>
-    inline void control_force_to_acceleration_mapping(const state_t<T> &x, Eigen::Matrix<T, NA, NU> &map) const noexcept
+    inline void nonlinear_state_dynamics_force(const state_t<T> &x,
+                                               const control_force_t<T> &u,
+                                               state_t<T> &x_dot) const noexcept
+    {
+        T Fx1 = props.learned_motor_vec_a_1[0]*u(0);
+        T Fx2 = props.learned_motor_vec_a_2[0]*u(1);
+        T Fx3 = props.learned_motor_vec_b_1[0]*u(2);
+        T Fx4 = props.learned_motor_vec_b_2[0]*u(3);
+        T Fx5 = props.learned_motor_vec_c_1[0]*u(4);
+        T Fx6 = props.learned_motor_vec_c_2[0]*u(5);
+        
+        T Fy1 = props.learned_motor_vec_a_1[1]*u(0);
+        T Fy2 = props.learned_motor_vec_a_2[1]*u(1);
+        T Fy3 = props.learned_motor_vec_b_1[1]*u(2);
+        T Fy4 = props.learned_motor_vec_b_2[1]*u(3);
+        T Fy5 = props.learned_motor_vec_c_1[1]*u(4);
+        T Fy6 = props.learned_motor_vec_c_2[1]*u(5); // y dot
+
+        T Fx = cos(x(4))*(Fx1+Fx2+Fx3+Fx4+Fx5+Fx6) - sin(x(4))*(Fy1+Fy2+Fy3+Fy4+Fy5+Fy6);
+        T Fy = sin(x(4))*(Fx1+Fx2+Fx3+Fx4+Fx5+Fx6) + cos(x(4))*(Fy1+Fy2+Fy3+Fy4+Fy5+Fy6);
+
+        T Mz1 = -(props.motor_pos_a_1[1]-props.CoM[1])*Fx1 + (props.motor_pos_a_1[0]-props.CoM[0])*Fy1;
+        T Mz2 = -(props.motor_pos_a_2[1]-props.CoM[1])*Fx2 + (props.motor_pos_a_2[0]-props.CoM[0])*Fy2;
+        T Mz3 = -(props.motor_pos_b_1[1]-props.CoM[1])*Fx3 + (props.motor_pos_b_1[0]-props.CoM[0])*Fy3;
+        T Mz4 = -(props.motor_pos_b_2[1]-props.CoM[1])*Fx4 + (props.motor_pos_b_2[0]-props.CoM[0])*Fy4;
+        T Mz5 = -(props.motor_pos_c_1[1]-props.CoM[1])*Fx5 + (props.motor_pos_c_1[0]-props.CoM[0])*Fy5;
+        T Mz6 = -(props.motor_pos_c_2[1]-props.CoM[1])*Fx6 + (props.motor_pos_c_2[0]-props.CoM[0])*Fy6;
+
+        x_dot(0) = x(2); // x
+        x_dot(1) = x(3); // y
+        x_dot(2) = Fx/props.mass ; // x dot
+        x_dot(3) = Fy/props.mass ;// y dot
+        x_dot(4) = x(5); // theta
+        x_dot(5) = (Mz1+Mz2+Mz3+Mz4+Mz5+Mz6)/props.inertia; // theta dot
+
+        // linear acceleration correction due to CoM
+        x_dot(2) += props.CoM[1] * x_dot(5) + props.CoM[0] * x(5);
+        x_dot(3) += -props.CoM[0] * x_dot(5) + props.CoM[1] * x(5);
+    }
+
+    template<typename T>
+    inline void control_force_to_acceleration_mapping(const state_t<T> &x,
+                                                      Eigen::Matrix<T, NA, NU> &map,
+                                                      control_acc_t<T> &constant) const noexcept
     {
         Eigen::Matrix<T, 2, NU> force_to_total_force;
-        
         Eigen::Matrix<T, 1, NU> force_to_moment;
+
         // A motors
         int i = 0;
 
@@ -252,11 +264,21 @@ public:
         Eigen::Matrix<T, 2, 2> rotation_matrix;
         body_to_world_rotation_matrix(x, rotation_matrix);
 
+        Eigen::Matrix<T, NA, NU> uncorrected_map;
         // x, y acceleration mapping
-        map.template topLeftCorner<2, NU>() = 1.0 / props.mass * rotation_matrix * force_to_total_force;
+        uncorrected_map.template topLeftCorner<2, NU>() = 1.0 / props.mass * rotation_matrix * force_to_total_force;
 
         // angular acceleration around z-axis mapping
-        map.template bottomLeftCorner<1, NU>() = 1.0 / props.inertia * force_to_moment;
+        uncorrected_map.template bottomLeftCorner<1, NU>() = 1.0 / props.inertia * force_to_moment;
+
+        // correction matrix for linear accelerations due to CoM
+        Eigen::Matrix<T, NA, NA> CoM_correction;
+        CoM_correction << 1.0, 0.0, props.CoM[1],
+                          0.0, 1.0, -props.CoM[0],
+                          0.0, 0.0, 1.0;
+
+        map = CoM_correction * uncorrected_map;
+        constant << props.CoM[0] * x(5) * x(5), props.CoM[1] * x(5) * x(5), 0.0;
     }
 
     template<typename T>
@@ -265,9 +287,10 @@ public:
                                               control_acc_t<T> &u_acc) const noexcept
     {
         Eigen::Matrix<T, NA, NU> control_force_to_acceleration_map;
-        control_force_to_acceleration_mapping(x, control_force_to_acceleration_map);
+        control_acc_t<T> mapping_constant;
+        control_force_to_acceleration_mapping(x, control_force_to_acceleration_map, mapping_constant);
 
-        u_acc = control_force_to_acceleration_map * u_force;
+        u_acc = control_force_to_acceleration_map * u_force + mapping_constant;
     }
 
     template<typename T>
@@ -279,7 +302,7 @@ public:
         // Slacks are added to make sure the QP is always feasible
         //
         // min   ||F_i||^2_2 + mu * (1 - alpha)^2 + mu * (1 - beta)^2
-        // s.t.  (alpha * a_x, alpha * a_y, beta * w_dot_z) = A @ (F_1,...,F_6)
+        // s.t.  (alpha * a_x, alpha * a_y, beta * w_dot_z) = M @ (F_1,...,F_6) + g
         //       0 <= F_i <= F_max
         //
         // translated into standard form
@@ -290,7 +313,8 @@ public:
         // with x = (F_i, alpha, beta)
 
         Eigen::Matrix<T, NA, NU> control_force_to_acceleration_map;
-        control_force_to_acceleration_mapping(x, control_force_to_acceleration_map);
+        control_acc_t<T> mapping_constant;
+        control_force_to_acceleration_mapping(x, control_force_to_acceleration_map, mapping_constant);
 
         double mu = 1e6;
         Eigen::Matrix<T, NU + 2, NU + 2> P;
@@ -309,7 +333,7 @@ public:
         A.template topRightCorner<NA, 2>() << -u_acc(0), 0.0,
                                               -u_acc(1), 0.0,
                                               0,         -u_acc(2);
-        b.setZero();
+        b = -mapping_constant;
         lb.template head<NU>() = min_thrust;
         lb.template tail<2>().setConstant(0.0);
         ub.template head<NU>() = max_thrust;
@@ -348,19 +372,13 @@ public:
     {
 
         // RK4
-        Holohover::state_t<double> k1;
-        nonlinear_state_dynamics(x, u, k1);
-        Holohover::state_t<double> int_k2 = x+dt*k1/2;
-        Holohover::state_t<double> k2;
-        nonlinear_state_dynamics(int_k2, u, k2);
-        Holohover::state_t<double> int_k3=x+dt*k2/2;
-        Holohover::state_t<double> k3;
-        nonlinear_state_dynamics(int_k3, u, k3);
-        Holohover::state_t<double> int_k4=x+dt*k3;
-        Holohover::state_t<double> k4;
-        nonlinear_state_dynamics(int_k4, u, k4);
+        Holohover::state_t<T> k1, k2, k3, k4;
+        nonlinear_state_dynamics<T>(x, u, k1);
+        nonlinear_state_dynamics<T>(x + dt * k1 / 2, u, k2);
+        nonlinear_state_dynamics<T>(x + dt * k2 / 2, u, k3);
+        nonlinear_state_dynamics<T>(x + dt * k3, u, k4);
 
-        x_next = x + dt*(k1+2*k2+2*k3+k4)/6;
+        x_next = x + dt * (k1 + 2 * k2 + 2 * k3 + k4) / 6;
     }
 
     template<typename T>
