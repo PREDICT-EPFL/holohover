@@ -41,6 +41,10 @@ public:
     Eigen::Matrix<double, NX, NX> Ad;
     Eigen::Matrix<double, NX, NA> Bd;
 
+    // discrete motor dynamics, i.e., first order system of input delay
+    double Ad_motor;
+    double Bd_motor;
+
     piqp::DenseSolver<double> solver;
     bool solver_initialized = false;
 
@@ -68,6 +72,9 @@ public:
              0, 0, 1;
 
         calculate_discretized_system();
+
+        Ad_motor = std::exp(-dt / props.motor_tau);
+        Bd_motor = 1.0 - Ad_motor;
     }
 
     inline void calculate_discretized_system()
@@ -293,10 +300,18 @@ public:
         u_acc = control_force_to_acceleration_map * u_force + mapping_constant;
     }
 
-    template<typename T>
-    inline void control_acceleration_to_force(const state_t<T> &x,
-                                              const control_acc_t<T> &u_acc,
-                                              control_force_t<T> &u_force) noexcept
+    inline void control_acceleration_to_force(const state_t<double> &x,
+                                              const control_acc_t<double> &u_acc,
+                                              control_force_t<double> &u_force) noexcept
+    {
+        control_acceleration_to_force(x, u_acc, u_force, min_thrust, max_thrust);
+    }
+
+    inline void control_acceleration_to_force(const state_t<double> &x,
+                                              const control_acc_t<double> &u_acc,
+                                              control_force_t<double> &u_force,
+                                              const control_force_t<double> &min_force,
+                                              const control_force_t<double> &max_force) noexcept
     {
         // We solve a QP to find the minimum energy mapping satisfying max thrust constraints
         // Slacks are added to make sure the QP is always feasible
@@ -312,18 +327,18 @@ public:
         //
         // with x = (F_i, alpha, beta)
 
-        Eigen::Matrix<T, NA, NU> control_force_to_acceleration_map;
-        control_acc_t<T> mapping_constant;
+        Eigen::Matrix<double, NA, NU> control_force_to_acceleration_map;
+        control_acc_t<double> mapping_constant;
         control_force_to_acceleration_mapping(x, control_force_to_acceleration_map, mapping_constant);
 
         double mu = 1e6;
-        Eigen::Matrix<T, NU + 2, NU + 2> P;
-        Eigen::Matrix<T, NU + 2, 1> c;
-        Eigen::Matrix<T, NA, NU + 2> A;
-        Eigen::Matrix<T, NA, 1> b;
-        Eigen::Matrix<T, 0, NU + 2> G;
-        Eigen::Matrix<T, 0, 1> h;
-        Eigen::Matrix<T, NU + 2, 1> lb, ub;
+        Eigen::Matrix<double, NU + 2, NU + 2> P;
+        Eigen::Matrix<double, NU + 2, 1> c;
+        Eigen::Matrix<double, NA, NU + 2> A;
+        Eigen::Matrix<double, NA, 1> b;
+        Eigen::Matrix<double, 0, NU + 2> G;
+        Eigen::Matrix<double, 0, 1> h;
+        Eigen::Matrix<double, NU + 2, 1> lb, ub;
 
         P.setIdentity();
         P.diagonal().template tail<2>().setConstant(mu);
@@ -334,9 +349,9 @@ public:
                                               -u_acc(1), 0.0,
                                               0,         -u_acc(2);
         b = -mapping_constant;
-        lb.template head<NU>() = min_thrust;
+        lb.template head<NU>() = min_force;
         lb.template tail<2>().setConstant(0.0);
-        ub.template head<NU>() = max_thrust;
+        ub.template head<NU>() = max_force;
         ub.template tail<2>().setConstant(1.0);
 
         if (!solver_initialized) {
@@ -370,7 +385,6 @@ public:
                                         const control_force_t<T> &u,
                                         state_t<T> &x_next) const noexcept
     {
-
         // RK4
         Holohover::state_t<T> k1, k2, k3, k4;
         nonlinear_state_dynamics<T>(x, u, k1);
