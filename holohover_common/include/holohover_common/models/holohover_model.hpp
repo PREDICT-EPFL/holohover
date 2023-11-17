@@ -31,6 +31,7 @@ public:
     HolohoverProps props;
     control_force_t<double> min_thrust;
     control_force_t<double> max_thrust;
+    Eigen::Map<Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> configuration_matrix;
 
     // continuous system dynamics for input u = (a_x, a_y, w_dot_z)
     Eigen::Matrix<double, NX, NX> A;
@@ -48,7 +49,8 @@ public:
     piqp::DenseSolver<double> solver;
     bool solver_initialized = false;
 
-    explicit Holohover(HolohoverProps &_props, double _dt = 0.01) : props(_props), dt(_dt)
+    explicit Holohover(HolohoverProps &_props, double _dt = 0.01)
+        : props(_props), configuration_matrix(props.configuration_matrix.data()), dt(_dt)
     {
         control_force_t<double> min_signal = control_force_t<double>::Constant(props.idle_signal);
         control_force_t<double> max_signal = control_force_t<double>::Constant(1.0);
@@ -111,14 +113,7 @@ public:
                                          state_t<T> &x_dot) const noexcept
     {
         Holohover::control_force_t<T> force;
-
-        force(0) = u(0)*(u(0)*(u(0)*props.signal_to_thrust_coeffs_motor_1[0] + props.signal_to_thrust_coeffs_motor_1[1]) + props.signal_to_thrust_coeffs_motor_1[2]);
-        force(1) = u(1)*(u(1)*(u(1)*props.signal_to_thrust_coeffs_motor_2[0] + props.signal_to_thrust_coeffs_motor_2[1]) + props.signal_to_thrust_coeffs_motor_2[2]);
-        force(2) = u(2)*(u(2)*(u(2)*props.signal_to_thrust_coeffs_motor_3[0] + props.signal_to_thrust_coeffs_motor_3[1]) + props.signal_to_thrust_coeffs_motor_3[2]);
-        force(3) = u(3)*(u(3)*(u(3)*props.signal_to_thrust_coeffs_motor_4[0] + props.signal_to_thrust_coeffs_motor_4[1]) + props.signal_to_thrust_coeffs_motor_4[2]);
-        force(4) = u(4)*(u(4)*(u(4)*props.signal_to_thrust_coeffs_motor_5[0] + props.signal_to_thrust_coeffs_motor_5[1]) + props.signal_to_thrust_coeffs_motor_5[2]);
-        force(5) = u(5)*(u(5)*(u(5)*props.signal_to_thrust_coeffs_motor_6[0] + props.signal_to_thrust_coeffs_motor_6[1]) + props.signal_to_thrust_coeffs_motor_6[2]);
-
+        signal_to_thrust(u, force);
         nonlinear_state_dynamics_force<T>(x, force, x_dot);
     }
 
@@ -127,36 +122,55 @@ public:
                                                const control_force_t<T> &u,
                                                state_t<T> &x_dot) const noexcept
     {
-        T Fx1 = props.learned_motor_vec_a_1[0]*u(0);
-        T Fx2 = props.learned_motor_vec_a_2[0]*u(1);
-        T Fx3 = props.learned_motor_vec_b_1[0]*u(2);
-        T Fx4 = props.learned_motor_vec_b_2[0]*u(3);
-        T Fx5 = props.learned_motor_vec_c_1[0]*u(4);
-        T Fx6 = props.learned_motor_vec_c_2[0]*u(5);
-        
-        T Fy1 = props.learned_motor_vec_a_1[1]*u(0);
-        T Fy2 = props.learned_motor_vec_a_2[1]*u(1);
-        T Fy3 = props.learned_motor_vec_b_1[1]*u(2);
-        T Fy4 = props.learned_motor_vec_b_2[1]*u(3);
-        T Fy5 = props.learned_motor_vec_c_1[1]*u(4);
-        T Fy6 = props.learned_motor_vec_c_2[1]*u(5); // y dot
+        Eigen::Matrix<T, 2, 1> linear_acceleration_body;
+        T angular_acceleration;
 
-        T Fx = cos(x(4))*(Fx1+Fx2+Fx3+Fx4+Fx5+Fx6) - sin(x(4))*(Fy1+Fy2+Fy3+Fy4+Fy5+Fy6);
-        T Fy = sin(x(4))*(Fx1+Fx2+Fx3+Fx4+Fx5+Fx6) + cos(x(4))*(Fy1+Fy2+Fy3+Fy4+Fy5+Fy6);
+        if (props.use_configuration_matrix)
+        {
+            linear_acceleration_body = configuration_matrix.topLeftCorner<2, NU>() * u;
+            angular_acceleration = configuration_matrix.bottomLeftCorner<1, NU>() * u;
+        }
+        else
+        {
+            T Fx1 = props.learned_motor_vec_a_1[0] * u(0);
+            T Fx2 = props.learned_motor_vec_a_2[0] * u(1);
+            T Fx3 = props.learned_motor_vec_b_1[0] * u(2);
+            T Fx4 = props.learned_motor_vec_b_2[0] * u(3);
+            T Fx5 = props.learned_motor_vec_c_1[0] * u(4);
+            T Fx6 = props.learned_motor_vec_c_2[0] * u(5);
+            
+            T Fy1 = props.learned_motor_vec_a_1[1] * u(0);
+            T Fy2 = props.learned_motor_vec_a_2[1] * u(1);
+            T Fy3 = props.learned_motor_vec_b_1[1] * u(2);
+            T Fy4 = props.learned_motor_vec_b_2[1] * u(3);
+            T Fy5 = props.learned_motor_vec_c_1[1] * u(4);
+            T Fy6 = props.learned_motor_vec_c_2[1] * u(5);
 
-        T Mz1 = -(props.motor_pos_a_1[1]-props.CoM[1])*Fx1 + (props.motor_pos_a_1[0]-props.CoM[0])*Fy1;
-        T Mz2 = -(props.motor_pos_a_2[1]-props.CoM[1])*Fx2 + (props.motor_pos_a_2[0]-props.CoM[0])*Fy2;
-        T Mz3 = -(props.motor_pos_b_1[1]-props.CoM[1])*Fx3 + (props.motor_pos_b_1[0]-props.CoM[0])*Fy3;
-        T Mz4 = -(props.motor_pos_b_2[1]-props.CoM[1])*Fx4 + (props.motor_pos_b_2[0]-props.CoM[0])*Fy4;
-        T Mz5 = -(props.motor_pos_c_1[1]-props.CoM[1])*Fx5 + (props.motor_pos_c_1[0]-props.CoM[0])*Fy5;
-        T Mz6 = -(props.motor_pos_c_2[1]-props.CoM[1])*Fx6 + (props.motor_pos_c_2[0]-props.CoM[0])*Fy6;
+            linear_acceleration_body(0) = (Fx1 + Fx2 + Fx3 + Fx4 + Fx5 + Fx6) / props.mass;
+            linear_acceleration_body(1) = (Fx1 + Fx2 + Fx3 + Fx4 + Fx5 + Fx6) / props.mass;
+
+            T Mz1 = -(props.motor_pos_a_1[1] - props.CoM[1]) * Fx1 + (props.motor_pos_a_1[0] - props.CoM[0]) * Fy1;
+            T Mz2 = -(props.motor_pos_a_2[1] - props.CoM[1]) * Fx2 + (props.motor_pos_a_2[0] - props.CoM[0]) * Fy2;
+            T Mz3 = -(props.motor_pos_b_1[1] - props.CoM[1]) * Fx3 + (props.motor_pos_b_1[0] - props.CoM[0]) * Fy3;
+            T Mz4 = -(props.motor_pos_b_2[1] - props.CoM[1]) * Fx4 + (props.motor_pos_b_2[0] - props.CoM[0]) * Fy4;
+            T Mz5 = -(props.motor_pos_c_1[1] - props.CoM[1]) * Fx5 + (props.motor_pos_c_1[0] - props.CoM[0]) * Fy5;
+            T Mz6 = -(props.motor_pos_c_2[1] - props.CoM[1]) * Fx6 + (props.motor_pos_c_2[0] - props.CoM[0]) * Fy6;
+
+            angular_acceleration = (Mz1 + Mz2 + Mz3 + Mz4 + Mz5 + Mz6) / props.inertia;
+        }
+
+        // rotation from body to world frame
+        Eigen::Matrix<T, 2, 2> rotation_matrix;
+        body_to_world_rotation_matrix(x, rotation_matrix);
+
+        Eigen::Matrix<T, 2, 1> linear_acceleration_world = rotation_matrix * linear_acceleration_body;
 
         x_dot(0) = x(2); // x
         x_dot(1) = x(3); // y
-        x_dot(2) = Fx/props.mass ; // x dot
-        x_dot(3) = Fy/props.mass ;// y dot
+        x_dot(2) = linear_acceleration_world(0); // x dot
+        x_dot(3) = linear_acceleration_world(1); // y dot
         x_dot(4) = x(5); // theta
-        x_dot(5) = (Mz1+Mz2+Mz3+Mz4+Mz5+Mz6)/props.inertia; // theta dot
+        x_dot(5) = angular_acceleration; // theta dot
 
         // linear acceleration correction due to CoM
         x_dot(2) += props.CoM[1] * x_dot(5) + props.CoM[0] * x(5);
@@ -168,104 +182,115 @@ public:
                                                       Eigen::Matrix<T, NA, NU> &map,
                                                       control_acc_t<T> &constant) const noexcept
     {
-        Eigen::Matrix<T, 2, NU> force_to_total_force;
-        Eigen::Matrix<T, 1, NU> force_to_moment;
+        Eigen::Matrix<T, 2, NU> force_to_linear_acceleration_body;
+        Eigen::Matrix<T, 1, NU> force_to_angular_acceleration;
 
-        // A motors
-        int i = 0;
+        if (props.use_configuration_matrix)
+        {
+            force_to_linear_acceleration_body = configuration_matrix.topLeftCorner<2, NU>();
+            force_to_angular_acceleration = configuration_matrix.bottomLeftCorner<1, NU>();
+        }
+        else
+        {
+            // A motors
+            int i = 0;
 
-        // x force component of the first propeller in the propeller pair 1
-        force_to_total_force(0, 2 * i) = props.learned_motor_vec_a_1[0];
-        // y force component of the first propeller in the propeller pair 1
-        force_to_total_force(1, 2 * i) = props.learned_motor_vec_a_1[1];
-        // x force component of the second propeller in the propeller pair 1
-        force_to_total_force(0, 2 * i + 1) = props.learned_motor_vec_a_2[0];
-        // y force component of the second propeller in the propeller pair 1
-        force_to_total_force(1, 2 * i + 1) = props.learned_motor_vec_a_2[1];
+            // x force component of the first propeller in the propeller pair 1
+            force_to_linear_acceleration_body(0, 2 * i) = props.learned_motor_vec_a_1[0];
+            // y force component of the first propeller in the propeller pair 1
+            force_to_linear_acceleration_body(1, 2 * i) = props.learned_motor_vec_a_1[1];
+            // x force component of the second propeller in the propeller pair 1
+            force_to_linear_acceleration_body(0, 2 * i + 1) = props.learned_motor_vec_a_2[0];
+            // y force component of the second propeller in the propeller pair 1
+            force_to_linear_acceleration_body(1, 2 * i + 1) = props.learned_motor_vec_a_2[1];
 
-        // position vector of the first propeller in the propeller pair i if CoM centered                        
-        double rx1 = props.motor_pos_a_1[0]-props.CoM[0];
-        double ry1 = props.motor_pos_a_1[1]-props.CoM[1];
+            // position vector of the first propeller in the propeller pair i if CoM centered                        
+            double rx1 = props.motor_pos_a_1[0] - props.CoM[0];
+            double ry1 = props.motor_pos_a_1[1] - props.CoM[1];
 
-        // force vector of the first propeller in the propeller pair i
-        T Fx1 = force_to_total_force(0, 2 * i);
-        T Fy1 = force_to_total_force(1, 2 * i);
-        // moment induced by the first propeller in the propeller pair i
-        force_to_moment(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
+            // force vector of the first propeller in the propeller pair i
+            T Fx1 = force_to_linear_acceleration_body(0, 2 * i);
+            T Fy1 = force_to_linear_acceleration_body(1, 2 * i);
+            // moment induced by the first propeller in the propeller pair i
+            force_to_angular_acceleration(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
 
-        // Learned position
-        double rx2 = props.motor_pos_a_2[0]-props.CoM[0];
-        double ry2 = props.motor_pos_a_2[1]-props.CoM[1];
+            // Learned position
+            double rx2 = props.motor_pos_a_2[0] - props.CoM[0];
+            double ry2 = props.motor_pos_a_2[1] - props.CoM[1];
 
-        // force vector of the second propeller in the propeller pair i
-        T Fx2 = force_to_total_force(0, 2 * i + 1);
-        T Fy2 = force_to_total_force(1, 2 * i + 1);
-        // moment induced by the second propeller in the propeller pair i
-        force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
+            // force vector of the second propeller in the propeller pair i
+            T Fx2 = force_to_linear_acceleration_body(0, 2 * i + 1);
+            T Fy2 = force_to_linear_acceleration_body(1, 2 * i + 1);
+            // moment induced by the second propeller in the propeller pair i
+            force_to_angular_acceleration(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
 
-        // B motors
-        i = 1; 
+            // B motors
+            i = 1; 
 
-        // x force component of the first propeller in the propeller pair 1
-        force_to_total_force(0, 2 * i) = props.learned_motor_vec_b_1[0];
-        // y force component of the first propeller in the propeller pair 1
-        force_to_total_force(1, 2 * i) = props.learned_motor_vec_b_1[1];
-        // x force component of the second propeller in the propeller pair 1
-        force_to_total_force(0, 2 * i + 1) = props.learned_motor_vec_b_2[0];
-        // y force component of the second propeller in the propeller pair 1
-        force_to_total_force(1, 2 * i + 1) = props.learned_motor_vec_b_2[1];
+            // x force component of the first propeller in the propeller pair 1
+            force_to_linear_acceleration_body(0, 2 * i) = props.learned_motor_vec_b_1[0];
+            // y force component of the first propeller in the propeller pair 1
+            force_to_linear_acceleration_body(1, 2 * i) = props.learned_motor_vec_b_1[1];
+            // x force component of the second propeller in the propeller pair 1
+            force_to_linear_acceleration_body(0, 2 * i + 1) = props.learned_motor_vec_b_2[0];
+            // y force component of the second propeller in the propeller pair 1
+            force_to_linear_acceleration_body(1, 2 * i + 1) = props.learned_motor_vec_b_2[1];
 
-        // Learned position
-        rx1 = props.motor_pos_b_1[0]-props.CoM[0];
-        ry1 = props.motor_pos_b_1[1]-props.CoM[1];
+            // Learned position
+            rx1 = props.motor_pos_b_1[0] - props.CoM[0];
+            ry1 = props.motor_pos_b_1[1] - props.CoM[1];
 
-        // force vector of the first propeller in the propeller pair i
-        Fx1 = force_to_total_force(0, 2 * i);
-        Fy1 = force_to_total_force(1, 2 * i);
-        // moment induced by the first propeller in the propeller pair i
-        force_to_moment(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
+            // force vector of the first propeller in the propeller pair i
+            Fx1 = force_to_linear_acceleration_body(0, 2 * i);
+            Fy1 = force_to_linear_acceleration_body(1, 2 * i);
+            // moment induced by the first propeller in the propeller pair i
+            force_to_angular_acceleration(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
 
-        // Learned position
-        rx2 = props.motor_pos_b_2[0]-props.CoM[0];
-        ry2 = props.motor_pos_b_2[1]-props.CoM[1];
+            // Learned position
+            rx2 = props.motor_pos_b_2[0] - props.CoM[0];
+            ry2 = props.motor_pos_b_2[1] - props.CoM[1];
 
-        // force vector of the second propeller in the propeller pair i
-        Fx2 = force_to_total_force(0, 2 * i + 1);
-        Fy2 = force_to_total_force(1, 2 * i + 1);
-        // moment induced by the second propeller in the propeller pair i
-        force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
+            // force vector of the second propeller in the propeller pair i
+            Fx2 = force_to_linear_acceleration_body(0, 2 * i + 1);
+            Fy2 = force_to_linear_acceleration_body(1, 2 * i + 1);
+            // moment induced by the second propeller in the propeller pair i
+            force_to_angular_acceleration(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
 
-        // C motors
-        i = 2;
+            // C motors
+            i = 2;
 
-        // x force component of the first propeller in the propeller pair 1
-        force_to_total_force(0, 2 * i) = props.learned_motor_vec_c_1[0];
-        // y force component of the first propeller in the propeller pair 1
-        force_to_total_force(1, 2 * i) = props.learned_motor_vec_c_1[1];
-        // x force component of the second propeller in the propeller pair 1
-        force_to_total_force(0, 2 * i + 1) = props.learned_motor_vec_c_2[0];
-        // y force component of the second propeller in the propeller pair 1
-        force_to_total_force(1, 2 * i + 1) = props.learned_motor_vec_c_2[1];
+            // x force component of the first propeller in the propeller pair 1
+            force_to_linear_acceleration_body(0, 2 * i) = props.learned_motor_vec_c_1[0];
+            // y force component of the first propeller in the propeller pair 1
+            force_to_linear_acceleration_body(1, 2 * i) = props.learned_motor_vec_c_1[1];
+            // x force component of the second propeller in the propeller pair 1
+            force_to_linear_acceleration_body(0, 2 * i + 1) = props.learned_motor_vec_c_2[0];
+            // y force component of the second propeller in the propeller pair 1
+            force_to_linear_acceleration_body(1, 2 * i + 1) = props.learned_motor_vec_c_2[1];
 
-        // Learned position
-        rx1 = props.motor_pos_c_1[0]-props.CoM[0];
-        ry1 = props.motor_pos_c_1[1]-props.CoM[1];
+            // Learned position
+            rx1 = props.motor_pos_c_1[0] - props.CoM[0];
+            ry1 = props.motor_pos_c_1[1] - props.CoM[1];
 
-        // force vector of the first propeller in the propeller pair i
-        Fx1 = force_to_total_force(0, 2 * i);
-        Fy1 = force_to_total_force(1, 2 * i);
-        // moment induced by the first propeller in the propeller pair i
-        force_to_moment(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
+            // force vector of the first propeller in the propeller pair i
+            Fx1 = force_to_linear_acceleration_body(0, 2 * i);
+            Fy1 = force_to_linear_acceleration_body(1, 2 * i);
+            // moment induced by the first propeller in the propeller pair i
+            force_to_angular_acceleration(0, 2 * i) = static_cast<T>(rx1) * Fy1 - static_cast<T>(ry1) * Fx1;
 
-        // Learned position
-        rx2 = props.motor_pos_c_2[0]-props.CoM[0];
-        ry2 = props.motor_pos_c_2[1]-props.CoM[1];
+            // Learned position
+            rx2 = props.motor_pos_c_2[0] - props.CoM[0];
+            ry2 = props.motor_pos_c_2[1] - props.CoM[1];
 
-        // force vector of the second propeller in the propeller pair i
-        Fx2 = force_to_total_force(0, 2 * i + 1);
-        Fy2 = force_to_total_force(1, 2 * i + 1);
-        // moment induced by the second propeller in the propeller pair i
-        force_to_moment(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
+            // force vector of the second propeller in the propeller pair i
+            Fx2 = force_to_linear_acceleration_body(0, 2 * i + 1);
+            Fy2 = force_to_linear_acceleration_body(1, 2 * i + 1);
+            // moment induced by the second propeller in the propeller pair i
+            force_to_angular_acceleration(0, 2 * i + 1) = static_cast<T>(rx2) * Fy2 - static_cast<T>(ry2) * Fx2;
+
+            force_to_linear_acceleration_body.array() /= props.mass;
+            force_to_angular_acceleration.array() /= props.inertia;
+        }
 
         // rotation from body to world frame
         Eigen::Matrix<T, 2, 2> rotation_matrix;
@@ -273,10 +298,10 @@ public:
 
         Eigen::Matrix<T, NA, NU> uncorrected_map;
         // x, y acceleration mapping
-        uncorrected_map.template topLeftCorner<2, NU>() = 1.0 / props.mass * rotation_matrix * force_to_total_force;
+        uncorrected_map.template topLeftCorner<2, NU>() = rotation_matrix * force_to_linear_acceleration_body;
 
         // angular acceleration around z-axis mapping
-        uncorrected_map.template bottomLeftCorner<1, NU>() = 1.0 / props.inertia * force_to_moment;
+        uncorrected_map.template bottomLeftCorner<1, NU>() = force_to_angular_acceleration;
 
         // correction matrix for linear accelerations due to CoM
         Eigen::Matrix<T, NA, NA> CoM_correction;
@@ -409,14 +434,10 @@ public:
     template<typename T>
     inline void signal_to_thrust(const control_force_t<T> &u_signal, control_force_t<T> &u_thrust) const noexcept
     {
-        // 
-        control_force_t<T> u_motor_signal = u_signal.array();  
-        control_force_t<T> u_motor_thrust;
-        u_motor_thrust.setZero();
+        u_thrust.setZero();
 
-        for (std::size_t i=0; i!=props.signal_to_thrust_coeffs_motor_1.size(); ++i)
+        for (int i = props.signal_to_thrust_coeffs_motor_1.size() - 1; i >= 0; i--)
         {
-            u_motor_thrust.array() *= u_motor_signal.array();
         	Eigen::Matrix<T, NU, 1> coeffs;
             coeffs << static_cast<T>(props.signal_to_thrust_coeffs_motor_1[i]),
                       static_cast<T>(props.signal_to_thrust_coeffs_motor_2[i]),
@@ -424,90 +445,46 @@ public:
                       static_cast<T>(props.signal_to_thrust_coeffs_motor_4[i]),
                       static_cast<T>(props.signal_to_thrust_coeffs_motor_5[i]),
                       static_cast<T>(props.signal_to_thrust_coeffs_motor_6[i]);
-            u_motor_thrust = u_motor_thrust + coeffs;
+            u_thrust += coeffs;
+            u_thrust.array() *= u_signal.array();
         }
-        
-        //for (const double& coeff: props.signal_to_thrust_coeffs_motor_1)
-        //{
-        //    u_thrust_mN.array() *= u_motor_signal.array();
-        //    u_thrust_mN.array() += coeff;
-        //}
-        
-        u_thrust = u_motor_thrust;
     }
 
     template<typename T>
     inline void thrust_to_signal(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
     {
         // 
-        control_force_t<T> u_motor_thrust = u_thrust.array();
-        control_force_t<T> u_motor_signal;
-        u_motor_thrust = u_motor_thrust.cwiseMin(max_thrust).cwiseMax(0.0);
-        //std::cout << "thrust = " << u_motor_thrust << std::endl;
-        u_motor_signal = 0.6*u_motor_thrust; // First linear guess
+        control_force_t<T> u_thrust_clipped = u_thrust;
+        u_thrust_clipped = u_thrust_clipped.cwiseMin(max_thrust).cwiseMax(0.0);
+        u_signal = 0.6 * u_thrust_clipped; // first linear guess
         
-        //double tol = 1e-3; // Tolerance for the root
-        int maxiter = 5; // Maximum number of iterations
+        int max_iter = 5; // we do a fixed amount of newton iterations
 
-        auto f = [](auto x, auto a, auto b, auto c, auto d) {
-            return x*(x*(a*x+b)+c)-d;
-        };
-        
-        auto fprime = [](auto x, auto a, auto b, auto c) {
-            return x*(3*a*x+2*b)+c;
-        };
-
-        for (int i=0; i<maxiter; i++) {
-            double fx_1 = f(u_motor_signal(0),props.signal_to_thrust_coeffs_motor_1[0],props.signal_to_thrust_coeffs_motor_1[1],props.signal_to_thrust_coeffs_motor_1[2],u_motor_thrust(0));
-            double fxprime_1 = fprime(u_motor_signal(0),props.signal_to_thrust_coeffs_motor_1[0],props.signal_to_thrust_coeffs_motor_1[1],props.signal_to_thrust_coeffs_motor_1[2]);
-            double fx_2 = f(u_motor_signal(1),props.signal_to_thrust_coeffs_motor_2[0],props.signal_to_thrust_coeffs_motor_2[1],props.signal_to_thrust_coeffs_motor_2[2],u_motor_thrust(1));
-            double fxprime_2 = fprime(u_motor_signal(1),props.signal_to_thrust_coeffs_motor_2[0],props.signal_to_thrust_coeffs_motor_2[1],props.signal_to_thrust_coeffs_motor_2[2]);
-            double fx_3 = f(u_motor_signal(2),props.signal_to_thrust_coeffs_motor_3[0],props.signal_to_thrust_coeffs_motor_3[1],props.signal_to_thrust_coeffs_motor_3[2],u_motor_thrust(2));
-            double fxprime_3 = fprime(u_motor_signal(2),props.signal_to_thrust_coeffs_motor_3[0],props.signal_to_thrust_coeffs_motor_3[1],props.signal_to_thrust_coeffs_motor_3[2]);
-            double fx_4 = f(u_motor_signal(3),props.signal_to_thrust_coeffs_motor_4[0],props.signal_to_thrust_coeffs_motor_4[1],props.signal_to_thrust_coeffs_motor_4[2],u_motor_thrust(3));
-            double fxprime_4 = fprime(u_motor_signal(3),props.signal_to_thrust_coeffs_motor_4[0],props.signal_to_thrust_coeffs_motor_4[1],props.signal_to_thrust_coeffs_motor_4[2]);
-            double fx_5 = f(u_motor_signal(4),props.signal_to_thrust_coeffs_motor_5[0],props.signal_to_thrust_coeffs_motor_5[1],props.signal_to_thrust_coeffs_motor_5[2],u_motor_thrust(4));
-            double fxprime_5 = fprime(u_motor_signal(4),props.signal_to_thrust_coeffs_motor_5[0],props.signal_to_thrust_coeffs_motor_5[1],props.signal_to_thrust_coeffs_motor_5[2]);
-            double fx_6 = f(u_motor_signal(5),props.signal_to_thrust_coeffs_motor_6[0],props.signal_to_thrust_coeffs_motor_6[1],props.signal_to_thrust_coeffs_motor_6[2],u_motor_thrust(5));
-            double fxprime_6 = fprime(u_motor_signal(5),props.signal_to_thrust_coeffs_motor_6[0],props.signal_to_thrust_coeffs_motor_6[1],props.signal_to_thrust_coeffs_motor_6[2]);
-
-            double alpha = 1;
-            u_motor_signal(0) = u_motor_signal(0) -alpha * fx_1/fxprime_1; // Update x1
-            u_motor_signal(1) = u_motor_signal(1) -alpha * fx_2/fxprime_2; // Update x2
-            u_motor_signal(2) = u_motor_signal(2) -alpha * fx_3/fxprime_3; // Update x3
-            u_motor_signal(3) = u_motor_signal(3) -alpha * fx_4/fxprime_4; // Update x4
-            u_motor_signal(4) = u_motor_signal(4) -alpha * fx_5/fxprime_5; // Update x5
-            u_motor_signal(5) = u_motor_signal(5) -alpha * fx_6/fxprime_6; // Update x6
-            u_motor_signal = u_motor_signal.cwiseMin(1.0).cwiseMax(0.0);
-        }
-
-        u_signal.array() = u_motor_signal.array();
-    }
-
-
-
-    template<typename T>
-    inline void thrust_to_signal_old(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
-    {
-        // 
-        control_force_t<T> u_motor_thrust = u_thrust.array();
-        control_force_t<T> u_motor_signal;
-        u_motor_signal.setZero();
-        
-        for (std::size_t i=0; i!=props.thrust_to_signal_coeffs_motor_1.size(); ++i)
+        for (int i = 0; i < max_iter; i++)
         {
-            u_motor_signal.array() *= u_motor_thrust.array();
-        	Eigen::Matrix<T, NU, 1> coeffs {props.thrust_to_signal_coeffs_motor_1[i],
-        									props.thrust_to_signal_coeffs_motor_2[i],
-        									props.thrust_to_signal_coeffs_motor_3[i],
-        									props.thrust_to_signal_coeffs_motor_4[i],
-        									props.thrust_to_signal_coeffs_motor_5[i],
-        									props.thrust_to_signal_coeffs_motor_6[i]};
-            u_motor_signal = u_motor_signal + coeffs;
+            control_force_t<T> f;
+            signal_to_thrust(u_signal, f);
+            f -= u_thrust_clipped;
+
+            control_force_t<T> f_dot;
+            f_dot.setZero();
+            for (int i = props.signal_to_thrust_coeffs_motor_1.size() - 1; i >= 0; i--)
+            {
+                f_dot.array() *= u_signal.array();
+                Eigen::Matrix<T, NU, 1> coeffs;
+                coeffs << static_cast<T>(props.signal_to_thrust_coeffs_motor_1[i]),
+                        static_cast<T>(props.signal_to_thrust_coeffs_motor_2[i]),
+                        static_cast<T>(props.signal_to_thrust_coeffs_motor_3[i]),
+                        static_cast<T>(props.signal_to_thrust_coeffs_motor_4[i]),
+                        static_cast<T>(props.signal_to_thrust_coeffs_motor_5[i]),
+                        static_cast<T>(props.signal_to_thrust_coeffs_motor_6[i]);
+                f_dot += static_cast<T>(i + 1) * coeffs;
+            }
+
+            double alpha = 1.0;
+            u_signal.array() -= alpha * f.array() / f_dot.array();
+            u_signal = u_signal.cwiseMin(1.0).cwiseMax(0.0);
         }
-        
-        
-        u_signal.array() = u_motor_signal.array();
     }
 };
 
