@@ -103,9 +103,7 @@ void HolohoverSimulationNode::simulate_forward_callback()
     current_control_signal(3) = current_control.motor_b_2;
     current_control_signal(4) = current_control.motor_c_1;
     current_control_signal(5) = current_control.motor_c_2;
-    double A_motor = std::exp(-simulation_settings.period / holohover_props.motor_tau);
-    double B_motor = 1.0 - A_motor;
-    motor_velocities = A_motor * motor_velocities + B_motor * current_control_signal;
+    motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * current_control_signal;
     calculate_control_acc();
 
     state = holohover.Ad * state + holohover.Bd * current_control_acc;

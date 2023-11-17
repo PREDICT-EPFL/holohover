@@ -24,7 +24,9 @@ private:
     Holohover holohover;
 
     Holohover::state_t<double> state;
-    //geometry_msgs::msg::Pose2D ref;
+    Holohover::control_force_t<double> motor_velocities;
+    Holohover::control_acc_t<double> last_control_acc;
+    Holohover::control_force_t<double> last_control_signal;
     holohover_msgs::msg::HolohoverState ref;
     Eigen::Matrix<double, Holohover::NA, Holohover::NX> K;
 

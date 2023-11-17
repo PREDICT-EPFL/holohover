@@ -8,6 +8,9 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
 {
     // init state
     state.setZero();
+    motor_velocities.setZero();
+    last_control_acc.setZero();
+    last_control_signal.setZero();
 
     // init ref
     ref.x = 0;
@@ -61,20 +64,40 @@ void HolohoverControlLQRNode::init_timer()
 
 void HolohoverControlLQRNode::publish_control()
 {
+    motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
+
     Holohover::state_t<double> state_ref;
     state_ref.setZero();
     state_ref(0) = ref.x;
     state_ref(1) = ref.y;
     state_ref(4) = ref.yaw;
 
-    Holohover::control_acc_t<double> u_acc = -K * (state - state_ref);   
-    Holohover::control_force_t<double> u_force;
-    holohover.control_acceleration_to_force(state, u_acc, u_force);    
-    Holohover::control_force_t<double> u_signal;
-    holohover.thrust_to_signal(u_force, u_signal);
+    // calculate control for next step
+    Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * last_control_acc;
+    Holohover::control_acc_t<double> u_acc_next = -K * (state_next - state_ref);
+
+    // calculate thrust bounds for next step
+    Holohover::control_force_t<double> u_force_next_min, u_force_next_max;
+    holohover.signal_to_thrust<double>(holohover.Ad_motor * motor_velocities + Holohover::control_force_t<double>::Constant(holohover.Bd_motor * holohover_props.idle_signal), u_force_next_min);
+    holohover.signal_to_thrust<double>(holohover.Ad_motor * motor_velocities + Holohover::control_force_t<double>::Constant(holohover.Bd_motor * 1.0), u_force_next_max);
+
+    // calculate next thrust and motor velocities
+    Holohover::control_force_t<double> u_force_next;
+    holohover.control_acceleration_to_force(state_next, u_acc_next, u_force_next, u_force_next_min, u_force_next_max);    
+    Holohover::control_force_t<double> motor_velocities_next;
+    holohover.thrust_to_signal(u_force_next, motor_velocities_next);
+
+    // calculate control from future motor velocities
+    Holohover::control_force_t<double> u_signal = (motor_velocities_next - holohover.Ad_motor * motor_velocities) / holohover.Bd_motor;
 
     // clip between 0 and 1
     u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);
+
+    // save control inputs for next iterations
+    Holohover::control_force_t<double> u_force;
+    holohover.signal_to_thrust(u_signal, u_force);
+    holohover.control_force_to_acceleration(state, u_force, last_control_acc);
+    last_control_signal = u_signal;
 
     holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";
