@@ -144,9 +144,6 @@ void HolohoverSimulationNode::imu_callback()
     holohover_msgs::msg::HolohoverIMUStamped imu_measurement;
     imu_measurement.header.frame_id = "body";
     imu_measurement.header.stamp = this->now();
-    imu_measurement.atti.roll = 0;
-    imu_measurement.atti.pitch = 0;
-    imu_measurement.atti.yaw = state(4);
     imu_measurement.acc.x = current_control_acc(0);
     imu_measurement.acc.y = current_control_acc(1);
     imu_measurement.acc.z = -9.81;
