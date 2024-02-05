@@ -11,6 +11,8 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "esp_wifi.h"
+#include "esp_timer.h"
 #include "driver/gpio.h"
 #include "driver/uart.h"
 
@@ -89,7 +91,6 @@ uint32_t pixels[NEOPIXEL_NR_LED];
 pmw3389dm_handle_t pmw3389dm_handle;
 uint8_t pmw3389dm_burst_buffer[12];
 
-struct msp_attitude_t attitude;
 struct msp_raw_imu_t imu;
 struct msp_motor_t motors;
 
@@ -133,20 +134,12 @@ void imu_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 
     if (timer != NULL) {
 
-        int msp_attitude_result = msp_request(UART_PORT, MSP_ATTITUDE, &attitude, sizeof(attitude), UART_TIMEOUT);
         int msp_raw_imu_result = msp_request(UART_PORT, MSP_RAW_IMU, &imu, sizeof(imu), UART_TIMEOUT);
 
-        if (msp_attitude_result >= 0 && msp_raw_imu_result >= 0) {
+        if (msp_raw_imu_result >= 0) {
             int64_t nanos = rmw_uros_epoch_nanos();
             outgoing_imu_measurement_msg.header.stamp.sec = nanos / 1000000000;
             outgoing_imu_measurement_msg.header.stamp.nanosec = nanos % 1000000000;
-
-            outgoing_imu_measurement_msg.atti.roll  = (double) attitude.pitch / 1800 * M_PI;
-            outgoing_imu_measurement_msg.atti.pitch = -((double) attitude.roll / 1800 * M_PI);
-            outgoing_imu_measurement_msg.atti.yaw   = -((double) attitude.yaw / 180 * M_PI);
-            if (outgoing_imu_measurement_msg.atti.yaw < -M_PI) {
-                outgoing_imu_measurement_msg.atti.yaw += 2 * M_PI;
-            }
 
             outgoing_imu_measurement_msg.acc.x = (double) imu.acc[1] / 32767 * 16 * 4 * 9.81;
             outgoing_imu_measurement_msg.acc.y = -((double) imu.acc[0] / 32767 * 16 * 4 * 9.81);
@@ -158,9 +151,6 @@ void imu_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 
             RCSOFTCHECK(rcl_publish(&imu_publisher, (const void*) &outgoing_imu_measurement_msg, NULL));
         } else {
-            if (msp_attitude_result < 0) {
-                ESP_LOGW(TAG, "MSP attitude request failed.");
-            }
             if (msp_raw_imu_result < 0) {
                 ESP_LOGW(TAG, "MSP raw imu request failed.");
             }
@@ -172,7 +162,11 @@ void mouse_timer_callback(rcl_timer_t * timer, int64_t last_call_time)
 {
     if (timer != NULL) {
 
+        int64_t start = esp_timer_get_time();
         esp_err_t err = spi_pmw3389dm_burst_read(pmw3389dm_handle, pmw3389dm_burst_buffer);
+        int64_t end = esp_timer_get_time();
+        int64_t diff = end - start;
+        ESP_LOGI(TAG, "time mouse: %lld", diff);
         if (err == ESP_OK) {
             int64_t nanos = rmw_uros_epoch_nanos();
             outgoing_mouse_measurement_msg.header.stamp.sec = nanos / 1000000000;
@@ -517,6 +511,8 @@ void app_main(void)
 
 #if defined(CONFIG_MICRO_ROS_ESP_NETIF_WLAN) || defined(CONFIG_MICRO_ROS_ESP_NETIF_ENET)
     ESP_ERROR_CHECK(network_interface_initialize());
+    // disable wifi power safe mode
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
 #endif
 
     config_server_start();
