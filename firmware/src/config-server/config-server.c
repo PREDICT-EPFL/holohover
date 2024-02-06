@@ -214,7 +214,8 @@ static esp_err_t config_server_post_handler(httpd_req_t *req) {
     char value[128];
     char decoded_value[128]; // holds the value of the attribute after decoding
     bool should_commit_nvs = false; // whether the NVS needs a commit()
-    for (uint_fast8_t i = 0; i < 9; i++) {
+    size_t n = sizeof(attribute_keys) / sizeof(attribute_keys[0]);
+    for (int i = 0; i < n; i++) {
         esp_err_t ret = httpd_query_key_value(query_string, attribute_keys[i],
                                               value, sizeof(value));
         if (ret == ESP_ERR_NOT_FOUND) {
