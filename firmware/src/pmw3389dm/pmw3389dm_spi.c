@@ -1,5 +1,5 @@
-#include "spi_pmw3389dm.h"
-#include "spi_pmw3389dm_srom.h"
+#include "pmw3389dm_spi.h"
+#include "pmw3389dm_srom.h"
 
 #include <stdlib.h>
 #include <string.h>

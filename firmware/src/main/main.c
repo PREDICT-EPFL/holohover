@@ -17,7 +17,7 @@
 #include "driver/uart.h"
 
 #include "msp.h"
-#include "PMW3389DM/spi_pmw3389dm.h"
+#include "pmw3389dm_spi.h"
 
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>

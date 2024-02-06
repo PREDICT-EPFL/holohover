@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS main.c msp.c PMW3389DM/spi_pmw3389dm.c
+    SRCS main.c
     INCLUDE_DIRS ""
-    REQUIRES micro_ros_espidf_component neopixel nvs-manager wifi config-server
+    REQUIRES config-server micro_ros_espidf_component msp neopixel nvs-manager pmw3389dm wifi
 )

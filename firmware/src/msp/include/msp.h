@@ -223,14 +223,14 @@ struct msp_servo_configurations_t {
 
 // MSP_SERVO_MIX_RULES reply
 struct msp_servo_mix_rules_t {
-    __attribute__ ((packed)) struct {
+    struct {
         uint8_t targetChannel;
         uint8_t inputSource;
         uint8_t rate;
         uint8_t speed;
         uint8_t min;
         uint8_t max;
-    } mixRule[MSP_MAX_SERVO_RULES];
+    } __attribute__ ((packed)) mixRule[MSP_MAX_SERVO_RULES];
 } __attribute__ ((packed));
 
 
