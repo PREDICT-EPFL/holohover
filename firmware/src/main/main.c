@@ -57,9 +57,9 @@ static const char *TAG = "MAIN";
 
 #define MOTOR_A_1  0
 #define MOTOR_A_2  1
-#define MOTOR_B_1  4
+#define MOTOR_B_1  2
 #define MOTOR_B_2  3
-#define MOTOR_C_1  2
+#define MOTOR_C_1  4
 #define MOTOR_C_2  5
 
 // Time for watchdog to turn off motors if no commands arrive: 100ms
