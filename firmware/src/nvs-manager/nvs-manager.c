@@ -10,6 +10,31 @@
 #include "nvs_flash.h"
 #include "sdkconfig.h"
 
+#define NVS_GET_STR_DEFAULT(id, fallback) { \
+    size_t id ## _len = sizeof(global_config. id); \
+    esp_err_t ret = nvs_get_str(vehicle_config_handle, #id, global_config. id, & id ## _len); \
+    switch (ret) { \
+    case ESP_OK: \
+        break; \
+    case ESP_ERR_NVS_NOT_FOUND: \
+        strncpy(global_config. id, fallback, sizeof(global_config. id)); \
+        /* Zero-terminate in case the value in the config would be an overflow. */ \
+        /* What will happen is that it just doesn't work, but instead can still */ \
+        /* be set via the web interface. */ \
+        global_config. id [sizeof(global_config. id) - 1] = '\0'; \
+        break; \
+    default: \
+        ESP_ERROR_CHECK(ret); \
+    } \
+}
+
+#define NVS_GET_U16_DEFAULT(id, fallback) { \
+    esp_err_t ret = nvs_get_u16(vehicle_config_handle, #id, &global_config. id); \
+    if (ret == ESP_ERR_NVS_NOT_FOUND) { \
+        global_config. id = fallback; \
+    } \
+}
+
 /* Global variable declaration ---------------------------------------------- */
 
 struct Configuration global_config = {0};
@@ -46,111 +71,13 @@ void nvs_init(void) {
 }
 
 void nvs_load_config(void) {
-    size_t agent_ip_len = sizeof(global_config.agent_ip);
-    esp_err_t ret = nvs_get_str(vehicle_config_handle, "agent_ip",
-                                global_config.agent_ip, &agent_ip_len);
-
-    switch (ret) {
-    case ESP_OK:
-        break;
-    case ESP_ERR_NVS_NOT_FOUND:
-        strncpy(global_config.agent_ip, CONFIG_MICRO_ROS_AGENT_IP,
-                sizeof(global_config.agent_ip));
-        // Zero-terminate in case the value in the config would be an overflow.
-        // What will happen is that it just doesn't work, but instead can still
-        // be set via the web interface.
-        global_config.agent_ip[sizeof(global_config.agent_ip) - 1] = '\0';
-        break;
-    default:
-        ESP_ERROR_CHECK(ret);
-    }
-
-    ret = nvs_get_u16(vehicle_config_handle, "agent_port", &global_config.agent_port);
-    if (ret == ESP_ERR_NVS_NOT_FOUND) {
-        global_config.agent_port = atoi(CONFIG_MICRO_ROS_AGENT_PORT);
-    }
-
-    size_t ssid_len = sizeof(global_config.ssid);
-    ret = nvs_get_str(vehicle_config_handle, "ssid", global_config.ssid,
-                      &ssid_len);
-
-    switch (ret) {
-    case ESP_OK:
-        break;
-    case ESP_ERR_NVS_NOT_FOUND:
-        strncpy(global_config.ssid, CONFIG_ESP_WIFI_SSID,
-                sizeof(global_config.ssid));
-        global_config.ssid[sizeof(global_config.ssid) - 1] = '\0';
-        break;
-    default:
-        ESP_ERROR_CHECK(ret);
-    }
-
-    size_t pwd_len = sizeof(global_config.pwd);
-    ret = nvs_get_str(vehicle_config_handle, "pwd", global_config.pwd, &pwd_len);
-
-    switch (ret) {
-    case ESP_OK:
-        break;
-    case ESP_ERR_NVS_NOT_FOUND:
-        strncpy(global_config.pwd, CONFIG_ESP_WIFI_PASSWORD,
-                sizeof(global_config.pwd));
-        global_config.pwd[sizeof(global_config.pwd) - 1] = '\0';
-        break;
-    default:
-        ESP_ERROR_CHECK(ret);
-    }
-
-    size_t static_ip_len = sizeof(global_config.static_ip);
-    ret = nvs_get_str(vehicle_config_handle, "static_ip", global_config.static_ip, &static_ip_len);
-
-    switch (ret) {
-        case ESP_OK:
-            break;
-        case ESP_ERR_NVS_NOT_FOUND:
-            strncpy(global_config.static_ip, "0.0.0.0", sizeof(global_config.static_ip));
-            // Zero-terminate in case the value in the config would be an overflow.
-            // What will happen is that it just doesn't work, but instead can still
-            // be set via the web interface.
-            global_config.static_ip[sizeof(global_config.static_ip) - 1] = '\0';
-            break;
-        default:
-            ESP_ERROR_CHECK(ret);
-    }
-
-    size_t static_netmask_len = sizeof(global_config.static_netmask);
-    ret = nvs_get_str(vehicle_config_handle, "static_netmask", global_config.static_netmask, &static_netmask_len);
-
-    switch (ret) {
-        case ESP_OK:
-            break;
-        case ESP_ERR_NVS_NOT_FOUND:
-            strncpy(global_config.static_netmask, "255.255.255.0", sizeof(global_config.static_netmask));
-            // Zero-terminate in case the value in the config would be an overflow.
-            // What will happen is that it just doesn't work, but instead can still
-            // be set via the web interface.
-            global_config.static_netmask[sizeof(global_config.static_netmask) - 1] = '\0';
-            break;
-        default:
-            ESP_ERROR_CHECK(ret);
-    }
-
-    size_t static_gw_len = sizeof(global_config.static_gw);
-    ret = nvs_get_str(vehicle_config_handle, "static_gw", global_config.static_gw, &static_gw_len);
-
-    switch (ret) {
-        case ESP_OK:
-            break;
-        case ESP_ERR_NVS_NOT_FOUND:
-            strncpy(global_config.static_gw, "192.168.0.1", sizeof(global_config.static_gw));
-            // Zero-terminate in case the value in the config would be an overflow.
-            // What will happen is that it just doesn't work, but instead can still
-            // be set via the web interface.
-            global_config.static_gw[sizeof(global_config.static_gw) - 1] = '\0';
-            break;
-        default:
-            ESP_ERROR_CHECK(ret);
-    }
+    NVS_GET_STR_DEFAULT(agent_ip, CONFIG_MICRO_ROS_AGENT_IP);
+    NVS_GET_U16_DEFAULT(agent_port, atoi(CONFIG_MICRO_ROS_AGENT_PORT));
+    NVS_GET_STR_DEFAULT(ssid, CONFIG_ESP_WIFI_SSID);
+    NVS_GET_STR_DEFAULT(pwd, CONFIG_ESP_WIFI_PASSWORD);
+    NVS_GET_STR_DEFAULT(static_ip, "0.0.0.0");
+    NVS_GET_STR_DEFAULT(static_netmask, "255.255.255.0");
+    NVS_GET_STR_DEFAULT(static_gw, "192.168.0.1");
 }
 
 void nvs_store_config() {
