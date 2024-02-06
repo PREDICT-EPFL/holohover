@@ -293,19 +293,23 @@ rcl_ret_t create_entities()
     ESP_LOGI(TAG, "Setup ros node, publishers and subscribers.");
 
     // create init_options
+    if (global_config.domain_id != 0)
+    {
+        RCCHECK(rcl_init_options_set_domain_id(&init_options, global_config.domain_id));
+    }
     RCSOFTCHECKRET(rclc_support_init_with_options(&support, 0, NULL, &init_options, &allocator));
 
     // create node
     RCSOFTCHECKRET(rclc_node_init_default(&node, "holohover_firmware", "", &support));
 
     // Create publishers and subscribers for measurements and control commands
-    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverIMUStamped), "/drone/imu"));
-    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&mouse_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverMouseStamped), "/drone/mouse"));
-    RCSOFTCHECKRET(rclc_subscription_init_best_effort(&control_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverControlStamped), "/drone/control"));
+    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&imu_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverIMUStamped), global_config.imu_topic));
+    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&mouse_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverMouseStamped), global_config.mouse_topic));
+    RCSOFTCHECKRET(rclc_subscription_init_best_effort(&control_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(holohover_msgs, msg, HolohoverControlStamped), global_config.control_topic));
 
     // Ping and pong publisher and subscriber
-    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&pong_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/pong"));
-    RCSOFTCHECKRET(rclc_subscription_init_best_effort(&ping_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), "/drone/ping"));
+    RCSOFTCHECKRET(rclc_publisher_init_best_effort(&pong_publisher, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), global_config.pong_topic));
+    RCSOFTCHECKRET(rclc_subscription_init_best_effort(&ping_subscriber, &node, ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Header), global_config.ping_topic));
 
     // Create a timer to sample imu
     RCSOFTCHECKRET(rclc_timer_init_default(&imu_timer, &support, RCL_MS_TO_NS(IMU_SAMPLE_TIME_MS), imu_timer_callback));
@@ -316,11 +320,16 @@ rcl_ret_t create_entities()
     ESP_LOGI(TAG, "Starting ros executor.");
 
     // create executor
-    RCSOFTCHECKRET(rclc_executor_init(&executor, &support.context, 4, &allocator));
+    size_t n_handles = 2 + global_config.imu_enabled + global_config.mouse_enabled;
+    RCSOFTCHECKRET(rclc_executor_init(&executor, &support.context, n_handles, &allocator));
     RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &ping_subscriber, &incoming_ping, &ping_subscription_callback, ON_NEW_DATA));
     RCSOFTCHECKRET(rclc_executor_add_subscription(&executor, &control_subscriber, &incoming_control_msg, &motor_control_subscription_callback, ON_NEW_DATA));
-    RCSOFTCHECKRET(rclc_executor_add_timer(&executor, &imu_timer));
-    RCSOFTCHECKRET(rclc_executor_add_timer(&executor, &mouse_timer));
+    if (global_config.imu_enabled) {
+        RCSOFTCHECKRET(rclc_executor_add_timer(&executor, &imu_timer));
+    }
+    if (global_config.mouse_enabled) {
+        RCSOFTCHECKRET(rclc_executor_add_timer(&executor, &mouse_timer));
+    }
 
     return RCL_RET_OK;
 }

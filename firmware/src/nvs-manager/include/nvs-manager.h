@@ -27,13 +27,21 @@
  * runtime and committed back to NVS.
  */
 struct Configuration {
-    char agent_ip[40];              ///< Agent IP address in human-readable format.
-    uint16_t agent_port;            ///< UDP port of agent computer
-    char ssid[33];                  ///< SSID
-    char pwd[100];                  ///< Password
-    char static_ip[40];             ///< Static IP address in human-readable format. For dynamic IP set to 0.0.0.0
-    char static_netmask[40];        ///< Static netmask address in human-readable format.
-    char static_gw[40];             ///< Static gateway address in human-readable format.
+    uint16_t domain_id;             // ROS_DOMAIN_ID
+    char agent_ip[40];              // Agent IP address in human-readable format.
+    uint16_t agent_port;            // UDP port of agent computer
+    char ssid[33];                  // SSID
+    char pwd[100];                  // Password
+    char static_ip[40];             // Static IP address in human-readable format. For dynamic IP set to 0.0.0.0
+    char static_netmask[40];        // Static netmask address in human-readable format.
+    char static_gw[40];             // Static gateway address in human-readable format.
+    char control_topic[50];         // ROS topic to receive control messages on.
+    char imu_topic[50];             // ROS topic to send IMU measurements on.
+    bool imu_enabled;               // Enable IMU measurements.
+    char mouse_topic[50];           // ROS topic to send mouse measurements on.
+    bool mouse_enabled;             // Enable mouse measurements.
+    char ping_topic[50];            // ROS topic to receive ping messages on.
+    char pong_topic[50];            // ROS topic to send pong messages on.
 };
 
 /**

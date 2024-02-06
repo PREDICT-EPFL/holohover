@@ -15,7 +15,6 @@
                 if (xmlhttp.status == 200) {
                     lines = xmlhttp.responseText.split('\n');
                     for (let i in lines) {
-
                         if (lines[i].startsWith("choice_")) {
                             // handle radio buttons separately: here, the value refers to the index of the checked button
                             line = lines[i].slice("choice_".length);
@@ -28,7 +27,13 @@
 
                         arg = lines[i].split('=')[0]
                         val = lines[i].split('=').slice(1).join("=")
-                        document.getElementsByName(arg)[0].value = val;
+                        const element = document.getElementsByName(arg)[0]
+                        element.value = val;
+
+                        if (element.type === 'checkbox')
+                        {
+                            element.checked = +val
+                        }
                     }
                 }
                 else {
@@ -46,6 +51,15 @@
 
                 // Bind the FormData object and the form element
                 const FD = new FormData(form);
+
+                // Process all checkboxes
+                form.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+                    if (FD.has(checkbox.name)) {
+                        FD.set(checkbox.name, checkbox.checked ? '1' : '0')
+                    } else {
+                        FD.append(checkbox.name, checkbox.checked ? '1' : '0')
+                    }
+                })
 
                 // Define what happens on successful data submission
                 XHR.addEventListener("load", (event) => {
@@ -77,15 +91,15 @@
     </script>
 </head>
 
-<body class="antialiased font-sans bg-gray-100">
+<body class="antialiased font-sans bg-gray-100 text-gray-900">
 
     <div class="container mx-auto">
         <div class="py-6 px-4 sm:px-0">
-            <h1 class="text-3xl font-bold tracking-tight text-gray-900">Holohover Configuration</h1>
+            <h1 class="text-3xl font-bold tracking-tight ">Holohover Configuration</h1>
         </div>
 
         <div class="space-y-6 bg-white px-4 py-5 sm:p-6 sm:rounded-md shadow mb-6">
-            <p>Using this form you can change the parameters of the car. Not all parameters apply instantly.<br/>To apply all changes <span class="font-bold">reset</span> the car afterwards.</p>
+            <p>Using this form you can change the parameters of the hovercraft. Not all parameters apply instantly.<br/>To apply all changes <span class="font-bold">reset</span> the hovercraft afterwards.</p>
         </div>
 
         <form id="config_form">
@@ -94,8 +108,8 @@
                 <div class="md:grid md:grid-cols-3 md:gap-6">
                     <div class="md:col-span-1">
                         <div class="px-4 sm:px-0">
-                            <h3 class="text-lg font-medium leading-6 text-gray-900">Wi-Fi Connectivity</h3>
-                            <p class="mt-1 text-sm text-gray-600">All settings related to Wi-Fi connectivity. Messing up these settings will result in loss of connectivity of the car. To recover the firmware has to be reset...</p>
+                            <h3 class="text-lg font-medium leading-6 ">Wi-Fi Connectivity</h3>
+                            <p class="mt-1 text-sm text-gray-600">All settings related to Wi-Fi connectivity. Messing up these settings will result in loss of connectivity of the hovercraft. To recover the firmware has to be reset...</p>
                         </div>
                     </div>
                     <div class="mt-5 md:col-span-2 md:mt-0">
@@ -143,7 +157,7 @@
                 <div class="md:grid md:grid-cols-3 md:gap-6">
                     <div class="md:col-span-1">
                         <div class="px-4 sm:px-0">
-                            <h3 class="text-lg font-medium leading-6 text-gray-900">MicroROS Agent</h3>
+                            <h3 class="text-lg font-medium leading-6 ">MicroROS Agent</h3>
                             <p class="mt-1 text-sm text-gray-600">The settings for the MicroROS Agent connectivity. The car tries connect to computer described by these settings. Make sure you are running the MicroROS Agent on this machine.</p>
                         </div>
                     </div>
@@ -151,6 +165,11 @@
                         <div class="shadow sm:overflow-hidden sm:rounded-md">
                             <div class="space-y-6 bg-white px-4 py-5 sm:p-6">
                                 <div class="grid grid-cols-6 gap-6">
+                                    <div class="col-start-1 col-end-7 md:col-end-5">
+                                        <label for="domain_id" class="block text-sm font-medium text-gray-700">ROS_DOMAIN_ID</label>
+                                        <input type="number" name="domain_id" id="domain_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    </div>
+                                    
                                     <div class="col-start-1 col-end-7 md:col-end-5">
                                         <label for="agent_ip" class="block text-sm font-medium text-gray-700">IP of agent</label>
                                         <input type="text" name="agent_ip" id="agent_ip" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
@@ -177,7 +196,74 @@
                 <div class="md:grid md:grid-cols-3 md:gap-6">
                     <div class="md:col-span-1">
                         <div class="px-4 sm:px-0">
-                            <h3 class="text-lg font-medium leading-6 text-gray-900">Firmware Information</h3>
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">ROS Topic Configuration</h3>
+                            <p class="mt-1 text-sm text-gray-600">Configuration of the ROS topics.</p>
+                        </div>
+                    </div>
+                    <div class="mt-5 md:col-span-2 md:mt-0">
+                        <div class="shadow sm:overflow-hidden sm:rounded-md">
+                            <div class="space-y-6 bg-white px-4 py-5 sm:p-6">
+                                <div class="grid grid-cols-6 gap-6">
+                                    <div class="col-start-1 col-end-7 md:col-end-5">
+                                        <label for="control_topic" class="block text-sm font-medium text-gray-700">Control messages topic</label>
+                                        <input type="text" name="control_topic" id="control_topic" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    </div>
+
+                                    <div class="col-start-1 col-end-7 md:col-end-5">
+                                        <label for="imu_topic" class="block text-sm font-medium text-gray-700">IMU measurements topic</label>
+                                        <input type="text" name="imu_topic" id="imu_topic" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    </div>
+
+                                    <div class="col-start-1 col-end-7 md:col-end-5 flex items-start">
+                                        <div class="flex h-6 items-center">
+                                            <input id="imu_enabled" name="imu_enabled" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                                        </div>
+                                        <div class="ml-3 text-sm leading-6">
+                                            <label for="imu_enabled" class="font-medium text-gray-900">Enable IMU measurements</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-start-1 col-end-7 md:col-end-5">
+                                        <label for="mouse_topic" class="block text-sm font-medium text-gray-700">Mouse measurements topic</label>
+                                        <input type="text" name="mouse_topic" id="mouse_topic" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    </div>
+
+                                    <div class="col-start-1 col-end-7 md:col-end-5 flex items-start">
+                                        <div class="flex h-6 items-center">
+                                            <input id="mouse_enabled" name="mouse_enabled" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                                        </div>
+                                        <div class="ml-3 text-sm leading-6">
+                                            <label for="mouse_enabled" class="font-medium text-gray-900">Enable mouse measurements</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-start-1 col-end-7 md:col-end-5">
+                                        <label for="ping_topic" class="block text-sm font-medium text-gray-700">Ping topic</label>
+                                        <input type="text" name="ping_topic" id="ping_topic" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    </div>
+
+                                    <div class="col-start-1 col-end-7 md:col-end-5">
+                                        <label for="pong_topic" class="block text-sm font-medium text-gray-700">Pong topic</label>
+                                        <input type="text" name="pong_topic" id="pong_topic" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden sm:block" aria-hidden="true">
+                <div class="py-5">
+                    <div class="border-t border-gray-200"></div>
+                </div>
+            </div>
+
+            <div class="mt-10 sm:mt-0">
+                <div class="md:grid md:grid-cols-3 md:gap-6">
+                    <div class="md:col-span-1">
+                        <div class="px-4 sm:px-0">
+                            <h3 class="text-lg font-medium leading-6 ">Firmware Information</h3>
                             <p class="mt-1 text-sm text-gray-600">Information of the installed firmware.</p>
                         </div>
                     </div>
