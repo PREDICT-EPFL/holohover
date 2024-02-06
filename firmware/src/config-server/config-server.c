@@ -206,8 +206,10 @@ static esp_err_t config_server_post_handler(httpd_req_t *req) {
 
     // Attributes that are currently supported in POST requests
     const char *attribute_keys[] = {
-        "agent_ip", "agent_port",
-        "ssid", "pwd", "static_ip", "static_netmask", "static_gw"
+        "domain_id", "agent_ip", "agent_port",
+        "ssid", "pwd", "static_ip", "static_netmask", "static_gw",
+        "control_topic", "imu_topic", "imu_enabled", "mouse_topic", "mouse_enabled",
+        "ping_topic", "pong_topic"
     };
 
     // Value of the attribute. Limited to 128 bytes including nul-termination.
@@ -249,10 +251,20 @@ static esp_err_t config_server_get_config_handler(httpd_req_t *req) {
     char response[1000];
     snprintf(
         response, sizeof(response),
-        "agent_ip=%s\nagent_port=%d\nssid=%s\npwd=%s\nstatic_ip=%s\nstatic_netmask=%s\nstatic_gw=%s\nsoftware_version=%s",
-        global_config.agent_ip, global_config.agent_port,
+        "domain_id=%d\nagent_ip=%s\nagent_port=%d\n"
+        "ssid=%s\npwd=%s\n"
+        "static_ip=%s\nstatic_netmask=%s\nstatic_gw=%s\n"
+        "control_topic=%s\nimu_topic=%s\nimu_enabled=%d\n"
+        "mouse_topic=%s\nmouse_enabled=%d\n"
+        "ping_topic=%s\npong_topic=%s\n"
+        "software_version=%s",
+        global_config.domain_id, global_config.agent_ip, global_config.agent_port,
         global_config.ssid, global_config.pwd,
-        global_config.static_ip, global_config.static_netmask, global_config.static_gw, GIT_TAG);
+        global_config.static_ip, global_config.static_netmask, global_config.static_gw,
+        global_config.control_topic, global_config.imu_topic, global_config.imu_enabled,
+        global_config.mouse_topic, global_config.mouse_enabled,
+        global_config.ping_topic, global_config.pong_topic,
+        GIT_TAG);
     httpd_resp_send(req, (const char *)response, strlen(response));
     return ESP_OK;
 }
@@ -293,7 +305,11 @@ static bool config_server_update_config(const char *key, const char *value) {
     if (!key || !value || value[0] == '\0')
         return false;
 
-    if (strncmp(key, "agent_ip", 8) == 0) {
+    if (strncmp(key, "domain_id", 9) == 0) {
+        // update global domain id attribute
+        global_config.domain_id = atoi(value);
+        return true;
+    } else if (strncmp(key, "agent_ip", 8) == 0) {
         // update global IP attribute
         // copy value into buffer, zero-termination by strlcpy
         strlcpy(global_config.agent_ip, value, sizeof(global_config.agent_ip));
@@ -321,6 +337,27 @@ static bool config_server_update_config(const char *key, const char *value) {
         return true;
     } else if (strncmp(key, "static_gw", 9) == 0) {
         strlcpy(global_config.static_gw, value, sizeof(global_config.static_gw));
+        return true;
+    } else if (strncmp(key, "control_topic", 13) == 0) {
+        strlcpy(global_config.control_topic, value, sizeof(global_config.control_topic));
+        return true;
+    } else if (strncmp(key, "imu_topic", 9) == 0) {
+        strlcpy(global_config.imu_topic, value, sizeof(global_config.imu_topic));
+        return true;
+    } else if (strncmp(key, "imu_enabled", 11) == 0) {
+        global_config.imu_enabled = (bool) atoi(value);
+        return true;
+    } else if (strncmp(key, "mouse_topic", 11) == 0) {
+        strlcpy(global_config.mouse_topic, value, sizeof(global_config.mouse_topic));
+        return true;
+    } else if (strncmp(key, "mouse_enabled", 13) == 0) {
+        global_config.mouse_enabled = (bool) atoi(value);
+        return true;
+    } else if (strncmp(key, "ping_topic", 10) == 0) {
+        strlcpy(global_config.ping_topic, value, sizeof(global_config.ping_topic));
+        return true;
+    } else if (strncmp(key, "pong_topic", 10) == 0) {
+        strlcpy(global_config.pong_topic, value, sizeof(global_config.pong_topic));
         return true;
     }
     return false;
