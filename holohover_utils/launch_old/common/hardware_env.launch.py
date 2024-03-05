@@ -13,6 +13,10 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(this_dir, 'optitrack.launch.py'))
     )
 
+    navigation_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(this_dir, 'navigation.launch.py'))
+    )
+
     visualization_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(this_dir, 'visualization.launch.py'))
     )
@@ -22,6 +26,7 @@ def generate_launch_description():
     )
 
     ld.add_action(optitrack_launch)
+    ld.add_action(navigation_launch)
     ld.add_action(visualization_launch)
     ld.add_action(recorder_launch)
 
