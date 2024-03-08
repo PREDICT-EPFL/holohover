@@ -27,7 +27,7 @@ private:
     holohover_msgs::msg::HolohoverState ref;
     Holohover::control_force_t<double> current_control;
 
-    int marker_id_counter = 0;
+    int marker_id_counter;
     visualization_msgs::msg::Marker holohover_marker;
     visualization_msgs::msg::Marker reference_holohover_marker;
     visualization_msgs::msg::Marker past_trajectory_marker;
