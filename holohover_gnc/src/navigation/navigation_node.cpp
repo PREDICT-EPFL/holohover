@@ -40,23 +40,23 @@ HolohoverNavigationNode::HolohoverNavigationNode() :
 
 void HolohoverNavigationNode::init_topics()
 {
-    state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverStateStamped>("navigation/state", 1);
-    state_acc_publisher = this->create_publisher<geometry_msgs::msg::Vector3Stamped>("/navigation/state_acc", 1);
+    state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverStateStamped>("state", 1);
+    state_acc_publisher = this->create_publisher<geometry_msgs::msg::Vector3Stamped>("state_acc", 1);
 
-    imu_subscription = this->create_subscription<holohover_msgs::msg::HolohoverIMUStamped>(
-            "drone/imu",
+    /*imu_subscription = this->create_subscription<holohover_msgs::msg::HolohoverIMUStamped>(
+            "imu",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::imu_callback, this, std::placeholders::_1));
     mouse_subscription = this->create_subscription<holohover_msgs::msg::HolohoverMouseStamped>(
-            "drone/mouse",
+            "mouse",
             rclcpp::SensorDataQoS(),
-            std::bind(&HolohoverNavigationNode::mouse_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverNavigationNode::mouse_callback, this, std::placeholders::_1));*/
     pose_subscription = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-            "optitrack/drone/pose",
+            "pose",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::pose_callback, this, std::placeholders::_1));
     control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
-            "drone/control",
+            "control",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverNavigationNode::control_callback, this, std::placeholders::_1));
 }

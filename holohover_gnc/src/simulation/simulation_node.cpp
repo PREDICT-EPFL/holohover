@@ -53,20 +53,8 @@ void HolohoverSimulationNode::init_timers()
     timer = this->create_wall_timer(
             std::chrono::duration<double>(simulation_settings.period),
             std::bind(&HolohoverSimulationNode::simulate_forward_callback, this));
-    if (simulation_settings.sensor_imu_period > 0)
-    {
-        imu_timer = this->create_wall_timer(
-                std::chrono::duration<double>(simulation_settings.sensor_imu_period),
-                std::bind(&HolohoverSimulationNode::imu_callback, this));
-    }
-    if (simulation_settings.sensor_mouse_period > 0)
-    {
-        mouse_timer = this->create_wall_timer(
-                std::chrono::duration<double>(simulation_settings.sensor_mouse_period),
-                std::bind(&HolohoverSimulationNode::mouse_callback, this));
-    }
-    if (simulation_settings.sensor_pose_period > 0)
-    {
+
+    if (simulation_settings.sensor_pose_period > 0) {
         pose_timer = this->create_wall_timer(
                 std::chrono::duration<double>(simulation_settings.sensor_pose_period),
                 std::bind(&HolohoverSimulationNode::pose_callback, this));
@@ -139,48 +127,6 @@ void HolohoverSimulationNode::simulate_forward_callback()
     state_publisher->publish(msg_state);
 }
 
-void HolohoverSimulationNode::imu_callback()
-{
-    holohover_msgs::msg::HolohoverIMUStamped imu_measurement;
-    imu_measurement.header.frame_id = "body";
-    imu_measurement.header.stamp = this->now();
-    imu_measurement.acc.x = current_control_acc(0);
-    imu_measurement.acc.y = current_control_acc(1);
-    imu_measurement.acc.z = -9.81;
-    imu_measurement.gyro.x = 0;
-    imu_measurement.gyro.y = 0;
-    imu_measurement.gyro.z = state(5);
-
-    std::normal_distribution<> acc_x_noise(simulation_settings.sensor_acc_bias_x, simulation_settings.sensor_acc_noise_x);
-    std::normal_distribution<> acc_y_noise(simulation_settings.sensor_acc_bias_y, simulation_settings.sensor_acc_noise_y);
-    std::normal_distribution<> gyro_z_noise(simulation_settings.sensor_gyro_bias_z, simulation_settings.sensor_gyro_noise_z);
-    imu_measurement.acc.x += acc_x_noise(random_engine);
-    imu_measurement.acc.y += acc_y_noise(random_engine);
-    imu_measurement.gyro.z += gyro_z_noise(random_engine);
-
-    imu_publisher->publish(imu_measurement);
-}
-
-void HolohoverSimulationNode::mouse_callback()
-{
-    Eigen::Matrix2d rotation_matrix;
-    holohover.world_to_body_rotation_matrix(state, rotation_matrix);
-    Eigen::Vector2d velocity_world = state.segment<2>(2);
-    Eigen::Vector2d velocity_body = rotation_matrix * velocity_world;
-
-    holohover_msgs::msg::HolohoverMouseStamped mouse_measurement;
-    mouse_measurement.header.frame_id = "world";
-    mouse_measurement.header.stamp = this->now();
-    mouse_measurement.v_x = velocity_body(0);
-    mouse_measurement.v_y = velocity_body(1);
-
-    std::normal_distribution<> mouse_v_x_noise(0, simulation_settings.sensor_mouse_noise_x);
-    std::normal_distribution<> mouse_v_y_noise(0, simulation_settings.sensor_mouse_noise_y);
-    mouse_measurement.v_x += mouse_v_x_noise(random_engine);
-    mouse_measurement.v_y += mouse_v_y_noise(random_engine);
-
-    mouse_publisher->publish(mouse_measurement);
-}
 
 void HolohoverSimulationNode::pose_callback()
 {

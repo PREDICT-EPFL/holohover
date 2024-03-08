@@ -20,7 +20,7 @@ def generate_launch_description():
     #ld.add_action(DeclareLaunchArgument('experiment', default_value='experiment1.yaml'))
     #experiment = ParameterValue(LaunchConfiguration('experiment')).get_parameter_value().string_value
     #experiment = LaunchConfiguration('experiment', default='experiment1.yaml')
-
+    # ToDo: add parameter for experiment file
     experiment_filename = "experiment1.yaml"
     
     experiment_conf = os.path.join(
@@ -29,35 +29,32 @@ def generate_launch_description():
         'experiments',
         experiment_filename
         )
-    
-    with open(experiment_conf, "r") as file:
+    with open(experiment_conf, 'r') as file:
+        # Skip the first line - /**:
+        file.readline()
+        # Read the rest of the YAML
         data = yaml.safe_load(file)
+    data = data['ros__parameters']
 
+    print(f" - - - - STARTING SIMULATION EXPERIMENT  - - - - ")
     print(f"Running experiment:\t\t{data['experiment']['name']}")
     print(f"Experiment description:\t\t{data['experiment']['description']}")
 
-    hardware_env_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/hardware_env.launch.py'))
+    # Start common nodes
+    simulation_env_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/simulation_env.launch.py'))
     )
-    ld.add_action(hardware_env_launch)
+    ld.add_action(simulation_env_launch)
+
+    # Now iterate on each hovercraft and launch the nodes for each one
     hovercrafts = data["hovercrafts"]
 
     print(f"Starting {len(hovercrafts)} hovercrafts")
     for hovercraft_conf in hovercrafts:
         print(f"\t- hovercraft\t\tID: {hovercraft_conf['id']} - Name: {hovercraft_conf['name']} - Type: {hovercraft_conf['type']}")
 
-        #namespace = hovercraft_conf['id']
+        namespace = hovercraft_conf['id']
 
-        hovercraft_launch = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/hovercraft.launch.py')),
-            #launch_arguments={'namespace': namespace, 'conf': hovercraft_conf}.items()
-        )
-
-
-        #visualization_launch = IncludeLaunchDescription(
-        #    PythonLaunchDescriptionSource(os.path.join(this_dir, 'visualization.launch.py'))
-        #)
-        
         holohover_params = os.path.join(
             get_package_share_directory('holohover_utils'),
             'config/common',
@@ -69,16 +66,42 @@ def generate_launch_description():
             'config/common',
             'control_lqr_config.yaml'
         )
-        
+        navigation_config = os.path.join(
+            get_package_share_directory('holohover_utils'),
+            'config/common',
+            'navigation_config.yaml'
+        )
+
+        navigation_node = Node(
+            package="holohover_gnc",
+            executable="navigation",
+            parameters=[holohover_params, navigation_config],
+            namespace="hovercraft" + str(namespace),
+            output='screen'
+        )
+
         controller_node = Node(
             package="holohover_gnc",
             executable="control_lqr",
-            parameters=[holohover_params, control_lqr_config, {}],
+            parameters=[holohover_params, control_lqr_config],
             name = "control_lqr",
-            namespace=("eddai"+str(hovercraft_conf['id'])),
+            namespace="hovercraft" + str(namespace),
             output='screen'
         )
-        ld.add_action(controller_node)
+
+        rviz_interface_node = Node(
+            package="holohover_utils",
+            executable="rviz_interface",
+            parameters=[holohover_params],
+            namespace="hovercraft" + str(namespace),
+            output='screen'
+        )
+
+        ld.add_action(controller_node)        
+        ld.add_action(navigation_node)
+        ld.add_action(rviz_interface_node)
+
+
         #ld.add_action(hovercraft_launch)
 
     return ld

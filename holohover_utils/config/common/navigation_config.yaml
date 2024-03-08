@@ -1,4 +1,4 @@
-navigation:
+/**:
   ros__parameters:
     period: 0.005
 

@@ -1,4 +1,5 @@
-control_lqr:
+/**:
+#control_lqr:
   ros__parameters:
     period: 0.01
 
