@@ -92,7 +92,7 @@ def generate_launch_description():
         rviz_interface_node = Node(
             package="holohover_utils",
             executable="rviz_interface",
-            parameters=[holohover_params],
+            parameters=[holohover_params, {"id": int(namespace)}],
             namespace="hovercraft" + str(namespace),
             output='screen'
         )

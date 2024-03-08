@@ -6,6 +6,8 @@
 
 struct HolohoverProps
 {
+    // id of the hovercraft
+    int id;
     // mass of the hovercraft
     double mass;
     // Learned CoM 
@@ -46,6 +48,7 @@ HolohoverProps load_holohover_pros(rclcpp::Node &node)
 {
     HolohoverProps props;
 
+    props.id = node.declare_parameter<int>("id", 0);
     props.mass = node.declare_parameter<double>("mass");
     props.CoM = node.declare_parameter<std::vector<double>>("CoM");
     props.inertia = node.declare_parameter<double>("inertia");

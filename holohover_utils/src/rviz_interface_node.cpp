@@ -1,10 +1,15 @@
 #include "rviz_interface_node.hpp"
 
+
 RvizInterfaceNode::RvizInterfaceNode() :
         Node("rviz_interface"),
         holohover_props(load_holohover_pros(*this)),
         holohover(holohover_props)
 {
+    RCLCPP_INFO(get_logger(), "Starting rviz node for id: %d", holohover_props.id);
+
+    marker_id_counter = 1000 * holohover_props.id;
+
     holohover_marker = create_marker("holohover", 0.75, 0.75, 0.75);
     holohover_marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
     holohover_marker.mesh_resource = "package://holohover_utils/gui/holohover.stl";
@@ -78,7 +83,7 @@ RvizInterfaceNode::RvizInterfaceNode() :
 void RvizInterfaceNode::init_topics()
 {
     viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-            "visualization", 10);
+            "/visualization/drone", 10);
 
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "state", 10,
