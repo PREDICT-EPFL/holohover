@@ -78,22 +78,22 @@ RvizInterfaceNode::RvizInterfaceNode() :
 void RvizInterfaceNode::init_topics()
 {
     viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>(
-            "visualization/drone", 10);
+            "visualization", 10);
 
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
-            "navigation/state", 10,
+            "state", 10,
             std::bind(&RvizInterfaceNode::state_callback, this, std::placeholders::_1));
     
-    trajectory_subscription = this->create_subscription<holohover_msgs::msg::HolohoverTrajectory>(
-            "control/HolohoverTrajectory", rclcpp::SensorDataQoS(),
-            std::bind(&RvizInterfaceNode::trajectory_callback, this, std::placeholders::_1));
+    //trajectory_subscription = this->create_subscription<holohover_msgs::msg::HolohoverTrajectory>(
+    //        "HolohoverTrajectory", rclcpp::SensorDataQoS(),
+    //        std::bind(&RvizInterfaceNode::trajectory_callback, this, std::placeholders::_1));
     
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
-            "control/state_ref", 10,
+            "state_ref", 10,
             std::bind(&RvizInterfaceNode::ref_callback, this, std::placeholders::_1));
     
     control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
-            "drone/control", rclcpp::SensorDataQoS(),
+            "control", rclcpp::SensorDataQoS(),
             std::bind(&RvizInterfaceNode::control_callback, this, std::placeholders::_1));
     
 }

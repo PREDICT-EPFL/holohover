@@ -24,12 +24,17 @@ find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(holohover_msgs REQUIRED)
 find_package(holohover_common REQUIRED)
+find_package(box2d REQUIRED)
 
 add_executable(rviz_interface src/rviz_interface_node.cpp)
 ament_target_dependencies(rviz_interface rclcpp tf2 visualization_msgs holohover_msgs holohover_common)
 
 add_executable(optitrack_interface src/optitrack_interface_node.cpp)
 ament_target_dependencies(optitrack_interface rclcpp geometry_msgs tf2 tf2_geometry_msgs)
+
+add_executable(simulator src/simulator_node.cpp)
+ament_target_dependencies(simulator rclcpp holohover_msgs holohover_common geometry_msgs box2d)
+target_link_libraries(simulator box2d)
 
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
@@ -40,7 +45,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
-  rviz_interface optitrack_interface
+  rviz_interface optitrack_interface simulator
   DESTINATION lib/${PROJECT_NAME}
 )
 
