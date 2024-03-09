@@ -19,6 +19,7 @@ find_package(rclpy REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
@@ -33,7 +34,9 @@ add_executable(optitrack_interface src/optitrack_interface_node.cpp)
 ament_target_dependencies(optitrack_interface rclcpp geometry_msgs tf2 tf2_geometry_msgs)
 
 add_executable(simulator src/simulator_node.cpp)
-ament_target_dependencies(simulator rclcpp holohover_msgs holohover_common geometry_msgs box2d)
+ament_target_dependencies(simulator rclcpp holohover_msgs holohover_common geometry_msgs box2d tf2_ros )
+
+
 target_link_libraries(simulator box2d)
 
 # Install Python modules
