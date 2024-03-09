@@ -1,3 +1,4 @@
+
 experiment:
   name: experiment1
   description: "This is the first experiment - it contains 4 hovercrafts with a line type graph and... ToDo"
@@ -6,17 +7,22 @@ experiment:
 
 hovercrafts:
   - name: hovercraft0
-    id: 0
-    initial_state: [0, 0, 0, 0, 0, 0]
+    id: "0"
+                # x  y  theta vx, vy, w
+    start_state: [0, 0, 0,    0,  0,  0]
+
 
   - name: hovercraft1
-    id: 1
-    initial_state: [5, 0, 0, 0, 0, 0]
+    id: "1"
 
   - name: hovercraft2
-    id: 2
-    initial_state: [10, 0, 0, 0, 0, 0]
+    id: "2"
+    type: slave
+    graph_neighbours: [1, 3]
+    delta_pose: [0, 10, 0]
 
   - name: hovercraft3
-    id: 3
-    initial_state: [15, 0, 0, 0, 0, 0]
+    id: "3"
+    type: slave
+    graph_neighbours: [2]
+    delta_pose: [0, 15, 0]

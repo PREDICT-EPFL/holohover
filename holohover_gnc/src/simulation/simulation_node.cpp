@@ -31,19 +31,19 @@ HolohoverSimulationNode::HolohoverSimulationNode() :
 
 void HolohoverSimulationNode::init_topics()
 {
-    state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverStateStamped>("simulation/state", 10);
-    imu_publisher = this->create_publisher<holohover_msgs::msg::HolohoverIMUStamped>(
+    state_publisher = this->create_publisher<holohover_msgs::msg::HolohoverStateStamped>("state", 10);
+    /*imu_publisher = this->create_publisher<holohover_msgs::msg::HolohoverIMUStamped>(
             "drone/imu",
             rclcpp::SensorDataQoS());
     mouse_publisher = this->create_publisher<holohover_msgs::msg::HolohoverMouseStamped>(
             "drone/mouse",
-            rclcpp::SensorDataQoS());
+            rclcpp::SensorDataQoS());*/
     pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>(
-            "optitrack/drone/pose",
+            "pose",
             rclcpp::SensorDataQoS());
 
     control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
-            "drone/control",
+            "control",
             rclcpp::SensorDataQoS(),
             std::bind(&HolohoverSimulationNode::control_callback, this, std::placeholders::_1));
 }

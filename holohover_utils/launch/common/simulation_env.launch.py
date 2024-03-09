@@ -17,10 +17,10 @@ def generate_launch_description():
         'holohover_params.yaml'
     )
 
-    simulation_config = os.path.join(
+    simulator_config = os.path.join(
         get_package_share_directory('holohover_utils'),
         'config/common',
-        'simulation_config.yaml'
+        'simulator_config.yaml'
     )
 
     experiment_config = os.path.join(
@@ -29,10 +29,10 @@ def generate_launch_description():
         'experiment1.yaml' # ToDo: add parameter for experiment file
     )
     
-    simulation_node = Node(
+    simulator_node = Node(
         package="holohover_utils",
         executable="simulator",
-        parameters=[holohover_params, simulation_config, experiment_config], #ToDo simulation config from main config
+        parameters=[holohover_params, simulator_config, experiment_config], #ToDo simulator config from main config
         output='screen'
     )
 
@@ -44,7 +44,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(this_dir, 'visualization.launch.py'))
     )
 
-    ld.add_action(simulation_node)
+    ld.add_action(simulator_node)
     ld.add_action(recorder_launch)
     ld.add_action(visualization_launch)
 

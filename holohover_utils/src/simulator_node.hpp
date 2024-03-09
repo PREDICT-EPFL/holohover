@@ -52,8 +52,6 @@ private:
     void init_box2d_world();
     void init_box2d_hovercrafts();
     void simulation_step();
-
-
 };
 
 #endif //HOLOHOVER_UTILS_RVIZ_INTERFACE_NODE_HPP
