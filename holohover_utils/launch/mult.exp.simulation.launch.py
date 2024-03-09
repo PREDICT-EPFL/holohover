@@ -48,6 +48,7 @@ def generate_launch_description():
     )
 
     data = yaml.safe_load(open(experiment_conf, 'r'))
+    hovercrafts = data["hovercrafts"]
 
     print(f" - - - - STARTING SIMULATION EXPERIMENT  - - - - ")
     print(f"Running experiment:\t\t{data['experiment']['name']}")
@@ -57,17 +58,30 @@ def generate_launch_description():
     simulation_env_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/simulation_env.launch.py'))
     )
+    simulator_config = os.path.join(
+        get_package_share_directory('holohover_utils'),
+        'config/common',
+        'simulation_config.yaml'
+    )
+
+    simulator_node = Node(
+        package="holohover_utils",
+        executable="simulator",
+        parameters=[holohover_params, simulator_config, {"hovercrafts" : hovercrafts['ids']}], #ToDo simulator config from main config
+        output='screen'
+    )
+    ld.add_action(simulator_node)
     #ld.add_action(simulation_env_launch)
 
     # Now iterate on each hovercraft and launch the nodes for each one
-    hovercrafts = data["hovercrafts"]
-
-    print(f"Starting {len(hovercrafts)} hovercrafts")
-    for hovercraft_conf in hovercrafts:
-        print(f"\t- hovercraft\t\tID: {hovercraft_conf['id']} - Name: {hovercraft_conf['name']} - Initial state: {hovercraft_conf['initial_state']} ")
-        print(hovercraft_conf)
-        namespace = hovercraft_conf['name']
-
+    print(f"Starting {hovercrafts['number_of_hovercrafts']} hovercrafts")
+    print(data)
+    for i in range(hovercrafts['number_of_hovercrafts']):
+        print(f"\t- hovercraft\t\tID: {hovercrafts['ids'][i]} - Name: {hovercrafts['names'][i]} - Initial state: {hovercrafts['initial_states'][i]} ")
+        namespace = hovercrafts['names'][i]
+        print(f"Namespace: {namespace}")
+        
+        
         specific_configuration = os.path.join(
             get_package_share_directory('holohover_utils'),
             'config/hovercrafts',
@@ -82,7 +96,7 @@ def generate_launch_description():
             namespace= namespace,
             output='screen'
         )
-
+        
         controller_node = Node(
             package="holohover_gnc",
             executable="control_lqr",
@@ -95,11 +109,11 @@ def generate_launch_description():
         rviz_interface_node = Node(
             package="holohover_utils",
             executable="rviz_interface",
-            parameters=[holohover_params, specific_configuration, hovercraft_conf],
+            parameters=[holohover_params, specific_configuration, {'id': hovercrafts['ids'][i]}],
             namespace= namespace,
             output='screen'
         )
-
+        
         simulation_config = os.path.join(
             get_package_share_directory('holohover_utils'),
             'config/common',
@@ -112,11 +126,11 @@ def generate_launch_description():
             parameters=[holohover_params, simulation_config],
             output='screen'
         )
-
+        
         ld.add_action(controller_node)        
         ld.add_action(navigation_node)
         ld.add_action(rviz_interface_node)
-        ld.add_action(simulation_node)
+        #ld.add_action(simulation_node)
 
         #ld.add_action(hovercraft_launch)
 

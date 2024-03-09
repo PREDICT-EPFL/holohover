@@ -5,18 +5,7 @@ experiment:
 
 
 hovercrafts:
-  - name: hovercraft0
-    id: 0
-    initial_state: [0, 0, 0, 0, 0, 0]
-
-  - name: hovercraft1
-    id: 1
-    initial_state: [5, 0, 0, 0, 0, 0]
-
-  - name: hovercraft2
-    id: 2
-    initial_state: [10, 0, 0, 0, 0, 0]
-
-  - name: hovercraft3
-    id: 3
-    initial_state: [15, 0, 0, 0, 0, 0]
+  number_of_hovercrafts: 4
+  names: ["hovercraft0", "hovercraft1", "hovercraft2", "hovercraft3"]
+  ids: [0, 1, 2, 3]
+  initial_states: [["0", "0", "0", "0", "0", "0"], ["5", "0", "0", "0", "0", "0"], ["10", "0", "0", "0", "0", "0"], ["15", "0", "0", "0", "0", "0"]]

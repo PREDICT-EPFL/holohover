@@ -6,8 +6,13 @@
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "holohover_msgs/msg/holohover_trajectory.hpp"
 #include "holohover_common/models/holohover_model.hpp"
-#include "holohover_common/utils/holohover_props.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "holohover_common/utils/holohover_props.hpp"
+#include "holohover_common/models/holohover_model.hpp"
+#include "simulation_settings.hpp"
+#include <tf2/LinearMath/Quaternion.h>
+
+
 
 #include <box2d/box2d.h>
 
@@ -17,41 +22,46 @@ class SimulatorNode : public rclcpp::Node
 public:
     SimulatorNode();
 private:
-    //b2World world;
-    b2Vec2 gravity;//(0.0f, 0.0f);
+    HolohoverProps holohover_props;
+    SimulationSettings simulation_settings;
 
-    b2World world;//(gravity);// = &(new b2World(gravity));
+    Holohover holohover;
 
-    b2Body *hovercraft0, *hovercraft1, *hovercraft2, *hovercraft3;
+    b2Vec2 gravity;
+
+    b2World world;
+
+    float timeStep;
+    int32 velocityIterations;
+    int32 positionIterations;
+
+    std::vector<b2Body*> hovercraft_bodies;
+    b2CircleShape hovercraft_shape;
 
     rclcpp::TimerBase::SharedPtr timer;
 
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher_0;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher_1;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher_2;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_publisher_3;
+    std::vector<long int> hovercraft_ids;
+
+    std::vector<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr> pose_publishers;
     
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_subscription_0;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_subscription_1;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_subscription_2;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_subscription_3;
+    std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr> control_subscriptions;
 
-    void control_callback_0(const holohover_msgs::msg::HolohoverControlStamped &msg);
-    void control_callback_1(const holohover_msgs::msg::HolohoverControlStamped &msg);
-    void control_callback_2(const holohover_msgs::msg::HolohoverControlStamped &msg);
-    void control_callback_3(const holohover_msgs::msg::HolohoverControlStamped &msg);
+    void control_callback(std::shared_ptr<holohover_msgs::msg::HolohoverControlStamped> msg, long int hovercraft_id);
 
-    holohover_msgs::msg::HolohoverControlStamped control_0;
-    holohover_msgs::msg::HolohoverControlStamped control_1;
-    holohover_msgs::msg::HolohoverControlStamped control_2;
-    holohover_msgs::msg::HolohoverControlStamped control_3;
+    std::vector<holohover_msgs::msg::HolohoverControlStamped>   control_msgs;
+    std::vector<Holohover::state_t<double>>                     states_vec;
+    std::vector<Holohover::control_force_t<double>>             motor_velocities_vec; 
+    std::vector<Holohover::control_acc_t<double>>               control_acc_vec;
 
-
-    void init_topics();
+    void init_hovercrafts();
     void init_timer();
     void init_box2d_world();
-    void init_box2d_hovercrafts();
     void simulation_step();
+
+    void calculate_control_acc(Holohover::state_t<double> state, Holohover::control_force_t<double> motor_velocities, Holohover::control_acc_t<double> &current_control_acc);
+
+    void body_to_state(Holohover::state_t<double> &state, b2Body* body);
+    void apply_control_acc(b2Body* body, Holohover::control_acc_t<double> control_acc);
 };
 
 #endif //HOLOHOVER_UTILS_RVIZ_INTERFACE_NODE_HPP
