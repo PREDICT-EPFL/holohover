@@ -34,6 +34,7 @@ private:
     float timeStep;
     int32 velocityIterations;
     int32 positionIterations;
+    float density;
 
     std::vector<b2Body*> hovercraft_bodies;
     b2CircleShape hovercraft_shape;

@@ -1,8 +1,5 @@
 #include "simulator_node.hpp"
 
-#include <box2d/box2d.h>
-
-
 SimulatorNode::SimulatorNode() :
     Node("simulator"),
     holohover_props(load_holohover_pros(*this)),
@@ -12,16 +9,18 @@ SimulatorNode::SimulatorNode() :
     world(gravity)
 {
     hovercraft_ids = declare_parameter<std::vector<long int>>("hovercrafts");
-    hovercraft_shape.m_radius = 1.0f;        // ToDo parameter
+    hovercraft_shape.m_radius = .06f;        // ToDo parameter
     // ToDo density parameter
 
-    timeStep = 1.0f / 60.0f;              // simulating at 60Hz - ToDo parametrize
+    timeStep = 1.0f / 60.0f;              // ToDo simulating at 60Hz - ToDo parametrize
 
     // number of internal iterations
     velocityIterations = 6;               // ToDo parametrize
     positionIterations = 2;
 
+    density = holohover_props.mass / (M_PI * hovercraft_shape.m_radius * hovercraft_shape.m_radius); // ToDo
 
+    
     init_box2d_world();
     init_hovercrafts();
     init_timer();
@@ -29,7 +28,7 @@ SimulatorNode::SimulatorNode() :
 
 void SimulatorNode::init_box2d_world()
 {
-    // static body - ToDo insert 4 walls - ToDo parametrize position of the walls
+    // ToDo static body - ToDo insert 4 walls - ToDo parametrize position of the walls
     b2BodyDef groundBodyDef;
     groundBodyDef.position.Set(0.0f, -10.0f);
     b2Body* groundBody = world.CreateBody(&groundBodyDef);
@@ -40,19 +39,18 @@ void SimulatorNode::init_box2d_world()
 
 void SimulatorNode::init_hovercrafts()
 {
-
     for(long int hovercraft_id : hovercraft_ids) {
         RCLCPP_INFO(get_logger(), "Hovercraft id: %ld", hovercraft_id);
         
         //box2d bodies
         b2BodyDef bodyDef;
         bodyDef.type = b2_dynamicBody;
-        bodyDef.position.Set(0.0f, 0.0f);               // ToDo get starting positions
+        bodyDef.position.Set(hovercraft_id, 0.0f);               // ToDo get starting positions
         bodyDef.angle = 0.0f;
         bodyDef.linearVelocity = b2Vec2(0.0f, 0.0f);
         bodyDef.angularVelocity = 0.0f;
         b2Body * body = world.CreateBody(&bodyDef);
-        body->CreateFixture(&hovercraft_shape, 1.0f);               // ToDo non-zero density for dynamic body
+        body->CreateFixture(&hovercraft_shape, density);               // ToDo non-zero density for dynamic body
         hovercraft_bodies.push_back(body);
 
         // state
@@ -105,14 +103,14 @@ void SimulatorNode::init_hovercrafts()
 void SimulatorNode::init_timer()
 {
     timer = this->create_wall_timer(
-            std::chrono::duration<double>(0.04),                        // ToDo parametrize duration
+            std::chrono::duration<double>(0.04),                        // TODO parametrize duration
             std::bind(&SimulatorNode::simulation_step, this));
 }
 
 void SimulatorNode::simulation_step()
 {
     for(long int i : hovercraft_ids) {
-        // - control_* to force/torque to apply for each hovercraft - ToDo copy from old simulation node
+        // ToDo - control_* to force/torque to apply for each hovercraft - ToDo copy from old simulation node
         // integrate motor velocities
         Holohover::control_force_t<double> current_control_signal;
         current_control_signal(0) = control_msgs[i].motor_a_1;
@@ -136,8 +134,8 @@ void SimulatorNode::simulation_step()
         geometry_msgs::msg::PoseStamped pose_measurement;
         pose_measurement.header.frame_id = "world";
         pose_measurement.header.stamp = this->now();
-        pose_measurement.pose.position.x = states_vec[i](0);// ToDo??? + simulation_settings.Gx;
-        pose_measurement.pose.position.y = states_vec[i](1);// + simulation_settings.Gy;
+        pose_measurement.pose.position.x = states_vec[i](0) + simulation_settings.Gx; // ToDo ??
+        pose_measurement.pose.position.y = states_vec[i](1) + simulation_settings.Gy;
         pose_measurement.pose.position.z = 0;
         
         tf2::Quaternion q;
