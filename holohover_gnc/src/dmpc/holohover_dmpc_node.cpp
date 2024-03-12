@@ -25,14 +25,15 @@ SOFTWARE.*/
 
 using namespace std::chrono;
 
-HolohoverControlDMPCNode::HolohoverControlDMPCNode(const std::string& folder_name_sprob_, int my_id_) :
+HolohoverControlDMPCNode::HolohoverControlDMPCNode(const std::string& folder_name_sprob_, int my_id_, int Nagents_) :
         Node("control_dmpc"),
         holohover_props(load_holohover_pros(*this)),
         control_settings(load_control_dmpc_settings(*this)),
         holohover(holohover_props, control_settings.period)
 {
     folder_name_sprob = folder_name_sprob_;
-    my_id = my_id_;    
+    my_id = my_id_;
+    Nagents = Nagents_;    
     admm = nullptr;
 
     // init state
@@ -40,15 +41,14 @@ HolohoverControlDMPCNode::HolohoverControlDMPCNode(const std::string& folder_nam
     u_acc_curr.setZero();
     u_acc_next.setZero();
     motor_velocities.setZero();
-    last_control_acc.setZero();
     last_control_signal.setZero();
     u_signal.setZero();
 
 
-    p = Eigen::VectorXd::zero(control_settings.nx+control_settings.nu+control_settings.nxd);
+    p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd);
     state_ref = p.segment(control_settings.nx+control_settings.nu,control_settings.nxd); //todo
 
-    admm = new holohover_admm_node(folder_name_sprob, my_id, control_settings.rho);
+    admm = new HolohoverControlADMMNode(folder_name_sprob, my_id, Nagents, control_settings.rho);
 
     init_topics();
     init_dmpc();
@@ -70,9 +70,9 @@ void HolohoverControlDMPCNode::init_topics()
             "drone/control",
             rclcpp::SensorDataQoS());
 
-    laopt_frequency_publisher = this->create_publisher<holohover_msgs::msg::HolohoverLaoptSpeedStamped>(
-            "control/laopt_speed",
-            rclcpp::SensorDataQoS());
+    // laopt_frequency_publisher = this->create_publisher<holohover_msgs::msg::HolohoverLaoptSpeedStamped>(
+            // "control/laopt_speed",
+            // rclcpp::SensorDataQoS());
 
     HolohoverTrajectory_publisher = this->create_publisher<holohover_msgs::msg::HolohoverTrajectory>(
             "control/HolohoverTrajectory",
@@ -137,6 +137,7 @@ void HolohoverControlDMPCNode::convert_u_acc_to_u_signal()
 
     // calculate next thrust and motor velocities
     Holohover::control_force_t<double> u_force_next;
+    Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_curr;
     holohover.control_acceleration_to_force(state_next, u_acc_next, u_force_next, u_force_next_min, u_force_next_max);    
     Holohover::control_force_t<double> motor_velocities_next;
     holohover.thrust_to_signal(u_force_next, motor_velocities_next);
@@ -154,7 +155,7 @@ void HolohoverControlDMPCNode::convert_u_acc_to_u_signal()
     last_control_signal = u_signal;
 }
 
-void HolohoverControlMPCNode::publish_trajectory( )
+void HolohoverControlDMPCNode::publish_trajectory( )
 {
 
     holohover_msgs::msg::HolohoverTrajectory msg;
@@ -196,8 +197,11 @@ void HolohoverControlDMPCNode::ref_callback(const holohover_msgs::msg::Holohover
 }
 
 int main(int argc, char **argv) {
+    std::string folder_name_sprob_ = "here"; 
+    int my_id_ = 0;
+    int Nagents_ = 0;
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<HolohoverControlDMPCNode>());
+    rclcpp::spin(std::make_shared<HolohoverControlDMPCNode>(folder_name_sprob_, my_id_, Nagents_));
     rclcpp::shutdown();
     return 0;
 }
@@ -207,7 +211,7 @@ int main(int argc, char **argv) {
 
 void HolohoverControlDMPCNode::set_state_in_ocp()
 {
-    p.segment(0,m_meta.nx) = state;
+    p.segment(0,control_settings.nx) = state;
     admm->lbA.block(control_settings.idx_eqx0,0,control_settings.nx,1) = state;
     admm->ubA.block(control_settings.idx_eqx0,0,control_settings.nx,1) = state;
 }
@@ -229,7 +233,7 @@ void HolohoverControlDMPCNode::update_setpoint_in_ocp(){
 
     p.segment(0,control_settings.nx) = state;                           //GS: remove, because we have set_state_in_ocp?
     p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;    //GS: remove, because we have set_u_acc_curr_in_ocp?
-    p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = xd;
+    p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref;
 
     std::string function_library = folder_name_sprob + "/locFuns.so";
 

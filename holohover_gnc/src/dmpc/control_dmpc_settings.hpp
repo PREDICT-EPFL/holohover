@@ -20,7 +20,7 @@ struct ControlDMPCSettings
     int Nagents;
 };
 
-ControlMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
+ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
 {
     ControlDMPCSettings settings;
     
