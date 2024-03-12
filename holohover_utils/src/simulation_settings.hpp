@@ -6,6 +6,23 @@ struct SimulationSettings
     double period;
     int seed;
 
+    double hovercraft_radius;
+    int internal_iterations_velocity;
+    int internal_iterations_position;
+
+    std::vector<long int> hovercraft_ids;
+    std::vector<double>   start_position_x;
+    std::vector<double>   start_position_y;
+    std::vector<double>   start_position_theta;
+    std::vector<double>   start_position_vx;
+    std::vector<double>   start_position_vy;
+    std::vector<double>   start_position_w;
+
+    std::vector<double> wall_1;
+    std::vector<double> wall_2;
+    std::vector<double> wall_3;
+    std::vector<double> wall_4;
+
     double drag_reference_area;
     double drag_coefficient;
 
@@ -39,6 +56,24 @@ SimulationSettings load_simulation_settings(rclcpp::Node &node)
 
     settings.period = node.declare_parameter<double>("period");
     settings.seed = node.declare_parameter<int>("seed");
+
+
+    settings.hovercraft_radius = node.declare_parameter<double>("hovercraft_radius");
+    settings.internal_iterations_velocity = node.declare_parameter<int>("internal_iterations_velocity");
+    settings.internal_iterations_position = node.declare_parameter<int>("internal_iterations_position");
+
+    settings.hovercraft_ids       = node.declare_parameter<std::vector<long int>>("hovercrafts");
+    settings.start_position_x     = node.declare_parameter<std::vector<double>>("initial_state_x");
+    settings.start_position_y     = node.declare_parameter<std::vector<double>>("initial_state_y");
+    settings.start_position_theta = node.declare_parameter<std::vector<double>>("initial_state_theta");
+    settings.start_position_vx    = node.declare_parameter<std::vector<double>>("initial_state_vx");
+    settings.start_position_vy    = node.declare_parameter<std::vector<double>>("initial_state_vy");
+    settings.start_position_w     = node.declare_parameter<std::vector<double>>("initial_state_w");
+
+    settings.wall_1 = node.declare_parameter<std::vector<double>>("wall_1");
+    settings.wall_2 = node.declare_parameter<std::vector<double>>("wall_2");
+    settings.wall_3 = node.declare_parameter<std::vector<double>>("wall_3");
+    settings.wall_4 = node.declare_parameter<std::vector<double>>("wall_4");
 
     settings.drag_reference_area = node.declare_parameter<double>("drag_reference_area");
     settings.drag_coefficient = node.declare_parameter<double>("drag_coefficient");
