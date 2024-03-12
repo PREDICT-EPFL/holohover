@@ -28,20 +28,11 @@ private:
     Holohover holohover;
 
     b2Vec2 gravity;
-
     b2World world;
 
-    float timeStep;
-    int32 velocityIterations;
-    int32 positionIterations;
-    float density;
-
     std::vector<b2Body*> hovercraft_bodies;
-    b2CircleShape hovercraft_shape;
 
     rclcpp::TimerBase::SharedPtr timer;
-
-    std::vector<long int> hovercraft_ids;
 
     std::vector<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr> pose_publishers;
     

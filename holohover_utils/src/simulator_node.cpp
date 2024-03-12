@@ -8,49 +8,60 @@ SimulatorNode::SimulatorNode() :
     gravity(0.0f, 0.0f),
     world(gravity)
 {
-    hovercraft_ids = declare_parameter<std::vector<long int>>("hovercrafts");
-    hovercraft_shape.m_radius = .06f;        // ToDo parameter
-    // ToDo density parameter
-
-    timeStep = 1.0f / 60.0f;              // ToDo simulating at 60Hz - ToDo parametrize
-
-    // number of internal iterations
-    velocityIterations = 6;               // ToDo parametrize
-    positionIterations = 2;
-
-    density = holohover_props.mass / (M_PI * hovercraft_shape.m_radius * hovercraft_shape.m_radius); // ToDo
-
-    
-    init_box2d_world();
+    // init_box2d_world(); ToDo set positions and sizes of walls
     init_hovercrafts();
     init_timer();
 }
 
 void SimulatorNode::init_box2d_world()
 {
-    // ToDo static body - ToDo insert 4 walls - ToDo parametrize position of the walls
-    b2BodyDef groundBodyDef;
-    groundBodyDef.position.Set(0.0f, -10.0f);
-    b2Body* groundBody = world.CreateBody(&groundBodyDef);
-    b2PolygonShape groundBox;
-    groundBox.SetAsBox(50.0f, 10.0f);
-    groundBody->CreateFixture(&groundBox, 0.0f);                    // 0 density for static body
+    b2PolygonShape wallBox;
+    b2BodyDef wallDef;
+    b2Body *wall;
+
+    // Wall 1
+    wallBox.SetAsBox(simulation_settings.wall_1[2], simulation_settings.wall_1[3]);
+    wallDef.position.Set(simulation_settings.wall_1[0], simulation_settings.wall_1[1]);
+    wall = world.CreateBody(&wallDef);
+    wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
+
+    // Wall 2
+    wallBox.SetAsBox(simulation_settings.wall_2[2], simulation_settings.wall_2[3]);
+    wallDef.position.Set(simulation_settings.wall_2[0], simulation_settings.wall_2[1]);
+    wall = world.CreateBody(&wallDef);
+    wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
+
+    // Wall 3
+    wallBox.SetAsBox(simulation_settings.wall_3[2], simulation_settings.wall_3[3]);
+    wallDef.position.Set(simulation_settings.wall_3[0], simulation_settings.wall_3[1]);
+    wall = world.CreateBody(&wallDef);
+    wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
+
+    // Wall 4
+    wallBox.SetAsBox(simulation_settings.wall_4[2], simulation_settings.wall_4[3]);
+    wallDef.position.Set(simulation_settings.wall_4[0], simulation_settings.wall_4[1]);
+    wall = world.CreateBody(&wallDef);
+    wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
 }
 
 void SimulatorNode::init_hovercrafts()
 {
-    for(long int hovercraft_id : hovercraft_ids) {
-        RCLCPP_INFO(get_logger(), "Hovercraft id: %ld", hovercraft_id);
+    b2CircleShape hovercraft_shape;
+    hovercraft_shape.m_radius = simulation_settings.hovercraft_radius;
+    double density = holohover_props.mass / (M_PI * hovercraft_shape.m_radius * hovercraft_shape.m_radius);  // ToDo density parameter
+
+    for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
+        RCLCPP_INFO(get_logger(), "Hovercraft id: %ld", simulation_settings.hovercraft_ids[i]);
         
         //box2d bodies
         b2BodyDef bodyDef;
         bodyDef.type = b2_dynamicBody;
-        bodyDef.position.Set(hovercraft_id, 0.0f);               // ToDo get starting positions
-        bodyDef.angle = 0.0f;
-        bodyDef.linearVelocity = b2Vec2(0.0f, 0.0f);
-        bodyDef.angularVelocity = 0.0f;
+        bodyDef.position.Set(simulation_settings.start_position_x[i], simulation_settings.start_position_y[i]);
+        bodyDef.angle = simulation_settings.start_position_theta[i];
+        bodyDef.linearVelocity = b2Vec2(simulation_settings.start_position_vx[i], simulation_settings.start_position_vy[i]);
+        bodyDef.angularVelocity = simulation_settings.start_position_w[i];
         b2Body * body = world.CreateBody(&bodyDef);
-        body->CreateFixture(&hovercraft_shape, density);               // ToDo non-zero density for dynamic body
+        body->CreateFixture(&hovercraft_shape, density);
         hovercraft_bodies.push_back(body);
 
         // state
@@ -81,19 +92,18 @@ void SimulatorNode::init_hovercrafts()
         msg.motor_c_2 = 0;
         control_msgs.push_back(msg);
 
-
         // control subscriptions
-        auto topic_name = "/hovercraft" + std::to_string(hovercraft_id) + "/control";
+        auto topic_name = "/hovercraft" + std::to_string(simulation_settings.hovercraft_ids[i]) + "/control";
 
         std::function<void(const holohover_msgs::msg::HolohoverControlStamped::SharedPtr)> callback = 
-                 std::bind(&SimulatorNode::control_callback, this, std::placeholders::_1, hovercraft_id);
+                 std::bind(&SimulatorNode::control_callback, this, std::placeholders::_1, i);
 
         auto sub = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(topic_name, rclcpp::SensorDataQoS(), callback);
 
         control_subscriptions.push_back(sub);
 
         // pose publishers
-        topic_name = "/hovercraft" + std::to_string(hovercraft_id) + "/pose";
+        topic_name = "/hovercraft" + std::to_string(simulation_settings.hovercraft_ids[i]) + "/pose";
         pose_publishers.push_back(this->create_publisher<geometry_msgs::msg::PoseStamped>(
             topic_name, rclcpp::SensorDataQoS()));
     }
@@ -103,14 +113,13 @@ void SimulatorNode::init_hovercrafts()
 void SimulatorNode::init_timer()
 {
     timer = this->create_wall_timer(
-            std::chrono::duration<double>(0.04),                        // TODO parametrize duration
+            std::chrono::duration<double>(simulation_settings.period),
             std::bind(&SimulatorNode::simulation_step, this));
 }
 
 void SimulatorNode::simulation_step()
 {
-    for(long int i : hovercraft_ids) {
-        // ToDo - control_* to force/torque to apply for each hovercraft - ToDo copy from old simulation node
+    for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
         // integrate motor velocities
         Holohover::control_force_t<double> current_control_signal;
         current_control_signal(0) = control_msgs[i].motor_a_1;
@@ -126,15 +135,17 @@ void SimulatorNode::simulation_step()
     }
 
     // - box2d step of the world
-    world.Step(timeStep, velocityIterations, positionIterations);
+    world.Step( simulation_settings.period, 
+                simulation_settings.internal_iterations_velocity, 
+                simulation_settings.internal_iterations_position);
 
-    for(long int i : hovercraft_ids) {
+    for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
         body_to_state(states_vec[i], hovercraft_bodies[i]);
        
         geometry_msgs::msg::PoseStamped pose_measurement;
         pose_measurement.header.frame_id = "world";
         pose_measurement.header.stamp = this->now();
-        pose_measurement.pose.position.x = states_vec[i](0) + simulation_settings.Gx; // ToDo ??
+        pose_measurement.pose.position.x = states_vec[i](0) + simulation_settings.Gx;
         pose_measurement.pose.position.y = states_vec[i](1) + simulation_settings.Gy;
         pose_measurement.pose.position.z = 0;
         

@@ -7,5 +7,10 @@ experiment:
 hovercrafts:
   number_of_hovercrafts: 4
   names: ["hovercraft0", "hovercraft1", "hovercraft2", "hovercraft3"]
-  ids: [0, 1, 2, 3]
-  initial_states: [["0", "0", "0", "0", "0", "0"], ["5", "0", "0", "0", "0", "0"], ["10", "0", "0", "0", "0", "0"], ["15", "0", "0", "0", "0", "0"]]
+  ids:                  [0,  1,  2,  3]
+  initial_state_x:      [0.0,  5.0, 10.0, 15.0]
+  initial_state_y:      [0.0,  0.0,  0.0,  0.0]
+  initial_state_theta:  [0.0,  0.0,  0.0,  0.0]
+  initial_state_vx:     [0.0,  0.0,  0.0,  0.0]
+  initial_state_vy:     [0.0,  0.0,  0.0,  0.0]
+  initial_state_w:      [0.0,  0.0,  0.0,  0.0]
