@@ -27,15 +27,16 @@ SOFTWARE.*/
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include "holohover_msgs/msg/holohover_state_stamped.hpp"
+#include "holohover_msgs/msg/holohover_admm_stamped.hpp"
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "holohover_common/utils/holohover_props.hpp"
 #include "holohover_msgs/msg/holohover_trajectory.hpp"
-//#include "holohover_msgs/msg/holohover_laopt_speed_stamped.hpp"
+#include "holohover_msgs/msg/holohover_laopt_speed_stamped.hpp"
+#include "holohover_msgs/msg/holohover_state_stamped.hpp"
 //#include "holohover_ocp.hpp"
 #include "control_dmpc_settings.hpp"
 
 #include "holohover_admm_node.hpp"
-#include <casadi/casadi.hpp>
 
 class HolohoverControlDMPCNode : public rclcpp::Node
 {
@@ -43,7 +44,8 @@ public:
     static constexpr int N = 20;
 
 public:
-    HolohoverControlDMPCNode(const std::string& folder_name_sprob_, int my_id_);
+    HolohoverControlDMPCNode(const std::string& folder_name_sprob_, int my_id_, int Nagents_);
+    ~HolohoverControlDMPCNode();
 private:
     HolohoverProps holohover_props;
     ControlDMPCSettings control_settings;
@@ -68,16 +70,17 @@ private:
     //GS BEGIN
     Eigen::VectorXd state_ref;   //GS: m_xd
     Eigen::VectorXd p; //parameters for OCP ([x0; u0; xd])
-    Holohover::control_acc_t<double> u_acc_curr; //GS: m_u0
+    Holohover::control_acc_t<double> u_acc_curr;
     Holohover::control_acc_t<double> u_acc_next; //GS: m_u1
     Holohover::control_force_t<double> motor_velocities;
     Holohover::control_force_t<double> last_control_signal;
-    Holohover::control_force_t<double> u_signal
+    Holohover::control_force_t<double> u_signal;
 
     VectorXd sol; //GS: OCP solution
     int my_id; //GS: move to config?
+    int Nagents;
     std::string folder_name_sprob; //GS: move to config?
-    HolohoverControlADMMNode admm;
+    HolohoverControlADMMNode* admm;
     //GS END
     
     
@@ -96,6 +99,7 @@ private:
     void get_u_acc_from_sol();
     void update_setpoint_in_ocp();
     void init_dmpc();
+    void convert_u_acc_to_u_signal();
     Eigen::MatrixXd casadi2Eigen ( const casadi::DM& A );
     Eigen::VectorXd casadi2EigenVector ( const casadi::DM& A );
     casadi::DM Eigen2casadi( const Eigen::VectorXd& in);

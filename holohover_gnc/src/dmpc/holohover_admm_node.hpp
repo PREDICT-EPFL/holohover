@@ -35,13 +35,18 @@ SOFTWARE.*/
 #include <qpOASES.hpp>
 #include <cfloat> //DBL_MAX
 #include "vcpy.hpp"
+#include <casadi/casadi.hpp>
+
+
+#include "holohover_msgs/msg/holohover_admm_stamped.hpp"
+
 
 class HolohoverControlADMMNode : public rclcpp::Node
 {
 //problem data
+public: 
         int Nagents;
         int my_id;
-
         int nx;
         int ng;
         int nh;
@@ -86,12 +91,12 @@ class HolohoverControlADMMNode : public rclcpp::Node
         int N_in_neighbors;
         int N_out_neighbors;
 
-        admmAgent(const sProb& sprob_, const int& my_id_, const double& rho_);  
-        ~admmAgent();                                           
+        HolohoverControlADMMNode(const std::string& folder_name_sprob_, const int& my_id_, const int& Nagents, const double& rho_);  
+        ~HolohoverControlADMMNode();                                           
         
         void init_coupling();   //extract coupling metadata from coupling matrices        
         
-        void build_qp(const std::string& folder_name_sprob_,const int& my_id_, const int& Nagents_); //construct the sProb
+        void build_qp(const std::string& folder_name_sprob_); //construct the sProb
         
         int solve(unsigned int maxiter_, Eigen::VectorXd& zbar_);
 
@@ -106,12 +111,27 @@ class HolohoverControlADMMNode : public rclcpp::Node
         void init_comms();
 
         //communication
-        VectorXi*  v_outMsg_idx_firstReceived;
-        std::string* v_outTopic;                     //send all originals to all out-neighbors. could be replaced by something more efficient (goesta)
-        std::string* v_inTopic; 
+        VectorXi* v_in_msg_idx_first_received;
+        VectorXi*  v_out_msg_idx_first_received;
 
-        VectorXi* v_inMsg_idx_firstReceived;
+        holohover_msgs::msg::HolohoverADMMStamped *v_in_msg;
+        holohover_msgs::msg::HolohoverADMMStamped *v_in_msg_old;
+        holohover_msgs::msg::HolohoverADMMStamped *v_out_msg;
+        holohover_msgs::msg::HolohoverADMMStamped *v_out_msg_old;
+        holohover_msgs::msg::HolohoverADMMStamped *v_in_msg_recv_buff;
+        holohover_msgs::msg::HolohoverADMMStamped *v_out_msg_recv_buff;
 
+        rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_in_publisher;
+        rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_out_publisher;
+
+        rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_in_subscriber;
+        rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_out_subscriber;
+
+        Eigen::Array<bool,Dynamic,1> received_vin;
+        Eigen::Array<bool,Dynamic,1> received_vout;
+
+        void received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_id_);
+        void received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_id_);
 
         int update_g_beq();
 

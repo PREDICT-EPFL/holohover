@@ -35,6 +35,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/HolohoverStateStamped.msg"
         "msg/HolohoverTrajectory.msg"
         "msg/HolohoverLaoptSpeedStamped.msg"
+        "msg/HolohoverADMMStamped.msg"
         DEPENDENCIES std_msgs geometry_msgs
         )
 
