@@ -67,7 +67,15 @@ def generate_launch_description():
     simulator_node = Node(
         package="holohover_utils",
         executable="simulator",
-        parameters=[holohover_params, simulator_config, {"hovercrafts" : hovercrafts['ids']}], #ToDo simulator config from main config
+        parameters=[holohover_params, simulator_config,
+                    { "hovercrafts" : hovercrafts['ids'], 
+                      "initial_state_x":     hovercrafts['initial_state_x'], 
+                      "initial_state_y":     hovercrafts['initial_state_y'], 
+                      "initial_state_theta": hovercrafts['initial_state_theta'], 
+                      "initial_state_vx":    hovercrafts['initial_state_vy'], 
+                      "initial_state_vy":    hovercrafts['initial_state_vy'], 
+                      "initial_state_w":     hovercrafts['initial_state_w']                                         
+                    }], #ToDo simulator config from main config
         output='screen'
     )
     ld.add_action(simulator_node)
@@ -75,9 +83,8 @@ def generate_launch_description():
 
     # Now iterate on each hovercraft and launch the nodes for each one
     print(f"Starting {hovercrafts['number_of_hovercrafts']} hovercrafts")
-    print(data)
     for i in range(hovercrafts['number_of_hovercrafts']):
-        print(f"\t- hovercraft\t\tID: {hovercrafts['ids'][i]} - Name: {hovercrafts['names'][i]} - Initial state: {hovercrafts['initial_states'][i]} ")
+        print(f"\t- hovercraft\t\tID: {hovercrafts['ids'][i]} - Name: {hovercrafts['names'][i]}")
         namespace = hovercrafts['names'][i]
         print(f"Namespace: {namespace}")
         
