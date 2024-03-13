@@ -121,17 +121,17 @@ public:
         holohover_msgs::msg::HolohoverADMMStamped *v_in_msg_recv_buff;
         holohover_msgs::msg::HolohoverADMMStamped *v_out_msg_recv_buff;
 
-        rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_in_publisher;
-        rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_out_publisher;
+        // rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_in_publisher;
+        // rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_out_publisher;
 
-        rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_in_subscriber;
-        rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_out_subscriber;
+        // rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_in_subscriber;
+        // rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_out_subscriber;
 
         Eigen::Array<bool,Dynamic,1> received_vin;
         Eigen::Array<bool,Dynamic,1> received_vout;
 
-        void received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_id_);
-        void received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_id_);
+        // void received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_id_);
+        // void received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_id_);
 
         int update_g_beq();
 
