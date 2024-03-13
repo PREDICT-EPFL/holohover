@@ -8,7 +8,7 @@ SimulatorNode::SimulatorNode() :
     gravity(0.0f, 0.0f),
     world(gravity)
 {
-    // init_box2d_world(); ToDo set positions and sizes of walls
+    //init_box2d_world(); // ToDo set positions and sizes of walls
     init_hovercrafts();
     init_timer();
 }
@@ -18,7 +18,7 @@ void SimulatorNode::init_box2d_world()
     b2PolygonShape wallBox;
     b2BodyDef wallDef;
     b2Body *wall;
-
+    /*
     // Wall 1
     wallBox.SetAsBox(simulation_settings.wall_1[2], simulation_settings.wall_1[3]);
     wallDef.position.Set(simulation_settings.wall_1[0], simulation_settings.wall_1[1]);
@@ -42,6 +42,46 @@ void SimulatorNode::init_box2d_world()
     wallDef.position.Set(simulation_settings.wall_4[0], simulation_settings.wall_4[1]);
     wall = world.CreateBody(&wallDef);
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
+    */
+
+
+    // Publish marker for wall visualization
+    visualization_msgs::msg::Marker marker;
+
+    marker.header.frame_id = "world";
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.ns = "holohover";
+    marker.id = 10000;
+    marker.type = visualization_msgs::msg::Marker::LINE_LIST;
+
+    geometry_msgs::msg::Point p;
+    p.z = 0;
+    
+    p.x = simulation_settings.wall_1[0] - (simulation_settings.wall_1[2]/2);
+    p.y = simulation_settings.wall_1[1] - (simulation_settings.wall_1[3]/2);
+    marker.points.push_back(p);
+
+    p.x = simulation_settings.wall_1[0] + (simulation_settings.wall_1[2]/2);
+    p.y = simulation_settings.wall_1[1] + (simulation_settings.wall_1[3]/2);
+    marker.points.push_back(p);
+
+    p.x = simulation_settings.wall_2[0] - (simulation_settings.wall_2[2]/2);
+    p.y = simulation_settings.wall_2[1] - (simulation_settings.wall_2[3]/2);
+    marker.points.push_back(p);
+
+    p.x = simulation_settings.wall_2[0] + (simulation_settings.wall_2[2]/2);
+    p.y = simulation_settings.wall_2[1] + (simulation_settings.wall_2[3]/2);
+    marker.points.push_back(p);
+
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization/drone", 10);
+
+
+    // publish markers
+    visualization_msgs::msg::MarkerArray markers;
+    markers.markers.reserve(1);
+    markers.markers.push_back(marker);
+    viz_publisher->publish(markers);
+
 }
 
 void SimulatorNode::init_hovercrafts()

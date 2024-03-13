@@ -10,6 +10,12 @@
 #include "holohover_common/utils/holohover_props.hpp"
 #include "holohover_common/models/holohover_model.hpp"
 #include "simulation_settings.hpp"
+#include "visualization_msgs/msg/marker.hpp"
+#include "visualization_msgs/msg/marker_array.hpp"
+#include "holohover_msgs/msg/holohover_state_stamped.hpp"
+#include "holohover_msgs/msg/holohover_control_stamped.hpp"
+#include "holohover_msgs/msg/holohover_trajectory.hpp"
+#include "geometry_msgs/msg/pose2_d.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 
 

@@ -34,7 +34,7 @@ add_executable(optitrack_interface src/optitrack_interface_node.cpp)
 ament_target_dependencies(optitrack_interface rclcpp geometry_msgs tf2 tf2_geometry_msgs)
 
 add_executable(simulator src/simulator_node.cpp)
-ament_target_dependencies(simulator rclcpp holohover_msgs holohover_common geometry_msgs box2d tf2_ros )
+ament_target_dependencies(simulator rclcpp holohover_msgs holohover_common visualization_msgs geometry_msgs box2d tf2_ros )
 
 
 target_link_libraries(simulator box2d)
