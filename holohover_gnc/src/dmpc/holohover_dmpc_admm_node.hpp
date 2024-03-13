@@ -182,13 +182,11 @@ private:
     void init_comms();
 
     //communication
-    VectorXi* v_in_msg_idx_first_received;
-    VectorXi*  v_out_msg_idx_first_received;
+    std::vector<int>* v_in_msg_idx_first_received;
+    std::vector<int>* v_out_msg_idx_first_received;
 
     holohover_msgs::msg::HolohoverADMMStamped *v_in_msg;
-    holohover_msgs::msg::HolohoverADMMStamped *v_in_msg_old;
     holohover_msgs::msg::HolohoverADMMStamped *v_out_msg;
-    holohover_msgs::msg::HolohoverADMMStamped *v_out_msg_old;
     holohover_msgs::msg::HolohoverADMMStamped *v_in_msg_recv_buff;
     holohover_msgs::msg::HolohoverADMMStamped *v_out_msg_recv_buff;
 
