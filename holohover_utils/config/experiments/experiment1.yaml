@@ -1,16 +1,24 @@
+
 experiment:
   name: experiment1
   description: "This is the first experiment - it contains 4 hovercrafts with a line type graph and... ToDo"
   experimentOCP: ".." #file path to the OCP file
+  number_of_hovercrafts: 4
 
 
 hovercrafts:
-  number_of_hovercrafts: 4
-  names: ["hovercraft0", "hovercraft1", "hovercraft2", "hovercraft3"]
-  ids:                  [0,  1,  2,  3]
-  initial_state_x:      [0.0,  5.0, 10.0, 15.0]
-  initial_state_y:      [0.0,  0.0,  0.0,  0.0]
-  initial_state_theta:  [0.0,  0.0,  0.0,  0.0]
-  initial_state_vx:     [0.0,  0.0,  0.0,  0.0]
-  initial_state_vy:     [0.0,  0.0,  0.0,  0.0]
-  initial_state_w:      [0.0,  0.0,  0.0,  0.0]
+  - name: hovercraft0
+    id: "0"
+    initial_state: [0, 0, 0, 0, 0, 0]
+
+  - name: hovercraft1
+    id: "1"
+    initial_state: [0, 0, 0, 0, 0, 0]
+
+  - name: hovercraft2
+    id: "2"
+    initial_state: [0, 0, 0, 0, 0, 0]
+
+  - name: hovercraft3
+    id: "3"
+    initial_state: [0, 0, 0, 0, 0, 0]

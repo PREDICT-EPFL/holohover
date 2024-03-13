@@ -49,6 +49,24 @@ def generate_launch_description():
 
     data = yaml.safe_load(open(experiment_conf, 'r'))
     hovercrafts = data["hovercrafts"]
+     
+    hovercraft_names = []
+    hovercraft_ids = []
+    initial_states = {'x': [], 'y': [], 'theta': [], 'vx': [], 'vy': [], 'w': []}
+
+    number_of_hovercrafts = data['experiment']['number_of_hovercrafts']
+
+
+    for hovercraft in hovercrafts:
+        hovercraft_names.append(hovercraft['name'])
+        hovercraft_ids.append(int(hovercraft['id']))
+        initial_state = hovercraft['initial_state']
+        for i, val in enumerate(initial_state):
+            initial_states[list(initial_states.keys())[i]].append(float(val))
+
+    print(hovercraft_names)
+    print(hovercraft_ids)
+    print(initial_states)
 
     print(f" - - - - STARTING SIMULATION EXPERIMENT  - - - - ")
     print(f"Running experiment:\t\t{data['experiment']['name']}")
@@ -68,24 +86,24 @@ def generate_launch_description():
         package="holohover_utils",
         executable="simulator",
         parameters=[holohover_params, simulator_config,
-                    { "hovercrafts" : hovercrafts['ids'], 
-                      "initial_state_x":     hovercrafts['initial_state_x'], 
-                      "initial_state_y":     hovercrafts['initial_state_y'], 
-                      "initial_state_theta": hovercrafts['initial_state_theta'], 
-                      "initial_state_vx":    hovercrafts['initial_state_vy'], 
-                      "initial_state_vy":    hovercrafts['initial_state_vy'], 
-                      "initial_state_w":     hovercrafts['initial_state_w']                                         
+                    { "hovercrafts" : hovercraft_ids, 
+                      "initial_state_x":     initial_states['x'], 
+                      "initial_state_y":     initial_states['y'], 
+                      "initial_state_theta": initial_states['theta'], 
+                      "initial_state_vx":    initial_states['vx'], 
+                      "initial_state_vy":    initial_states['vy'], 
+                      "initial_state_w":     initial_states['w']                                         
                     }], #ToDo simulator config from main config
         output='screen'
     )
     ld.add_action(simulator_node)
     #ld.add_action(simulation_env_launch)
-
+   
     # Now iterate on each hovercraft and launch the nodes for each one
-    print(f"Starting {hovercrafts['number_of_hovercrafts']} hovercrafts")
-    for i in range(hovercrafts['number_of_hovercrafts']):
-        print(f"\t- hovercraft\t\tID: {hovercrafts['ids'][i]} - Name: {hovercrafts['names'][i]}")
-        namespace = hovercrafts['names'][i]
+    print(f"Starting {number_of_hovercrafts} hovercrafts")
+    for i in range(number_of_hovercrafts):
+        print(f"\t- hovercraft\t\tID: {hovercraft_ids[i]} - Name: {hovercraft_names[i]}")
+        namespace = hovercraft_names[i]
         print(f"Namespace: {namespace}")
         
         
@@ -116,7 +134,7 @@ def generate_launch_description():
         rviz_interface_node = Node(
             package="holohover_utils",
             executable="rviz_interface",
-            parameters=[holohover_params, specific_configuration, {'id': hovercrafts['ids'][i]}],
+            parameters=[holohover_params, specific_configuration, {'id': hovercraft_ids[i]}],
             namespace= namespace,
             output='screen'
         )
