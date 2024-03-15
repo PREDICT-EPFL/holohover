@@ -1,5 +1,5 @@
-#ifndef HOLOHOVER_UTILS_RVIZ_INTERFACE_NODE_HPP
-#define HOLOHOVER_UTILS_RVIZ_INTERFACE_NODE_HPP
+#ifndef HOLOHOVER_UTILS_SIMULATOR_NODE_HPP
+#define HOLOHOVER_UTILS_SIMULATOR_NODE_HPP
 
 #include "rclcpp/rclcpp.hpp"
 #include "holohover_msgs/msg/holohover_state_stamped.hpp"
@@ -47,7 +47,7 @@ private:
     Holohover holohover;
 
     b2Vec2 gravity;
-    std::shared_ptr<b2World> world; // b2World world;
+    std::shared_ptr<b2World> world;
 
     std::vector<body_ptr> hovercraft_bodies;
 
@@ -75,4 +75,4 @@ private:
     void apply_control_acc(body_ptr &body, Holohover::control_acc_t<double> control_acc);
 };
 
-#endif //HOLOHOVER_UTILS_RVIZ_INTERFACE_NODE_HPP
+#endif //HOLOHOVER_UTILS_SIMULATOR_NODE_HPP
