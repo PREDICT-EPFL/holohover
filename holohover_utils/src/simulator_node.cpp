@@ -6,7 +6,7 @@ SimulatorNode::SimulatorNode() :
     simulation_settings(load_simulation_settings(*this)),
     holohover(holohover_props, simulation_settings.period),
     gravity(0.0f, 0.0f),
-    world(gravity)
+    world(std::make_unique<b2World>(gravity))
 {
     //init_box2d_world(); // ToDo set positions and sizes of walls
     init_hovercrafts();
@@ -100,9 +100,9 @@ void SimulatorNode::init_hovercrafts()
         bodyDef.angle = simulation_settings.start_position_theta[i];
         bodyDef.linearVelocity = b2Vec2(simulation_settings.start_position_vx[i], simulation_settings.start_position_vy[i]);
         bodyDef.angularVelocity = simulation_settings.start_position_w[i];
-        b2Body * body = world.CreateBody(&bodyDef);
+        body_ptr body(world->CreateBody(&bodyDef), world);
         body->CreateFixture(&hovercraft_shape, density);
-        hovercraft_bodies.push_back(body);
+        hovercraft_bodies.push_back(std::move(body));
 
         // state
         Holohover::state_t<double> state;
@@ -175,7 +175,7 @@ void SimulatorNode::simulation_step()
     }
 
     // - box2d step of the world
-    world.Step( simulation_settings.period, 
+    world->Step(simulation_settings.period, 
                 simulation_settings.internal_iterations_velocity, 
                 simulation_settings.internal_iterations_position);
 
@@ -204,7 +204,7 @@ void SimulatorNode::control_callback(holohover_msgs::msg::HolohoverControlStampe
     control_msgs[hovercraft_id] = *msg;
 }
 
-void SimulatorNode::body_to_state(Holohover::state_t<double> &state, b2Body* body) {
+void SimulatorNode::body_to_state(Holohover::state_t<double> &state, body_ptr &body) {
     // ToDo add noise 
     state(0) = body->GetPosition().x;
     state(1) = body->GetPosition().y;
@@ -214,7 +214,7 @@ void SimulatorNode::body_to_state(Holohover::state_t<double> &state, b2Body* bod
     state(5) = body->GetAngularVelocity();
 }
 
-void SimulatorNode::apply_control_acc(b2Body* body, Holohover::control_acc_t<double> control_acc) {
+void SimulatorNode::apply_control_acc(body_ptr &body, Holohover::control_acc_t<double> control_acc) {
     body->ApplyForceToCenter(b2Vec2(control_acc(0) * holohover_props.mass, control_acc(1) * holohover_props.mass), true);
     body->ApplyTorque(control_acc(2) * holohover_props.inertia, true);
 }

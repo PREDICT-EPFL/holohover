@@ -18,10 +18,23 @@
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 
-
-
 #include <box2d/box2d.h>
 
+class BodyDeleter
+{
+public:
+    BodyDeleter(std::shared_ptr<b2World> world) : m_world(world) {}
+    void operator()(b2Body* body)
+    {
+        if (m_world) {
+            m_world->DestroyBody(body);
+        }
+    }
+private:
+    std::shared_ptr<b2World> m_world;
+};
+
+using body_ptr = std::unique_ptr<b2Body, BodyDeleter>;
 
 class SimulatorNode : public rclcpp::Node
 {
@@ -34,9 +47,9 @@ private:
     Holohover holohover;
 
     b2Vec2 gravity;
-    b2World world;
+    std::shared_ptr<b2World> world; // b2World world;
 
-    std::vector<b2Body*> hovercraft_bodies;
+    std::vector<body_ptr> hovercraft_bodies;
 
     rclcpp::TimerBase::SharedPtr timer;
 
@@ -58,8 +71,8 @@ private:
 
     void calculate_control_acc(Holohover::state_t<double> state, Holohover::control_force_t<double> motor_velocities, Holohover::control_acc_t<double> &current_control_acc);
 
-    void body_to_state(Holohover::state_t<double> &state, b2Body* body);
-    void apply_control_acc(b2Body* body, Holohover::control_acc_t<double> control_acc);
+    void body_to_state(Holohover::state_t<double> &state, body_ptr &body);
+    void apply_control_acc(body_ptr &body, Holohover::control_acc_t<double> control_acc);
 };
 
 #endif //HOLOHOVER_UTILS_RVIZ_INTERFACE_NODE_HPP
