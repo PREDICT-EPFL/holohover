@@ -106,7 +106,7 @@ void SimulatorNode::init_hovercrafts()
 
         // state
         Holohover::state_t<double> state;
-        body_to_state(state, body);
+        body_to_state(state, hovercraft_bodies.back());
         states_vec.push_back(state);
 
         // motor velociticies
