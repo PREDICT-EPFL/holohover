@@ -1,0 +1,15 @@
+control_dmpc:
+  ros__parameters:
+    period: 0.1
+    rho: 1.0
+    maxiter: 5
+    nx: 6
+    nu: 3
+    nxd: 12
+    idx_eqx0: 0
+    idx_equ0: 6
+    idx_u0: 144
+    idx_u1: 147
+    Nagents: 4
+    my_id: 2
+    folder_name_sprob: "/home/mgoestom@ie3.e-technik.tu-dortmund.de/holohover_ws/src/holohover/holohover_gnc/ocp_specs/sProb_chain_QP_N7_acc"
