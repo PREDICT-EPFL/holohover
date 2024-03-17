@@ -56,13 +56,15 @@ SOFTWARE.*/
 #include <qpOASES.hpp>
 #include <casadi/casadi.hpp>
 
+#include <memory>
+
 class HolohoverDmpcAdmmNode : public rclcpp::Node
 {
 public:
     static constexpr int N = 20;
 
 public:
-    HolohoverDmpcAdmmNode(const std::string& folder_name_sprob_, int my_id_, int Nagents_);
+    HolohoverDmpcAdmmNode();
     ~HolohoverDmpcAdmmNode();
 private:
     HolohoverProps holohover_props;
@@ -97,7 +99,6 @@ private:
     VectorXd sol; //GS: OCP solution
     int my_id; //GS: move to config?
     int Nagents;
-    std::string folder_name_sprob; //GS: move to config?
 
     int nx;
     int ng;
@@ -134,9 +135,9 @@ private:
     VectorXd zbar;                              //nx x 1
     VectorXd gam;                               //nx x 1
 
-    vCpy* v_in;     //copy from in-neighbors       //N_in_neighbors x 1
-    vCpy* v_out;    //copy for out-neighbors       //N_out_neighbors x 1
-    std::vector<double>* XV;                       //N_og x n_out_neighbors(i)
+    std::vector<vCpy> v_in;  //copy from in-neighbors       //N_in_neighbors x 1
+    std::vector<vCpy> v_out; //copy for out-neighbors       //N_out_neighbors x 1
+    std::vector<std::vector<double>> XV;                       //N_og x n_out_neighbors(i)
 
     std::vector<int> in_neighbors;              //N_in_neighbors x 1
     std::vector<int> out_neighbors;             //N_out_neighbors x 1
@@ -167,34 +168,34 @@ private:
     
     void init_coupling();   //extract coupling metadata from coupling matrices        
         
-    void build_qp(const std::string& folder_name_sprob_); //construct the sProb
+    void build_qp(); //construct the sProb
     
     int solve(unsigned int maxiter_, Eigen::VectorXd& zbar_);
 
     //before averaging
     void update_v_in();     //place z into v_in
-    void send_vin_receive_vout(int64_t seq_number_);
+    void send_vin_receive_vout();
 
     //after averaging
     void update_v_out();
-    void send_vout_receive_vin(int64_t seq_number_);
+    void send_vout_receive_vin();
 
     void init_comms();
 
     //communication
-    std::vector<int>* v_in_msg_idx_first_received;
-    std::vector<int>* v_out_msg_idx_first_received;
+    std::vector<std::vector<int>> v_in_msg_idx_first_received;
+    std::vector<std::vector<int>> v_out_msg_idx_first_received;
 
-    holohover_msgs::msg::HolohoverADMMStamped *v_in_msg;
-    holohover_msgs::msg::HolohoverADMMStamped *v_out_msg;
-    holohover_msgs::msg::HolohoverADMMStamped *v_in_msg_recv_buff;
-    holohover_msgs::msg::HolohoverADMMStamped *v_out_msg_recv_buff;
+    std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_in_msg;
+    std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_out_msg;
+    std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_in_msg_recv_buff;
+    std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_out_msg_recv_buff;
 
-    rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_in_publisher;
-    rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_out_publisher;
+    std::vector<rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_publisher;
+    std::vector<rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_publisher;
 
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_in_subscriber;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr *v_out_subscriber;
+    std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_subscriber;
+    std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_subscriber;
 
     Eigen::Array<bool,Dynamic,1> received_vin;
     Eigen::Array<bool,Dynamic,1> received_vout;

@@ -20,15 +20,15 @@ SOFTWARE.*/
 
 using namespace std::chrono;
 
-HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode(const std::string& folder_name_sprob_, int my_id_, int Nagents_) :
+HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         Node("control_dmpc"),
         holohover_props(load_holohover_pros(*this)),
         control_settings(load_control_dmpc_settings(*this)),
-        holohover(holohover_props, control_settings.period)
+        holohover(holohover_props, control_settings.period),
+        sprob(control_settings.Nagents)
 {
-    folder_name_sprob = folder_name_sprob_;
-    my_id = my_id_;
-    Nagents = Nagents_;    
+    my_id = control_settings.my_id;
+    Nagents = control_settings.Nagents;    
 
     // init state
     state.setZero();
@@ -42,7 +42,8 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode(const std::string& folder_name_spro
     p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd);
     state_ref = p.segment(control_settings.nx+control_settings.nu,control_settings.nxd); //todo
 
-    build_qp(folder_name_sprob_);
+
+    build_qp();
 
     nx = sprob.H[my_id].rows();
     ng = sprob.Aeq[my_id].rows();
@@ -101,17 +102,18 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode(const std::string& folder_name_spro
     
     init_coupling();
 
-    XV = new std::vector<double>[N_og];
+    // XV = new std::vector<double>[N_og];
     for (int i = 0; i < N_og; i++){
+        XV.push_back(std::vector<double>());
         auto idx = og_idx_to_idx.find(i);
         XV[i].resize(numCopies(idx->second)+1); //XV stores local original variable and copies from out-neighbors
     }
 
     //initialize comms
     // v_out
-    v_out_msg = new holohover_msgs::msg::HolohoverADMMStamped[N_out_neighbors];
-    v_out_subscriber = new rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr[N_out_neighbors];
-    v_out_publisher = new rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr[N_out_neighbors];
+    v_out_msg.resize(N_out_neighbors); // = new holohover_msgs::msg::HolohoverADMMStamped[N_out_neighbors];
+    v_out_subscriber.resize(N_out_neighbors); // = new rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr[N_out_neighbors];
+    v_out_publisher.resize(N_out_neighbors); // = new rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr[N_out_neighbors];
 
     for (int i = 0; i < N_out_neighbors; i++){
         int neighbor_id = v_out[i].copying_agent;       
@@ -144,9 +146,9 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode(const std::string& folder_name_spro
     }
 
     // v_in
-    v_in_msg = new holohover_msgs::msg::HolohoverADMMStamped[N_in_neighbors];
-    v_in_subscriber = new rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr[N_in_neighbors];
-    v_in_publisher = new rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr[N_in_neighbors];
+    v_in_msg.resize(N_in_neighbors); // = new holohover_msgs::msg::HolohoverADMMStamped[N_in_neighbors];
+    v_in_subscriber.resize(N_in_neighbors); // = new rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr[N_in_neighbors];
+    v_in_publisher.resize(N_in_neighbors); // = new rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr[N_in_neighbors];
 
     for (int i = 0; i < N_in_neighbors; i++){
         int neighbor_id = v_in[i].original_agent;
@@ -178,31 +180,21 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode(const std::string& folder_name_spro
                             v_in_sub_topic, 10,
                             std::bind(&HolohoverDmpcAdmmNode::received_vin_callback, this, std::placeholders::_1));  //i  
     }
-
-    v_in_msg_idx_first_received = new std::vector<int>[N_in_neighbors];
-    v_out_msg_idx_first_received = new std::vector<int>[N_out_neighbors];
        
+    v_in_msg_idx_first_received.resize(N_in_neighbors);
+    v_out_msg_idx_first_received.resize(N_out_neighbors);
+
     init_topics();
     init_dmpc();
     init_timer();
+
+    std::cout << "finished constructing dmpc admm node" << std::endl;
 
 }
 
 HolohoverDmpcAdmmNode::~HolohoverDmpcAdmmNode()
 {
-    delete[] v_in;
-    delete[] v_out;
-    delete[] v_in_msg;
-    delete[] v_in_msg_idx_first_received;
-    delete[] v_out_msg;
-    delete[] v_out_msg_idx_first_received;
-    delete[] v_in_publisher;
-    delete[] v_out_publisher;
-    delete[] v_in_subscriber;
-    delete[] v_out_subscriber;
-    delete[] XV;
-    delete[] v_in_msg_recv_buff;
-    delete[] v_out_msg_recv_buff; 
+
 }
 
 void HolohoverDmpcAdmmNode::init_topics()
@@ -330,6 +322,7 @@ void HolohoverDmpcAdmmNode::init_comms(){
 
 void HolohoverDmpcAdmmNode::publish_control()
 {
+    std::cout << "starting publish_control()" << std::endl;
     set_state_in_ocp();
     set_u_acc_curr_in_ocp();
     update_setpoint_in_ocp();
@@ -430,15 +423,7 @@ void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverSta
     ref = pose; //GS: what is this?
 }
 
-int main(int argc, char **argv) {
-    std::string folder_name_sprob_ = "here"; 
-    int my_id_ = 0;
-    int Nagents_ = 0;
-    rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<HolohoverDmpcAdmmNode>(folder_name_sprob_, my_id_, Nagents_));
-    rclcpp::shutdown();
-    return 0;
-}
+
 
 
 //GS BEGIN
@@ -469,7 +454,7 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
     p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;    //GS: remove, because we have set_u_acc_curr_in_ocp?
     p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref;
 
-    std::string function_library = folder_name_sprob + "/locFuns.so";
+    std::string function_library = control_settings.folder_name_sprob + "/locFuns.so";
 
     casadi::DM z_cas;
     casadi::DM p_cas;
@@ -519,7 +504,7 @@ void HolohoverDmpcAdmmNode::init_dmpc()
     zbar  = VectorXd::Zero(nx);
     gam   = VectorXd::Zero(nx);
 
-    int flag = solve(10,zbar); //initializes data structures in admmAgent
+    solve(10,zbar); //initializes data structures in admmAgent
 
     //reset all ADMM variables to zero. 
     z     = VectorXd::Zero(nx);
@@ -541,7 +526,7 @@ Eigen::MatrixXd HolohoverDmpcAdmmNode::casadi2Eigen ( const casadi::DM& A ){
     using T = Eigen::Triplet<double>;
     std::vector<T> TripletList;
     TripletList.resize(values.size());
-    for(int k = 0; k < values.size(); ++k){
+    for(unsigned int k = 0; k < values.size(); ++k){
         if (values[k] == casadi::inf){
             values[k] = DBL_MAX;
         }
@@ -609,13 +594,11 @@ casadi::DM HolohoverDmpcAdmmNode::Eigen2casadi( const Eigen::VectorXd& in){
 
 //GS END
 
-void HolohoverDmpcAdmmNode::build_qp(const std::string& folder_name_sprob_)
+void HolohoverDmpcAdmmNode::build_qp()
 {
-    sprob = sProb(Nagents);
-    sprob.read_AA(folder_name_sprob_,Nagents);
-    sprob.read_ublb(folder_name_sprob_,my_id);
-
-    std::string functionLibrary = folder_name_sprob_ + "/locFuns.so";
+    sprob.read_AA(control_settings.folder_name_sprob,Nagents);
+    sprob.read_ublb(control_settings.folder_name_sprob,my_id);
+    std::string functionLibrary = control_settings.folder_name_sprob + "/locFuns.so";
 
     casadi::DM z_cas;
     casadi::DM p_cas;
@@ -801,12 +784,13 @@ void HolohoverDmpcAdmmNode::init_coupling()
 
 
     //Setup v_in and v_out
-    v_in = new vCpy[N_in_neighbors];
-    v_out = new vCpy[N_out_neighbors];
+    // v_in = new vCpy[N_in_neighbors];
+    // v_out = new vCpy[N_out_neighbors];
 
     //In-neighbors
     int nij = 0;
     for (int j = 0; j < N_in_neighbors; j++){
+        v_in.push_back(vCpy());
         nij = 0;
         for (int i = 0; i < nx; i++){
             if (Coup(i,0) == in_neighbors[j]){ //Variable i was copied from agent j
@@ -832,6 +816,7 @@ void HolohoverDmpcAdmmNode::init_coupling()
 
     //Out-neighbors
     for (int j = 0; j < N_out_neighbors; j++){
+        v_out.push_back(vCpy());
         v_out[j].copying_agent = out_neighbors[j];
         v_out[j].original_agent = my_id;
         v_out[j].nv = nv_out[out_neighbors[j]];
@@ -868,8 +853,8 @@ void HolohoverDmpcAdmmNode::init_coupling()
     received_vin.fill(false);
     received_vout.fill(false);
     
-    v_in_msg_recv_buff = new holohover_msgs::msg::HolohoverADMMStamped[N_in_neighbors]; 
-    v_out_msg_recv_buff = new holohover_msgs::msg::HolohoverADMMStamped[N_in_neighbors]; 
+    v_in_msg_recv_buff.resize(N_in_neighbors); //= new holohover_msgs::msg::HolohoverADMMStamped[N_in_neighbors]; 
+    v_out_msg_recv_buff.resize(N_out_neighbors); //= new holohover_msgs::msg::HolohoverADMMStamped[N_in_neighbors]; 
 
     return;
 }
@@ -895,7 +880,7 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_, Eigen::VectorXd& zbar_)
         
         //Communication
         update_v_in();
-        send_vin_receive_vout(0);
+        send_vin_receive_vout();
 
         //Step 2: averaging
         double avg;
@@ -907,7 +892,7 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_, Eigen::VectorXd& zbar_)
 
         //Communication
         update_v_out();
-        send_vout_receive_vin(0);
+        send_vout_receive_vin();
 
         //Step 3: dual update
         gam = gam + rho*(z-zbar);  
@@ -921,17 +906,17 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_, Eigen::VectorXd& zbar_)
 
 void HolohoverDmpcAdmmNode::received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_){
     int in_neighbor_idx_ = 1;
-    // v_in_msg_recv_buff[in_neighbor_idx_] = v_in_msg_;
+    v_in_msg_recv_buff[in_neighbor_idx_] = v_in_msg_;
     received_vin[in_neighbor_idx_] = true;
 }
 
 void HolohoverDmpcAdmmNode::received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_){
     int out_neighbor_idx_ = 1;
-    // v_out_msg_recv_buff[out_neighbor_idx_] = v_out_msg_;
+    v_out_msg_recv_buff[out_neighbor_idx_] = v_out_msg_;
     received_vout[out_neighbor_idx_] = true;  
 } 
 
-void HolohoverDmpcAdmmNode::send_vin_receive_vout(int64_t seq_number_){
+void HolohoverDmpcAdmmNode::send_vin_receive_vout(){
     //send copies in vin and receive copies in vout
     //this is done before the averaging step
 
@@ -974,7 +959,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(int64_t seq_number_){
     return;
 }
 
-void HolohoverDmpcAdmmNode::send_vout_receive_vin(int64_t seq_number_){
+void HolohoverDmpcAdmmNode::send_vout_receive_vin(){
     //send originals in vout and receive copies in vin
     //this is done after the averaging step
 
@@ -1053,5 +1038,12 @@ int HolohoverDmpcAdmmNode::update_g_beq(){
     g = sprob.g[my_id];    
     lbA.block(0,0,ng,1) = sprob.beq[my_id];
     ubA.block(0,0,ng,1) = sprob.beq[my_id];
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<HolohoverDmpcAdmmNode>());
+    rclcpp::shutdown();
     return 0;
 }
