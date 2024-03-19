@@ -3,7 +3,7 @@
 
 HolohoverControlExpNode::HolohoverControlExpNode() :
         Node("control_lqr"),
-        holohover_props(load_holohover_pros(*this)),
+        holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
         control_settings(load_control_lqr_settings(*this)),
         exp_settings(load_control_exp_settings(*this)),
         holohover(holohover_props, control_settings.period)

@@ -4,7 +4,7 @@
 
 HolohoverSimulationNode::HolohoverSimulationNode() :
     Node("simulation"),
-    holohover_props(load_holohover_pros(*this)),
+    holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
     simulation_settings(load_simulation_settings(*this)),
     holohover(holohover_props, simulation_settings.period),
     random_engine(simulation_settings.seed)
