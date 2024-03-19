@@ -36,28 +36,35 @@ message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(simulation src/simulation/simulation_node.cpp)
 ament_target_dependencies(simulation rclcpp tf2_ros geometry_msgs holohover_msgs holohover_common)
+target_link_libraries(simulation yaml-cpp)
 
 add_executable(navigation src/navigation/navigation_node.cpp)
 ament_target_dependencies(navigation rclcpp tf2_ros geometry_msgs holohover_msgs holohover_common)
+target_link_libraries(navigation yaml-cpp)
 
 add_executable(control_lqr src/control/control_lqr_node.cpp)
 ament_target_dependencies(control_lqr rclcpp geometry_msgs holohover_msgs holohover_common)
+target_link_libraries(control_lqr yaml-cpp)
 
 add_executable(control_signal src/control/control_signal_node.cpp)
 ament_target_dependencies(control_signal rclcpp geometry_msgs holohover_msgs holohover_common)
+target_link_libraries(control_signal yaml-cpp)
 
 add_executable(control_exp src/control/control_exp_node.cpp)
 ament_target_dependencies(control_exp rclcpp geometry_msgs holohover_msgs holohover_common)
+target_link_libraries(control_exp yaml-cpp)
 
 add_executable(control_mpc src/mpc/holohover_mpc_node.cpp)
 target_include_directories(control_mpc PRIVATE external/laopt/include)
 ament_target_dependencies(control_mpc rclcpp geometry_msgs holohover_msgs holohover_common)
 target_compile_options(control_mpc PRIVATE "-Wno-unused-parameter")
+target_link_libraries(control_mpc yaml-cpp)
 
 add_executable(double_integrator_test src/mpc/double_integrator_test.cpp)
 target_include_directories(double_integrator_test PRIVATE external/laopt/include)
 ament_target_dependencies(double_integrator_test rclcpp holohover_common)
 target_compile_options(double_integrator_test PRIVATE "-Wno-unused-parameter")
+target_link_libraries(double_integrator_test yaml-cpp)
 
 install(DIRECTORY
   config
