@@ -18,10 +18,7 @@ struct SimulationSettings
     std::vector<double>   start_position_vy;
     std::vector<double>   start_position_w;
 
-    std::vector<double> wall_1;
-    std::vector<double> wall_2;
-    std::vector<double> wall_3;
-    std::vector<double> wall_4;
+    std::vector<double> table_size;
 
     double drag_reference_area;
     double drag_coefficient;
@@ -70,10 +67,7 @@ SimulationSettings load_simulation_settings(rclcpp::Node &node)
     settings.start_position_vy    = node.declare_parameter<std::vector<double>>("initial_state_vy");
     settings.start_position_w     = node.declare_parameter<std::vector<double>>("initial_state_w");
 
-    settings.wall_1 = node.declare_parameter<std::vector<double>>("wall_1");
-    settings.wall_2 = node.declare_parameter<std::vector<double>>("wall_2");
-    settings.wall_3 = node.declare_parameter<std::vector<double>>("wall_3");
-    settings.wall_4 = node.declare_parameter<std::vector<double>>("wall_4");
+    settings.table_size = node.declare_parameter<std::vector<double>>("table_size");
 
     settings.drag_reference_area = node.declare_parameter<double>("drag_reference_area");
     settings.drag_coefficient = node.declare_parameter<double>("drag_coefficient");
