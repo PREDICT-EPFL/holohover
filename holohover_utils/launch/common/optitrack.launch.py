@@ -7,8 +7,6 @@ from launch_ros.actions import Node
 def generate_launch_description():
     ld = LaunchDescription()
 
-    print("inside optitrack launch")
-
     mocap_config = os.path.join(
         get_package_share_directory('holohover_utils'),
         'config',
@@ -28,7 +26,6 @@ def generate_launch_description():
         executable="optitrack_interface",
         output='screen'
     )
-
     ld.add_action(mocap_node)
     ld.add_action(optitrack_interface_node)
 
