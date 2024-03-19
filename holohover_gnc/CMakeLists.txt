@@ -34,10 +34,6 @@ endif()
 
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
-add_executable(simulation src/simulation/simulation_node.cpp)
-ament_target_dependencies(simulation rclcpp tf2_ros geometry_msgs holohover_msgs holohover_common)
-target_link_libraries(simulation yaml-cpp)
-
 add_executable(navigation src/navigation/navigation_node.cpp)
 ament_target_dependencies(navigation rclcpp tf2_ros geometry_msgs holohover_msgs holohover_common)
 target_link_libraries(navigation yaml-cpp)
@@ -72,7 +68,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
-  simulation navigation control_lqr control_signal control_exp double_integrator_test control_mpc
+  navigation control_lqr control_signal control_exp double_integrator_test control_mpc
   DESTINATION lib/${PROJECT_NAME}
 )
 
