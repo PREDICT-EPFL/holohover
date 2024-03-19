@@ -368,7 +368,7 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
 
     const steady_clock::time_point t_end = steady_clock::now();
     const long duration_us = duration_cast<microseconds>(t_end - t_start).count();
-    std::cout << "duration_ms  =" <<duration_us/1000 << std::endl;
+    std::cout << "ADMM duration_ms  =" <<duration_us/1000 << std::endl;
 
     get_u_acc_from_sol();
 
@@ -898,26 +898,26 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
     // zbar = zbar_;
     for (unsigned int iter = 0; iter < maxiter_; iter++){
 
-        std::cout << "Starting ADMM iteration " << iter << std::endl;
+        // std::cout << "Starting ADMM iteration " << iter << std::endl;
 
         //Step 1: local z update
 
-        std::cout << "updating g_bar" << std::endl;
+        // std::cout << "updating g_bar" << std::endl;
         g_bar = g + gam - rho*zbar;
         nWSR = 10000;
-        std::cout << "calling qpOASES" << std::endl;
+        // std::cout << "calling qpOASES" << std::endl;
         loc_prob.hotstart(g_bar.data(),
                            lb.data(), ub.data(), lbA.data(), ubA.data(), nWSR);
-        std::cout << "extract qpOASES solution" << std::endl;
+        // std::cout << "extract qpOASES solution" << std::endl;
         loc_prob.getPrimalSolution(z.data());
-        std::cout << "put qpOASES solution into XV" << std::endl;
+        // std::cout << "put qpOASES solution into XV" << std::endl;
         for (int i = 0; i < N_og; i++){
             auto idx = og_idx_to_idx.find(i);
             XV[i].clear();
             XV[i].push_back(z(idx->second));
         }
         
-        std::cout << "start the averaging" << std::endl;
+        // std::cout << "start the averaging" << std::endl;
         //Communication
         update_v_in();
         send_vin_receive_vout();
@@ -934,8 +934,8 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
         update_v_out();
         send_vout_receive_vin();
 
-        //Step 3: dual update
-        std::cout << "dual update" << std::endl;
+        // Step 3: dual update
+        // std::cout << "dual update" << std::endl;
         gam = gam + rho*(z-zbar);  
 
     }
@@ -948,7 +948,7 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
 void HolohoverDmpcAdmmNode::received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_idx_){ //
     // int in_neighbor_idx_ = 0;
     if(!received_vin(in_neighbor_idx_)){     
-        std::cout << "I am agent " << my_id << " and I invoked vin callback for in neighbor " << in_neighbor_idx_ << std::endl;
+        // std::cout << "I am agent " << my_id << " and I invoked vin callback for in neighbor " << in_neighbor_idx_ << std::endl;
         v_in_msg_recv_buff[in_neighbor_idx_] = v_in_msg_;
         received_vin(in_neighbor_idx_) = true;
     }
@@ -957,7 +957,7 @@ void HolohoverDmpcAdmmNode::received_vin_callback(const holohover_msgs::msg::Hol
 void HolohoverDmpcAdmmNode::received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_idx_){ //
     // int out_neighbor_idx_ = 0;
     if(!received_vout(out_neighbor_idx_)){    
-        std::cout << "I am agent "<< my_id << " and I invoked vout callback for out neighbor " << out_neighbor_idx_ << std::endl;
+        // std::cout << "I am agent "<< my_id << " and I invoked vout callback for out neighbor " << out_neighbor_idx_ << std::endl;
         v_out_msg_recv_buff[out_neighbor_idx_] = v_out_msg_;
         received_vout(out_neighbor_idx_) = true; 
     }  
@@ -997,16 +997,16 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(){
                         }
                     }                    
                 }
-                else{
-                    std::cout << "I am agent " << my_id << " and I am waiting for a message on " << v_out_subscriber[i]->get_topic_name() << std::endl; 
-                } 
+                // else{
+                    // std::cout << "I am agent " << my_id << " and I am waiting for a message on " << v_out_subscriber[i]->get_topic_name() << std::endl; 
+                // } 
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-        for (int i = 0; i < N_in_neighbors; i++){
-            std::cout << "I am agent " << my_id << "and I am publishing to " << v_in_publisher[i]->get_topic_name() << std::endl; 
-            v_in_publisher[i]->publish(v_in_msg[i]); //ros
-        }
+        // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+        // for (int i = 0; i < N_in_neighbors; i++){
+        //     std::cout << "I am agent " << my_id << "and I am publishing to " << v_in_publisher[i]->get_topic_name() << std::endl; 
+        //     v_in_publisher[i]->publish(v_in_msg[i]); //ros
+        // }
     }
     //receive_vout_timer.toc();
 
@@ -1046,8 +1046,8 @@ void HolohoverDmpcAdmmNode::send_vout_receive_vin(){
     while (!received.all()){
         for (int i = 0; i < N_in_neighbors; i++){
             if (!received(i)){
-                if (received_vout(i)){
-                    received_vout(i) = false;
+                if (received_vin(i)){
+                    received_vin(i) = false;
                     received(i) = true;
                     //move to callback?
                     for (int j = 0; j < v_in_msg_recv_buff[i].val_length; j++){
@@ -1056,20 +1056,18 @@ void HolohoverDmpcAdmmNode::send_vout_receive_vin(){
                         if (tmp != v_in[i].og_idx_to_cpy_idx.end()){
                             cpy_idx = tmp->second;
                             zbar[cpy_idx] = v_in_msg_recv_buff[i].value[j];
-                        }
-                        else{
                         }  
                     }
                 }
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-        for (int i = 0; i < N_out_neighbors; i++){
-            std::cout << "I am agent " << my_id << "and I am publishing to " << v_out_publisher[i]->get_topic_name() << std::endl; 
-            v_out_publisher[i]->publish(v_out_msg[i]); //ros
-            std::cout << "I am agent " << my_id << "and I am publishing to " << v_in_publisher[i]->get_topic_name() << std::endl; 
-            v_in_publisher[i]->publish(v_in_msg[i]); //ros
-        }        
+        // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+        // for (int i = 0; i < N_out_neighbors; i++){
+        //     std::cout << "I am agent " << my_id << "and I am publishing to " << v_out_publisher[i]->get_topic_name() << std::endl; 
+        //     v_out_publisher[i]->publish(v_out_msg[i]); //ros
+        //     std::cout << "I am agent " << my_id << "and I am publishing to " << v_in_publisher[i]->get_topic_name() << std::endl; 
+        //     v_in_publisher[i]->publish(v_in_msg[i]); //ros
+        // }        
     }
     return;
 }
