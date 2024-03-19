@@ -8,7 +8,10 @@ SimulatorNode::SimulatorNode() :
     gravity(0.0f, 0.0f),
     world(std::make_unique<b2World>(gravity))
 {
-    //init_box2d_world(); // ToDo set positions and sizes of walls
+    init_box2d_world(); // ToDo set positions and sizes of walls
+
+    viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization/drone", 10);
+
     init_hovercrafts();
     init_timer();
 }
@@ -18,70 +21,84 @@ void SimulatorNode::init_box2d_world()
     b2PolygonShape wallBox;
     b2BodyDef wallDef;
     b2Body *wall;
-    /*
+    
     // Wall 1
-    wallBox.SetAsBox(simulation_settings.wall_1[2], simulation_settings.wall_1[3]);
-    wallDef.position.Set(simulation_settings.wall_1[0], simulation_settings.wall_1[1]);
-    wall = world.CreateBody(&wallDef);
+    wallBox.SetAsBox(simulation_settings.table_size[0], 0.001);
+    wallDef.position.Set(simulation_settings.table_size[0] / 2, 0);
+    wall = world->CreateBody(&wallDef);
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
 
     // Wall 2
-    wallBox.SetAsBox(simulation_settings.wall_2[2], simulation_settings.wall_2[3]);
-    wallDef.position.Set(simulation_settings.wall_2[0], simulation_settings.wall_2[1]);
-    wall = world.CreateBody(&wallDef);
+    wallBox.SetAsBox(0.001, simulation_settings.table_size[1]);
+    wallDef.position.Set(simulation_settings.table_size[0], simulation_settings.table_size[1] / 2);
+    wall = world->CreateBody(&wallDef);
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
 
     // Wall 3
-    wallBox.SetAsBox(simulation_settings.wall_3[2], simulation_settings.wall_3[3]);
-    wallDef.position.Set(simulation_settings.wall_3[0], simulation_settings.wall_3[1]);
-    wall = world.CreateBody(&wallDef);
+    wallBox.SetAsBox(simulation_settings.table_size[0], 0.001);
+    wallDef.position.Set(simulation_settings.table_size[0] / 2, simulation_settings.table_size[1]);
+    wall = world->CreateBody(&wallDef);
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
 
     // Wall 4
-    wallBox.SetAsBox(simulation_settings.wall_4[2], simulation_settings.wall_4[3]);
-    wallDef.position.Set(simulation_settings.wall_4[0], simulation_settings.wall_4[1]);
-    wall = world.CreateBody(&wallDef);
+    wallBox.SetAsBox(0.001, simulation_settings.table_size[1]);
+    wallDef.position.Set(0, simulation_settings.table_size[1] / 2);
+    wall = world->CreateBody(&wallDef);
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
-    */
+    
 
 
     // Publish marker for wall visualization
     visualization_msgs::msg::Marker marker;
+    marker.header.stamp = now();
 
     marker.header.frame_id = "world";
     marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.ns = "holohover";
-    marker.id = 10000;
-    marker.type = visualization_msgs::msg::Marker::LINE_LIST;
-
-    geometry_msgs::msg::Point p;
-    p.z = 0;
+    marker.ns = "walls";
+    marker.id = 1234;
+    marker.color.r = 1.0;
+    marker.color.g = 0.5;
+    marker.color.b = 0.25;
+    marker.color.a = 1.0;
     
-    p.x = simulation_settings.wall_1[0] - (simulation_settings.wall_1[2]/2);
-    p.y = simulation_settings.wall_1[1] - (simulation_settings.wall_1[3]/2);
-    marker.points.push_back(p);
+    marker.pose.position.x = 0.0;
+    marker.pose.position.y = 0.0;
+    marker.pose.position.z = 0.0;
 
-    p.x = simulation_settings.wall_1[0] + (simulation_settings.wall_1[2]/2);
-    p.y = simulation_settings.wall_1[1] + (simulation_settings.wall_1[3]/2);
-    marker.points.push_back(p);
+    marker.pose.orientation.x = 0;
+    marker.pose.orientation.y = 0;
+    marker.pose.orientation.z = 0;
+    marker.pose.orientation.w = 1.0;
 
-    p.x = simulation_settings.wall_2[0] - (simulation_settings.wall_2[2]/2);
-    p.y = simulation_settings.wall_2[1] - (simulation_settings.wall_2[3]/2);
-    marker.points.push_back(p);
+    marker.scale.x = .01;
 
-    p.x = simulation_settings.wall_2[0] + (simulation_settings.wall_2[2]/2);
-    p.y = simulation_settings.wall_2[1] + (simulation_settings.wall_2[3]/2);
-    marker.points.push_back(p);
+    marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
 
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization/drone", 10);
+    geometry_msgs::msg::Point p1;
+    p1.z = 0.f;
 
 
-    // publish markers
-    visualization_msgs::msg::MarkerArray markers;
-    markers.markers.reserve(1);
-    markers.markers.push_back(marker);
-    viz_publisher->publish(markers);
+    p1.x = 0.0f;
+    p1.y = 0.0f;
+    marker.points.push_back(p1);
 
+    p1.x = simulation_settings.table_size[0];
+    p1.y = 0;
+    marker.points.push_back(p1);
+
+    p1.x = simulation_settings.table_size[0];
+    p1.y = simulation_settings.table_size[1];
+    marker.points.push_back(p1);
+
+    p1.x = 0;
+    p1.y = simulation_settings.table_size[1];
+    marker.points.push_back(p1);
+
+    p1.x = 0;
+    p1.y = 0;
+    marker.points.push_back(p1);
+
+    wall_markers.markers.push_back(marker);
 }
 
 void SimulatorNode::init_hovercrafts()
@@ -152,9 +169,19 @@ void SimulatorNode::init_hovercrafts()
 
 void SimulatorNode::init_timer()
 {
-    timer = this->create_wall_timer(
+    simulation_timer = this->create_wall_timer(
             std::chrono::duration<double>(simulation_settings.period),
             std::bind(&SimulatorNode::simulation_step, this));
+
+    wall_timer = this->create_wall_timer(
+            std::chrono::duration<double>(simulation_settings.period),
+            std::bind(&SimulatorNode::publish_wall, this));
+
+
+}
+void SimulatorNode::publish_wall()
+{
+    viz_publisher->publish(wall_markers);
 }
 
 void SimulatorNode::simulation_step()
