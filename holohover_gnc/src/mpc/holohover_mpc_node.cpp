@@ -9,7 +9,7 @@ using namespace std::chrono;
 
 HolohoverControlMPCNode::HolohoverControlMPCNode() :
         Node("control_mpc"),
-        holohover_props(load_holohover_pros(*this)),
+        holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
         control_settings(load_control_mpc_settings(*this)),
         holohover(holohover_props, control_settings.period),
         ocp(control_settings, holohover),
@@ -18,7 +18,6 @@ HolohoverControlMPCNode::HolohoverControlMPCNode() :
         opt_problem(transcription, tape),
         solver(opt_problem)
 {
-
         ocp.set_tf(1);
 
         ocp.u_ub.setConstant(0.2);

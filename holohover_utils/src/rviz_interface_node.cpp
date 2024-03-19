@@ -3,12 +3,14 @@
 
 RvizInterfaceNode::RvizInterfaceNode() :
         Node("rviz_interface"),
-        holohover_props(load_holohover_pros(*this)),
+        holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
         holohover(holohover_props)
 {
-    RCLCPP_INFO(get_logger(), "Starting rviz node for id: %d", holohover_props.id);
+    int id = declare_parameter<int>("id");
 
-    marker_id_counter = 1000 * holohover_props.id;
+    RCLCPP_INFO(get_logger(), "Starting rviz node for id: %d", id);
+
+    marker_id_counter = 1000 * id;
 
     std::vector<double> colors = declare_parameter<std::vector<double>>("color");
 

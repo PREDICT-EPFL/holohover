@@ -2,7 +2,7 @@
 
 SimulatorNode::SimulatorNode() :
     Node("simulator"),
-    holohover_props(load_holohover_pros(*this)),
+    holohover_props(load_holohover_pros(declare_parameter<std::vector<std::string>>("holohover_props_files")[0])),
     simulation_settings(load_simulation_settings(*this)),
     holohover(holohover_props, simulation_settings.period),
     gravity(0.0f, 0.0f),
@@ -163,6 +163,7 @@ void SimulatorNode::init_hovercrafts()
         topic_name = "/hovercraft" + std::to_string(simulation_settings.hovercraft_ids[i]) + "/pose";
         pose_publishers.push_back(this->create_publisher<geometry_msgs::msg::PoseStamped>(
             topic_name, rclcpp::SensorDataQoS()));
+
     }
     
 }
