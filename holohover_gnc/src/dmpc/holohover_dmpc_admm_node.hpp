@@ -27,6 +27,8 @@ SOFTWARE.*/
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 
+#include "std_msgs/msg/u_int64.hpp"
+
 #include "holohover_common/models/holohover_model.hpp"
 #include "holohover_msgs/msg/holohover_state_stamped.hpp"
 #include "holohover_msgs/msg/holohover_admm_stamped.hpp"
@@ -86,6 +88,8 @@ private:
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverState>::SharedPtr reference_subscription;
 
+    rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr publish_control_subscription; //triggers publish_control()
+
     
     //GS BEGIN
     Eigen::VectorXd state_ref;   //GS: m_xd
@@ -96,7 +100,7 @@ private:
     Holohover::control_force_t<double> last_control_signal;
     Holohover::control_force_t<double> u_signal;
 
-    VectorXd sol; //GS: OCP solution
+    // VectorXd sol; //GS: OCP solution
     int my_id; //GS: move to config?
     int Nagents;
 
@@ -143,17 +147,24 @@ private:
     std::vector<int> out_neighbors;             //N_out_neighbors x 1
     int N_in_neighbors;
     int N_out_neighbors;
+
+    rclcpp::SubscriptionOptions receive_vin_options;
+    rclcpp::SubscriptionOptions receive_vout_options;
+    rclcpp::CallbackGroup::SharedPtr receive_vin_cb_group;
+    rclcpp::CallbackGroup::SharedPtr receive_vout_cb_group;
+
     //GS END
     
     
     
     void init_topics();
     void init_timer();
-    void publish_control();
+    void publish_control(const std_msgs::msg::UInt64 &publish_control_msg);
     void publish_trajectory();
     void publish_laopt_speed(const long &duration_us );
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverState &pose);
+
 
     //GS BEGIN
     void set_state_in_ocp();
@@ -170,7 +181,7 @@ private:
         
     void build_qp(); //construct the sProb
     
-    int solve(unsigned int maxiter_, Eigen::VectorXd& zbar_);
+    int solve(unsigned int maxiter_);
 
     //before averaging
     void update_v_in();     //place z into v_in
@@ -196,14 +207,20 @@ private:
 
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_subscriber;
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_subscriber;
+    // rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr v_in_subscriber;
+    // rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr v_out_subscriber;
 
     Eigen::Array<bool,Dynamic,1> received_vin;
     Eigen::Array<bool,Dynamic,1> received_vout;
 
-    void received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_); //, int in_neighbor_id_
-    void received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_); //, int out_neighbor_id_
+    void received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_id_); //
+    void received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_id_); //
+    std::vector<std::function<void(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_)>> bound_received_vin_callback;
+    std::vector<std::function<void(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_)>> bound_received_vout_callback;
 
     int update_g_beq(); 
+
+    // std::string build_node_name( int my_id_);
     
     //GS END
 };

@@ -1,6 +1,6 @@
-control_dmpc:
+control_dmpc3:
   ros__parameters:
-    period: 0.1
+    period: 40.0
     rho: 1.0
     maxiter: 5
     nx: 6

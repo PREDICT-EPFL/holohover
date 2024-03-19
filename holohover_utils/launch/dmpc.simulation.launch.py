@@ -17,7 +17,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/dmpc.launch.py'))
     )
 
-    ld.add_action(simulation_env_launch)
+    # ld.add_action(simulation_env_launch)
     ld.add_action(dmpc_launch)
 
     return ld
