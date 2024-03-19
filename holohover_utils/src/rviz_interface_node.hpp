@@ -10,7 +10,6 @@
 #include "holohover_msgs/msg/holohover_trajectory.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include "holohover_common/models/holohover_model.hpp"
-#include "holohover_common/utils/holohover_props.hpp"
 
 class RvizInterfaceNode : public rclcpp::Node
 {
