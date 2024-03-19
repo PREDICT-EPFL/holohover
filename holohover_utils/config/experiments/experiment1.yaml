@@ -9,16 +9,16 @@ experiment:
 hovercrafts:
   - name: hovercraft0
     id: "0"
-    initial_state: [0, 0, 0, 0, 0, 0]
+    initial_state: [1, 1, 0, 0, 0, 0]
 
   - name: hovercraft1
     id: "1"
-    initial_state: [0, 0, 0, 0, 0, 0]
+    initial_state: [1, 1.2, 0, 0, 0, 0]
 
   - name: hovercraft2
     id: "2"
-    initial_state: [0, 0, 0, 0, 0, 0]
+    initial_state: [1.2, 1, 0, 0, 0, 0]
 
   - name: hovercraft3
     id: "3"
-    initial_state: [0, 0, 0, 0, 0, 0]
+    initial_state: [1.2, 1.2, 0, 0, 0, 0]
