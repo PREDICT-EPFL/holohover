@@ -153,6 +153,15 @@ private:
     rclcpp::CallbackGroup::SharedPtr receive_vin_cb_group;
     rclcpp::CallbackGroup::SharedPtr receive_vout_cb_group;
 
+    bool dmpc_is_initialized;
+
+    std::ostringstream fileName_z;
+    std::ofstream file_z;
+    std::ostringstream fileName_zbar;
+    std::ofstream file_zbar;
+    std::ostringstream fileName_gam;
+    std::ofstream file_gam;
+
     //GS END
     
     

@@ -49,7 +49,7 @@ def generate_launch_description():
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config0],
         # arguments = 0,
-        output='screen'
+        output='both'
     )
 
     controller_node1 = Node(
@@ -58,7 +58,7 @@ def generate_launch_description():
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config1],
         # arguments = 1,
-        output='screen'
+        output='both'
     )
 
     controller_node2 = Node(
@@ -67,7 +67,7 @@ def generate_launch_description():
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config2],
         # arguments = 2,
-        output='screen'
+        output='both'
     )
 
     controller_node3 = Node(
@@ -76,7 +76,7 @@ def generate_launch_description():
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config3],
         # arguments = 3,
-        output='screen'
+        output='both'
     )
 
     trigger_node = Node(
@@ -84,7 +84,7 @@ def generate_launch_description():
         package="holohover_gnc",
         executable="dmpc_trigger",
         parameters=[dmpc_trigger_config],
-        output='screen' 
+        output='both'
     )
 
     ld.add_action(controller_node0)
