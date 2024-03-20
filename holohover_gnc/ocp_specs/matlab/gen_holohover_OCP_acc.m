@@ -46,4 +46,4 @@ xinit = []; %solver initialization
 sProb = holohover_sProb_acc(Nrobot,N,Ts,xx0,uu0,xxd,xinit);
 
 %export C code
-gen_c_sProb(sProb);
+%gen_c_sProb(sProb);

@@ -45,7 +45,40 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
 
     p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd);
+
+    // Dummy QP parameters for checking that ADMM works
+    //initial positions
+    Vector2d x10; x10 << 0.5, 0.0;
+    Vector2d x20; x20 << 0.15, 0.3;
+    Vector2d x30; x30 << -0.15, -0.3;
+    Vector2d x40; x40 << -0.5, 0.0;
+
+    //desired positions
+    Vector2d x1d; x1d << 0.7, -0.7;
+    Vector2d x2d; x2d << -0.4, 0.0;
+    Vector2d x3d; x3d << -0.4, 0.0;
+    Vector2d x4d; x4d << -0.4, 0.0;
+
+    if (my_id == 0){
+        p[0] = x10[0]; p[1] = x10[1];
+        p[9] = x1d[0]; p[10] = x1d[1];
+        p[15] = x2d[0]; p[16] = x2d[1]; 
+    } else if (my_id == 1){
+        p[0] = x20[0]; p[1] = x20[1];
+        p[9] = x2d[0]; p[10] = x2d[1];
+        p[15] = x3d[0]; p[16] = x3d[1];     
+    } else if (my_id == 2){
+        p[0] = x30[0]; p[1] = x30[1];
+        p[9] = x3d[0]; p[10] = x3d[1];
+        p[15] = x4d[0]; p[16] = x4d[1]; 
+    } else if (my_id == 3){
+        p[0] = x40[0]; p[1] = x40[1];
+        p[9] = x4d[0]; p[10] = x4d[1];
+    }
+
+    state(0) = p(0); state(1) = p(1); state(2) = p(2); state(3) = p(3); state(4) = p(4); state(5) = p(5);
     state_ref = p.segment(control_settings.nx+control_settings.nu,control_settings.nxd); //todo
+
 
 
     build_qp();
@@ -58,7 +91,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     Ncons = sprob.A[my_id].rows();
 
-    double rho = 1.0;
+    rho = 1.0;
     H_bar = sprob.H[my_id] + rho * MatrixXd::Identity(nx,nx);
     g = sprob.g[my_id];
     A = MatrixXd::Zero(ng+nh,nx);
@@ -203,18 +236,32 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         std::cout << "I am agent " << my_id << " and I am subscribing to " << v_in_sub_topic << std::endl;
     }
        
-    // v_in_msg_idx_first_received.resize(N_in_neighbors);
-    // v_out_msg_idx_first_received.resize(N_out_neighbors);
+    v_in_msg_idx_first_received.resize(N_in_neighbors);
+    v_out_msg_idx_first_received.resize(N_out_neighbors);
 
-    
-    // std::cout << "calling init_dmpc" << std::endl;
-    // init_dmpc();
     std::cout << "calling init_timer" << std::endl;
     init_timer();
     std::cout << "calling init_topics" << std::endl;
     init_topics();
 
+    dmpc_is_initialized = false;
+
+    std::time_t t = std::time(0);   // get time now
+    std::tm* now = std::localtime(&t);
+    
+    fileName_z << "z" << "_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
+    file_z = std::ofstream(fileName_z.str());
+    fileName_zbar << "zbarlog" << "_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
+    file_zbar = std::ofstream(fileName_zbar.str());
+    fileName_gam << "gamlog" << "_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
+    file_gam = std::ofstream(fileName_gam.str());
     std::cout << "finished constructing dmpc admm node" << std::endl;
+    file_z.open(fileName_z.str(),std::ios_base::app);
+    file_z.close(); 
+    file_zbar.open(fileName_zbar.str(),std::ios_base::app);
+    file_zbar.close();
+    file_gam.open(fileName_gam.str(),std::ios_base::app);
+    file_gam.close();
 
 }
 
@@ -278,22 +325,22 @@ void HolohoverDmpcAdmmNode::init_comms(){
     while (!received.all()){
         for (int i = 0; i < N_out_neighbors; i++){
             if (!received(i)){
-                if (received_vout[i]){ //has received a new message
-                    received[i] = true;
-                    received_vout[i] = false;
+                if (received_vout(i)){ //has received a new message
+                    received(i) = true;
+                    received_vout(i) = false;
                     std::cout << "have received from out-neighbor " << i << std::endl;
                     v_out_msg_idx_first_received[i] = v_out_msg_recv_buff[i].idx;
                 }
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-        for (int i = 0; i < N_in_neighbors; i++){
-            // std::cout << "resending to in-neighbor " << i << std::endl; 
-            v_in_publisher[i]->publish(v_in_msg[i]); //ros
-        }
-        for (int i = 0; i < N_out_neighbors; i++){
-            v_out_publisher[i]->publish(v_out_msg[i]); //ros
-        }
+        // std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+        // for (int i = 0; i < N_in_neighbors; i++){
+        //     // std::cout << "resending to in-neighbor " << i << std::endl; 
+        //     v_in_publisher[i]->publish(v_in_msg[i]); //ros
+        // }
+        // for (int i = 0; i < N_out_neighbors; i++){
+        //     v_out_publisher[i]->publish(v_out_msg[i]); //ros
+        // }
     }
 
     //send vout
@@ -306,6 +353,7 @@ void HolohoverDmpcAdmmNode::init_comms(){
         for (int j = 0; j < nx; j++){
             if (isOriginal[j]){
                 v_out_msg[i].value[idx_row] = zbar[j];
+                v_out_msg[i].idx[idx_row] = j;
                 idx_row += 1;
             }
             if (idx_row == v_out_msg[i].val_length){
@@ -321,40 +369,44 @@ void HolohoverDmpcAdmmNode::init_comms(){
     while (!received.all()){
         for (int i = 0; i < N_in_neighbors; i++){
             if (!received(i)){
-                if (received_vin[i]){
-                    received_vin[i] = false;
-                    received[i] = true;
+                if (received_vin(i)){
+                    received_vin(i) = false;
+                    received(i) = true;
                     v_in_msg_idx_first_received[i] = v_in_msg_recv_buff[i].idx;
                 }
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-        for (int i = 0; i < N_in_neighbors; i++){
-            v_in_publisher[i]->publish(v_in_msg[i]); //ros
-        }
-        for (int i = 0; i < N_out_neighbors; i++){
-            v_out_publisher[i]->publish(v_out_msg[i]); //ros
-        }
+        // std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+        // for (int i = 0; i < N_in_neighbors; i++){
+        //     v_in_publisher[i]->publish(v_in_msg[i]); //ros
+        // }
+        // for (int i = 0; i < N_out_neighbors; i++){
+        //     v_out_publisher[i]->publish(v_out_msg[i]); //ros
+        // }
     }
 
 
-    for (int i = 0; i < N_out_neighbors; i++){
-        v_out_msg[i].idx_length = 0;
-        v_out_msg[i].idx.resize(0);        
-    }
-    for (int i = 0; i < N_in_neighbors; i++){
-        v_in_msg[i].idx_length = 0;
-        v_in_msg[i].idx.resize(0);
-    }
-
-
-    
+    // for (int i = 0; i < N_out_neighbors; i++){
+    //     v_out_msg[i].idx_length = 0;
+    //     v_out_msg[i].idx.resize(0);  //reduce ADMM message size for solve      
+    // }
+    // for (int i = 0; i < N_in_neighbors; i++){
+    //     v_in_msg[i].idx_length = 0;
+    //     v_in_msg[i].idx.resize(0);  //reduce ADMM message size for solve
+    // }   
 
     return;
 }
 
 void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish_control_msg)
 {
+    if(!dmpc_is_initialized){
+        init_dmpc();
+        dmpc_is_initialized = true;
+    } 
+    
+    
+    
     std::cout << "starting publish_control()" << std::endl;
     set_state_in_ocp();
     set_u_acc_curr_in_ocp();
@@ -366,25 +418,29 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     std::cout << "calling solve" << std::endl;
     solve(control_settings.maxiter);
 
+    
+ 
+      
+
     const steady_clock::time_point t_end = steady_clock::now();
     const long duration_us = duration_cast<microseconds>(t_end - t_start).count();
     std::cout << "ADMM duration_ms  =" <<duration_us/1000 << std::endl;
 
-    get_u_acc_from_sol();
+    // get_u_acc_from_sol();
 
-    //publish_trajectory();
+    // //publish_trajectory();
 
-    convert_u_acc_to_u_signal();
+    // convert_u_acc_to_u_signal();
 
-    control_msg.header.frame_id = "body";
-    control_msg.header.stamp = this->now();
-    control_msg.motor_a_1 = u_signal(0);
-    control_msg.motor_a_2 = u_signal(1);
-    control_msg.motor_b_1 = u_signal(2);
-    control_msg.motor_b_2 = u_signal(3);
-    control_msg.motor_c_1 = u_signal(4);
-    control_msg.motor_c_2 = u_signal(5);
-    control_publisher->publish(control_msg);
+    // control_msg.header.frame_id = "body";
+    // control_msg.header.stamp = this->now();
+    // control_msg.motor_a_1 = u_signal(0);
+    // control_msg.motor_a_2 = u_signal(1);
+    // control_msg.motor_b_1 = u_signal(2);
+    // control_msg.motor_b_2 = u_signal(3);
+    // control_msg.motor_c_1 = u_signal(4);
+    // control_msg.motor_c_2 = u_signal(5);
+    // control_publisher->publish(control_msg);
 }
 
 void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
@@ -538,7 +594,7 @@ void HolohoverDmpcAdmmNode::init_dmpc()
     zbar  = VectorXd::Zero(nx);
     gam   = VectorXd::Zero(nx);
 
-    solve(10); //initializes data structures in admmAgent
+    // solve(5); //initializes data structures in admmAgent
 
     //reset all ADMM variables to zero. 
     z     = VectorXd::Zero(nx);
@@ -896,11 +952,13 @@ void HolohoverDmpcAdmmNode::init_coupling()
 int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
 {
     // zbar = zbar_;
+    
     for (unsigned int iter = 0; iter < maxiter_; iter++){
 
         // std::cout << "Starting ADMM iteration " << iter << std::endl;
 
         //Step 1: local z update
+        std::cout << "rho = " << rho << std::endl;
 
         // std::cout << "updating g_bar" << std::endl;
         g_bar = g + gam - rho*zbar;
@@ -910,6 +968,9 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
                            lb.data(), ub.data(), lbA.data(), ubA.data(), nWSR);
         // std::cout << "extract qpOASES solution" << std::endl;
         loc_prob.getPrimalSolution(z.data());
+        if(my_id == 1){
+            std::cout << "I am agent 1 and z[0] =  " << z[0] << std::endl; 
+        } 
         // std::cout << "put qpOASES solution into XV" << std::endl;
         for (int i = 0; i < N_og; i++){
             auto idx = og_idx_to_idx.find(i);
@@ -936,7 +997,26 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
 
         // Step 3: dual update
         // std::cout << "dual update" << std::endl;
-        gam = gam + rho*(z-zbar);  
+        gam = gam + rho*(z-zbar);
+
+        file_z.open(fileName_z.str(),std::ios_base::app);
+        if (file_z.is_open())
+        {
+        file_z << z.transpose() << "\n"; 
+        }
+        file_z.close(); 
+        file_zbar.open(fileName_zbar.str(),std::ios_base::app);
+        if (file_zbar.is_open())
+        {
+        file_zbar << zbar.transpose() << "\n"; 
+        }
+        file_zbar.close();
+        file_gam.open(fileName_gam.str(),std::ios_base::app);
+        if (file_gam.is_open())
+        {
+        file_gam << gam.transpose() << "\n"; 
+        }
+        file_gam.close();   
 
     }
 
@@ -990,7 +1070,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(){
                     received_vout(i) = false; 
                     int idx = 0;
                     for (int j = 0; j < v_out_msg_recv_buff[i].val_length; j++){
-                        idx = v_out_msg_recv_buff[i].idx[j]; //  v_out_msg_idx_first_received[i][j];
+                        idx = v_out_msg_idx_first_received[i][j];
                         auto og_idx = idx_to_og_idx.find(idx);
                         if (og_idx != idx_to_og_idx.end()){
                             XV[og_idx->second].push_back(v_out_msg_recv_buff[i].value[j]); //careful: the order in XV will depend on the order in which the messages arrive. But that does not affect the average value.
@@ -1051,7 +1131,7 @@ void HolohoverDmpcAdmmNode::send_vout_receive_vin(){
                     received(i) = true;
                     //move to callback?
                     for (int j = 0; j < v_in_msg_recv_buff[i].val_length; j++){
-                        og_idx = v_in_msg_recv_buff[i].idx[j]; //  v_in_msg_idx_first_received[i][j];
+                        og_idx = v_in_msg_idx_first_received[i][j];
                         auto tmp = v_in[i].og_idx_to_cpy_idx.find(og_idx);
                         if (tmp != v_in[i].og_idx_to_cpy_idx.end()){
                             cpy_idx = tmp->second;
