@@ -63,9 +63,6 @@ SOFTWARE.*/
 class HolohoverDmpcAdmmNode : public rclcpp::Node
 {
 public:
-    static constexpr int N = 20;
-
-public:
     HolohoverDmpcAdmmNode();
     ~HolohoverDmpcAdmmNode();
 private:
@@ -155,27 +152,21 @@ private:
 
     bool dmpc_is_initialized;
 
-    std::ostringstream fileName_z;
-    std::ofstream file_z;
-    std::ostringstream fileName_zbar;
-    std::ofstream file_zbar;
-    std::ostringstream fileName_gam;
-    std::ofstream file_gam;
-
-    //GS END
-    
+    // std::ostringstream fileName_z;
+    // std::ofstream file_z;
+    // std::ostringstream fileName_zbar;
+    // std::ofstream file_zbar;
+    // std::ostringstream fileName_gam;
+    // std::ofstream file_gam;
     
     
     void init_topics();
-    void init_timer();
     void publish_control(const std_msgs::msg::UInt64 &publish_control_msg);
     void publish_trajectory();
     void publish_laopt_speed(const long &duration_us );
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverState &pose);
 
-
-    //GS BEGIN
     void set_state_in_ocp();
     void set_u_acc_curr_in_ocp();
     void get_u_acc_from_sol();
@@ -216,8 +207,6 @@ private:
 
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_subscriber;
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_subscriber;
-    // rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr v_in_subscriber;
-    // rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr v_out_subscriber;
 
     Eigen::Array<bool,Dynamic,1> received_vin;
     Eigen::Array<bool,Dynamic,1> received_vout;
@@ -228,10 +217,6 @@ private:
     std::vector<std::function<void(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_)>> bound_received_vout_callback;
 
     int update_g_beq(); 
-
-    // std::string build_node_name( int my_id_);
-    
-    //GS END
 };
 
 
