@@ -6,18 +6,19 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
-from launch_ros.descriptions import ParameterValue
 from launch_ros.actions import Node
-import launch_ros.actions
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
 import yaml
 
-def generate_launch_description():
-    ld = LaunchDescription()
+def launch_setup(context):
+    
+    experiment_filename = LaunchConfiguration('experiment').perform(context)
+
+    print(f"Launching experiment from file: {experiment_filename}")
+
+    launch_description = []
 
     this_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # ToDo: add parameter for experiment file
-    experiment_filename = "experiment1.yaml"
     
     experiment_conf = os.path.join(
         get_package_share_directory('holohover_utils'), 
@@ -90,8 +91,8 @@ def generate_launch_description():
         output='screen'
     )
 
-    ld.add_action(simulator_node)
-    ld.add_action(simulation_env_launch)
+    launch_description.append(simulator_node)
+    launch_description.append(simulation_env_launch)
    
     # Now iterate on each hovercraft and launch the nodes for each one
     print(f"Starting {number_of_hovercrafts} hovercrafts")
@@ -133,7 +134,23 @@ def generate_launch_description():
             output='screen'
         )
         
-        ld.add_action(controller_node)        
-        ld.add_action(navigation_node)
-        ld.add_action(rviz_interface_node)
+        launch_description.append(controller_node)        
+        launch_description.append(navigation_node)
+        launch_description.append(rviz_interface_node)
+    return launch_description
+
+
+def generate_launch_description():
+    ld = LaunchDescription()
+
+    opfunc = OpaqueFunction(function = launch_setup)
+
+    ld.add_action(DeclareLaunchArgument(
+        'experiment', default_value='experiment1.yaml',
+        description='Experiment File'
+    ))
+
+    ld.add_action(opfunc)   
+
     return ld
+
