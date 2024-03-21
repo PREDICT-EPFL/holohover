@@ -23,6 +23,9 @@ find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs)
 find_package(holohover_msgs REQUIRED)
 find_package(holohover_common REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(box2d REQUIRED)
+
 
 #set build type to RELEASE by default
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
@@ -57,6 +60,10 @@ ament_target_dependencies(control_mpc rclcpp geometry_msgs holohover_msgs holoho
 target_compile_options(control_mpc PRIVATE "-Wno-unused-parameter")
 target_link_libraries(control_mpc yaml-cpp)
 
+add_executable(simulator src/simulator/simulator_node.cpp)
+ament_target_dependencies(simulator rclcpp holohover_msgs holohover_common visualization_msgs geometry_msgs box2d tf2_ros )
+target_link_libraries(simulator box2d yaml-cpp)
+
 add_executable(double_integrator_test src/mpc/double_integrator_test.cpp)
 target_include_directories(double_integrator_test PRIVATE external/laopt/include)
 ament_target_dependencies(double_integrator_test rclcpp holohover_common)
@@ -69,7 +76,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
-  navigation control_lqr control_signal control_exp double_integrator_test control_mpc
+  navigation control_lqr control_signal control_exp double_integrator_test control_mpc simulator
   DESTINATION lib/${PROJECT_NAME}
 )
 
