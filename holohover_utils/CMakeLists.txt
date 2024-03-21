@@ -16,6 +16,7 @@ find_package(ament_cmake_python REQUIRED)
 
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 find_package(tf2 REQUIRED)
