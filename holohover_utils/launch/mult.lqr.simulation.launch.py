@@ -76,7 +76,7 @@ def launch_setup(context):
     )
 
     simulator_node = Node(
-        package="holohover_utils",
+        package="holohover_gnc",
         executable="simulator",
         parameters=[simulator_config,
                     { "hovercrafts" : hovercraft_ids, 
