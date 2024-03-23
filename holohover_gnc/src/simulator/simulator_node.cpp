@@ -8,7 +8,7 @@ SimulatorNode::SimulatorNode() :
     gravity(0.0f, 0.0f),
     world(std::make_unique<b2World>(gravity))
 {
-    init_box2d_world(); // ToDo set positions and sizes of walls
+    init_box2d_world();
 
     viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization/drone", 10);
 
@@ -119,10 +119,6 @@ void SimulatorNode::init_timer()
     simulation_timer = this->create_wall_timer(
             std::chrono::duration<double>(simulation_settings.period),
             std::bind(&SimulatorNode::simulation_step, this));
-}
-void SimulatorNode::publish_wall()
-{
-    viz_publisher->publish(wall_markers);
 }
 
 void SimulatorNode::simulation_step()
