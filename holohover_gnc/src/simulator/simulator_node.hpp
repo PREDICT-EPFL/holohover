@@ -9,7 +9,7 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "holohover_common/utils/holohover_props.hpp"
 #include "holohover_common/models/holohover_model.hpp"
-#include "simulation_settings.hpp"
+#include "holohover_common/utils/simulation_settings.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 #include "holohover_msgs/msg/holohover_state_stamped.hpp"
