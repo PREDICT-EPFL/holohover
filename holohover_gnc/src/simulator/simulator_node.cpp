@@ -2,8 +2,8 @@
 
 SimulatorNode::SimulatorNode() :
     Node("simulator"),
-    holohover_props(load_holohover_pros(declare_parameter<std::vector<std::string>>("holohover_props_files")[0])),
     simulation_settings(load_simulation_settings(*this)),
+    holohover_props(load_holohover_pros(simulation_settings.holohover_props_files[0])),
     holohover(holohover_props, simulation_settings.period),
     gravity(0.0f, 0.0f),
     world(std::make_unique<b2World>(gravity))

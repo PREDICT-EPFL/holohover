@@ -41,8 +41,8 @@ class SimulatorNode : public rclcpp::Node
 public:
     SimulatorNode();
 private:
-    HolohoverProps holohover_props;
     SimulationSettings simulation_settings;
+    HolohoverProps holohover_props;
 
     Holohover holohover;
 
