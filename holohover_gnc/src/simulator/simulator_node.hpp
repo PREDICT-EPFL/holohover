@@ -51,13 +51,11 @@ private:
 
     std::vector<body_ptr> hovercraft_bodies;
 
-    rclcpp::TimerBase::SharedPtr simulation_timer, wall_timer;
+    rclcpp::TimerBase::SharedPtr simulation_timer;
 
     std::vector<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr> pose_publishers;
     
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_publisher;
-
-    visualization_msgs::msg::MarkerArray wall_markers;
 
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr> control_subscriptions;
 
@@ -72,7 +70,6 @@ private:
     void init_timer();
     void init_box2d_world();
     void simulation_step();
-    void publish_wall();
 
     void calculate_control_acc(Holohover::state_t<double> state, Holohover::control_force_t<double> motor_velocities, Holohover::control_acc_t<double> &current_control_acc);
 
