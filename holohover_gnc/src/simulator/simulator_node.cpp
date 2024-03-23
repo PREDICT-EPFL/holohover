@@ -175,7 +175,7 @@ void SimulatorNode::init_timer()
             std::bind(&SimulatorNode::simulation_step, this));
 
     wall_timer = this->create_wall_timer(
-            std::chrono::duration<double>(simulation_settings.period),
+            std::chrono::duration<double>(1),
             std::bind(&SimulatorNode::publish_wall, this));
 
 
