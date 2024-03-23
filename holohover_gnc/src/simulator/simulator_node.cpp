@@ -45,60 +45,6 @@ void SimulatorNode::init_box2d_world()
     wallDef.position.Set(0, simulation_settings.table_size[1] / 2);
     wall = world->CreateBody(&wallDef);
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
-    
-
-
-    // Publish marker for wall visualization
-    visualization_msgs::msg::Marker marker;
-    marker.header.stamp = now();
-
-    marker.header.frame_id = "world";
-    marker.action = visualization_msgs::msg::Marker::ADD;
-    marker.ns = "walls";
-    marker.id = 1234;
-    marker.color.r = 1.0;
-    marker.color.g = 0.5;
-    marker.color.b = 0.25;
-    marker.color.a = 1.0;
-    
-    marker.pose.position.x = 0.0;
-    marker.pose.position.y = 0.0;
-    marker.pose.position.z = 0.0;
-
-    marker.pose.orientation.x = 0;
-    marker.pose.orientation.y = 0;
-    marker.pose.orientation.z = 0;
-    marker.pose.orientation.w = 1.0;
-
-    marker.scale.x = .01;
-
-    marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
-
-    geometry_msgs::msg::Point p1;
-    p1.z = 0.f;
-
-
-    p1.x = 0.0f;
-    p1.y = 0.0f;
-    marker.points.push_back(p1);
-
-    p1.x = simulation_settings.table_size[0];
-    p1.y = 0;
-    marker.points.push_back(p1);
-
-    p1.x = simulation_settings.table_size[0];
-    p1.y = simulation_settings.table_size[1];
-    marker.points.push_back(p1);
-
-    p1.x = 0;
-    p1.y = simulation_settings.table_size[1];
-    marker.points.push_back(p1);
-
-    p1.x = 0;
-    p1.y = 0;
-    marker.points.push_back(p1);
-
-    wall_markers.markers.push_back(marker);
 }
 
 void SimulatorNode::init_hovercrafts()
@@ -173,12 +119,6 @@ void SimulatorNode::init_timer()
     simulation_timer = this->create_wall_timer(
             std::chrono::duration<double>(simulation_settings.period),
             std::bind(&SimulatorNode::simulation_step, this));
-
-    wall_timer = this->create_wall_timer(
-            std::chrono::duration<double>(1),
-            std::bind(&SimulatorNode::publish_wall, this));
-
-
 }
 void SimulatorNode::publish_wall()
 {

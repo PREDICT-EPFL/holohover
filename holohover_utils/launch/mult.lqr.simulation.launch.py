@@ -91,8 +91,25 @@ def launch_setup(context):
         output='screen'
     )
 
+    rviz_wall_publisher_node = Node(
+        package="holohover_utils",
+        executable="rviz_wall_publisher",
+        parameters=[simulator_config,
+                    { "hovercrafts" : hovercraft_ids, 
+                      "initial_state_x":       initial_states['x'], 
+                      "initial_state_y":       initial_states['y'], 
+                      "initial_state_theta":   initial_states['theta'], 
+                      "initial_state_vx":      initial_states['vx'], 
+                      "initial_state_vy":      initial_states['vy'], 
+                      "initial_state_w":       initial_states['w'],
+                      "holohover_props_files": holohover_params                                          
+                    }],
+        output='screen'
+    )
+
     launch_description.append(simulator_node)
     launch_description.append(simulation_env_launch)
+    launch_description.append(rviz_wall_publisher_node)
    
     # Now iterate on each hovercraft and launch the nodes for each one
     print(f"Starting {number_of_hovercrafts} hovercrafts")

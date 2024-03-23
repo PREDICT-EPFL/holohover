@@ -34,6 +34,9 @@ target_link_libraries(rviz_interface yaml-cpp)
 add_executable(optitrack_interface src/optitrack_interface_node.cpp)
 ament_target_dependencies(optitrack_interface rclcpp geometry_msgs tf2 tf2_geometry_msgs)
 
+add_executable(rviz_wall_publisher src/rviz_wall_publisher.cpp)
+ament_target_dependencies(rviz_wall_publisher rclcpp geometry_msgs visualization_msgs holohover_common)
+
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})
 
@@ -43,7 +46,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
-  rviz_interface optitrack_interface
+  rviz_interface optitrack_interface rviz_wall_publisher
   DESTINATION lib/${PROJECT_NAME}
 )
 
