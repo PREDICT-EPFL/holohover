@@ -160,7 +160,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         }
         v_out_msg[i].id_sender = my_id;
 
-        std::string v_out_pub_topic = "/agent";
+        std::string v_out_pub_topic = "/dmpc/agent";
         v_out_pub_topic.append(std::to_string(my_id));
         v_out_pub_topic.append("ogforagent");
         v_out_pub_topic.append(std::to_string(neighbor_id));
@@ -168,7 +168,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
             v_out_pub_topic,
             rclcpp::SystemDefaultsQoS());
     
-        std::string v_out_sub_topic = "/agent";
+        std::string v_out_sub_topic = "/dmpc/agent";
         v_out_sub_topic.append(std::to_string(neighbor_id));
         v_out_sub_topic.append("copyofagent");
         v_out_sub_topic.append(std::to_string(my_id));
@@ -199,7 +199,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         }
         v_in_msg[i].id_sender = my_id;
 
-        std::string v_in_pub_topic = "/agent";
+        std::string v_in_pub_topic = "/dmpc/agent";
         v_in_pub_topic.append(std::to_string(my_id));
         v_in_pub_topic.append("copyofagent");
         v_in_pub_topic.append(std::to_string(neighbor_id));
@@ -207,7 +207,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
             v_in_pub_topic,
             rclcpp::SystemDefaultsQoS());
 
-        std::string v_in_sub_topic = "/agent";
+        std::string v_in_sub_topic = "/dmpc/agent";
         v_in_sub_topic.append(std::to_string(neighbor_id));
         v_in_sub_topic.append("ogforagent");
         v_in_sub_topic.append(std::to_string(my_id));
@@ -248,9 +248,8 @@ HolohoverDmpcAdmmNode::~HolohoverDmpcAdmmNode()
 
 void HolohoverDmpcAdmmNode::init_topics()
 {
-    std::string topic_name = "/hovercraft" + std::to_string(my_id) + "/control";    
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
-            topic_name,
+            "control",
             rclcpp::SensorDataQoS());
 
     // laopt_frequency_publisher = this->create_publisher<holohover_msgs::msg::HolohoverLaoptSpeedStamped>(
@@ -261,18 +260,16 @@ void HolohoverDmpcAdmmNode::init_topics()
             "control/HolohoverTrajectory",
             rclcpp::SensorDataQoS());
 
-    topic_name = "/hovercraft" + std::to_string(my_id) + "/state";
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
-            topic_name, 10,
+            "state", 10,
             std::bind(&HolohoverDmpcAdmmNode::state_callback, this, std::placeholders::_1));
 
-    topic_name = "/hovercraft" + std::to_string(my_id) + "/state_ref";
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(
-            topic_name, 10,
+            "dmpc_state_ref", 10,
             std::bind(&HolohoverDmpcAdmmNode::ref_callback, this, std::placeholders::_1));
 
     publish_control_subscription = this->create_subscription<std_msgs::msg::UInt64>(
-            "publish_control", 10,
+            "/dmpc/trigger", 10,
             std::bind(&HolohoverDmpcAdmmNode::publish_control, this, std::placeholders::_1));
 }
 

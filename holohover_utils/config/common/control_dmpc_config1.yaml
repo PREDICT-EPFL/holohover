@@ -1,4 +1,4 @@
-control_dmpc1:
+h1/dmpc:
   ros__parameters:
     period: 40.0
     rho: 1.0

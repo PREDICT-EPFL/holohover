@@ -44,38 +44,38 @@ def generate_launch_description():
     )
 
     controller_node0 = Node(
-        name="control_dmpc0",
+        name="dmpc",
         package="holohover_gnc",
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config0],
-        # arguments = 0,
+        namespace="h0",
         output='both'
     )
 
     controller_node1 = Node(
-        name="control_dmpc1",
+        name="dmpc",
         package="holohover_gnc",
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config1],
-        # arguments = 1,
+        namespace="h1",
         output='both'
     )
 
     controller_node2 = Node(
-        name="control_dmpc2",
+        name="dmpc",
         package="holohover_gnc",
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config2],
-        # arguments = 2,
+        namespace="h2",
         output='both'
     )
 
     controller_node3 = Node(
-        name="control_dmpc3",
+        name="dmpc",
         package="holohover_gnc",
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config3],
-        # arguments = 3,
+        namespace="h3",
         output='both'
     )
 

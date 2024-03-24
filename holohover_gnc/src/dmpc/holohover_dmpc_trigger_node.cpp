@@ -18,7 +18,7 @@ class HolohoverDmpcTrigger : public rclcpp::Node
     HolohoverDmpcTrigger()
     : Node("holohover_dmpc_trigger"), control_settings(load_control_dmpc_settings(*this)), count_(0)
     {
-      publisher_ = this->create_publisher<std_msgs::msg::UInt64>("publish_control", 10);
+      publisher_ = this->create_publisher<std_msgs::msg::UInt64>("/dmpc/trigger", 10);
       timer_ = this->create_wall_timer(
       std::chrono::duration<double>(control_settings.period), std::bind(&HolohoverDmpcTrigger::timer_callback, this));
     }
