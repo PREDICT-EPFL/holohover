@@ -31,7 +31,6 @@ public:
     HolohoverProps props;
     control_force_t<double> min_thrust;
     control_force_t<double> max_thrust;
-    Eigen::Map<Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> configuration_matrix;
 
     // continuous system dynamics for input u = (a_x, a_y, w_dot_z)
     Eigen::Matrix<double, NX, NX> A;
@@ -50,7 +49,7 @@ public:
     bool solver_initialized = false;
 
     explicit Holohover(HolohoverProps &_props, double _dt = 0.01)
-        : props(_props), configuration_matrix(props.configuration_matrix.data()), dt(_dt)
+        : props(_props), dt(_dt)
     {
         control_force_t<double> min_signal = control_force_t<double>::Constant(props.idle_signal);
         control_force_t<double> max_signal = control_force_t<double>::Constant(1.0);
@@ -127,6 +126,7 @@ public:
 
         if (props.use_configuration_matrix)
         {
+            Eigen::Map<const Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> configuration_matrix(props.configuration_matrix.data());
             linear_acceleration_body = configuration_matrix.topLeftCorner<2, NU>() * u;
             angular_acceleration = configuration_matrix.bottomLeftCorner<1, NU>() * u;
         }
@@ -187,6 +187,7 @@ public:
 
         if (props.use_configuration_matrix)
         {
+            Eigen::Map<const Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> configuration_matrix(props.configuration_matrix.data());
             force_to_linear_acceleration_body = configuration_matrix.topLeftCorner<2, NU>();
             force_to_angular_acceleration = configuration_matrix.bottomLeftCorner<1, NU>();
         }
