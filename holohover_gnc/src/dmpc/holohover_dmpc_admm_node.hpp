@@ -33,11 +33,10 @@ SOFTWARE.*/
 #include "holohover_msgs/msg/holohover_state_stamped.hpp"
 #include "holohover_msgs/msg/holohover_admm_stamped.hpp"
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
+#include "holohover_msgs/msg/holohover_dmpc_state_ref_stamped.hpp"
 #include "holohover_common/utils/holohover_props.hpp"
 #include "holohover_msgs/msg/holohover_trajectory.hpp"
 #include "holohover_msgs/msg/holohover_laopt_speed_stamped.hpp"
-// #include "holohover_msgs/msg/holohover_state_stamped.hpp"
-//#include "holohover_ocp.hpp"
 #include "control_dmpc_settings.hpp"
 
 #include <numeric> //accumulate
@@ -71,9 +70,8 @@ private:
 
     Holohover holohover;
     
-    Holohover::state_t<double> state;       //GS: m_x_meas
+    Holohover::state_t<double> state;
     
-    holohover_msgs::msg::HolohoverState ref;
     //holohover_msgs::msg::HolohoverLaoptSpeedStamped speed;
     holohover_msgs::msg::HolohoverLaoptSpeedStamped speed_msg;
     //geometry_msgs::msg::Pose2D ref;
@@ -83,13 +81,13 @@ private:
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverTrajectory>::SharedPtr HolohoverTrajectory_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverState>::SharedPtr reference_subscription;
+    rclcpp::Subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr reference_subscription;
 
     rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr publish_control_subscription; //triggers publish_control()
 
     
     //GS BEGIN
-    Eigen::VectorXd state_ref;   //GS: m_xd
+    Eigen::VectorXd state_ref;   //GS: VectorXd, because different subsystems can have different state_ref dimension
     Eigen::VectorXd p; //parameters for OCP ([x0; u0; xd])
     Holohover::control_acc_t<double> u_acc_curr;
     Holohover::control_acc_t<double> u_acc_next; //GS: m_u1
@@ -165,7 +163,7 @@ private:
     void publish_trajectory();
     void publish_laopt_speed(const long &duration_us );
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
-    void ref_callback(const holohover_msgs::msg::HolohoverState &pose);
+    void ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &state_ref);
 
     void set_state_in_ocp();
     void set_u_acc_curr_in_ocp();
