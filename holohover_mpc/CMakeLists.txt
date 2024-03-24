@@ -44,10 +44,10 @@ ament_target_dependencies(double_integrator_test rclcpp holohover_common)
 target_compile_options(double_integrator_test PRIVATE "-Wno-unused-parameter")
 target_link_libraries(double_integrator_test yaml-cpp)
 
-install(DIRECTORY
-  config
-  DESTINATION share/${PROJECT_NAME}
-)
+# install(DIRECTORY
+#   config
+#   DESTINATION share/${PROJECT_NAME}
+# )
 
 install(TARGETS
   double_integrator_test control_mpc
