@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>holohover_gnc</name>
+  <name>holohover_navigation</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="rschwan@todo.todo">rschwan</maintainer>
@@ -11,7 +11,6 @@
 
   <depend>rclcpp</depend>
   <depend>tf2_ros</depend>
-  <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>holohover_msgs</depend>
   <depend>holohover_common</depend>
