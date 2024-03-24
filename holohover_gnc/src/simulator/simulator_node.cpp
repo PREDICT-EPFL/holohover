@@ -3,8 +3,6 @@
 SimulatorNode::SimulatorNode() :
     Node("simulator"),
     simulation_settings(load_simulation_settings(*this)),
-    holohover_props(load_holohover_pros(simulation_settings.holohover_props_files[0])),
-    holohover(holohover_props, simulation_settings.period),
     gravity(0.0f, 0.0f),
     world(std::make_unique<b2World>(gravity))
 {
@@ -51,11 +49,19 @@ void SimulatorNode::init_hovercrafts()
 {
     b2CircleShape hovercraft_shape;
     hovercraft_shape.m_radius = simulation_settings.hovercraft_radius;
-    double density = holohover_props.mass / (M_PI * hovercraft_shape.m_radius * hovercraft_shape.m_radius);  // ToDo density parameter
+    double density;
 
     for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
         RCLCPP_INFO(get_logger(), "Hovercraft id: %ld", simulation_settings.hovercraft_ids[i]);
         
+        HolohoverProps hp = load_holohover_pros(simulation_settings.holohover_props_files[i]);
+        holohover_props_vec.push_back(hp);
+
+        Holohover hh(holohover_props_vec.back(), simulation_settings.period);
+        holohover_vec.push_back(hh);
+
+        density = holohover_props_vec.back().mass / (M_PI * hovercraft_shape.m_radius * hovercraft_shape.m_radius);
+
         //box2d bodies
         b2BodyDef bodyDef;
         bodyDef.type = b2_dynamicBody;
@@ -79,7 +85,7 @@ void SimulatorNode::init_hovercrafts()
 
         // control acc
         Holohover::control_acc_t<double> current_control_acc;
-        calculate_control_acc(state, motor_velocities, current_control_acc);
+        calculate_control_acc(state, motor_velocities, current_control_acc, i);
         control_acc_vec.push_back(current_control_acc);
 
         // control messages
@@ -111,7 +117,6 @@ void SimulatorNode::init_hovercrafts()
             topic_name, rclcpp::SensorDataQoS()));
 
     }
-    
 }
 
 void SimulatorNode::init_timer()
@@ -132,9 +137,9 @@ void SimulatorNode::simulation_step()
         current_control_signal(3) = control_msgs[i].motor_b_2;
         current_control_signal(4) = control_msgs[i].motor_c_1;
         current_control_signal(5) = control_msgs[i].motor_c_2;
-        motor_velocities_vec[i] = holohover.Ad_motor * motor_velocities_vec[i] + holohover.Bd_motor * current_control_signal;
-        calculate_control_acc(states_vec[i], motor_velocities_vec[i], control_acc_vec[i]);
-        apply_control_acc(hovercraft_bodies[i], control_acc_vec[i]);
+        motor_velocities_vec[i] = holohover_vec[i].Ad_motor * motor_velocities_vec[i] + holohover_vec[i].Bd_motor * current_control_signal;
+        calculate_control_acc(states_vec[i], motor_velocities_vec[i], control_acc_vec[i], i);
+        apply_control_acc(hovercraft_bodies[i], control_acc_vec[i], i);
         
     }
 
@@ -178,21 +183,22 @@ void SimulatorNode::body_to_state(Holohover::state_t<double> &state, body_ptr &b
     state(5) = body->GetAngularVelocity();
 }
 
-void SimulatorNode::apply_control_acc(body_ptr &body, Holohover::control_acc_t<double> control_acc) {
-    body->ApplyForceToCenter(b2Vec2(control_acc(0) * holohover_props.mass, control_acc(1) * holohover_props.mass), true);
-    body->ApplyTorque(control_acc(2) * holohover_props.inertia, true);
+void SimulatorNode::apply_control_acc(body_ptr &body, Holohover::control_acc_t<double> control_acc, int i) {
+    body->ApplyForceToCenter(b2Vec2(control_acc(0) * holohover_props_vec[i].mass, control_acc(1) * holohover_props_vec[i].mass), true);
+    body->ApplyTorque(control_acc(2) * holohover_props_vec[i].inertia, true);
 }
 
-void SimulatorNode::calculate_control_acc(Holohover::state_t<double> state, Holohover::control_force_t<double> motor_velocities, Holohover::control_acc_t<double> &current_control_acc)
+void SimulatorNode::calculate_control_acc(Holohover::state_t<double> state, Holohover::control_force_t<double> motor_velocities, Holohover::control_acc_t<double> &current_control_acc, int i)
 {
     Holohover::control_force_t<double> current_control_force;
-    holohover.signal_to_thrust(motor_velocities, current_control_force);
-    holohover.control_force_to_acceleration(state, current_control_force, current_control_acc);
+    holohover_vec[i].signal_to_thrust(motor_velocities, current_control_force);
+    holohover_vec[i].control_force_to_acceleration(state, current_control_force, current_control_acc);
 
     // add drag force
     double rho = 1.2; // air density at ~20C sea level
-    current_control_acc(0) -= 0.5 / holohover_props.mass * rho * state(2) * abs(state(2)) * simulation_settings.drag_coefficient * simulation_settings.drag_reference_area;
-    current_control_acc(1) -= 0.5 / holohover_props.mass * rho * state(3) * abs(state(3)) * simulation_settings.drag_coefficient * simulation_settings.drag_reference_area;
+    current_control_acc(0) -= 0.5 / holohover_props_vec[i].mass * rho * state(2) * abs(state(2)) * simulation_settings.drag_coefficient * simulation_settings.drag_reference_area;
+    current_control_acc(1) -= 0.5 / holohover_props_vec[i].mass * rho * state(3) * abs(state(3)) * simulation_settings.drag_coefficient * simulation_settings.drag_reference_area;
+
 
     // add force introduced by table tilt
     double g = 9.81;

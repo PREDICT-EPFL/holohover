@@ -42,9 +42,10 @@ public:
     SimulatorNode();
 private:
     SimulationSettings simulation_settings;
-    HolohoverProps holohover_props;
+    
+    std::vector<HolohoverProps> holohover_props_vec;
 
-    Holohover holohover;
+    std::vector<Holohover> holohover_vec;
 
     b2Vec2 gravity;
     std::shared_ptr<b2World> world;
@@ -71,10 +72,10 @@ private:
     void init_box2d_world();
     void simulation_step();
 
-    void calculate_control_acc(Holohover::state_t<double> state, Holohover::control_force_t<double> motor_velocities, Holohover::control_acc_t<double> &current_control_acc);
+    void calculate_control_acc(Holohover::state_t<double> state, Holohover::control_force_t<double> motor_velocities, Holohover::control_acc_t<double> &current_control_acc, int i);
 
     void body_to_state(Holohover::state_t<double> &state, body_ptr &body);
-    void apply_control_acc(body_ptr &body, Holohover::control_acc_t<double> control_acc);
+    void apply_control_acc(body_ptr &body, Holohover::control_acc_t<double> control_acc, int i);
 };
 
 #endif //HOLOHOVER_UTILS_SIMULATOR_NODE_HPP
