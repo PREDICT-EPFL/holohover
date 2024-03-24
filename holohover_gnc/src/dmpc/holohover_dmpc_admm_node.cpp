@@ -248,8 +248,9 @@ HolohoverDmpcAdmmNode::~HolohoverDmpcAdmmNode()
 
 void HolohoverDmpcAdmmNode::init_topics()
 {
+    std::string topic_name = "/hovercraft" + std::to_string(my_id) + "/control";    
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
-            "drone/control",
+            topic_name,
             rclcpp::SensorDataQoS());
 
     // laopt_frequency_publisher = this->create_publisher<holohover_msgs::msg::HolohoverLaoptSpeedStamped>(
@@ -260,12 +261,14 @@ void HolohoverDmpcAdmmNode::init_topics()
             "control/HolohoverTrajectory",
             rclcpp::SensorDataQoS());
 
+    topic_name = "/hovercraft" + std::to_string(my_id) + "/state";
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
-            "navigation/state", 10,
+            topic_name, 10,
             std::bind(&HolohoverDmpcAdmmNode::state_callback, this, std::placeholders::_1));
 
-    reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
-            "control/state_ref", 10,
+    topic_name = "/hovercraft" + std::to_string(my_id) + "/state_ref";
+    reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(
+            topic_name, 10,
             std::bind(&HolohoverDmpcAdmmNode::ref_callback, this, std::placeholders::_1));
 
     publish_control_subscription = this->create_subscription<std_msgs::msg::UInt64>(
@@ -470,9 +473,15 @@ void HolohoverDmpcAdmmNode::state_callback(const holohover_msgs::msg::HolohoverS
     state(5) = msg_state.state_msg.w_z;
 }
 
-void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverState &pose)
+void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &ref)
 {
-    ref = pose; //GS: what is this?
+    if(ref.val_length != control_settings.nxd){
+        std::cout << "Discarded state reference message with incorrect length" << std::endl;
+        return;
+    } 
+    for (unsigned int i = 0; i < ref.val_length; i++){
+        state_ref(i) = ref.ref_value[i]; 
+    } 
 }
 
 void HolohoverDmpcAdmmNode::set_state_in_ocp()
