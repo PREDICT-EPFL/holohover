@@ -390,8 +390,6 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
 
     get_u_acc_from_sol();
 
-    //publish_trajectory();
-
     convert_u_acc_to_u_signal();
 
     control_msg.header.frame_id = "body";
@@ -403,6 +401,8 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     control_msg.motor_c_1 = u_signal(4);
     control_msg.motor_c_2 = u_signal(5);
     control_publisher->publish(control_msg);
+
+    publish_trajectory();
 }
 
 void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
@@ -441,21 +441,18 @@ void HolohoverDmpcAdmmNode::publish_trajectory( )
     msg.header.frame_id = "body";
     msg.header.stamp = this->now();
 
-    //StateTrajectory = Eigen::Matrix<Scalar, ControlProblem::NX, N + 1>;
-//    trajectory.FutureTrajectory = transcription.get_X_opt()[0][1];
-
-    /*Eigen::MatrixXd X_opt = transcription.get_X_opt();
-    msg.state_trajectory.resize(20);
-    for (int i = 0; i < 20; i++)
+    msg.state_trajectory.resize(control_settings.N);
+    int idx = control_settings.idx_x0;
+    for (int i = 0; i < control_settings.N; i++) //GS: we could also send up to control_settings.N+1
     {
-        msg.state_trajectory[i].x = X_opt(0,i);
-        msg.state_trajectory[i].y = X_opt(1,i);
-        msg.state_trajectory[i].v_x = X_opt(2,i);
-        msg.state_trajectory[i].v_y = X_opt(3,i);
-        msg.state_trajectory[i].yaw = X_opt(4,i);
-        msg.state_trajectory[i].w_z = X_opt(5,i);
+        msg.state_trajectory[i].x = zbar(idx); 
+        msg.state_trajectory[i].y = zbar(idx+1);
+        msg.state_trajectory[i].v_x = zbar(idx+2);
+        msg.state_trajectory[i].v_y = zbar(idx+3);
+        msg.state_trajectory[i].yaw = zbar(idx+4);
+        msg.state_trajectory[i].w_z = zbar(idx+5);
+        idx = idx + 6;
     }
-    */
 
     HolohoverTrajectory_publisher->publish(msg);
 }
