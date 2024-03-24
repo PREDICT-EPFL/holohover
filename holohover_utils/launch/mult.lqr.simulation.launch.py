@@ -76,7 +76,7 @@ def launch_setup(context):
     )
 
     simulator_node = Node(
-        package="holohover_gnc",
+        package="holohover_simulator",
         executable="simulator",
         parameters=[simulator_config,
                     { "hovercrafts" : hovercraft_ids, 
@@ -127,7 +127,7 @@ def launch_setup(context):
         )
 
         navigation_node = Node(
-            package="holohover_gnc",
+            package="holohover_navigation",
             executable="navigation",
             parameters=[navigation_config, {'holohover_props_file' : holohover_params[i]}],
             namespace= namespace,
@@ -135,7 +135,7 @@ def launch_setup(context):
         )
         
         controller_node = Node(
-            package="holohover_gnc",
+            package="holohover_control",
             executable="control_lqr",
             parameters=[control_lqr_config, {'holohover_props_file' : holohover_params[i]}],
             name = "control_lqr",

@@ -43,9 +43,9 @@ install(TARGETS holohover_common
   INCLUDES DESTINATION include
 )
 
-install(DIRECTORY
-  config
-  DESTINATION share/${PROJECT_NAME}
-)
+# install(DIRECTORY
+#   config
+#   DESTINATION share/${PROJECT_NAME}
+# )
 
 ament_package()
