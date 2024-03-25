@@ -102,7 +102,7 @@ void SimulatorNode::init_hovercrafts()
         control_msgs.push_back(msg);
 
         // control subscriptions
-        auto topic_name = "/hovercraft" + std::to_string(simulation_settings.hovercraft_ids[i]) + "/control";
+        auto topic_name = "/" + simulation_settings.hovercraft_names[i] + "/control";
 
         std::function<void(const holohover_msgs::msg::HolohoverControlStamped::SharedPtr)> callback = 
                  std::bind(&SimulatorNode::control_callback, this, std::placeholders::_1, i);
@@ -112,7 +112,7 @@ void SimulatorNode::init_hovercrafts()
         control_subscriptions.push_back(sub);
 
         // pose publishers
-        topic_name = "/hovercraft" + std::to_string(simulation_settings.hovercraft_ids[i]) + "/pose";
+        topic_name = "/" + simulation_settings.hovercraft_names[i] + "/pose";
         pose_publishers.push_back(this->create_publisher<geometry_msgs::msg::PoseStamped>(
             topic_name, rclcpp::SensorDataQoS()));
 
