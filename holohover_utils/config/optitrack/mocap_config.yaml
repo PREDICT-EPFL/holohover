@@ -6,7 +6,15 @@ mocap_node:
   ros__parameters:
     rigid_bodies:
       '1':
-        pose: optitrack/drone/pose_raw
+        pose: optitrack/table_pose_raw
+      '2':
+        pose: optitrack/h0_pose_raw
+      '3':
+        pose: optitrack/h1_pose_raw
+      '4':
+        pose: optitrack/h2_pose_raw
+      '5':
+        pose: optitrack/h3_pose_raw
     free_markers: true # set to true to publish marker positions for markers not in rigid bodies
     optitrack_config:
       # should match the Multicast Interface in Motive streaming panel

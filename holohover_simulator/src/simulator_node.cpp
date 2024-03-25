@@ -112,7 +112,7 @@ void SimulatorNode::init_hovercrafts()
         control_subscriptions.push_back(sub);
 
         // pose publishers
-        topic_name = "/" + simulation_settings.hovercraft_names[i] + "/pose";
+        topic_name = "/optitrack/" + simulation_settings.hovercraft_names[i] + "_pose_raw";
         pose_publishers.push_back(this->create_publisher<geometry_msgs::msg::PoseStamped>(
             topic_name, rclcpp::SensorDataQoS()));
 
