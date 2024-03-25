@@ -3,7 +3,7 @@
 
 RvizWallPublisher::RvizWallPublisher() :
     Node("rviz_wall_publisher"),
-    simulation_settings(load_simulation_settings(*this))
+    table_size(declare_parameter<std::vector<double>>("table_size"))
 {
     viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization/drone", 10);
 
@@ -41,16 +41,16 @@ RvizWallPublisher::RvizWallPublisher() :
     p1.y = 0.0f;
     marker.points.push_back(p1);
 
-    p1.x = simulation_settings.table_size[0];
+    p1.x = table_size[0];
     p1.y = 0;
     marker.points.push_back(p1);
 
-    p1.x = simulation_settings.table_size[0];
-    p1.y = simulation_settings.table_size[1];
+    p1.x = table_size[0];
+    p1.y = table_size[1];
     marker.points.push_back(p1);
 
     p1.x = 0;
-    p1.y = simulation_settings.table_size[1];
+    p1.y = table_size[1];
     marker.points.push_back(p1);
 
     p1.x = 0;
