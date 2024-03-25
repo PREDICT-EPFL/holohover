@@ -39,7 +39,10 @@ def launch_setup(context):
     for hovercraft in hovercrafts:
         hovercraft_names.append(hovercraft['name'])
         hovercraft_ids.append(int(hovercraft['id']))
-        holohover_params.append(hovercraft['holohover_props'])
+        holohover_params.append(os.path.join(
+            get_package_share_directory('holohover_utils'),
+            'config',
+            hovercraft['holohover_props']))
 
         initial_state = hovercraft['initial_state']
         for i, val in enumerate(initial_state):
@@ -75,11 +78,11 @@ def launch_setup(context):
     )
 
     recorder_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(this_dir, 'recorder.launch.py'))
+        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common', 'recorder.launch.py'))
     )
 
     rviz_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(this_dir, 'rviz.launch.py'))
+        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common', 'rviz.launch.py'))
     )
 
 
