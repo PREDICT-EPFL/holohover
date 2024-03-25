@@ -20,23 +20,12 @@ def launch_setup(context):
 
     this_dir = os.path.dirname(os.path.abspath(__file__))
     
+    #################### EXPERIMENT FILE PARSING ####################
     experiment_conf = os.path.join(
         get_package_share_directory('holohover_utils'), 
         'config', 
         'experiments', 
         experiment_filename
-    )
-
-    control_lqr_config = os.path.join(
-        get_package_share_directory('holohover_utils'),
-        'config/common',
-        'control_lqr_config.yaml'
-    )
-
-    navigation_config = os.path.join(
-        get_package_share_directory('holohover_utils'),
-        'config/common',
-        'navigation_config.yaml'
     )
 
     data = yaml.safe_load(open(experiment_conf, 'r'))
@@ -46,28 +35,22 @@ def launch_setup(context):
     hovercraft_ids = []
     initial_states = {'x': [], 'y': [], 'theta': [], 'vx': [], 'vy': [], 'w': []}
     holohover_params = []
-    number_of_hovercrafts = data['experiment']['number_of_hovercrafts']
-
 
     for hovercraft in hovercrafts:
         hovercraft_names.append(hovercraft['name'])
         hovercraft_ids.append(int(hovercraft['id']))
+        holohover_params.append(hovercraft['holohover_props'])
+
         initial_state = hovercraft['initial_state']
         for i, val in enumerate(initial_state):
             initial_states[list(initial_states.keys())[i]].append(float(val))
-        holohover_params.append(os.path.join(
-            get_package_share_directory('holohover_utils'),
-            'config',
-            hovercraft['holohover_props']))
+    #################### EXPERIMENT FILE PARSING - END ####################
+     
 
+    #################### COMMON NODES STARTING ####################
     print(f" - - - - STARTING SIMULATION EXPERIMENT  - - - - ")
     print(f"Running experiment:\t\t{data['experiment']['name']}")
     print(f"Experiment description:\t\t{data['experiment']['description']}")
-
-    # Start common nodes
-    simulation_env_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/simulation_env.launch.py'))
-    )
 
     simulator_config = os.path.join(
         get_package_share_directory('holohover_utils'),
@@ -91,69 +74,32 @@ def launch_setup(context):
         output='screen'
     )
 
-    rviz_wall_publisher_node = Node(
-        package="holohover_utils",
-        executable="rviz_wall_publisher",
-        parameters=[simulator_config,
-                    { "hovercrafts" : hovercraft_ids, 
-                      "initial_state_x":       initial_states['x'], 
-                      "initial_state_y":       initial_states['y'], 
-                      "initial_state_theta":   initial_states['theta'], 
-                      "initial_state_vx":      initial_states['vx'], 
-                      "initial_state_vy":      initial_states['vy'], 
-                      "initial_state_w":       initial_states['w'],
-                      "holohover_props_files": holohover_params                                          
-                    }],
-        output='screen'
+    recorder_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(this_dir, 'recorder.launch.py'))
     )
 
-    launch_description.append(simulator_node)
-    launch_description.append(simulation_env_launch)
-    launch_description.append(rviz_wall_publisher_node)
-   
-    # Now iterate on each hovercraft and launch the nodes for each one
-    print(f"Starting {number_of_hovercrafts} hovercrafts")
-    for i in range(number_of_hovercrafts):
-        print(f"\t- hovercraft\t\tID: {hovercraft_ids[i]} - Name: {hovercraft_names[i]}")
-        namespace = hovercraft_names[i]
-        print(f"Namespace: {namespace}")
-        print(f"Configuration file: {holohover_params[i]}")
-        
-        specific_configuration = os.path.join(
-            get_package_share_directory('holohover_utils'),
-            'config/hovercrafts',
-            namespace,
-            'config.yaml'
-        )
+    rviz_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(this_dir, 'rviz.launch.py'))
+    )
 
-        navigation_node = Node(
-            package="holohover_navigation",
-            executable="navigation",
-            parameters=[navigation_config, {'holohover_props_file' : holohover_params[i]}],
-            namespace= namespace,
-            output='screen'
+
+    launch_description.append(rviz_launch)
+    launch_description.append(recorder_launch)
+    launch_description.append(simulator_node)
+    #################### COMMON NODES STARTING - END ####################
+   
+    #################### HOVERCRAFTS STARTING ####################
+    # Now iterate on each hovercraft and launch the nodes for each one
+    print(f"Starting {len(hovercrafts)} hovercrafts")
+    for i in range(len(hovercrafts)):
+        hovercraft_launch = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft.launch.py')),
+            launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i]}.items()
         )
         
-        controller_node = Node(
-            package="holohover_control",
-            executable="control_lqr",
-            parameters=[control_lqr_config, {'holohover_props_file' : holohover_params[i]}],
-            name = "control_lqr",
-            namespace= namespace,
-            output='screen'
-        )
-        
-        rviz_interface_node = Node(
-            package="holohover_utils",
-            executable="rviz_interface",
-            parameters=[specific_configuration, {'id': hovercraft_ids[i], 'holohover_props_file' : holohover_params[i]}],
-            namespace= namespace,
-            output='screen'
-        )
-        
-        launch_description.append(controller_node)        
-        launch_description.append(navigation_node)
-        launch_description.append(rviz_interface_node)
+        launch_description.append(hovercraft_launch)
+    #################### HOVERCRAFTS STARTING - END ####################
+
     return launch_description
 
 
