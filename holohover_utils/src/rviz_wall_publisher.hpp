@@ -4,15 +4,13 @@
 #include "rclcpp/rclcpp.hpp"
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
-#include "holohover_common/utils/simulation_settings.hpp"
-
 
 class RvizWallPublisher : public rclcpp::Node
 {
 public:
     RvizWallPublisher();
 private:
-    SimulationSettings simulation_settings;
+    std::vector<double> table_size;
 
     rclcpp::TimerBase::SharedPtr timer;
 
