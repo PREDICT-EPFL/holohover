@@ -17,7 +17,6 @@
 #include "holohover_msgs/msg/holohover_trajectory.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include <tf2/LinearMath/Quaternion.h>
-
 #include <box2d/box2d.h>
 
 class BodyDeleter
