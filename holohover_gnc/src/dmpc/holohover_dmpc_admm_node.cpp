@@ -239,6 +239,15 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     // file_gam.open(fileName_gam.str(),std::ios_base::app);
     // file_gam.close();
 
+    log_buffer_size = 500;
+    admm_timer.reserve(log_buffer_size);
+    reserve_time_measurements(log_buffer_size*control_settings.maxiter);
+
+    x_log = -MatrixXd::Ones(log_buffer_size,control_settings.nx);
+    u_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
+    xd_log = -MatrixXd::Ones(log_buffer_size,control_settings.nxd);
+    mpc_step = 0;
+
 }
 
 HolohoverDmpcAdmmNode::~HolohoverDmpcAdmmNode()
@@ -268,7 +277,7 @@ void HolohoverDmpcAdmmNode::init_topics()
             "dmpc_state_ref", 10,
             std::bind(&HolohoverDmpcAdmmNode::ref_callback, this, std::placeholders::_1));
 
-    publish_control_subscription = this->create_subscription<std_msgs::msg::UInt64>(
+    dmpc_trigger_subscription = this->create_subscription<std_msgs::msg::UInt64>(
             "/dmpc/trigger", 10,
             std::bind(&HolohoverDmpcAdmmNode::publish_control, this, std::placeholders::_1));
 }
@@ -380,13 +389,13 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
         return;
     }
 
-    const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
-
+    // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
+    admm_timer.tic();
     solve(control_settings.maxiter);      
-
-    const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
-    const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
-    std::cout << "ADMM duration_ms  =" <<duration_us/1000 << std::endl;
+    admm_timer.toc();
+    // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
+    // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
+    // std::cout << "ADMM duration_ms  =" <<duration_us/1000 << std::endl;
 
     get_u_acc_from_sol();
 
@@ -403,6 +412,19 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     control_publisher->publish(control_msg);
 
     publish_trajectory();
+
+    if(mpc_step < log_buffer_size-1){
+        x_log.block(mpc_step,0,1,control_settings.nx) = state.transpose(); 
+        u_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
+        xd_log.block(mpc_step,0,1,control_settings.nxd) = state_ref.transpose();
+    } else {
+        print_time_measurements();
+        clear_time_measurements();
+        mpc_step = -1; //gets increased to 0 below
+    } 
+
+    u_acc_curr = u_acc_next;
+    mpc_step = mpc_step + 1;
 }
 
 void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
@@ -548,6 +570,7 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
 
 void HolohoverDmpcAdmmNode::init_dmpc()
 {
+    std::this_thread::sleep_for(std::chrono::seconds(10)); //wait until all subscribers are setup
     init_comms();
     std::cout << "comms initialized" << std::endl;
     z     = VectorXd::Zero(nx);
@@ -555,11 +578,12 @@ void HolohoverDmpcAdmmNode::init_dmpc()
     gam   = VectorXd::Zero(nx);
 
     solve(5); //initializes data structures in admmAgent
+    clear_time_measurements();
 
     //reset all ADMM variables to zero. 
-    // z     = VectorXd::Zero(nx);
-    // zbar  = VectorXd::Zero(nx);
-    // gam   = VectorXd::Zero(nx);
+    z     = VectorXd::Zero(nx);
+    zbar  = VectorXd::Zero(nx);
+    gam   = VectorXd::Zero(nx);
     return;
 }
 
@@ -910,8 +934,10 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
     for (unsigned int iter = 0; iter < maxiter_; iter++){
 
         // std::cout << "Starting ADMM iteration " << iter << std::endl;
+        iter_timer.tic(),
 
         //Step 1: local z update
+        loc_timer.tic();
         g_bar = g + gam - rho*zbar;
         nWSR = 10000;
         loc_prob.hotstart(g_bar.data(),
@@ -922,10 +948,13 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
             XV[i].clear();
             XV[i].push_back(z(idx->second));
         }
-        
+        loc_timer.toc();
+
         //Communication
+        z_comm_timer.tic();
         update_v_in();
         send_vin_receive_vout();
+        z_comm_timer.toc();
 
         //Step 2: averaging
         double avg;
@@ -936,8 +965,10 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
         }
 
         //Communication
+        zbar_comm_timer.tic();
         update_v_out();
         send_vout_receive_vin();
+        zbar_comm_timer.toc();
 
         // Step 3: dual update
         gam = gam + rho*(z-zbar);
@@ -960,6 +991,7 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
         // file_gam << gam.transpose() << "\n"; 
         // }
         // file_gam.close();   
+        iter_timer.toc();
 
     }
     
@@ -985,7 +1017,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(){
     //this is done before the averaging step
 
     //send vin
-    //send_vin_timer.tic();
+    send_vin_timer.tic();
     for (int i = 0; i < N_in_neighbors; i++){
         v_in_msg[i].seq_number += 1;
         v_in_msg[i].header.frame_id = "body"; 
@@ -993,9 +1025,9 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(){
         Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
         v_in_publisher[i]->publish(v_in_msg[i]); //ros
     }
-    //send_vin_timer.toc();
+    send_vin_timer.toc();
     //receive vout
-    //receive_vout_timer.tic();
+    receive_vout_timer.tic();
     Eigen::Array<bool,Dynamic,1> received(N_out_neighbors,1);
     received.fill(false);
 
@@ -1021,7 +1053,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(){
         //     v_in_publisher[i]->publish(v_in_msg[i]); //ros
         // }
     }
-    //receive_vout_timer.toc();
+    receive_vout_timer.toc();
 
 
     return;
@@ -1110,6 +1142,63 @@ int HolohoverDmpcAdmmNode::update_g_beq(){
     ubA.block(0,0,ng,1) = sprob.beq[my_id];
     return 0;
 }
+
+void HolohoverDmpcAdmmNode::print_time_measurements(){
+    std::time_t t = std::time(0);   // get time now
+    std::tm* now = std::localtime(&t);
+ 
+    std::ostringstream fileName;
+    fileName << "dmpc_time_measurement" << "_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
+    std::ofstream file(fileName.str());
+    if (file.is_open())
+    {
+    file << "mpc step, x0(1), x0(2), x0(3), x0(4), x0(5), x0(6), u0(1), u0(2), xd(0), xd(1), xd(2), xd(3), xd(4), xd(5), admm time (us), admm iter, admm iter time (us), loc_qp time(us), zcomm time (us), zbarcomm time(us), sendvin time (us), receivevout time (us)\n";
+    file.close();
+    }
+    
+
+    int N_rows = iter_timer.m_log.size();
+    std::cout << "N_rows = " << N_rows << std::endl;
+    int k = 1; //MPC step
+    unsigned int row = 0;
+    while (row < N_rows){
+        for (unsigned int i = 0; i < control_settings.maxiter; i++){     
+            file.open(fileName.str(),std::ios_base::app);
+            if (file.is_open())
+            {
+                file << k << "," << x_log(k-1,0) << "," << x_log(k-1,1) << "," << x_log(k-1,2) << "," << x_log(k-1,3) << "," << x_log(k-1,4) << "," << x_log(k-1,5) << "," << u_log(k-1,0) << "," << u_log(k-1,1) << "," << u_log(k-1,2) << "," << xd_log(k-1,0) << "," << xd_log(k-1,1) << "," << xd_log(k-1,2) << "," << xd_log(k-1,3) << "," << xd_log(k-1,4) << "," << xd_log(k-1,5) << "," << admm_timer.m_log[k-1] << "," << i << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";        
+            }
+            file.close();
+
+            row++;
+        }
+        k++;
+    }
+
+    
+    return;
+}
+
+void HolohoverDmpcAdmmNode::reserve_time_measurements(unsigned int new_cap){
+    loc_timer.reserve(new_cap);
+    iter_timer.reserve(new_cap);
+    z_comm_timer.reserve(new_cap);
+    zbar_comm_timer.reserve(new_cap);
+    send_vin_timer.reserve(new_cap);
+    receive_vout_timer.reserve(new_cap);
+}
+
+void HolohoverDmpcAdmmNode::clear_time_measurements(){
+    admm_timer.clear();
+    iter_timer.clear();
+    loc_timer.clear();
+    z_comm_timer.clear();
+    zbar_comm_timer.clear();
+    send_vin_timer.clear();
+    receive_vout_timer.clear();
+    return;
+}
+
 
 int main(int argc, char **argv) {
 

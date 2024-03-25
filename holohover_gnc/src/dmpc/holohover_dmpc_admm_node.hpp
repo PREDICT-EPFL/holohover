@@ -53,6 +53,7 @@ SOFTWARE.*/
 
 #include "sProb.hpp"
 #include "vcpy.hpp"
+#include "doptTimer.hpp"
 
 #include <qpOASES.hpp>
 #include <casadi/casadi.hpp>
@@ -83,7 +84,7 @@ private:
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr reference_subscription;
 
-    rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr publish_control_subscription; //triggers publish_control()
+    rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()
 
     
     //GS BEGIN
@@ -214,7 +215,26 @@ private:
     std::vector<std::function<void(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_)>> bound_received_vin_callback;
     std::vector<std::function<void(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_)>> bound_received_vout_callback;
 
-    int update_g_beq(); 
+    int update_g_beq();
+
+    doptTimer admm_timer;
+    doptTimer loc_timer;        //time for solving the local QP
+    doptTimer iter_timer;       //time for running one iteration
+    doptTimer z_comm_timer;     //time for communicating z in one iteration
+    doptTimer zbar_comm_timer;  //time for communicating zbar in one iteration
+    doptTimer send_vin_timer;
+    doptTimer receive_vout_timer;
+
+    Eigen::MatrixXd x_log;
+    Eigen::MatrixXd u_log;
+    Eigen::MatrixXd xd_log;
+
+    int mpc_step;
+    int log_buffer_size; //number of MPC steps to store before writing to log
+
+    void print_time_measurements();
+    void clear_time_measurements();
+    void reserve_time_measurements(unsigned int new_cap); 
 };
 
 
