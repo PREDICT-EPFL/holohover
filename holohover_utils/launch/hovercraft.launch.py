@@ -12,10 +12,6 @@ def launch_setup(context):
     index  = LaunchConfiguration('index').perform(context)
     name   = LaunchConfiguration('name').perform(context)
     params = LaunchConfiguration('params').perform(context)
-    params = os.path.join(
-                get_package_share_directory('holohover_utils'),
-                'config',
-                params)
     
     print(f"\t- hovercraft\t\tID: {index} - Name: {name}")
     print(f"Configuration file: {params}")
