@@ -53,13 +53,14 @@ message("CASADI_INCLUDEDIR: ${CASADI_INCLUDEDIR}")
 link_directories(${CASADI_LIBRARY_DIRS})
 include_directories("${QPOASES_INCLUDE_DIR}")
 
-add_executable(control_dmpc src/dmpc/holohover_dmpc_admm_node.cpp src/dmpc/sProb.cpp src/dmpc/doptTimer.cpp)
+add_executable(control_dmpc src/holohover_dmpc_admm_node.cpp src/sProb.cpp src/doptTimer.cpp)
 target_include_directories(control_dmpc PRIVATE ${CASADI_INCLUDEDIR})
 ament_target_dependencies(control_dmpc rclcpp geometry_msgs holohover_msgs holohover_common)
-target_link_libraries(control_dmpc ${QPOASES_LIB} casadi)
+target_link_libraries(control_dmpc ${QPOASES_LIB} casadi yaml-cpp)
 
-add_executable(dmpc_trigger src/dmpc/holohover_dmpc_trigger_node.cpp)
+add_executable(dmpc_trigger src/holohover_dmpc_trigger_node.cpp)
 ament_target_dependencies(dmpc_trigger rclcpp std_msgs)
+target_link_libraries(dmpc_trigger yaml-cpp)
 
 install(DIRECTORY
   config
