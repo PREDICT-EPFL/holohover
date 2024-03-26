@@ -24,12 +24,11 @@ void OptitrackInterfaceNode::init_topics()
 
         // pose publishers
         topic_name = "/" + simulation_settings.hovercraft_names[i] + "/pose";
-        hovercrafts_pose_publishers.push_back(this->create_publisher<geometry_msgs::msg::PoseStamped>(
-            topic_name, rclcpp::SensorDataQoS()));
+        hovercrafts_pose_publishers.push_back(this->create_publisher<geometry_msgs::msg::PoseStamped>(topic_name, 10));
     }
 
     table_raw_pose_subscription = this->create_subscription<geometry_msgs::msg::PoseStamped>(
-        "/optitrack/table_pose_raw", 10,
+        "/optitrack/table_pose_raw", rclcpp::SensorDataQoS(),
         std::bind(&OptitrackInterfaceNode::table_raw_pose_callback, this, std::placeholders::_1));
 }
 
@@ -54,24 +53,22 @@ void OptitrackInterfaceNode::hovercraft_raw_pose_callback(std::shared_ptr<geomet
     pose.pose.position.y = raw_pose->pose.position.y - table_pose.pose.position.y;
     pose.pose.position.z = 0;
     
+    tf2::Quaternion q_raw, q_table, q_new;
 
-    double r, p, y_hov, y_table;    
-    tf2::Quaternion q;
+    tf2::convert(raw_pose->pose.orientation , q_raw);
+    tf2::convert(table_pose.pose.orientation , q_table);
 
-    tf2::fromMsg(table_pose.pose.orientation, q);
-    tf2::Matrix3x3 m_table(q);
-    m_table.getRPY(r, p, y_table);
+    q_new = q_raw*q_table;
+    q_new.normalize();
 
-    tf2::fromMsg(table_pose.pose.orientation, q);
-    tf2::Matrix3x3 m_hov(q);
-    m_table.getRPY(r, p, y_hov);
+    // double r,p,y;
+    // tf2::Matrix3x3 m(q_new);
+    // m.getRPY(r,p,y);
+    // q_new.setRPY(0,0,y);
+    // q_new.normalize();
 
-    q.setRPY(0, 0, y_hov - y_table);
-    pose.pose.orientation.w = q.w();
-    pose.pose.orientation.x = q.x();
-    pose.pose.orientation.y = q.y();
-    pose.pose.orientation.z = q.z();
-    
+    tf2::convert(q_new, pose.pose.orientation);
+
     hovercrafts_pose_publishers[hovercraft_id]->publish(pose);
 }
 
