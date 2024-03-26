@@ -1158,7 +1158,6 @@ void HolohoverDmpcAdmmNode::print_time_measurements(){
     
 
     int N_rows = iter_timer.m_log.size();
-    std::cout << "N_rows = " << N_rows << std::endl;
     int k = 1; //MPC step
     unsigned int row = 0;
     while (row < N_rows){
