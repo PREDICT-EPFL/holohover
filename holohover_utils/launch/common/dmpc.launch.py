@@ -14,38 +14,38 @@ def generate_launch_description():
     )
 
     control_dmpc_config0 = os.path.join(
-        get_package_share_directory('holohover_gnc'),
+        get_package_share_directory('holohover_dmpc'),
         'config',
         'control_dmpc_config0.yaml'
     )
 
     control_dmpc_config1 = os.path.join(
-        get_package_share_directory('holohover_gnc'),
+        get_package_share_directory('holohover_dmpc'),
         'config',
         'control_dmpc_config1.yaml'
     )
 
     control_dmpc_config2 = os.path.join(
-        get_package_share_directory('holohover_gnc'),
+        get_package_share_directory('holohover_dmpc'),
         'config',
         'control_dmpc_config2.yaml'
     )
 
     control_dmpc_config3 = os.path.join(
-        get_package_share_directory('holohover_gnc'),
+        get_package_share_directory('holohover_dmpc'),
         'config',
         'control_dmpc_config3.yaml'
     )
 
     dmpc_trigger_config = os.path.join(
-        get_package_share_directory('holohover_gnc'),
+        get_package_share_directory('holohover_dmpc'),
         'config',
         'dmpc_trigger_config.yaml'
     )
 
     controller_node0 = Node(
         name="dmpc",
-        package="holohover_gnc",
+        package="holohover_dmpc",
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config0],
         namespace="h0",
@@ -54,7 +54,7 @@ def generate_launch_description():
 
     controller_node1 = Node(
         name="dmpc",
-        package="holohover_gnc",
+        package="holohover_dmpc",
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config1],
         namespace="h1",
@@ -63,7 +63,7 @@ def generate_launch_description():
 
     controller_node2 = Node(
         name="dmpc",
-        package="holohover_gnc",
+        package="holohover_dmpc",
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config2],
         namespace="h2",
@@ -72,7 +72,7 @@ def generate_launch_description():
 
     controller_node3 = Node(
         name="dmpc",
-        package="holohover_gnc",
+        package="holohover_dmpc",
         executable="control_dmpc",
         parameters=[holohover_params, control_dmpc_config3],
         namespace="h3",
@@ -81,7 +81,7 @@ def generate_launch_description():
 
     trigger_node = Node(
         name="holohover_dmpc_trigger",
-        package="holohover_gnc",
+        package="holohover_dmpc",
         executable="dmpc_trigger",
         parameters=[dmpc_trigger_config],
         output='both'
