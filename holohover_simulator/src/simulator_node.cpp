@@ -1,14 +1,23 @@
 #include "simulator_node.hpp"
 
+#include <chrono>
+#include <thread>
+
+
 SimulatorNode::SimulatorNode() :
     Node("simulator"),
     simulation_settings(load_simulation_settings(*this)),
     gravity(0.0f, 0.0f),
-    world(std::make_unique<b2World>(gravity))
+    world(std::make_unique<b2World>(gravity)),
+    random_engine(simulation_settings.seed),
+    normal_table_x  (3,.01), // 1 cm  std - 99.7% values will be within 3cms of the mean        //ToDo parametrize
+    normal_table_y  (3,.01), // 1 cm  std
+    normal_table_yaw(3,.017) // 1 deg std 
 {
     init_box2d_world();
 
     viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization/drone", 10);
+    table_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/table_pose_raw", rclcpp::SensorDataQoS());
 
     init_hovercrafts();
     init_timer();
@@ -124,8 +133,34 @@ void SimulatorNode::init_timer()
     simulation_timer = this->create_wall_timer(
             std::chrono::duration<double>(simulation_settings.period),
             std::bind(&SimulatorNode::simulation_step, this));
+
+    table_timer = this->create_wall_timer(
+            std::chrono::duration<double>(1),                     //ToDo parametrize
+            std::bind(&SimulatorNode::table_publisher, this));
 }
 
+void SimulatorNode::table_publisher()
+{
+    table_x   = normal_table_x(random_engine);
+    table_y   = normal_table_y(random_engine);
+    table_yaw = normal_table_yaw(random_engine);   
+
+    geometry_msgs::msg::PoseStamped table_pose;
+    table_pose.header.frame_id = "world";
+    table_pose.header.stamp = this->now();
+    table_pose.pose.position.x = table_x;
+    table_pose.pose.position.y = table_y;
+    table_pose.pose.position.z = 0;
+    
+    tf2::Quaternion q;
+    q.setRPY(0, 0, table_yaw);
+    table_pose.pose.orientation.w = q.w();
+    table_pose.pose.orientation.x = q.x();
+    table_pose.pose.orientation.y = q.y();
+    table_pose.pose.orientation.z = q.z();
+
+    table_pose_publisher->publish(table_pose);
+}
 void SimulatorNode::simulation_step()
 {
     for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
@@ -154,12 +189,12 @@ void SimulatorNode::simulation_step()
         geometry_msgs::msg::PoseStamped pose_measurement;
         pose_measurement.header.frame_id = "world";
         pose_measurement.header.stamp = this->now();
-        pose_measurement.pose.position.x = states_vec[i](0) + simulation_settings.Gx;
-        pose_measurement.pose.position.y = states_vec[i](1) + simulation_settings.Gy;
+        pose_measurement.pose.position.x = table_x + states_vec[i](0) + simulation_settings.Gx;
+        pose_measurement.pose.position.y = table_y + states_vec[i](1) + simulation_settings.Gy;
         pose_measurement.pose.position.z = 0;
         
         tf2::Quaternion q;
-        q.setRPY(0, 0, states_vec[i](4));
+        q.setRPY(0, 0, table_yaw + states_vec[i](4));
         pose_measurement.pose.orientation.w = q.w();
         pose_measurement.pose.orientation.x = q.x();
         pose_measurement.pose.orientation.y = q.y();

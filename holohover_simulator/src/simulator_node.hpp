@@ -18,6 +18,7 @@
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <box2d/box2d.h>
+#include <random>
 
 class BodyDeleter
 {
@@ -49,12 +50,20 @@ private:
     b2Vec2 gravity;
     std::shared_ptr<b2World> world;
 
+    std::mt19937 random_engine;
+    std::normal_distribution<> normal_table_x;
+    std::normal_distribution<> normal_table_y;
+    std::normal_distribution<> normal_table_yaw;
+    double table_x, table_y, table_yaw;
+
     std::vector<body_ptr> hovercraft_bodies;
 
-    rclcpp::TimerBase::SharedPtr simulation_timer;
+    rclcpp::TimerBase::SharedPtr table_timer, simulation_timer;
 
     std::vector<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr> pose_publishers;
-    
+
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr table_pose_publisher;
+
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_publisher;
 
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr> control_subscriptions;
@@ -70,6 +79,8 @@ private:
     void init_timer();
     void init_box2d_world();
     void simulation_step();
+    void table_publisher();
+
 
     void calculate_control_acc(Holohover::state_t<double> state, Holohover::control_force_t<double> motor_velocities, Holohover::control_acc_t<double> &current_control_acc, int i);
 
