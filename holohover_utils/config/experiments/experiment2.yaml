@@ -7,7 +7,7 @@ experiment:
 
 
 hovercrafts:
-  - name: hovercraft0
+  - name: h0
     id: "0"
     initial_state: [1, 1, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
