@@ -8,8 +8,9 @@ def generate_launch_description():
     ld = LaunchDescription()
 
     holohover_params = os.path.join(
-        get_package_share_directory('holohover_common'),
+        get_package_share_directory('holohover_utils'),
         'config',
+        'common',
         'holohover_params.yaml'
     )
 
@@ -47,7 +48,8 @@ def generate_launch_description():
         name="dmpc",
         package="holohover_dmpc",
         executable="control_dmpc",
-        parameters=[holohover_params, control_dmpc_config0],
+        parameters=[control_dmpc_config0,
+        {"holohover_props_file": holohover_params}],
         namespace="h0",
         output='both'
     )
@@ -56,7 +58,8 @@ def generate_launch_description():
         name="dmpc",
         package="holohover_dmpc",
         executable="control_dmpc",
-        parameters=[holohover_params, control_dmpc_config1],
+        parameters=[control_dmpc_config1,
+        {"holohover_props_file": holohover_params}],
         namespace="h1",
         output='both'
     )
@@ -65,7 +68,8 @@ def generate_launch_description():
         name="dmpc",
         package="holohover_dmpc",
         executable="control_dmpc",
-        parameters=[holohover_params, control_dmpc_config2],
+        parameters=[control_dmpc_config2,
+        {"holohover_props_file": holohover_params}],
         namespace="h2",
         output='both'
     )
@@ -74,7 +78,8 @@ def generate_launch_description():
         name="dmpc",
         package="holohover_dmpc",
         executable="control_dmpc",
-        parameters=[holohover_params, control_dmpc_config3],
+        parameters=[control_dmpc_config3,
+        {"holohover_props_file": holohover_params}],
         namespace="h3",
         output='both'
     )
