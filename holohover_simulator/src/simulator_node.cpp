@@ -8,7 +8,11 @@ SimulatorNode::SimulatorNode() :
     Node("simulator"),
     simulation_settings(load_simulation_settings(*this)),
     gravity(0.0f, 0.0f),
-    world(std::make_unique<b2World>(gravity))
+    world(std::make_unique<b2World>(gravity)),
+    random_engine(simulation_settings.seed),
+    normal_table_x  (3,.01), // 1 cm  std - 99.7% values will be within 3cms of the mean        //ToDo parametrize
+    normal_table_y  (3,.01), // 1 cm  std
+    normal_table_yaw(3,.017) // 1 deg std 
 {
     init_box2d_world();
 
