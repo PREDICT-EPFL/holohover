@@ -37,24 +37,24 @@ RvizWallPublisher::RvizWallPublisher() :
     p1.z = 0.f;
 
 
-    p1.x = 0.0f;
-    p1.y = 0.0f;
+    p1.x = -table_size[0] / 2.0f;
+    p1.y = -table_size[1] / 2.0f;
     marker.points.push_back(p1);
 
-    p1.x = table_size[0];
-    p1.y = 0;
+    p1.x =  table_size[0] / 2.0f;
+    p1.y = -table_size[1] / 2.0f;
     marker.points.push_back(p1);
 
-    p1.x = table_size[0];
-    p1.y = table_size[1];
+    p1.x = table_size[0] / 2.0f;
+    p1.y = table_size[1] / 2.0f;
     marker.points.push_back(p1);
 
-    p1.x = 0;
-    p1.y = table_size[1];
+    p1.x = -table_size[0] / 2.0f;
+    p1.y =  table_size[1] / 2.0f;
     marker.points.push_back(p1);
 
-    p1.x = 0;
-    p1.y = 0;
+    p1.x = -table_size[0] / 2.0f;
+    p1.y = -table_size[1] / 2.0f;
     marker.points.push_back(p1);
 
     wall_markers.markers.push_back(marker);
