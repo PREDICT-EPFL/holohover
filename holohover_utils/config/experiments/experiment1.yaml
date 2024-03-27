@@ -2,27 +2,24 @@
 experiment:
   name: experiment1
   description: "This is the first experiment - it contains 4 hovercrafts with a line type graph and... ToDo"
-  experimentOCP: ".." #file path to the OCP file
-  number_of_hovercrafts: 4
-
 
 hovercrafts:
   - name: h0
-    id: "0"
+    id: 0
     initial_state: [1, 1, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
 
   - name: h1
-    id: "1"
+    id: 1
     initial_state: [1, 1.2, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
 
   - name: h2
-    id: "2"
+    id: 2
     initial_state: [1.2, 1, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
 
   - name: h3
-    id: "3"
+    id: 3
     initial_state: [1.2, 1.2, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
