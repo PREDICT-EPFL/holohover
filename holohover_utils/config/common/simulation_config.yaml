@@ -8,7 +8,7 @@
     internal_iterations_velocity: 6
     internal_iterations_position: 2
 
-    table_size: [2.0, 3.0]
+    table_size: [6.0, 4.0]
 
     drag_reference_area: 0.0021
     drag_coefficient: 1.5

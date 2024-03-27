@@ -31,25 +31,25 @@ void SimulatorNode::init_box2d_world()
     
     // Wall 1
     wallBox.SetAsBox(simulation_settings.table_size[0], 0.001);
-    wallDef.position.Set(simulation_settings.table_size[0] / 2, 0);
+    wallDef.position.Set(0, -simulation_settings.table_size[1] / 2);
     wall = world->CreateBody(&wallDef);
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
 
     // Wall 2
     wallBox.SetAsBox(0.001, simulation_settings.table_size[1]);
-    wallDef.position.Set(simulation_settings.table_size[0], simulation_settings.table_size[1] / 2);
+    wallDef.position.Set(simulation_settings.table_size[0] / 2, 0);
     wall = world->CreateBody(&wallDef);
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
 
     // Wall 3
     wallBox.SetAsBox(simulation_settings.table_size[0], 0.001);
-    wallDef.position.Set(simulation_settings.table_size[0] / 2, simulation_settings.table_size[1]);
+    wallDef.position.Set(0, simulation_settings.table_size[1] / 2);
     wall = world->CreateBody(&wallDef);
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
 
     // Wall 4
     wallBox.SetAsBox(0.001, simulation_settings.table_size[1]);
-    wallDef.position.Set(0, simulation_settings.table_size[1] / 2);
+    wallDef.position.Set(-simulation_settings.table_size[0] / 2, 0);
     wall = world->CreateBody(&wallDef);
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
 }
