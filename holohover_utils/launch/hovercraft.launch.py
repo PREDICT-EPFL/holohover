@@ -17,11 +17,11 @@ def launch_setup(context):
     print(f"Configuration file: {params}")
     
     #  - - Config files
-    control_lqr_config = os.path.join(
-        get_package_share_directory('holohover_utils'),
-        'config/common',
-        'control_lqr_config.yaml'
-    )
+    # control_lqr_config = os.path.join(
+    #     get_package_share_directory('holohover_utils'),
+    #     'config/common',
+    #     'control_lqr_config.yaml'
+    # )
 
     navigation_config = os.path.join(
         get_package_share_directory('holohover_utils'),
@@ -45,14 +45,14 @@ def launch_setup(context):
         output='screen'
     )
     
-    controller_node = Node(
-        package="holohover_control",
-        executable="control_lqr",
-        parameters=[control_lqr_config, {'holohover_props_file' : params}],
-        name = "control_lqr",
-        namespace= name,
-        output='screen'
-    )
+    # controller_node = Node(
+    #     package="holohover_control",
+    #     executable="control_lqr",
+    #     parameters=[control_lqr_config, {'holohover_props_file' : params}],
+    #     name = "control_lqr",
+    #     namespace= name,
+    #     output='screen'
+    # )
     
     rviz_interface_node = Node(
         package="holohover_utils",
@@ -62,7 +62,7 @@ def launch_setup(context):
         output='screen'
     )
     
-    launch_description.append(controller_node)        
+    # launch_description.append(controller_node)        
     launch_description.append(navigation_node)
     launch_description.append(rviz_interface_node)
 

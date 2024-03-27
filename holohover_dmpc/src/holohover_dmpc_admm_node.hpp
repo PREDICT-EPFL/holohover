@@ -231,10 +231,13 @@ private:
 
     int mpc_step;
     int log_buffer_size; //number of MPC steps to store before writing to log
+    int logged_mpc_steps; //number of MPC steps that have already been logged
 
     void print_time_measurements();
     void clear_time_measurements();
-    void reserve_time_measurements(unsigned int new_cap); 
+    void reserve_time_measurements(unsigned int new_cap);
+    std::ostringstream file_name;
+    std::ofstream log_file; 
 };
 
 
