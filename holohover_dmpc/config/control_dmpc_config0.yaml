@@ -14,4 +14,4 @@ h0/dmpc:
     idx_x0: 0
     Nagents: 4
     my_id: 0
-    folder_name_sprob: "../../holohover_dmpc/ocp_specs/sProb_chain_QP_N7_acc"
+    folder_name_sprob: "holohover/holohover_dmpc/ocp_specs/sProb_chain_QP_N7_acc"

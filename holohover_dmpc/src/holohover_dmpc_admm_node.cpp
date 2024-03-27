@@ -224,22 +224,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     dmpc_is_initialized = false;
 
-    // std::time_t t = std::time(0);   // get time now
-    // std::tm* now = std::localtime(&t);    
-    // fileName_z << "z" << "_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
-    // file_z = std::ofstream(fileName_z.str());
-    // fileName_zbar << "zbarlog" << "_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
-    // file_zbar = std::ofstream(fileName_zbar.str());
-    // fileName_gam << "gamlog" << "_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
-    // file_gam = std::ofstream(fileName_gam.str());
-    // file_z.open(fileName_z.str(),std::ios_base::app);
-    // file_z.close(); 
-    // file_zbar.open(fileName_zbar.str(),std::ios_base::app);
-    // file_zbar.close();
-    // file_gam.open(fileName_gam.str(),std::ios_base::app);
-    // file_gam.close();
-
-    log_buffer_size = 500;
+    log_buffer_size = 1;
     admm_timer.reserve(log_buffer_size);
     reserve_time_measurements(log_buffer_size*control_settings.maxiter);
 
@@ -247,6 +232,18 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     u_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
     xd_log = -MatrixXd::Ones(log_buffer_size,control_settings.nxd);
     mpc_step = 0;
+    logged_mpc_steps = 0;
+    std::time_t t = std::time(0);   // get time now
+    std::tm* now = std::localtime(&t);
+    
+    
+    file_name << "dmpc_time_measurement" << "_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
+    log_file = std::ofstream(file_name.str());
+    if (log_file.is_open())
+    {
+    log_file << "mpc step, x0(1), x0(2), x0(3), x0(4), x0(5), x0(6), u0(1), u0(2), xd(0), xd(1), xd(2), xd(3), xd(4), xd(5), admm time (us), admm iter, admm iter time (us), loc_qp time(us), zcomm time (us), zbarcomm time(us), sendvin time (us), receivevout time (us)\n";
+    log_file.close();
+    }
 
 }
 
@@ -413,14 +410,18 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
 
     publish_trajectory();
 
-    if(mpc_step < log_buffer_size-1){
-        x_log.block(mpc_step,0,1,control_settings.nx) = state.transpose(); 
-        u_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
-        xd_log.block(mpc_step,0,1,control_settings.nxd) = state_ref.transpose();
-    } else {
+    x_log.block(mpc_step,0,1,control_settings.nx) = state.transpose(); 
+    u_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
+    xd_log.block(mpc_step,0,1,control_settings.nxd) = state_ref.transpose();
+
+    if (mpc_step == log_buffer_size - 1) {
+        // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
         print_time_measurements();
         clear_time_measurements();
         mpc_step = -1; //gets increased to 0 below
+        // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
+        // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
+        // std::cout << "Logging duration_us  =" <<duration_us << std::endl;
     } 
 
     u_acc_curr = u_acc_next;
@@ -1144,35 +1145,26 @@ int HolohoverDmpcAdmmNode::update_g_beq(){
 }
 
 void HolohoverDmpcAdmmNode::print_time_measurements(){
-    std::time_t t = std::time(0);   // get time now
-    std::tm* now = std::localtime(&t);
- 
-    std::ostringstream fileName;
-    fileName << "dmpc_time_measurement" << "_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
-    std::ofstream file(fileName.str());
-    if (file.is_open())
-    {
-    file << "mpc step, x0(1), x0(2), x0(3), x0(4), x0(5), x0(6), u0(1), u0(2), xd(0), xd(1), xd(2), xd(3), xd(4), xd(5), admm time (us), admm iter, admm iter time (us), loc_qp time(us), zcomm time (us), zbarcomm time(us), sendvin time (us), receivevout time (us)\n";
-    file.close();
-    }
     
+      
 
     int N_rows = iter_timer.m_log.size();
     int k = 1; //MPC step
     unsigned int row = 0;
     while (row < N_rows){
         for (unsigned int i = 0; i < control_settings.maxiter; i++){     
-            file.open(fileName.str(),std::ios_base::app);
-            if (file.is_open())
+            log_file.open(file_name.str(),std::ios_base::app);
+            if (log_file.is_open())
             {
-                file << k << "," << x_log(k-1,0) << "," << x_log(k-1,1) << "," << x_log(k-1,2) << "," << x_log(k-1,3) << "," << x_log(k-1,4) << "," << x_log(k-1,5) << "," << u_log(k-1,0) << "," << u_log(k-1,1) << "," << u_log(k-1,2) << "," << xd_log(k-1,0) << "," << xd_log(k-1,1) << "," << xd_log(k-1,2) << "," << xd_log(k-1,3) << "," << xd_log(k-1,4) << "," << xd_log(k-1,5) << "," << admm_timer.m_log[k-1] << "," << i << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";        
+                log_file << logged_mpc_steps+k << "," << x_log(k-1,0) << "," << x_log(k-1,1) << "," << x_log(k-1,2) << "," << x_log(k-1,3) << "," << x_log(k-1,4) << "," << x_log(k-1,5) << "," << u_log(k-1,0) << "," << u_log(k-1,1) << "," << u_log(k-1,2) << "," << xd_log(k-1,0) << "," << xd_log(k-1,1) << "," << xd_log(k-1,2) << "," << xd_log(k-1,3) << "," << xd_log(k-1,4) << "," << xd_log(k-1,5) << "," << admm_timer.m_log[k-1] << "," << i << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";        
             }
-            file.close();
+            log_file.close();
 
             row++;
         }
         k++;
     }
+    logged_mpc_steps = logged_mpc_steps + k;
 
     
     return;
