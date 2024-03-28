@@ -51,6 +51,7 @@ public:
     explicit Holohover(HolohoverProps &_props, double _dt = 0.01)
         : props(_props), dt(_dt)
     {
+        std::cout << "Generating Hovercraft model with dt = " << dt << std::endl;
         control_force_t<double> min_signal = control_force_t<double>::Constant(props.idle_signal);
         control_force_t<double> max_signal = control_force_t<double>::Constant(1.0);
         signal_to_thrust(min_signal, min_thrust);

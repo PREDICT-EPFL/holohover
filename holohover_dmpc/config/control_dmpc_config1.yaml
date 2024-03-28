@@ -1,8 +1,8 @@
 h1/dmpc:
   ros__parameters:
-    period: 40.0
+    period: 0.100
     rho: 1.0
-    maxiter: 10
+    maxiter: 2
     nx: 6
     nu: 3
     nxd: 12

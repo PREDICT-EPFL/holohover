@@ -106,12 +106,22 @@ for i=1:Nrobot
     
     for j= 1:N+1                            
         % state and input constraints
-        llbx{i} = [ llbx{i}, xmin];
-        uubx{i} = [ uubx{i}, xmax];
+        if j == 1 %don't enforce box constraints at initial state
+            llbx{i} = [llbx{i}; -inf(nx,1)];
+            uubx{i} = [uubx{i};  inf(nx,1)];
+        else
+            llbx{i} = [ llbx{i}, xmin];
+            uubx{i} = [ uubx{i}, xmax];
+        end
     end
     for j = 1:N
-        llbu{i} = [ llbu{i}, umin];
-        uubu{i} = [ uubu{i}, umax];
+        if j == 1 %don't enforce box constraints at initial input
+            llbu{i} = [llbu{i}; -inf(nu,1)];
+            uubu{i} = [uubu{i};  inf(nu,1)];
+        else
+            llbu{i} = [ llbu{i}, umin];
+            uubu{i} = [ uubu{i}, umax];
+        end
     end    
 end
 

@@ -100,7 +100,7 @@ private:
     int my_id; //GS: move to config?
     int Nagents;
 
-    int nx;
+    int nz;
     int ng;
     int nh;
     int Ncons;
@@ -123,17 +123,17 @@ private:
     VectorXd ub; 
 
     //problem metadata
-    Vector<bool, Eigen::Dynamic> isOriginal;    //nx x 1
-    Vector<bool, Eigen::Dynamic> isCopy;        //nx x 1
-    Vector<int, Eigen::Dynamic> numCopies;      //nx x 1 (how many copies there are of each original variable)    
+    Vector<bool, Eigen::Dynamic> isOriginal;    //nz x 1
+    Vector<bool, Eigen::Dynamic> isCopy;        //nz x 1
+    Vector<int, Eigen::Dynamic> numCopies;      //nz x 1 (how many copies there are of each original variable)    
     int N_og;                                   //Number of original variables this agent owns
     std::map<int,int> og_idx_to_idx;            //original variable index -> local variable index
     std::map<int,int> idx_to_og_idx;            //local variable index -> original variable index
 
     //ADMM iterates
-    VectorXd z;                                 //nx x 1
-    VectorXd zbar;                              //nx x 1
-    VectorXd gam;                               //nx x 1
+    VectorXd z;                                 //nz x 1
+    VectorXd zbar;                              //nz x 1
+    VectorXd gam;                               //nz x 1
 
     std::vector<vCpy> v_in;  //copy from in-neighbors       //N_in_neighbors x 1
     std::vector<vCpy> v_out; //copy for out-neighbors       //N_out_neighbors x 1

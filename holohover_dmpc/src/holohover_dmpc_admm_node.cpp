@@ -47,10 +47,10 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     Vector2d x40; x40 << -0.5, 0.0;
 
     //desired positions
-    Vector2d x1d; x1d << 0.7, -0.7;
-    Vector2d x2d; x2d << -0.4, 0.0;
-    Vector2d x3d; x3d << -0.4, 0.0;
-    Vector2d x4d; x4d << -0.4, 0.0;
+    Vector2d x1d; x1d << 0.5, 1.8;
+    Vector2d x2d; x2d << 0.0, -0.4;
+    Vector2d x3d; x3d << 0.0, -0.4;
+    Vector2d x4d; x4d << 0.0, -0.4;
 
     if (my_id == 0){
         p[0] = x10[0]; p[1] = x10[1];
@@ -76,22 +76,22 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     build_qp();
 
-    nx = sprob.H[my_id].rows();
+    nz = sprob.H[my_id].rows();
     ng = sprob.Aeq[my_id].rows();
     nh = sprob.Aineq[my_id].rows();
 
-    std::cout << "nx = " << nx << " , " << "ng = " << ng << " , " << "nh = " << nh << std::endl;
+    std::cout << "nz = " << nz << " , " << "ng = " << ng << " , " << "nh = " << nh << std::endl;
 
     Ncons = sprob.A[my_id].rows();
 
     rho = 1.0;
-    H_bar = sprob.H[my_id] + rho * MatrixXd::Identity(nx,nx);
+    H_bar = sprob.H[my_id] + rho * MatrixXd::Identity(nz,nz);
     g = sprob.g[my_id];
-    A = MatrixXd::Zero(ng+nh,nx);
-    A.block(0,0,ng,nx) = sprob.Aeq[my_id];
+    A = MatrixXd::Zero(ng+nh,nz);
+    A.block(0,0,ng,nz) = sprob.Aeq[my_id];
     
     if (nh > 0){
-        A.block(ng,0,nh,nx) = sprob.Aineq[my_id];
+        A.block(ng,0,nh,nz) = sprob.Aineq[my_id];
     }
 
     lbA = VectorXd::Zero(ng+nh);
@@ -104,30 +104,30 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         ubA.block(ng,0,nh,1) = sprob.bineq[my_id];
     }
 
-    z       = VectorXd::Zero(nx);
-    zbar   = VectorXd::Zero(nx);
-    gam     = VectorXd::Zero(nx);
+    z       = VectorXd::Zero(nz);
+    zbar   = VectorXd::Zero(nz);
+    gam     = VectorXd::Zero(nz);
     ub = sprob.ub[my_id];
     lb = sprob.lb[my_id];
 
-    myOptions.printLevel = qpOASES::PL_NONE; // other values: PL_NONE, PL_LOW, PL_MEDIUM, PL_HIGH, PL_TABULAR, PL_DEBUG_ITER
+    myOptions.printLevel = qpOASES::PL_LOW; // other values: PL_NONE, PL_LOW, PL_MEDIUM, PL_HIGH, PL_TABULAR, PL_DEBUG_ITER
  
     nWSR = 1000;
     g_bar = g + gam - rho*zbar;
 
-    loc_prob = qpOASES::QProblem(nx,ng+nh);
+    loc_prob = qpOASES::QProblem(nz,ng+nh);
     loc_prob.setOptions(myOptions);
     loc_prob.init(H_bar.data(), g_bar.data(), A.data(),
                            lb.data(), ub.data(), lbA.data(), ubA.data(), nWSR);    
 
-    isOriginal.resize(nx);
+    isOriginal.resize(nz);
     isOriginal.setConstant(false);
-    isCopy.resize(nx);
+    isCopy.resize(nz);
     isCopy.setConstant(false);
 
     out_neighbors = std::vector<int>(0);
     in_neighbors = std::vector<int>(0);
-    numCopies = VectorXi::Zero(nx);    
+    numCopies = VectorXi::Zero(nz);    
     
 
     init_coupling();
@@ -241,7 +241,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     log_file = std::ofstream(file_name.str());
     if (log_file.is_open())
     {
-    log_file << "mpc step, x0(1), x0(2), x0(3), x0(4), x0(5), x0(6), u0(1), u0(2), xd(0), xd(1), xd(2), xd(3), xd(4), xd(5), admm time (us), admm iter, admm iter time (us), loc_qp time(us), zcomm time (us), zbarcomm time(us), sendvin time (us), receivevout time (us)\n";
+    log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_\n";
     log_file.close();
     }
 
@@ -322,7 +322,7 @@ void HolohoverDmpcAdmmNode::init_comms(){
         v_out_msg[i].header.stamp = this->now();
 
         int idx_row = 0;
-        for (int j = 0; j < nx; j++){
+        for (int j = 0; j < nz; j++){
             if (isOriginal[j]){
                 v_out_msg[i].value[idx_row] = zbar[j];
                 v_out_msg[i].idx[idx_row] = j;
@@ -372,32 +372,24 @@ void HolohoverDmpcAdmmNode::init_comms(){
 
 void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish_control_msg)
 {
-     
-    
-    set_state_in_ocp();
-    set_u_acc_curr_in_ocp();
-    update_setpoint_in_ocp();
-
-    holohover_msgs::msg::HolohoverControlStamped control_msg; //GS: move this to after solve?
 
     if(!dmpc_is_initialized){
+        set_state_in_ocp();
+        set_u_acc_curr_in_ocp();
+        update_setpoint_in_ocp();
         init_dmpc();
         dmpc_is_initialized = true;
         return;
     }
 
-    // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
-    admm_timer.tic();
-    solve(control_settings.maxiter);      
-    admm_timer.toc();
-    // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
-    // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
-    // std::cout << "ADMM duration_ms  =" <<duration_us/1000 << std::endl;
-
-    get_u_acc_from_sol();
-
+    // std::cout << "u_acc_curr before conversion = " << u_acc_curr[0] << " , " << u_acc_curr[1] << " , " << u_acc_curr[2] << std::endl;
+    // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now(); 
     convert_u_acc_to_u_signal();
+    
+    // std::cout << "u_acc_curr after conversion = " << u_acc_curr[0] << " , " << u_acc_curr[1] << " , " << u_acc_curr[2] << std::endl; 
 
+
+    holohover_msgs::msg::HolohoverControlStamped control_msg; //GS: move this to after solve?
     control_msg.header.frame_id = "body";
     control_msg.header.stamp = this->now();
     control_msg.motor_a_1 = u_signal(0);
@@ -407,6 +399,24 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     control_msg.motor_c_1 = u_signal(4);
     control_msg.motor_c_2 = u_signal(5);
     control_publisher->publish(control_msg);
+    // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
+    // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
+    // std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;
+
+    set_state_in_ocp();
+    set_u_acc_curr_in_ocp();
+    update_setpoint_in_ocp();
+
+    
+    // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
+    admm_timer.tic();
+    solve(control_settings.maxiter);      
+    admm_timer.toc();
+    // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
+    // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
+    // std::cout << "ADMM duration_ms  =" <<duration_us/1000 << std::endl;
+
+    get_u_acc_from_sol();
 
     publish_trajectory();
 
@@ -433,27 +443,26 @@ void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
     motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
 
     // calculate thrust bounds for next step
-    Holohover::control_force_t<double> u_force_next_min, u_force_next_max;
-    holohover.signal_to_thrust<double>(holohover.Ad_motor * motor_velocities + Holohover::control_force_t<double>::Constant(holohover.Bd_motor * holohover_props.idle_signal), u_force_next_min);
-    holohover.signal_to_thrust<double>(holohover.Ad_motor * motor_velocities + Holohover::control_force_t<double>::Constant(holohover.Bd_motor * 1.0), u_force_next_max);
+    Holohover::control_force_t<double> u_force_curr_min, u_force_curr_max;
+    holohover.signal_to_thrust<double>(holohover.Ad_motor * motor_velocities + Holohover::control_force_t<double>::Constant(holohover.Bd_motor * holohover_props.idle_signal), u_force_curr_min);
+    holohover.signal_to_thrust<double>(holohover.Ad_motor * motor_velocities + Holohover::control_force_t<double>::Constant(holohover.Bd_motor * 1.0), u_force_curr_max);
 
     // calculate next thrust and motor velocities
-    Holohover::control_force_t<double> u_force_next;
-    Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_curr;
-    holohover.control_acceleration_to_force(state_next, u_acc_next, u_force_next, u_force_next_min, u_force_next_max);    
-    Holohover::control_force_t<double> motor_velocities_next;
-    holohover.thrust_to_signal(u_force_next, motor_velocities_next);
+    Holohover::control_force_t<double> u_force_curr;
+    // Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_curr;
+    holohover.control_acceleration_to_force(state, u_acc_next, u_force_curr, u_force_curr_min, u_force_curr_max);    
+    Holohover::control_force_t<double> motor_velocities_curr;
+    holohover.thrust_to_signal(u_force_curr, motor_velocities_curr);
 
     // calculate control from future motor velocities
-    u_signal = (motor_velocities_next - holohover.Ad_motor * motor_velocities) / holohover.Bd_motor;
+    u_signal = (motor_velocities_curr - holohover.Ad_motor * motor_velocities) / holohover.Bd_motor;
 
     // clip between 0 and 1
-    u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);
-
+    u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);    
+    holohover.signal_to_thrust(u_signal, u_force_curr);
+    holohover.control_force_to_acceleration(state, u_force_curr, u_acc_curr);
+    
     // save control inputs for next iterations
-    Holohover::control_force_t<double> u_force;
-    holohover.signal_to_thrust(u_signal, u_force);
-    holohover.control_force_to_acceleration(state, u_force, u_acc_curr);
     last_control_signal = u_signal;
 }
 
@@ -539,10 +548,10 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
     std::vector<casadi::DM> arg; // = {z};
     std::vector<casadi::DM> res; // = f(arg);
 
-    int nx_ = g.size();
+    int nz_ = g.size();
 
 
-    VectorXd z = Eigen::VectorXd::Zero(nx_);
+    VectorXd z = Eigen::VectorXd::Zero(nz_);
   
     z_cas = Eigen2casadi(z);
     p_cas = Eigen2casadi(p);
@@ -574,17 +583,13 @@ void HolohoverDmpcAdmmNode::init_dmpc()
     std::this_thread::sleep_for(std::chrono::seconds(10)); //wait until all subscribers are setup
     init_comms();
     std::cout << "comms initialized" << std::endl;
-    z     = VectorXd::Zero(nx);
-    zbar  = VectorXd::Zero(nx);
-    gam   = VectorXd::Zero(nx);
+    z     = VectorXd::Zero(nz);
+    zbar  = VectorXd::Zero(nz);
+    gam   = VectorXd::Zero(nz);
 
-    solve(5); //initializes data structures in admmAgent
+    solve(10); //initializes data structures in admm and warm start for first MPC step
     clear_time_measurements();
 
-    //reset all ADMM variables to zero. 
-    z     = VectorXd::Zero(nx);
-    zbar  = VectorXd::Zero(nx);
-    gam   = VectorXd::Zero(nx);
     return;
 }
 
@@ -683,10 +688,10 @@ void HolohoverDmpcAdmmNode::build_qp()
     std::vector<casadi::DM> arg; // = {z};
     std::vector<casadi::DM> res; // = f(arg);
 
-    int nx_ = sprob.A[my_id].cols();
+    int nz_ = sprob.A[my_id].cols();
 
 
-    VectorXd z_ = Eigen::VectorXd::Zero(nx_);
+    VectorXd z_ = Eigen::VectorXd::Zero(nz_);
   
     z_cas = Eigen2casadi(z_);
     p_cas = Eigen2casadi(p);
@@ -704,7 +709,7 @@ void HolohoverDmpcAdmmNode::build_qp()
     str = "gradFun" + std::to_string(my_id+1); //convert to matlab index
     f = casadi::external(str,functionLibrary);
     res = f(arg);
-    sprob.g[my_id] = Eigen::VectorXd::Zero(nx_);
+    sprob.g[my_id] = Eigen::VectorXd::Zero(nz_);
     sprob.g[my_id] = casadi2EigenVector(res[0]);
 
     //Aeq
@@ -765,11 +770,11 @@ void HolohoverDmpcAdmmNode::build_qp()
 void HolohoverDmpcAdmmNode::init_coupling()
 {
     //Coupling information
-    Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Coup = -MatrixXi::Ones(nx,2); //col1: owning agent ID; col2: index in nx of owning agent
+    Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Coup = -MatrixXi::Ones(nz,2); //col1: owning agent ID; col2: index in nz of owning agent
 
-    std::vector<int> nnx (Nagents);
+    std::vector<int> nnz (Nagents);
     for (int i = 0; i < Nagents; i++){
-        nnx[i] = sprob.A[i].cols();
+        nnz[i] = sprob.A[i].cols();
     }
     MatrixXd tmp;
     std::vector<int>::iterator it;
@@ -778,7 +783,7 @@ void HolohoverDmpcAdmmNode::init_coupling()
     //Identify coupling structure
     //Out-neighbors
     N_og = 0;
-    for (int i = 0; i < nx; i++){
+    for (int i = 0; i < nz; i++){
         for (int j = 0; j < Ncons; j++){
             if (sprob.A[my_id](j,i) >= 0.9){
                 if (!isOriginal[i]){
@@ -791,8 +796,8 @@ void HolohoverDmpcAdmmNode::init_coupling()
                 }                
                 bool isDestination = 0;
                 for (int k = 0; k < Nagents; k++){
-                    tmp = MatrixXd::Zero(1,nnx[k]);
-                    tmp = sprob.A[k].block(j,0,1,nnx[k]);
+                    tmp = MatrixXd::Zero(1,nnz[k]);
+                    tmp = sprob.A[k].block(j,0,1,nnz[k]);
                     isDestination = (tmp.array() <= -0.9).any();
                     if (isDestination){
                         it = std::find(out_neighbors.begin(), out_neighbors.end(),k);
@@ -811,14 +816,14 @@ void HolohoverDmpcAdmmNode::init_coupling()
     //In-neighbors
     bool isSource;
     VectorXd nv_in = VectorXd::Zero(Nagents);
-    for (int i = 0; i < nx; i++){
+    for (int i = 0; i < nz; i++){
         isSource = 0;
         for (int j = 0; j < Ncons; j++){
             if(sprob.A[my_id](j,i) <= -0.9){
                 isCopy(i) = true;
                 for (int k = 0; k < Nagents; k++){
-                    tmp.resize(1,nnx[k]);
-                    tmp = sprob.A[k].block(j,0,1,nnx[k]);
+                    tmp.resize(1,nnz[k]);
+                    tmp = sprob.A[k].block(j,0,1,nnz[k]);
                     isSource = (tmp.array() >= 0.9).any();
                     if (isSource){
                         isSource = 0;
@@ -842,9 +847,9 @@ void HolohoverDmpcAdmmNode::init_coupling()
         }
     }
     N_in_neighbors = in_neighbors.size();
-    isCopy.resize(nx);
+    isCopy.resize(nz);
 
-    for (int i = 0; i < nx; i++){
+    for (int i = 0; i < nz; i++){
         if (!isOriginal(i) && !isCopy(i)){
             isOriginal(i) = true;
             og_idx_to_idx.insert({N_og,i});
@@ -863,7 +868,7 @@ void HolohoverDmpcAdmmNode::init_coupling()
     for (int j = 0; j < N_in_neighbors; j++){
         v_in.push_back(vCpy());
         nij = 0;
-        for (int i = 0; i < nx; i++){
+        for (int i = 0; i < nz; i++){
             if (Coup(i,0) == in_neighbors[j]){ //Variable i was copied from agent j
                 nij+=1;
             }
@@ -875,7 +880,7 @@ void HolohoverDmpcAdmmNode::init_coupling()
         v_in[j].og_idx = VectorXi::Zero(nij);
         v_in[j].nv = nij;
         nij = 0;
-        for (int i = 0; i < nx; i++){
+        for (int i = 0; i < nz; i++){
             if (Coup(i,0) == in_neighbors[j]){ //Variable i was copied from agent j
                 v_in[j].cpy_idx(nij) = i;
                 v_in[j].og_idx(nij) = Coup(i,1);
@@ -897,15 +902,15 @@ void HolohoverDmpcAdmmNode::init_coupling()
         int k = out_neighbors[j];
 
         int nij = 0;
-        for (int i = 0; i < nx; i++){
+        for (int i = 0; i < nz; i++){
             bool isDestination = 0;
             for (int c = 0; c < Ncons; c++){
                 if (sprob.A[my_id](c,i) == 1){
-                    tmp.resize(1,nnx[k]);
-                    tmp = sprob.A[k].block(c,0,1,nnx[k]);
+                    tmp.resize(1,nnz[k]);
+                    tmp = sprob.A[k].block(c,0,1,nnz[k]);
                     isDestination = (tmp.array() == -1.0).any();
                     if (isDestination){
-                        for (int l = 0; l < nnx[k]; l++){
+                        for (int l = 0; l < nnz[k]; l++){
                             if (tmp(0,l) == -1){
                                 v_out[j].cpy_idx[nij] = l;
                                 v_out[j].og_idx[nij] = i;
@@ -1071,7 +1076,7 @@ void HolohoverDmpcAdmmNode::send_vout_receive_vin(){
         v_out_msg[i].header.stamp = this->now();
 
         int idx_row = 0;
-        for (int j = 0; j < nx; j++){
+        for (int j = 0; j < nz; j++){
             if (isOriginal[j]){
                 v_out_msg[i].value[idx_row] = zbar[j];
                 idx_row += 1;
@@ -1149,14 +1154,14 @@ void HolohoverDmpcAdmmNode::print_time_measurements(){
       
 
     int N_rows = iter_timer.m_log.size();
-    int k = 1; //MPC step
+    int k = 0; //MPC step
     unsigned int row = 0;
     while (row < N_rows){
         for (unsigned int i = 0; i < control_settings.maxiter; i++){     
             log_file.open(file_name.str(),std::ios_base::app);
             if (log_file.is_open())
             {
-                log_file << logged_mpc_steps+k << "," << x_log(k-1,0) << "," << x_log(k-1,1) << "," << x_log(k-1,2) << "," << x_log(k-1,3) << "," << x_log(k-1,4) << "," << x_log(k-1,5) << "," << u_log(k-1,0) << "," << u_log(k-1,1) << "," << u_log(k-1,2) << "," << xd_log(k-1,0) << "," << xd_log(k-1,1) << "," << xd_log(k-1,2) << "," << xd_log(k-1,3) << "," << xd_log(k-1,4) << "," << xd_log(k-1,5) << "," << admm_timer.m_log[k-1] << "," << i << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";        
+                log_file << logged_mpc_steps+k << "," << x_log(k,0) << "," << x_log(k,1) << "," << x_log(k,2) << "," << x_log(k,3) << "," << x_log(k,4) << "," << x_log(k,5) << "," << u_log(k,0) << "," << u_log(k,1) << "," << u_log(k,2) << "," << xd_log(k,0) << "," << xd_log(k,1) << "," << xd_log(k,2) << "," << xd_log(k,3) << "," << xd_log(k,4) << "," << xd_log(k,5) << "," << admm_timer.m_log[k] << "," << i << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";        
             }
             log_file.close();
 
