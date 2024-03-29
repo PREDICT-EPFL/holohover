@@ -21,6 +21,8 @@ struct SimulationSettings
     std::vector<double>   start_position_w;
 
     std::vector<double> table_size;
+    std::vector<double> table_position;
+    double table_publish_period;
 
     double drag_reference_area;
     double drag_coefficient;
@@ -71,7 +73,9 @@ SimulationSettings load_simulation_settings(rclcpp::Node &node)
     settings.start_position_vy    = node.declare_parameter<std::vector<double>>("initial_state_vy");
     settings.start_position_w     = node.declare_parameter<std::vector<double>>("initial_state_w");
 
-    settings.table_size = node.declare_parameter<std::vector<double>>("table_size");
+    settings.table_size           = node.declare_parameter<std::vector<double>>("table_size");
+    settings.table_position       = node.declare_parameter<std::vector<double>>("table_position");
+    settings.table_publish_period = node.declare_parameter<double>("table_publish_period");
 
     settings.drag_reference_area = node.declare_parameter<double>("drag_reference_area");
     settings.drag_coefficient = node.declare_parameter<double>("drag_coefficient");
