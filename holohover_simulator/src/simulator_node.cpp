@@ -15,7 +15,7 @@ SimulatorNode::SimulatorNode() :
     viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization/drone", 10);
     table_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/table_pose_raw", rclcpp::SensorDataQoS());
 
-    init_hovercrafts();
+    init_hovercraft();
     init_timer();
 }
 
@@ -50,7 +50,7 @@ void SimulatorNode::init_box2d_world()
     wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
 }
 
-void SimulatorNode::init_hovercrafts()
+void SimulatorNode::init_hovercraft()
 {
     b2CircleShape hovercraft_shape;
     hovercraft_shape.m_radius = simulation_settings.hovercraft_radius;
