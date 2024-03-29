@@ -50,12 +50,6 @@ private:
     b2Vec2 gravity;
     std::shared_ptr<b2World> world;
 
-    std::mt19937 random_engine;
-    std::normal_distribution<> normal_table_x;
-    std::normal_distribution<> normal_table_y;
-    std::normal_distribution<> normal_table_yaw;
-    double table_x, table_y, table_yaw;
-
     std::vector<body_ptr> hovercraft_bodies;
 
     rclcpp::TimerBase::SharedPtr table_timer, simulation_timer;
