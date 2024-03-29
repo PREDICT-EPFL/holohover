@@ -99,7 +99,7 @@ def launch_setup(context):
         package="holohover_utils",
         executable="optitrack_interface",
         parameters=[simulator_config,
-                    { "hovercrafts" :          hovercraft_ids, 
+                    { "hovercraft_ids" :          hovercraft_ids, 
                       "hovercraft_names" :    hovercraft_names,
                       "initial_state_x":       initial_states['x'], 
                       "initial_state_y":       initial_states['y'], 
