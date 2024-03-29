@@ -55,17 +55,18 @@ void OptitrackInterfaceNode::hovercraft_raw_pose_callback(std::shared_ptr<geomet
     
     tf2::Quaternion q_raw, q_table, q_new;
 
-    tf2::convert(raw_pose->pose.orientation , q_raw);
-    tf2::convert(table_pose.pose.orientation , q_table);
+    tf2::convert(raw_pose->pose.orientation, q_raw);
+    tf2::convert(table_pose.pose.orientation, q_table);
 
-    q_new = q_raw*q_table;
+    double r,p,y_raw,y_table;
+    tf2::Matrix3x3 m_raw(q_raw);
+    m_raw.getRPY(r,p,y_raw);
+
+    tf2::Matrix3x3 m_table(q_table);
+    m_raw.getRPY(r,p,y_table);
+
+    q_new.setRPY(0, 0, y_raw - y_table);
     q_new.normalize();
-
-    // double r,p,y;
-    // tf2::Matrix3x3 m(q_new);
-    // m.getRPY(r,p,y);
-    // q_new.setRPY(0,0,y);
-    // q_new.normalize();
 
     tf2::convert(q_new, pose.pose.orientation);
 
