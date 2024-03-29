@@ -20,11 +20,11 @@ void OptitrackInterfaceNode::init_topics()
 
         auto sub = this->create_subscription<geometry_msgs::msg::PoseStamped>(topic_name, rclcpp::SensorDataQoS(), callback);
 
-        hovercrafts_raw_pose_subscriptions.push_back(sub);
+        hovercraft_raw_pose_subscriptions.push_back(sub);
 
         // pose publishers
         topic_name = "/" + simulation_settings.hovercraft_names[i] + "/pose";
-        hovercrafts_pose_publishers.push_back(this->create_publisher<geometry_msgs::msg::PoseStamped>(topic_name, 10));
+        hovercraft_pose_publishers.push_back(this->create_publisher<geometry_msgs::msg::PoseStamped>(topic_name, 10));
     }
 
     table_raw_pose_subscription = this->create_subscription<geometry_msgs::msg::PoseStamped>(
@@ -70,7 +70,7 @@ void OptitrackInterfaceNode::hovercraft_raw_pose_callback(std::shared_ptr<geomet
 
     tf2::convert(q_new, pose.pose.orientation);
 
-    hovercrafts_pose_publishers[hovercraft_id]->publish(pose);
+    hovercraft_pose_publishers[hovercraft_id]->publish(pose);
 }
 
 

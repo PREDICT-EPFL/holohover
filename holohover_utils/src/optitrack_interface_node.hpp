@@ -20,8 +20,8 @@ private:
 
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr table_raw_pose_subscription;
 
-    std::vector<rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr> hovercrafts_raw_pose_subscriptions;
-    std::vector<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr>    hovercrafts_pose_publishers;
+    std::vector<rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr> hovercraft_raw_pose_subscriptions;
+    std::vector<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr>    hovercraft_pose_publishers;
 
     void init_topics();
     void table_raw_pose_callback(const geometry_msgs::msg::PoseStamped &raw_pose);

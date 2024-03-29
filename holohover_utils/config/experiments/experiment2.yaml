@@ -3,7 +3,7 @@ experiment:
   name: experiment2
   description: "Test experiment with just 1 hovercraft"
 
-hovercrafts:
+hovercraft:
   - name: h0
     id: 0
     initial_state: [1, 1, 0, 0, 0, 0]

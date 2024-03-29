@@ -31,7 +31,7 @@ def launch_setup(context):
 
     specific_configuration = os.path.join(
         get_package_share_directory('holohover_utils'),
-        'config/hovercrafts',
+        'config/hovercraft',
         name,
         'config.yaml'
     )

@@ -69,7 +69,7 @@ private:
     std::vector<Holohover::control_force_t<double>>             motor_velocities_vec; 
     std::vector<Holohover::control_acc_t<double>>               control_acc_vec;
 
-    void init_hovercrafts();
+    void init_hovercraft();
     void init_timer();
     void init_box2d_world();
     void simulation_step();

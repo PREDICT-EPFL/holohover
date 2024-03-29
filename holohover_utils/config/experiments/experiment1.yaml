@@ -1,9 +1,9 @@
 
 experiment:
   name: experiment1
-  description: "This is the first experiment - it contains 4 hovercrafts with a line type graph and... ToDo"
+  description: "This is the first experiment - it contains 4 hovercraft with a line type graph and... ToDo"
 
-hovercrafts:
+hovercraft:
   - name: h0
     id: 0
     initial_state: [1, 1, 0, 0, 0, 0]

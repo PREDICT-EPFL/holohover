@@ -1,9 +1,9 @@
 
 experiment:
   name: experiment1
-  description: "2 hovercrafts "
+  description: "2 hovercraft"
 
-hovercrafts:
+hovercraft:
   - name: h0
     id: 0
     initial_state: [1, 1, 0, 0, 0, 0]
