@@ -47,6 +47,11 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(DIRECTORY
+  ocp_specs
+  DESTINATION share/${PROJECT_NAME}
+)
+
 install(TARGETS
   control_dmpc dmpc_trigger
   DESTINATION lib/${PROJECT_NAME}

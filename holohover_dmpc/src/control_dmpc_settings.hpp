@@ -2,6 +2,8 @@
 #define HOLOHOVER_GNC_CONTROL_DMPC_SETTINGS_HPP
 
 #include "rclcpp/rclcpp.hpp"
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
 
 struct ControlDMPCSettings
 {
@@ -44,7 +46,7 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
 
     settings.Nagents = node.declare_parameter<int>("Nagents");
     settings.my_id = node.declare_parameter<int>("my_id");
-    settings.folder_name_sprob = node.declare_parameter<std::string>("folder_name_sprob");   
+    settings.folder_name_sprob = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/ocp_specs/" + node.declare_parameter<std::string>("folder_name_sprob");
 
     return settings;
 }
