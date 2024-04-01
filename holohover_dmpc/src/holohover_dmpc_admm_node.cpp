@@ -84,39 +84,45 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     rho = control_settings.rho;
     H_bar = sprob.H[my_id] + rho * MatrixXd::Identity(nz,nz);
     g = sprob.g[my_id];
-    A = MatrixXd::Zero(ng+nh,nz);
-    A.block(0,0,ng,nz) = sprob.Aeq[my_id];
-    
-    if (nh > 0){
-        A.block(ng,0,nh,nz) = sprob.Aineq[my_id];
-    }
-
-    lbA = VectorXd::Zero(ng+nh);
-    ubA = VectorXd::Zero(ng+nh);
-    lbA.block(0,0,ng,1) = sprob.beq[my_id];
-    ubA.block(0,0,ng,1) = sprob.beq[my_id];
-
-    if (nh > 0){
-        lbA.block(ng,0,nh,1).setConstant(-pow(10,20));  
-        ubA.block(ng,0,nh,1) = sprob.bineq[my_id];
-    }
+    ub = sprob.ub[my_id];
+    lb = sprob.lb[my_id];
 
     z       = VectorXd::Zero(nz);
     zbar   = VectorXd::Zero(nz);
     gam     = VectorXd::Zero(nz);
-    ub = sprob.ub[my_id];
-    lb = sprob.lb[my_id];
 
-    myOptions.printLevel = qpOASES::PL_LOW; // other values: PL_NONE, PL_LOW, PL_MEDIUM, PL_HIGH, PL_TABULAR, PL_DEBUG_ITER
- 
-    nWSR = 1000;
     g_bar = g + gam - rho*zbar;
 
+    //qpOASES
+    A = MatrixXd::Zero(ng+nh,nz);
+    A.block(0,0,ng,nz) = sprob.Aeq[my_id];    
+    if (nh > 0){
+        A.block(ng,0,nh,nz) = sprob.Aineq[my_id];
+    }
+    lbA = VectorXd::Zero(ng+nh);
+    ubA = VectorXd::Zero(ng+nh);
+    lbA.block(0,0,ng,1) = sprob.beq[my_id];
+    ubA.block(0,0,ng,1) = sprob.beq[my_id];
+    if (nh > 0){
+        lbA.block(ng,0,nh,1).setConstant(-pow(10,20));  
+        ubA.block(ng,0,nh,1) = sprob.bineq[my_id];
+    }  
+    myOptions.printLevel = qpOASES::PL_LOW; // other values: PL_NONE, PL_LOW, PL_MEDIUM, PL_HIGH, PL_TABULAR, PL_DEBUG_ITER
+    nWSR = 1000;  
     loc_prob = qpOASES::QProblem(nz,ng+nh);
     loc_prob.setOptions(myOptions);
     loc_prob.init(H_bar.data(), g_bar.data(), A.data(),
-                           lb.data(), ub.data(), lbA.data(), ubA.data(), nWSR);    
+                           lb.data(), ub.data(), lbA.data(), ubA.data(), nWSR);
 
+    //PIQP    
+    // loc_prob.settings().verbose = true;
+    // loc_prob.settings().compute_timings = true;
+    // // loc_prob.setup(H_bar, g_bar, sprob.Aeq[my_id] , sprob.beq[my_id] , piqp::nullopt, piqp::nullopt, piqp::nullopt, piqp::nullopt);
+    // loc_prob.setup(H_bar, g_bar, sprob.Aeq[my_id] , sprob.beq[my_id] , sprob.Aineq[my_id] , sprob.bineq[my_id], lb, ub);
+    
+    // loc_prob.solve();
+    // std::cout << "finished PIQP setup" << std::endl;
+    
     isOriginal.resize(nz);
     isOriginal.setConstant(false);
     isCopy.resize(nz);
@@ -367,8 +373,8 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     std::ignore = publish_control_msg;
 
     if(!dmpc_is_initialized){
-        set_state_in_ocp();
-        set_u_acc_curr_in_ocp();
+        // set_state_in_ocp();
+        // set_u_acc_curr_in_ocp();
         update_setpoint_in_ocp();
         init_dmpc();
         dmpc_is_initialized = true;
@@ -396,8 +402,8 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
     // std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;
 
-    set_state_in_ocp();
-    set_u_acc_curr_in_ocp();
+    // set_state_in_ocp();
+    // set_u_acc_curr_in_ocp();
     update_setpoint_in_ocp();
 
     
@@ -510,22 +516,22 @@ void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmp
     state_ref_lock.unlock(); 
 }
 
-void HolohoverDmpcAdmmNode::set_state_in_ocp()
-{
-    std::unique_lock state_lock{state_mutex, std::defer_lock};
-    state_lock.lock();
-    p.segment(0,control_settings.nx) = state;
-    lbA.block(control_settings.idx_eqx0,0,control_settings.nx,1) = state;
-    ubA.block(control_settings.idx_eqx0,0,control_settings.nx,1) = state;
-    state_lock.unlock();
-}
+// void HolohoverDmpcAdmmNode::set_state_in_ocp()
+// {
+//     std::unique_lock state_lock{state_mutex, std::defer_lock};
+//     state_lock.lock();
+//     p.segment(0,control_settings.nx) = state;
+//     lbA.block(control_settings.idx_eqx0,0,control_settings.nx,1) = state;
+//     ubA.block(control_settings.idx_eqx0,0,control_settings.nx,1) = state;
+//     state_lock.unlock();
+// }
 
-void HolohoverDmpcAdmmNode::set_u_acc_curr_in_ocp()
-{
-    p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;
-    lbA.block(control_settings.idx_equ0,0,control_settings.nu,1) = u_acc_curr;
-    ubA.block(control_settings.idx_equ0,0,control_settings.nu,1) = u_acc_curr;
-}
+// void HolohoverDmpcAdmmNode::set_u_acc_curr_in_ocp()
+// {
+//     p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;
+//     lbA.block(control_settings.idx_equ0,0,control_settings.nu,1) = u_acc_curr;
+//     ubA.block(control_settings.idx_equ0,0,control_settings.nu,1) = u_acc_curr;
+// }
 
 void HolohoverDmpcAdmmNode::get_u_acc_from_sol()
 {
@@ -759,17 +765,21 @@ void HolohoverDmpcAdmmNode::build_qp()
 
     for (int k = 0; k < sprob.lb[my_id].size(); k++){
         if (sprob.lb[my_id][k] == -casadi::inf){
-            sprob.lb[my_id][k] = -pow(10,20); 
+            sprob.lb[my_id][k] = -pow(10,20); //qpOASES
+            // sprob.lb[my_id][k] = -std::numeric_limits<double>::infinity(); //PIQP
         } else if (sprob.lb[my_id][k] == casadi::inf){
-            sprob.lb[my_id][k] = pow(10,20);
+            sprob.lb[my_id][k] = pow(10,20); //qpOASES
+            // sprob.lb[my_id][k] = std::numeric_limits<double>::infinity(); //PIQP
         }
     }
 
     for (int k = 0; k < sprob.ub[my_id].size(); k++){
         if (sprob.ub[my_id][k] == -casadi::inf){
-            sprob.ub[my_id][k] = -pow(10,20);
+            sprob.ub[my_id][k] = -pow(10,20); //qpOASES
+            // sprob.ub[my_id][k] = -std::numeric_limits<double>::infinity(); //PIQP
         } else if (sprob.ub[my_id][k] == casadi::inf){
-            sprob.ub[my_id][k] = pow(10,20);
+            sprob.ub[my_id][k] = pow(10,20); //qpOASES
+            // sprob.ub[my_id][k] = std::numeric_limits<double>::infinity(); //PIQP
         }
     }
 
@@ -954,10 +964,23 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
         //Step 1: local z update
         loc_timer.tic();
         g_bar = g + gam - rho*zbar;
+
+        //qpOASES
         nWSR = 10000;
         loc_prob.hotstart(g_bar.data(),
                            lb.data(), ub.data(), lbA.data(), ubA.data(), nWSR);
         loc_prob.getPrimalSolution(z.data());
+
+        //PIQP
+        // std::cout << "lb = " << lb << std::endl;
+        // std::cout << "ub = " << ub << std::endl;
+        // loc_prob.setup(H_bar, g_bar, sprob.Aeq[my_id] , sprob.beq[my_id] , piqp::nullopt, piqp::nullopt , piqp::nullopt, piqp::nullopt);
+        // loc_prob.update(piqp::nullopt, g_bar, piqp::nullopt , sprob.beq[my_id] , piqp::nullopt , piqp::nullopt, piqp::nullopt, piqp::nullopt);
+        // loc_prob.update(H_bar, g_bar, sprob.Aeq[my_id] , sprob.beq[my_id] , sprob.Aineq[my_id] , sprob.bineq[my_id], lb, ub);
+        // loc_prob.solve();
+        // z = loc_prob.result().x;
+
+
         for (int i = 0; i < N_og; i++){
             auto idx = og_idx_to_idx.find(i);
             XV[i].clear();
@@ -1152,7 +1175,9 @@ void HolohoverDmpcAdmmNode::update_v_out(){
 
 
 int HolohoverDmpcAdmmNode::update_g_beq(){
-    g = sprob.g[my_id];    
+    g = sprob.g[my_id];
+
+    //qpOASES    
     lbA.block(0,0,ng,1) = sprob.beq[my_id];
     ubA.block(0,0,ng,1) = sprob.beq[my_id];
     return 0;
