@@ -225,6 +225,7 @@ void sProb::read_AA(const std::string& folderName, unsigned int Nagents){
         error = csvRead(A[i],fileName,20);
     }   
 
+    std::ignore = error;
 }
 
 void sProb::read_ublb(const std::string& folderName, unsigned int my_id_){

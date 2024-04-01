@@ -364,6 +364,7 @@ void HolohoverDmpcAdmmNode::init_comms(){
 
 void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish_control_msg)
 {
+    std::ignore = publish_control_msg;
 
     if(!dmpc_is_initialized){
         set_state_in_ocp();
@@ -467,7 +468,7 @@ void HolohoverDmpcAdmmNode::publish_trajectory( )
 
     msg.state_trajectory.resize(control_settings.N);
     int idx = control_settings.idx_x0;
-    for (int i = 0; i < control_settings.N; i++) //GS: we could also send up to control_settings.N+1
+    for (unsigned int i = 0; i < control_settings.N; i++) //GS: we could also send up to control_settings.N+1
     {
         msg.state_trajectory[i].x = zbar(idx); 
         msg.state_trajectory[i].y = zbar(idx+1);
@@ -1145,7 +1146,7 @@ void HolohoverDmpcAdmmNode::print_time_measurements(){
     
       
 
-    int N_rows = iter_timer.m_log.size();
+    unsigned int N_rows = iter_timer.m_log.size();
     int k = 0; //MPC step
     unsigned int row = 0;
     while (row < N_rows){
