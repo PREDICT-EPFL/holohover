@@ -113,14 +113,14 @@ void HolohoverNavigationNode::pose_callback(const geometry_msgs::msg::PoseStampe
     rclcpp::Time current_time = this->now();
     rclcpp::Time pose_time = measurement.header.stamp;
     // don't predict if update was too long ago otherwise we diverge
-    if (pose_time > last_update && (current_time - last_update).seconds() < 25e-3)
+    if (pose_time >= last_update && (current_time - last_update).seconds() < 25e-3)
     {
         ekf->predict((pose_time - last_update).seconds());
     }
     else
     {
         RCLCPP_INFO_STREAM(this->get_logger(), "EKF - NotPredicting");
-        if (pose_time <= last_update) {
+        if (pose_time < last_update) {
             RCLCPP_INFO_STREAM(this->get_logger(), "Received Message from the past: " << (pose_time - last_update).seconds() * 1e3 << " ms");
         } 
         if((current_time - last_update).seconds() >= 25e-3) {
