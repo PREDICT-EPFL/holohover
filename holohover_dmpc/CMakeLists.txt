@@ -18,6 +18,7 @@ find_package(rclpy REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(piqp REQUIRED)
 find_package(qpOASES REQUIRED)
+find_package(casadi REQUIRED)
 
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs)
@@ -31,23 +32,9 @@ if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
   endif()
 endif()
 
-
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
-# Get package info using pkg-config
-find_package(PkgConfig)
-pkg_search_module(CASADI casadi)
-if(NOT CASADI_LIBRARIES)
-  message(SEND_ERROR "Could not find casadi.pc - did you set PKG_CONFIG_PATH?")
-endif()
-
-message("CASADI_LIBRARY_DIRS: ${CASADI_LIBRARY_DIRS}")
-message("CASADI_LIBRARIES: ${CASADI_LIBRARIES}")
-message("CASADI_INCLUDEDIR: ${CASADI_INCLUDEDIR}")
-link_directories(${CASADI_LIBRARY_DIRS})
-
 add_executable(control_dmpc src/holohover_dmpc_admm_node.cpp src/sProb.cpp src/doptTimer.cpp)
-target_include_directories(control_dmpc PRIVATE ${CASADI_INCLUDEDIR})
 ament_target_dependencies(control_dmpc rclcpp geometry_msgs holohover_msgs holohover_common)
 target_link_libraries(control_dmpc qpOASES casadi yaml-cpp)
 
