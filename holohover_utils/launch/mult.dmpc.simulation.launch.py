@@ -29,22 +29,22 @@ def launch_setup(context):
     )
 
     data = yaml.safe_load(open(experiment_conf, 'r'))
-    hovercrafts = data["hovercrafts"]
+    hovercraft = data["hovercraft"]
      
     hovercraft_names = []
     hovercraft_ids = []
     initial_states = {'x': [], 'y': [], 'theta': [], 'vx': [], 'vy': [], 'w': []}
     holohover_params = []
 
-    for hovercraft in hovercrafts:
-        hovercraft_names.append(hovercraft['name'])
-        hovercraft_ids.append(int(hovercraft['id']))
+    for h in hovercraft:
+        hovercraft_names.append(h['name'])
+        hovercraft_ids.append(int(h['id']))
         holohover_params.append(os.path.join(
             get_package_share_directory('holohover_utils'),
             'config',
-            hovercraft['holohover_props']))
+            h['holohover_props']))
 
-        initial_state = hovercraft['initial_state']
+        initial_state = h['initial_state']
         for i, val in enumerate(initial_state):
             initial_states[list(initial_states.keys())[i]].append(float(val))
     #################### EXPERIMENT FILE PARSING - END ####################
@@ -65,7 +65,7 @@ def launch_setup(context):
         package="holohover_simulator",
         executable="simulator",
         parameters=[simulator_config,
-                    { "hovercrafts" :          hovercraft_ids, 
+                    { "hovercraft_ids" :          hovercraft_ids, 
                       "hovercraft_names" :    hovercraft_names,
                       "initial_state_x":       initial_states['x'], 
                       "initial_state_y":       initial_states['y'], 
@@ -94,8 +94,8 @@ def launch_setup(context):
    
     #################### HOVERCRAFTS STARTING ####################
     # Now iterate on each hovercraft and launch the nodes for each one
-    print(f"Starting {len(hovercrafts)} hovercrafts")
-    for i in range(len(hovercrafts)):
+    print(f"Starting {len(hovercraft)} hovercraft")
+    for i in range(len(hovercraft)):
         hovercraft_launch = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft.launch.py')),
             launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i]}.items()
