@@ -68,11 +68,8 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         p[0] = x40[0]; p[1] = x40[1];
         p[9] = x4d[0]; p[10] = x4d[1];
     }
-
     state(0) = p(0); state(1) = p(1); state(2) = p(2); state(3) = p(3); state(4) = p(4); state(5) = p(5);
     state_ref = p.segment(control_settings.nx+control_settings.nu,control_settings.nxd); //todo
-
-
 
     build_qp();
 
@@ -84,7 +81,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     Ncons = sprob.A[my_id].rows();
 
-    rho = 1.0;
+    rho = control_settings.rho;
     H_bar = sprob.H[my_id] + rho * MatrixXd::Identity(nz,nz);
     g = sprob.g[my_id];
     A = MatrixXd::Zero(ng+nh,nz);
@@ -132,7 +129,6 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     init_coupling();
 
-    // XV = new std::vector<double>[N_og];
     for (int i = 0; i < N_og; i++){
         XV.push_back(std::vector<double>());
         auto idx = og_idx_to_idx.find(i);
@@ -257,10 +253,6 @@ void HolohoverDmpcAdmmNode::init_topics()
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
             "control",
             rclcpp::SensorDataQoS());
-
-    // laopt_frequency_publisher = this->create_publisher<holohover_msgs::msg::HolohoverLaoptSpeedStamped>(
-            // "control/laopt_speed",
-            // rclcpp::SensorDataQoS());
 
     HolohoverTrajectory_publisher = this->create_publisher<holohover_msgs::msg::HolohoverTrajectory>(
             "control/HolohoverTrajectory",
