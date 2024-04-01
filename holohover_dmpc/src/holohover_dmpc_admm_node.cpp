@@ -484,12 +484,15 @@ void HolohoverDmpcAdmmNode::publish_trajectory( )
 
 void HolohoverDmpcAdmmNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state)
 {
+    std::unique_lock state_lock{state_mutex, std::defer_lock};
+    state_lock.lock(); 
     state(0) = msg_state.state_msg.x;
     state(1) = msg_state.state_msg.y;
     state(2) = msg_state.state_msg.v_x;
     state(3) = msg_state.state_msg.v_y;
     state(4) = msg_state.state_msg.yaw;
     state(5) = msg_state.state_msg.w_z;
+    state_lock.unlock();
 }
 
 void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &ref)
@@ -498,17 +501,23 @@ void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmp
         RCLCPP_INFO(get_logger(), "Discarded state reference message with incorrect length. Received %d, should be %d", ref.val_length, control_settings.nxd);
 
         return;
-    } 
+    }
+    std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
+    state_ref_lock.lock(); 
     for (unsigned int i = 0; i < ref.val_length; i++){
         state_ref(i) = ref.ref_value[i]; 
     }
+    state_ref_lock.unlock(); 
 }
 
 void HolohoverDmpcAdmmNode::set_state_in_ocp()
 {
+    std::unique_lock state_lock{state_mutex, std::defer_lock};
+    state_lock.lock();
     p.segment(0,control_settings.nx) = state;
     lbA.block(control_settings.idx_eqx0,0,control_settings.nx,1) = state;
     ubA.block(control_settings.idx_eqx0,0,control_settings.nx,1) = state;
+    state_lock.unlock();
 }
 
 void HolohoverDmpcAdmmNode::set_u_acc_curr_in_ocp()
@@ -526,9 +535,15 @@ void HolohoverDmpcAdmmNode::get_u_acc_from_sol()
 
 void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
 
-    p.segment(0,control_settings.nx) = state;                           
+    std::unique_lock state_lock{state_mutex, std::defer_lock};
+    state_lock.lock();
+    p.segment(0,control_settings.nx) = state;
+    state_lock.unlock();                           
     p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;
+    std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
+    state_ref_lock.lock();
     p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref;
+    state_ref_lock.unlock();
 
     std::string function_library = control_settings.folder_name_sprob + "/locFuns.so";
 

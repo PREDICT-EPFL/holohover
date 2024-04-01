@@ -48,6 +48,7 @@ SOFTWARE.*/
 #include <fstream>
 #include <thread>
 #include <cfloat> //DBL_MAX
+#include <mutex>
 
 #include <iostream>
 #include <iomanip>
@@ -240,6 +241,9 @@ private:
     void reserve_time_measurements(unsigned int new_cap);
     std::ostringstream file_name;
     std::ofstream log_file; 
+
+    std::mutex state_mutex;
+    std::mutex state_ref_mutex;
 };
 
 
