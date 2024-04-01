@@ -8,7 +8,7 @@
     internal_iterations_velocity: 6
     internal_iterations_position: 2
 
-    table_size:     [6.0, 4.0]
+    table_size:     [2.2, 1.1]
     table_position: [3.0, 2.5, 1.0]
     table_publish_period: 1.0
 
