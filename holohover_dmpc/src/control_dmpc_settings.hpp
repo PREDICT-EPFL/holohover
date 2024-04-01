@@ -7,12 +7,12 @@ struct ControlDMPCSettings
 {
     double period; //seconds
     double rho;
-    int maxiter;
+    unsigned int maxiter;
 
-    int nx; //state dimension
-    int nu; //input dimension
-    int nxd; //dimension of setpoint
-    int N; //horizon
+    unsigned int nx; //state dimension
+    unsigned int nu; //input dimension
+    unsigned int nxd; //dimension of setpoint
+    unsigned int N; //horizon
     int idx_eqx0; //equality constraint for initial condition
     int idx_equ0; //equality constraint for u0
     int idx_u0;
