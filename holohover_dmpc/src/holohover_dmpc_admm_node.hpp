@@ -57,6 +57,7 @@ SOFTWARE.*/
 #include "sProb.hpp"
 #include "vcpy.hpp"
 #include "doptTimer.hpp"
+#include "piqp/piqp.hpp"
 
 #include <qpOASES.hpp>
 #include <casadi/casadi.hpp>
@@ -110,20 +111,25 @@ private:
     sProb sprob;
 
     Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> H_bar;
-    Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A;
     VectorXd g;
     VectorXd g_bar;
+    VectorXd lb;
+    VectorXd ub; 
+
+    //qpOASES
+    Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A;
     VectorXd lbA;
     VectorXd ubA;
-    VectorXd ub_vec;
-    VectorXd lb_vec;
-
     qpOASES::Options myOptions;
     qpOASES::QProblem loc_prob;
     int nWSR;
+
+    //PIQP
+    // piqp::DenseSolver<double> loc_prob;
+
+    
     double rho;
-    VectorXd lb;
-    VectorXd ub; 
+    
 
     //problem metadata
     Vector<bool, Eigen::Dynamic> isOriginal;    //nz x 1
@@ -169,8 +175,8 @@ private:
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &state_ref);
 
-    void set_state_in_ocp();
-    void set_u_acc_curr_in_ocp();
+    // void set_state_in_ocp();
+    // void set_u_acc_curr_in_ocp();
     void get_u_acc_from_sol();
     void update_setpoint_in_ocp();
     void init_dmpc();
