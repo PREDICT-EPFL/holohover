@@ -82,12 +82,14 @@ end
 
 for i = 1:MPC_steps
     loc_qpTime_MPC_step(i) = sum( loc_qpTime( (i-1)*Nadmm+1 : i*Nadmm ) );
+    zcommTime_MPC_step(i) = sum( zcommTime( (i-1)*Nadmm+1 : i*Nadmm ) );
+    zbarcommTime_MPC_step(i) = sum( zbarcommTime( (i-1)*Nadmm+1 : i*Nadmm ) );
 end
 
 %% closed-loop trajectories
 
 figure()
-subplot(4,2,1);
+subplot(5,2,1);
 for i = 1:Nagents
     plot(xx{i}(1,:));
     hold on
@@ -96,7 +98,7 @@ end
 grid on
 ylabel("x");
 
-subplot(4,2,2);
+subplot(5,2,2);
 for i = 1:Nagents
     plot(xx{i}(2,:));
     hold on
@@ -107,47 +109,61 @@ grid on
 ylim([-2,3]);
 ylabel("y");
 
-subplot(4,2,3);
+subplot(5,2,3);
 for i = 1:Nagents
     plot(xx{i}(3,:));
     hold on
 end
 ylabel("vx");
 
-subplot(4,2,4);
+subplot(5,2,4);
 for i = 1:Nagents
     plot(xx{i}(4,:));
     hold on
 end
 ylabel("vy");
 
-subplot(4,2,5);
+subplot(5,2,5);
 for i = 1:Nagents
     stairs(uu{i}(1,:));
     hold on
 end
 ylabel("ax");
 
-subplot(4,2,6);
+subplot(5,2,6);
 for i = 1:Nagents
     plot(uu{i}(2,:));
     hold on
 end
 ylabel("ay");
 
-subplot(4,2,7);
+subplot(5,2,7);
 for i = 1:Nagents
     stairs(AdmmTime(:,i));
     hold on
 end
 ylabel("Solve OCP [ms]");
 
-subplot(4,2,8);
+subplot(5,2,8);
 for i = 1:Nagents
     stairs(loc_qpTime_MPC_step);
     hold on
 end
-ylabel("Local QP time [ms]");
+ylabel("Local QP [ms]");
+
+subplot(5,2,9);
+for i = 1:Nagents
+    stairs(zcommTime_MPC_step);
+    hold on
+end
+ylabel("z c. [ms]");
+
+subplot(5,2,10);
+for i = 1:Nagents
+    stairs(zbarcommTime_MPC_step);
+    hold on
+end
+ylabel("zbar c. [ms]");
 
 
 %% Detailed timing statistics
