@@ -78,6 +78,23 @@ def launch_setup(context):
         output='screen'
     )
 
+    optitrack_node = Node(
+        package="holohover_utils",
+        executable="optitrack_interface",
+        parameters=[simulator_config,
+                    { "hovercraft_ids" :          hovercraft_ids, 
+                      "hovercraft_names" :    hovercraft_names,
+                      "initial_state_x":       initial_states['x'], 
+                      "initial_state_y":       initial_states['y'], 
+                      "initial_state_theta":   initial_states['theta'], 
+                      "initial_state_vx":      initial_states['vx'], 
+                      "initial_state_vy":      initial_states['vy'], 
+                      "initial_state_w":       initial_states['w'],
+                      "holohover_props_files": holohover_params                                          
+                    }],
+        output='screen'
+    )
+
     recorder_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(this_dir, 'common', 'recorder.launch.py'))
     )
@@ -90,6 +107,8 @@ def launch_setup(context):
     launch_description.append(rviz_launch)
     launch_description.append(recorder_launch)
     launch_description.append(simulator_node)
+    launch_description.append(optitrack_node)
+    
     #################### COMMON NODES STARTING - END ####################
    
     #################### HOVERCRAFTS STARTING ####################
