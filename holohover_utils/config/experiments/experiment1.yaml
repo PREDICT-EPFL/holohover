@@ -7,28 +7,28 @@ experiment:
 hovercraft:
   - name: h0
     id: 0
-    initial_state: [1.2, 1, 0, 0, 0, 0]
+    initial_state: [0.9, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     simulate: True
     machine: la016
 
   - name: h1
     id: 1
-    initial_state: [1.2, 1.2, 0, 0, 0, 0]
+    initial_state: [0.6, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     simulate: True
     machine: la016
 
   - name: h2
     id: 2
-    initial_state: [1.0, 1, 0, 0, 0, 0]
+    initial_state: [0.3, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     simulate: True
     machine: la017
 
   - name: h3
     id: 3
-    initial_state: [1.2, 1.2, 0, 0, 0, 0]
+    initial_state: [0, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     simulate: True
     machine: la017

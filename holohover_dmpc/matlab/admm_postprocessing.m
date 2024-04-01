@@ -80,6 +80,10 @@ for i = 1:Nagents
     end
 end
 
+for i = 1:MPC_steps
+    loc_qpTime_MPC_step(i) = sum( loc_qpTime( (i-1)*Nadmm+1 : i*Nadmm ) );
+end
+
 %% closed-loop trajectories
 
 figure()
@@ -137,6 +141,13 @@ for i = 1:Nagents
     hold on
 end
 ylabel("Solve OCP [ms]");
+
+subplot(4,2,8);
+for i = 1:Nagents
+    stairs(loc_qpTime_MPC_step);
+    hold on
+end
+ylabel("Local QP time [ms]");
 
 
 %% Detailed timing statistics
