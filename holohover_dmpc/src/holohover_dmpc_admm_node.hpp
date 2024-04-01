@@ -39,6 +39,8 @@ SOFTWARE.*/
 #include "holohover_msgs/msg/holohover_laopt_speed_stamped.hpp"
 #include "control_dmpc_settings.hpp"
 
+#include <ament_index_cpp/get_package_prefix.hpp>
+
 #include <numeric> //accumulate
 #include <vector>
 #include <math.h> //pow, max
