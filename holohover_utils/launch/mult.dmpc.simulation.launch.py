@@ -116,7 +116,7 @@ def launch_setup(context):
     print(f"Starting {len(hovercraft)} hovercraft")
     for i in range(len(hovercraft)):
         hovercraft_launch = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft.launch.py')),
+            PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_dmpc.launch.py')),
             launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i]}.items()
         )
         
