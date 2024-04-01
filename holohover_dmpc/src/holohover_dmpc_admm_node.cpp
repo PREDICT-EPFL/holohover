@@ -44,13 +44,13 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     Vector2d x10; x10 << 0.5, 0.0;
     Vector2d x20; x20 << 0.15, 0.3;
     Vector2d x30; x30 << -0.15, -0.3;
-    Vector2d x40; x40 << -0.5, 0.0;
+    Vector2d x40; x40 << -0.5, 0.5;
 
     //desired positions
-    Vector2d x1d; x1d << 0.5, 1.8;
-    Vector2d x2d; x2d << 0.0, -0.4;
-    Vector2d x3d; x3d << 0.0, -0.4;
-    Vector2d x4d; x4d << 0.0, -0.4;
+    Vector2d x1d; x1d << 0.0, 0.5;
+    Vector2d x2d; x2d << 0.5, 0.5;
+    Vector2d x3d; x3d << 0.5, 0.5;
+    Vector2d x4d; x4d << 0.5, 0.5;
 
     if (my_id == 0){
         p[0] = x10[0]; p[1] = x10[1];
