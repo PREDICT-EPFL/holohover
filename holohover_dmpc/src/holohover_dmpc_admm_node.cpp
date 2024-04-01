@@ -229,16 +229,16 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     xd_log = -MatrixXd::Ones(log_buffer_size,control_settings.nxd);
     mpc_step = 0;
     logged_mpc_steps = 0;
-    std::time_t t = std::time(0);   // get time now
-    std::tm* now = std::localtime(&t);
     
+    auto now = std::chrono::system_clock::now();
+    auto localTime = std::chrono::system_clock::to_time_t(now);
     
-    file_name << "dmpc_time_measurement" << "_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
+    file_name << ament_index_cpp::get_package_prefix("holohover_dmpc") << "/../../log/dmpc_time_measurement_" << std::put_time(std::localtime(&localTime), "%F_%H-%M-%S") << "_agent" << my_id << ".csv";
     log_file = std::ofstream(file_name.str());
     if (log_file.is_open())
     {
-    log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_\n";
-    log_file.close();
+        log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_\n";
+        log_file.close();
     }
 
 }
