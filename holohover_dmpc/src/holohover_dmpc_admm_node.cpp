@@ -77,7 +77,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     ng = sprob.Aeq[my_id].rows();
     nh = sprob.Aineq[my_id].rows();
 
-    std::cout << "nz = " << nz << " , " << "ng = " << ng << " , " << "nh = " << nh << std::endl;
+    RCLCPP_INFO(get_logger(), "nz = %d, ng = %d, nh = %d", nz, ng, nh);
 
     Ncons = sprob.A[my_id].rows();
 
@@ -495,7 +495,8 @@ void HolohoverDmpcAdmmNode::state_callback(const holohover_msgs::msg::HolohoverS
 void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &ref)
 {
     if(ref.val_length != control_settings.nxd){
-        std::cout << "Discarded state reference message with incorrect length" << std::endl;
+        RCLCPP_INFO(get_logger(), "Discarded state reference message with incorrect length. Received %d, should be %d", ref.val_length, control_settings.nxd);
+
         return;
     } 
     for (unsigned int i = 0; i < ref.val_length; i++){
@@ -575,7 +576,7 @@ void HolohoverDmpcAdmmNode::init_dmpc()
 {
     std::this_thread::sleep_for(std::chrono::seconds(10)); //wait until all subscribers are setup
     init_comms();
-    std::cout << "comms initialized" << std::endl;
+    RCLCPP_INFO(get_logger(), "Comms initialized");
     z     = VectorXd::Zero(nz);
     zbar  = VectorXd::Zero(nz);
     gam   = VectorXd::Zero(nz);
