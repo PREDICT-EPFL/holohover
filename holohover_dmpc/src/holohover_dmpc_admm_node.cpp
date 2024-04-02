@@ -93,38 +93,12 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     g_bar = g + gam - rho*zbar;
 
-    //qpOASES
-    // A = MatrixXd::Zero(ng+nh,nz);
-    // A.block(0,0,ng,nz) = sprob.Aeq[my_id];    
-    // if (nh > 0){
-    //     A.block(ng,0,nh,nz) = sprob.Aineq[my_id];
-    // }
-    // lbA = VectorXd::Zero(ng+nh);
-    // ubA = VectorXd::Zero(ng+nh);
-    // lbA.block(0,0,ng,1) = sprob.beq[my_id];
-    // ubA.block(0,0,ng,1) = sprob.beq[my_id];
-    // if (nh > 0){
-    //     lbA.block(ng,0,nh,1).setConstant(-pow(10,20));  
-    //     ubA.block(ng,0,nh,1) = sprob.bineq[my_id];
-    // }  
-    // myOptions.printLevel = qpOASES::PL_LOW; // other values: PL_NONE, PL_LOW, PL_MEDIUM, PL_HIGH, PL_TABULAR, PL_DEBUG_ITER
-    // nWSR = 1000;  
-    // loc_prob = qpOASES::QProblem(nz,ng+nh);
-    // loc_prob.setOptions(myOptions);
-    // loc_prob.init(H_bar.data(), g_bar.data(), A.data(),
-    //                        lb.data(), ub.data(), lbA.data(), ubA.data(), nWSR);
-
     //PIQP    
     loc_prob.settings().verbose = false;
     loc_prob.settings().compute_timings = false;
-    // loc_prob.setup(H_bar, g_bar, sprob.Aeq[my_id] , sprob.beq[my_id] , piqp::nullopt, piqp::nullopt, piqp::nullopt, piqp::nullopt);
-    // loc_prob_piqp.setup(H_bar, g_bar, sprob.Aeq[my_id] , sprob.beq[my_id] , sprob.Aineq[my_id] , sprob.bineq[my_id], lb, ub);
-    loc_prob.setup(H_bar.sparseView(), g_bar, sprob.Aeq[my_id].sparseView() , sprob.beq[my_id] , sprob.Aineq[my_id].sparseView() , sprob.bineq[my_id], lb, ub);
-  
+    loc_prob.setup(H_bar.sparseView(), g_bar, sprob.Aeq[my_id].sparseView() , sprob.beq[my_id] , sprob.Aineq[my_id].sparseView() , sprob.bineq[my_id], lb, ub); 
     loc_prob.solve();
-    // std::string piqp_log << "piqp_log_" << my_id;
-    // piqp::save_sparse_model(loc_prob, piqp_log);
-    // std::cout << "finished PIQP setup" << std::endl;
+    
     
     isOriginal.resize(nz);
     isOriginal.setConstant(false);
@@ -592,7 +566,7 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
     std::memcpy(sprob.beq[my_id].data(), res.at(0).ptr(), sizeof(double)*ng_*cols_);
     sprob.beq[my_id] = -sprob.beq[my_id];
 
-    update_g_beq();
+    g = sprob.g[my_id];
    
 }
 
@@ -766,20 +740,16 @@ void HolohoverDmpcAdmmNode::build_qp()
 
     for (int k = 0; k < sprob.lb[my_id].size(); k++){
         if (sprob.lb[my_id][k] == -casadi::inf){
-            // sprob.lb[my_id][k] = -pow(10,20); //qpOASES
             sprob.lb[my_id][k] = -std::numeric_limits<double>::infinity(); //PIQP
         } else if (sprob.lb[my_id][k] == casadi::inf){
-            // sprob.lb[my_id][k] = pow(10,20); //qpOASES
             sprob.lb[my_id][k] = std::numeric_limits<double>::infinity(); //PIQP
         }
     }
 
     for (int k = 0; k < sprob.ub[my_id].size(); k++){
         if (sprob.ub[my_id][k] == -casadi::inf){
-            // sprob.ub[my_id][k] = -pow(10,20); //qpOASES
             sprob.ub[my_id][k] = -std::numeric_limits<double>::infinity(); //PIQP
         } else if (sprob.ub[my_id][k] == casadi::inf){
-            // sprob.ub[my_id][k] = pow(10,20); //qpOASES
             sprob.ub[my_id][k] = std::numeric_limits<double>::infinity(); //PIQP
         }
     }
@@ -966,19 +936,7 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
         loc_timer.tic();
         g_bar = g + gam - rho*zbar;
 
-        //qpOASES
-        // nWSR = 10000;
-        // loc_prob.hotstart(g_bar.data(),
-        //                    lb.data(), ub.data(), lbA.data(), ubA.data(), nWSR);
-        // loc_prob.getPrimalSolution(z.data());
-
         //PIQP
-        // std::cout << "lb = " << lb << std::endl;
-        // std::cout << "ub = " << ub << std::endl;
-        // loc_prob.setup(H_bar, g_bar, sprob.Aeq[my_id] , sprob.beq[my_id] , piqp::nullopt, piqp::nullopt , piqp::nullopt, piqp::nullopt);
-        // loc_prob.update(piqp::nullopt, g_bar, piqp::nullopt , sprob.beq[my_id] , piqp::nullopt , piqp::nullopt, piqp::nullopt, piqp::nullopt,true);
-        // loc_prob_piqp.setup(H_bar, g_bar, sprob.Aeq[my_id] , sprob.beq[my_id] , sprob.Aineq[my_id] , sprob.bineq[my_id], lb, ub);
-        // loc_prob_piqp.setup(H_bar.sparseView(), g_bar, sprob.Aeq[my_id].sparseView() , sprob.beq[my_id] , sprob.Aineq[my_id].sparseView() , sprob.bineq[my_id], lb, ub);    
         loc_prob.update(piqp::nullopt, g_bar, piqp::nullopt , sprob.beq[my_id] , piqp::nullopt , piqp::nullopt, piqp::nullopt, piqp::nullopt,true);
         loc_prob.solve();
         z = loc_prob.result().x;
@@ -1173,16 +1131,6 @@ void HolohoverDmpcAdmmNode::update_v_out(){
             v_out[i].val[j] = zbar[v_out[i].og_idx[j]];
         }
     }
-}
-
-
-int HolohoverDmpcAdmmNode::update_g_beq(){
-    g = sprob.g[my_id];
-
-    //qpOASES    
-    // lbA.block(0,0,ng,1) = sprob.beq[my_id];
-    // ubA.block(0,0,ng,1) = sprob.beq[my_id];
-    return 0;
 }
 
 void HolohoverDmpcAdmmNode::print_time_measurements(){

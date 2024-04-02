@@ -17,7 +17,6 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(piqp REQUIRED)
-find_package(qpOASES REQUIRED)
 find_package(casadi REQUIRED)
 
 find_package(tf2_ros REQUIRED)
@@ -36,7 +35,7 @@ message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(control_dmpc src/holohover_dmpc_admm_node.cpp src/sProb.cpp src/doptTimer.cpp)
 ament_target_dependencies(control_dmpc rclcpp geometry_msgs holohover_msgs holohover_common)
-target_link_libraries(control_dmpc qpOASES casadi yaml-cpp Eigen3::Eigen piqp::piqp)
+target_link_libraries(control_dmpc casadi yaml-cpp Eigen3::Eigen piqp::piqp)
 
 
 add_executable(dmpc_trigger src/holohover_dmpc_trigger_node.cpp)
