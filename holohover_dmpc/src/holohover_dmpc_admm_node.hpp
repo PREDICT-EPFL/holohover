@@ -58,9 +58,7 @@ SOFTWARE.*/
 #include "vcpy.hpp"
 #include "doptTimer.hpp"
 #include "piqp/piqp.hpp"
-// #include "piqp/utils/io_utils.hpp"
 
-#include <qpOASES.hpp>
 #include <casadi/casadi.hpp>
 
 #include <memory>
@@ -117,15 +115,6 @@ private:
     VectorXd lb;
     VectorXd ub; 
 
-    //qpOASES
-    // Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A;
-    // VectorXd lbA;
-    // VectorXd ubA;
-    // qpOASES::Options myOptions;
-    // qpOASES::QProblem loc_prob;
-    // int nWSR;
-
-    //PIQP
     piqp::SparseSolver<double> loc_prob;
     
     double rho;
@@ -223,8 +212,6 @@ private:
     void received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_id_); //
     std::vector<std::function<void(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_)>> bound_received_vin_callback;
     std::vector<std::function<void(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_)>> bound_received_vout_callback;
-
-    int update_g_beq();
 
     doptTimer admm_timer;
     doptTimer loc_timer;        //time for solving the local QP
