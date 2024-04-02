@@ -8,18 +8,22 @@ hovercraft:
     id: 0
     initial_state: [1, 1, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    simulate: True
 
   - name: h1
     id: 1
     initial_state: [1, 1.2, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    simulate: True
 
   - name: h2
     id: 2
     initial_state: [1.2, 1, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    simulate: True
 
   - name: h3
     id: 3
     initial_state: [1.2, 1.2, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    simulate: True
