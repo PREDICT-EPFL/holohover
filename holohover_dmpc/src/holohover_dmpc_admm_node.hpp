@@ -58,6 +58,7 @@ SOFTWARE.*/
 #include "vcpy.hpp"
 #include "doptTimer.hpp"
 #include "piqp/piqp.hpp"
+// #include "piqp/utils/io_utils.hpp"
 
 #include <qpOASES.hpp>
 #include <casadi/casadi.hpp>
@@ -117,16 +118,15 @@ private:
     VectorXd ub; 
 
     //qpOASES
-    Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A;
-    VectorXd lbA;
-    VectorXd ubA;
-    qpOASES::Options myOptions;
-    qpOASES::QProblem loc_prob;
-    int nWSR;
+    // Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> A;
+    // VectorXd lbA;
+    // VectorXd ubA;
+    // qpOASES::Options myOptions;
+    // qpOASES::QProblem loc_prob;
+    // int nWSR;
 
     //PIQP
-    // piqp::DenseSolver<double> loc_prob;
-
+    piqp::SparseSolver<double> loc_prob;
     
     double rho;
     
