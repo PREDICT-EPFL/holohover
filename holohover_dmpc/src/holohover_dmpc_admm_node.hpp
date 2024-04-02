@@ -59,7 +59,7 @@ SOFTWARE.*/
 #include "doptTimer.hpp"
 #include "piqp/piqp.hpp"
 
-#include <casadi/casadi.hpp>
+#include "casadi/casadi.hpp"
 
 #include <memory>
 
@@ -75,51 +75,34 @@ private:
     Holohover holohover;
     
     Holohover::state_t<double> state;
-    
-    //holohover_msgs::msg::HolohoverLaoptSpeedStamped speed;
-    holohover_msgs::msg::HolohoverLaoptSpeedStamped speed_msg;
-    //geometry_msgs::msg::Pose2D ref;
+    Eigen::VectorXd state_ref;   //GS: VectorXd, because different subsystems can have different state_ref dimension
 
-    rclcpp::TimerBase::SharedPtr timer;
-    //rclcpp::Publisher<holohover_msgs::msg::HolohoverLaoptSpeedStamped>::SharedPtr laopt_frequency_publisher;
+
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverTrajectory>::SharedPtr HolohoverTrajectory_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr reference_subscription;
-
-    rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()
-
+    rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()    
     
-    //GS BEGIN
-    Eigen::VectorXd state_ref;   //GS: VectorXd, because different subsystems can have different state_ref dimension
-    Eigen::VectorXd p; //parameters for OCP ([x0; u0; xd])
     Holohover::control_acc_t<double> u_acc_curr;
     Holohover::control_acc_t<double> u_acc_next; //GS: m_u1
     Holohover::control_force_t<double> motor_velocities;
     Holohover::control_force_t<double> last_control_signal;
     Holohover::control_force_t<double> u_signal;
 
-    // VectorXd sol; //GS: OCP solution
-    int my_id; //GS: move to config?
+    //OCP
+    Eigen::VectorXd p; //parameters for OCP ([x0; u0; xd])
+    int my_id;
     int Nagents;
-
     int nz;
     int ng;
     int nh;
     int Ncons;
     sProb sprob;
-
-    Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> H_bar;
     VectorXd g;
-    VectorXd g_bar;
     VectorXd lb;
     VectorXd ub; 
-
-    piqp::SparseSolver<double> loc_prob;
     
-    double rho;
-    
-
     //problem metadata
     Vector<bool, Eigen::Dynamic> isOriginal;    //nz x 1
     Vector<bool, Eigen::Dynamic> isCopy;        //nz x 1
@@ -127,16 +110,21 @@ private:
     int N_og;                                   //Number of original variables this agent owns
     std::map<int,int> og_idx_to_idx;            //original variable index -> local variable index
     std::map<int,int> idx_to_og_idx;            //local variable index -> original variable index
+    
+    //ADMM
+    Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> H_bar;
+    VectorXd g_bar;
 
     //ADMM iterates
     VectorXd z;                                 //nz x 1
     VectorXd zbar;                              //nz x 1
     VectorXd gam;                               //nz x 1
+    double rho;
 
+    //ADMM coupling
     std::vector<vCpy> v_in;  //copy from in-neighbors       //N_in_neighbors x 1
     std::vector<vCpy> v_out; //copy for out-neighbors       //N_out_neighbors x 1
     std::vector<std::vector<double>> XV;                       //N_og x n_out_neighbors(i)
-
     std::vector<int> in_neighbors;              //N_in_neighbors x 1
     std::vector<int> out_neighbors;             //N_out_neighbors x 1
     int N_in_neighbors;
@@ -145,40 +133,34 @@ private:
     rclcpp::SubscriptionOptions receive_vin_options;
     rclcpp::SubscriptionOptions receive_vout_options;
     rclcpp::CallbackGroup::SharedPtr receive_vin_cb_group;
-    rclcpp::CallbackGroup::SharedPtr receive_vout_cb_group;
+    rclcpp::CallbackGroup::SharedPtr receive_vout_cb_group;  
+
+    piqp::SparseSolver<double> loc_prob;
 
     bool dmpc_is_initialized;
 
-    // std::ostringstream fileName_z;
-    // std::ofstream file_z;
-    // std::ostringstream fileName_zbar;
-    // std::ofstream file_zbar;
-    // std::ostringstream fileName_gam;
-    // std::ofstream file_gam;
-    
+    std::mutex state_mutex;
+    std::mutex state_ref_mutex;   
     
     void init_topics();
-    void publish_control(const std_msgs::msg::UInt64 &publish_control_msg);
-    void publish_trajectory();
-    void publish_laopt_speed(const long &duration_us );
+    void init_dmpc();
+    void init_coupling();   //extract coupling metadata from coupling matrices 
+    void init_comms();     
+    void build_qp(); //construct the sProb
+  
+
+    //callbacks
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &state_ref);
-
-    // void set_state_in_ocp();
-    // void set_u_acc_curr_in_ocp();
-    void get_u_acc_from_sol();
+    void publish_control(const std_msgs::msg::UInt64 &publish_control_msg);
+    
+    void publish_trajectory();
+    
+    //DMPC loop
     void update_setpoint_in_ocp();
-    void init_dmpc();
-    void convert_u_acc_to_u_signal();
-    Eigen::MatrixXd casadi2Eigen ( const casadi::DM& A );
-    Eigen::VectorXd casadi2EigenVector ( const casadi::DM& A );
-    casadi::DM Eigen2casadi( const Eigen::VectorXd& in);
-    
-    void init_coupling();   //extract coupling metadata from coupling matrices        
-        
-    void build_qp(); //construct the sProb
-    
     int solve(unsigned int maxiter_);
+    void get_u_acc_from_sol();
+    void convert_u_acc_to_u_signal();
 
     //before averaging
     void update_v_in();     //place z into v_in
@@ -188,9 +170,7 @@ private:
     void update_v_out();
     void send_vout_receive_vin();
 
-    void init_comms();
-
-    //communication
+    //ADMM communication
     std::vector<std::vector<int>> v_in_msg_idx_first_received;
     std::vector<std::vector<int>> v_out_msg_idx_first_received;
 
@@ -213,6 +193,7 @@ private:
     std::vector<std::function<void(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_)>> bound_received_vin_callback;
     std::vector<std::function<void(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_)>> bound_received_vout_callback;
 
+    //ADMM logging
     doptTimer admm_timer;
     doptTimer loc_timer;        //time for solving the local QP
     doptTimer iter_timer;       //time for running one iteration
@@ -220,23 +201,23 @@ private:
     doptTimer zbar_comm_timer;  //time for communicating zbar in one iteration
     doptTimer send_vin_timer;
     doptTimer receive_vout_timer;
-
     Eigen::MatrixXd x_log;
     Eigen::MatrixXd u_log;
     Eigen::MatrixXd xd_log;
-
     int mpc_step;
     int log_buffer_size; //number of MPC steps to store before writing to log
     int logged_mpc_steps; //number of MPC steps that have already been logged
-
     void print_time_measurements();
     void clear_time_measurements();
     void reserve_time_measurements(unsigned int new_cap);
     std::ostringstream file_name;
-    std::ofstream log_file; 
+    std::ofstream log_file;   
 
-    std::mutex state_mutex;
-    std::mutex state_ref_mutex;
+    //helper
+    Eigen::MatrixXd casadi2Eigen ( const casadi::DM& A );
+    Eigen::VectorXd casadi2EigenVector ( const casadi::DM& A );
+    casadi::DM Eigen2casadi( const Eigen::VectorXd& in);
+    
 };
 
 
