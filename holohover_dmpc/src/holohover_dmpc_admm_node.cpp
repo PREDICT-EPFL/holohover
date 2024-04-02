@@ -365,7 +365,7 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     // std::cout << "u_acc_curr after conversion = " << u_acc_curr[0] << " , " << u_acc_curr[1] << " , " << u_acc_curr[2] << std::endl; 
 
 
-    holohover_msgs::msg::HolohoverControlStamped control_msg; //GS: move this to after solve?
+    holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";
     control_msg.header.stamp = this->now();
     control_msg.motor_a_1 = u_signal(0);
@@ -379,8 +379,7 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
     // std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;
 
-    // set_state_in_ocp();
-    // set_u_acc_curr_in_ocp();
+
     update_setpoint_in_ocp();
 
     
@@ -492,23 +491,6 @@ void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmp
     }
     state_ref_lock.unlock(); 
 }
-
-// void HolohoverDmpcAdmmNode::set_state_in_ocp()
-// {
-//     std::unique_lock state_lock{state_mutex, std::defer_lock};
-//     state_lock.lock();
-//     p.segment(0,control_settings.nx) = state;
-//     lbA.block(control_settings.idx_eqx0,0,control_settings.nx,1) = state;
-//     ubA.block(control_settings.idx_eqx0,0,control_settings.nx,1) = state;
-//     state_lock.unlock();
-// }
-
-// void HolohoverDmpcAdmmNode::set_u_acc_curr_in_ocp()
-// {
-//     p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;
-//     lbA.block(control_settings.idx_equ0,0,control_settings.nu,1) = u_acc_curr;
-//     ubA.block(control_settings.idx_equ0,0,control_settings.nu,1) = u_acc_curr;
-// }
 
 void HolohoverDmpcAdmmNode::get_u_acc_from_sol()
 {
@@ -969,26 +951,7 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
         zbar_comm_timer.toc();
 
         // Step 3: dual update
-        gam = gam + rho*(z-zbar);
-
-        // file_z.open(fileName_z.str(),std::ios_base::app);
-        // if (file_z.is_open())
-        // {
-        // file_z << z.transpose() << "\n"; 
-        // }
-        // file_z.close(); 
-        // file_zbar.open(fileName_zbar.str(),std::ios_base::app);
-        // if (file_zbar.is_open())
-        // {
-        // file_zbar << zbar.transpose() << "\n"; 
-        // }
-        // file_zbar.close();
-        // file_gam.open(fileName_gam.str(),std::ios_base::app);
-        // if (file_gam.is_open())
-        // {
-        // file_gam << gam.transpose() << "\n"; 
-        // }
-        // file_gam.close();   
+        gam = gam + rho*(z-zbar);  
         iter_timer.toc();
 
     }
