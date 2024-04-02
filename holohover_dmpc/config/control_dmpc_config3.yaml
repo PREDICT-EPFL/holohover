@@ -2,7 +2,7 @@ h3/dmpc:
   ros__parameters:
     period: 0.100
     rho: 1.0
-    maxiter: 5
+    maxiter: 10
     nx: 6
     nu: 3
     nxd: 6
