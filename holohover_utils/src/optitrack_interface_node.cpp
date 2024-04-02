@@ -53,7 +53,6 @@ void OptitrackInterfaceNode::hovercraft_raw_pose_callback(std::shared_ptr<geomet
     pose.pose.position.y = raw_pose->pose.position.y - table_pose.pose.position.y;
     pose.pose.position.z = 0;
     
-<<<<<<< HEAD
     tf2::Quaternion q_raw, q_table, q_new;
 
     tf2::convert(raw_pose->pose.orientation, q_raw);
@@ -72,27 +71,6 @@ void OptitrackInterfaceNode::hovercraft_raw_pose_callback(std::shared_ptr<geomet
     tf2::convert(q_new, pose.pose.orientation);
 
     hovercraft_pose_publishers[hovercraft_id]->publish(pose);
-=======
-
-    double r, p, y_hov, y_table;    
-    tf2::Quaternion q;
-
-    tf2::fromMsg(table_pose.pose.orientation, q);
-    tf2::Matrix3x3 m_table(q);
-    m_table.getRPY(r, p, y_table);
-
-    tf2::fromMsg(table_pose.pose.orientation, q);
-    tf2::Matrix3x3 m_hov(q);
-    m_table.getRPY(r, p, y_hov);
-
-    q.setRPY(0, 0, y_hov - y_table);
-    pose.pose.orientation.w = q.w();
-    pose.pose.orientation.x = q.x();
-    pose.pose.orientation.y = q.y();
-    pose.pose.orientation.z = q.z();
-    
-    hovercrafts_pose_publishers[hovercraft_id]->publish(pose);
->>>>>>> c006f62 (optitrack interface transform)
 }
 
 
