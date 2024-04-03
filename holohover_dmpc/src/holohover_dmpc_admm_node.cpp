@@ -30,6 +30,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     // init state
     state.setZero();
+    state_at_ocp_solve.setZero();
     u_acc_curr.setZero();
     u_acc_next.setZero();
     motor_velocities.setZero();
@@ -70,7 +71,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     }
     state(0) = p(0); state(1) = p(1); state(2) = p(2); state(3) = p(3); state(4) = p(4); state(5) = p(5);
     state_ref = p.segment(control_settings.nx+control_settings.nu,control_settings.nxd); //todo
-
+    state_ref_at_ocp_solve = state_ref;
     build_qp();
 
     nz = sprob.H[my_id].rows();
@@ -241,17 +242,26 @@ void HolohoverDmpcAdmmNode::init_topics()
             "control/HolohoverTrajectory",
             rclcpp::SensorDataQoS());
 
+    state_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    state_options.callback_group = state_cb_group;        
+
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "state", 10,
-            std::bind(&HolohoverDmpcAdmmNode::state_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverDmpcAdmmNode::state_callback, this, std::placeholders::_1),state_options);
+
+    state_ref_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    state_ref_options.callback_group = state_ref_cb_group;
     
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(
             "dmpc_state_ref", 10,
-            std::bind(&HolohoverDmpcAdmmNode::ref_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverDmpcAdmmNode::ref_callback, this, std::placeholders::_1),state_ref_options);
+
+    publish_control_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    publish_control_options.callback_group = publish_control_cb_group;        
 
     dmpc_trigger_subscription = this->create_subscription<std_msgs::msg::UInt64>(
             "/dmpc/trigger", 10,
-            std::bind(&HolohoverDmpcAdmmNode::publish_control, this, std::placeholders::_1));
+            std::bind(&HolohoverDmpcAdmmNode::publish_control, this, std::placeholders::_1),publish_control_options);
 }
 
 void HolohoverDmpcAdmmNode::init_comms(){
@@ -350,8 +360,6 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     std::ignore = publish_control_msg;
 
     if(!dmpc_is_initialized){
-        // set_state_in_ocp();
-        // set_u_acc_curr_in_ocp();
         update_setpoint_in_ocp();
         init_dmpc();
         dmpc_is_initialized = true;
@@ -395,9 +403,9 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
 
     publish_trajectory();
 
-    x_log.block(mpc_step,0,1,control_settings.nx) = state.transpose(); 
+    x_log.block(mpc_step,0,1,control_settings.nx) = state_at_ocp_solve.transpose(); 
     u_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
-    xd_log.block(mpc_step,0,1,control_settings.nxd) = state_ref.transpose();
+    xd_log.block(mpc_step,0,1,control_settings.nxd) = state_ref_at_ocp_solve.transpose();
 
     if (mpc_step == log_buffer_size - 1) {
         // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
@@ -425,7 +433,7 @@ void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
     // calculate next thrust and motor velocities
     Holohover::control_force_t<double> u_force_curr;
     // Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_curr;
-    holohover.control_acceleration_to_force(state, u_acc_next, u_force_curr, u_force_curr_min, u_force_curr_max); //u_acc_curr
+    holohover.control_acceleration_to_force(state, u_acc_curr, u_force_curr, u_force_curr_min, u_force_curr_max);
     Holohover::control_force_t<double> motor_velocities_curr;
     holohover.thrust_to_signal(u_force_curr, motor_velocities_curr);
 
@@ -502,12 +510,14 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
 
     std::unique_lock state_lock{state_mutex, std::defer_lock};
     state_lock.lock();
-    p.segment(0,control_settings.nx) = state;
+    state_at_ocp_solve = state;
+    p.segment(0,control_settings.nx) = state_at_ocp_solve;
     state_lock.unlock();                           
     p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;
     std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
     state_ref_lock.lock();
-    p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref;
+    state_ref_at_ocp_solve = state_ref;
+    p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref_at_ocp_solve;
     state_ref_lock.unlock();
 
     std::string function_library = control_settings.folder_name_sprob + "/locFuns.so";
