@@ -75,14 +75,20 @@ private:
     Holohover holohover;
     
     Holohover::state_t<double> state;
+    Holohover::state_t<double> state_at_ocp_solve;
     Eigen::VectorXd state_ref;   //GS: VectorXd, because different subsystems can have different state_ref dimension
-
+    Eigen::VectorXd state_ref_at_ocp_solve; 
 
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverTrajectory>::SharedPtr HolohoverTrajectory_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr reference_subscription;
-    rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()    
+    rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()
+
+    rclcpp::SubscriptionOptions state_options;
+    rclcpp::SubscriptionOptions state_ref_options;
+    rclcpp::CallbackGroup::SharedPtr state_cb_group;
+    rclcpp::CallbackGroup::SharedPtr state_ref_cb_group;
     
 
     Holohover::control_acc_t<double> u_acc_dmpc_curr;
@@ -93,6 +99,7 @@ private:
     Holohover::control_force_t<double> motor_velocities;
     Holohover::control_force_t<double> last_control_signal;
     Holohover::control_force_t<double> u_signal;
+
 
     //OCP
     Eigen::VectorXd p; //parameters for OCP ([x0; u0; xd])
@@ -172,8 +179,6 @@ private:
     //LQR
     int lqr_step;
     Holohover::state_t<double> predicted_state;
-    Holohover::state_t<double> state_at_ocp_solve;
-    Holohover::state_t<double> state_at_ocp_solve_buff;
     bool new_dmpc_acc_available;
     
     //DMPC loop

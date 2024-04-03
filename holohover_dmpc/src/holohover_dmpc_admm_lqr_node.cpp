@@ -246,13 +246,19 @@ void HolohoverDmpcAdmmLqrNode::init_topics()
             "control/HolohoverTrajectory",
             rclcpp::SensorDataQoS());
 
+    state_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    state_options.callback_group = state_cb_group;        
+
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "state", 10,
-            std::bind(&HolohoverDmpcAdmmLqrNode::state_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverDmpcAdmmLqrNode::state_callback, this, std::placeholders::_1),state_options);
 
+    state_ref_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    state_ref_options.callback_group = state_ref_cb_group;
+    
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(
             "dmpc_state_ref", 10,
-            std::bind(&HolohoverDmpcAdmmLqrNode::ref_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverDmpcAdmmLqrNode::ref_callback, this, std::placeholders::_1),state_ref_options);
 
     run_admm_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     run_admm_options.callback_group = run_admm_cb_group;        
@@ -377,7 +383,6 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
             u_acc = u_acc_dmpc_curr_buff; //directly send MPC input
             dmpc_lqr_lock.unlock();
         } else{
-            // std::cout << "return without sending control" << std::endl;
             return; //don't send any control signal such that the hovercraft stop
         }
                           
@@ -395,12 +400,11 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
 
     
 
-    std::cout << "u_acc before conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
+    // std::cout << "u_acc before conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
     // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now(); 
     convert_u_acc_to_u_signal();    
-    std::cout << "u_acc after conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
+    // std::cout << "u_acc after conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
 
-    // std::cout << "sending control" << std::endl;
     holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";
     control_msg.header.stamp = this->now();
@@ -555,8 +559,8 @@ void HolohoverDmpcAdmmLqrNode::update_setpoint_in_ocp(){
 
     std::unique_lock state_lock{state_mutex, std::defer_lock};
     state_lock.lock();
-    p.segment(0,control_settings.nx) = state;
     state_at_ocp_solve = state;
+    p.segment(0,control_settings.nx) = state_at_ocp_solve;    
     state_lock.unlock();    
     std::unique_lock u_acc_curr_lock{u_acc_curr_mutex, std::defer_lock};
     u_acc_curr_lock.lock();                        
@@ -564,7 +568,8 @@ void HolohoverDmpcAdmmLqrNode::update_setpoint_in_ocp(){
     u_acc_curr_lock.unlock(); 
     std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
     state_ref_lock.lock();
-    p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref;
+    state_ref_at_ocp_solve = state_ref;
+    p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref_at_ocp_solve;
     state_ref_lock.unlock();
 
     std::string function_library = control_settings.folder_name_sprob + "/locFuns.so";
