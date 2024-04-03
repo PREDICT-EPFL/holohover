@@ -16,13 +16,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.*/
 
-#include "holohover_dmpc_admm_node.hpp"
+#include "holohover_dmpc_admm_lqr_node.hpp"
 
-HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
+HolohoverDmpcAdmmLqrNode::HolohoverDmpcAdmmLqrNode() :
         Node("dmpc_node"),
         holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
         control_settings(load_control_dmpc_settings(*this)),
-        holohover(holohover_props, control_settings.dmpc_period),
+        holohover(holohover_props, control_settings.lqr_period),
         sprob(control_settings.Nagents)
 {
     my_id = control_settings.my_id;
@@ -30,21 +30,25 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     // init state
     state.setZero();
-    u_acc_curr.setZero();
-    u_acc_next.setZero();
+    u_acc_dmpc_curr.setZero();
+    u_acc_dmpc_next.setZero();
+    u_acc.setZero();
+    u_acc_lqr.setZero();
     motor_velocities.setZero();
     last_control_signal.setZero();
     u_signal.setZero();
-
+    state_at_ocp_solve.setZero();
+    predicted_state.setZero();
+    new_dmpc_acc_available = false;
 
     p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd);
 
     // Dummy QP parameters for checking that ADMM works
     //initial positions
-    Vector2d x10; x10 << 0.8, 0.0;
-    Vector2d x20; x20 << -0.3, 0.0;
-    Vector2d x30; x30 << -0.3, 0.0;
-    Vector2d x40; x40 << -0.3, 0.0;
+    Vector2d x10; x10 << 0.5, 0.0;
+    Vector2d x20; x20 << 0.15, 0.3;
+    Vector2d x30; x30 << -0.15, -0.3;
+    Vector2d x40; x40 << -0.5, 0.5;
 
     //desired positions
     Vector2d x1d; x1d << 0.8, 0.0;
@@ -151,7 +155,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         v_out_sub_topic.append(std::to_string(neighbor_id));
         v_out_sub_topic.append("copyofagent");
         v_out_sub_topic.append(std::to_string(my_id));
-        bound_received_vout_callback[i] = std::bind(&HolohoverDmpcAdmmNode::received_vout_callback, this, std::placeholders::_1, i); 
+        bound_received_vout_callback[i] = std::bind(&HolohoverDmpcAdmmLqrNode::received_vout_callback, this, std::placeholders::_1, i); 
         v_out_subscriber[i] = this->create_subscription<holohover_msgs::msg::HolohoverADMMStamped>(
                             v_out_sub_topic, rclcpp::SystemDefaultsQoS(),
                             bound_received_vout_callback[i],receive_vout_options);
@@ -190,7 +194,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         v_in_sub_topic.append(std::to_string(neighbor_id));
         v_in_sub_topic.append("ogforagent");
         v_in_sub_topic.append(std::to_string(my_id));
-        bound_received_vin_callback[i] = std::bind(&HolohoverDmpcAdmmNode::received_vin_callback, this, std::placeholders::_1, i);
+        bound_received_vin_callback[i] = std::bind(&HolohoverDmpcAdmmLqrNode::received_vin_callback, this, std::placeholders::_1, i);
         v_in_subscriber[i] = this->create_subscription<holohover_msgs::msg::HolohoverADMMStamped>(
                             v_in_sub_topic, rclcpp::SystemDefaultsQoS(),
                             bound_received_vin_callback[i],receive_vin_options);
@@ -200,6 +204,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     v_out_msg_idx_first_received.resize(N_out_neighbors);
 
     init_topics();
+    init_timer();
 
     dmpc_is_initialized = false;
 
@@ -226,12 +231,12 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
 }
 
-HolohoverDmpcAdmmNode::~HolohoverDmpcAdmmNode()
+HolohoverDmpcAdmmLqrNode::~HolohoverDmpcAdmmLqrNode()
 {
 
 }
 
-void HolohoverDmpcAdmmNode::init_topics()
+void HolohoverDmpcAdmmLqrNode::init_topics()
 {
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
             "control",
@@ -243,18 +248,21 @@ void HolohoverDmpcAdmmNode::init_topics()
 
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "state", 10,
-            std::bind(&HolohoverDmpcAdmmNode::state_callback, this, std::placeholders::_1));
-    
+            std::bind(&HolohoverDmpcAdmmLqrNode::state_callback, this, std::placeholders::_1));
+
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(
             "dmpc_state_ref", 10,
-            std::bind(&HolohoverDmpcAdmmNode::ref_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverDmpcAdmmLqrNode::ref_callback, this, std::placeholders::_1));
+
+    run_admm_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    run_admm_options.callback_group = run_admm_cb_group;        
 
     dmpc_trigger_subscription = this->create_subscription<std_msgs::msg::UInt64>(
             "/dmpc/trigger", 10,
-            std::bind(&HolohoverDmpcAdmmNode::publish_control, this, std::placeholders::_1));
+            std::bind(&HolohoverDmpcAdmmLqrNode::run_admm, this, std::placeholders::_1),run_admm_options);
 }
 
-void HolohoverDmpcAdmmNode::init_comms(){
+void HolohoverDmpcAdmmLqrNode::init_comms(){
     //call this before you call solve()
     //send around the indices of v_inMsg and v_outMsg one. Then set idx_length to zero for future messages.
 
@@ -345,26 +353,54 @@ void HolohoverDmpcAdmmNode::init_comms(){
     return;
 }
 
-void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish_control_msg)
+void HolohoverDmpcAdmmLqrNode::init_timer()
 {
-    std::ignore = publish_control_msg;
+    publish_control_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    publish_control_options.callback_group = publish_control_cb_group;
+    timer = this->create_wall_timer(
+            std::chrono::duration<double>(control_settings.lqr_period),
+            std::bind(&HolohoverDmpcAdmmLqrNode::publish_control, this),publish_control_cb_group);
+}
 
-    if(!dmpc_is_initialized){
-        // set_state_in_ocp();
-        // set_u_acc_curr_in_ocp();
-        update_setpoint_in_ocp();
-        init_dmpc();
-        dmpc_is_initialized = true;
-        return;
+void HolohoverDmpcAdmmLqrNode::publish_control() 
+{
+    if (lqr_step == 0){ 
+        
+        if (new_dmpc_acc_available){
+            std::unique_lock dmpc_lqr_lock{dmpc_lqr_mutex, std::defer_lock};
+            dmpc_lqr_lock.lock();
+            //store mpc state and input
+            u_acc_dmpc_curr_buff = u_acc_dmpc_curr;
+            predicted_state = state_at_ocp_solve;
+            new_dmpc_acc_available = false;
+
+            u_acc = u_acc_dmpc_curr_buff; //directly send MPC input
+            dmpc_lqr_lock.unlock();
+        } else{
+            // std::cout << "return without sending control" << std::endl;
+            return; //don't send any control signal such that the hovercraft stop
+        }
+                          
+    } else {
+        // predicted_state =  Ad*predicted_state + Bd*u_acc_dmpc_curr_buff;
+        std::unique_lock state_lock{state_mutex, std::defer_lock};
+        state_lock.lock();
+        //u_acc_lqr = K*(state - predicted_state);
+        state_lock.unlock();
+        u_acc = u_acc_dmpc_curr_buff + u_acc_lqr;
+        if (lqr_step == 9){
+            lqr_step = -1;
+        } 
     }
 
-    // std::cout << "u_acc_curr before conversion = " << u_acc_curr[0] << " , " << u_acc_curr[1] << " , " << u_acc_curr[2] << std::endl;
-    // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now(); 
-    convert_u_acc_to_u_signal();
     
-    // std::cout << "u_acc_curr after conversion = " << u_acc_curr[0] << " , " << u_acc_curr[1] << " , " << u_acc_curr[2] << std::endl; 
 
+    std::cout << "u_acc before conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
+    // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now(); 
+    convert_u_acc_to_u_signal();    
+    std::cout << "u_acc after conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
 
+    // std::cout << "sending control" << std::endl;
     holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";
     control_msg.header.stamp = this->now();
@@ -378,9 +414,28 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
     // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
     // std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;
+    lqr_step++;
+
+}
 
 
+void HolohoverDmpcAdmmLqrNode::run_admm(const std_msgs::msg::UInt64 &publish_control_msg)
+{
+    std::ignore = publish_control_msg;
+
+    if(!dmpc_is_initialized){
+        update_setpoint_in_ocp();
+        init_dmpc();
+        dmpc_is_initialized = true;
+        return;
+    }
+
+    std::unique_lock dmpc_lqr_lock{dmpc_lqr_mutex, std::defer_lock};
+    dmpc_lqr_lock.lock(); 
+    u_acc_dmpc_curr = u_acc_dmpc_next;
+    new_dmpc_acc_available = true;
     update_setpoint_in_ocp();
+    dmpc_lqr_lock.unlock();
 
     
     // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
@@ -395,8 +450,8 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
 
     publish_trajectory();
 
-    x_log.block(mpc_step,0,1,control_settings.nx) = state.transpose(); 
-    u_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
+    x_log.block(mpc_step,0,1,control_settings.nx) = state_at_ocp_solve.transpose(); 
+    u_log.block(mpc_step,0,1,control_settings.nu) = u_acc_dmpc_curr.transpose();
     xd_log.block(mpc_step,0,1,control_settings.nxd) = state_ref.transpose();
 
     if (mpc_step == log_buffer_size - 1) {
@@ -409,11 +464,10 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
         // std::cout << "Logging duration_us  =" <<duration_us << std::endl;
     } 
 
-    u_acc_curr = u_acc_next;
     mpc_step = mpc_step + 1;
 }
 
-void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
+void HolohoverDmpcAdmmLqrNode::convert_u_acc_to_u_signal()
 {
     motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
 
@@ -425,7 +479,7 @@ void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
     // calculate next thrust and motor velocities
     Holohover::control_force_t<double> u_force_curr;
     // Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_curr;
-    holohover.control_acceleration_to_force(state, u_acc_next, u_force_curr, u_force_curr_min, u_force_curr_max); //u_acc_curr
+    holohover.control_acceleration_to_force(state, u_acc, u_force_curr, u_force_curr_min, u_force_curr_max);    
     Holohover::control_force_t<double> motor_velocities_curr;
     holohover.thrust_to_signal(u_force_curr, motor_velocities_curr);
 
@@ -435,13 +489,13 @@ void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
     // clip between 0 and 1
     u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);    
     holohover.signal_to_thrust(u_signal, u_force_curr);
-    holohover.control_force_to_acceleration(state, u_force_curr, u_acc_curr);
+    holohover.control_force_to_acceleration(state, u_force_curr, u_acc);
     
     // save control inputs for next iterations
     last_control_signal = u_signal;
 }
 
-void HolohoverDmpcAdmmNode::publish_trajectory( )
+void HolohoverDmpcAdmmLqrNode::publish_trajectory( )
 {
 
     holohover_msgs::msg::HolohoverTrajectory msg;
@@ -464,7 +518,7 @@ void HolohoverDmpcAdmmNode::publish_trajectory( )
     HolohoverTrajectory_publisher->publish(msg);
 }
 
-void HolohoverDmpcAdmmNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state)
+void HolohoverDmpcAdmmLqrNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state)
 {
     std::unique_lock state_lock{state_mutex, std::defer_lock};
     state_lock.lock(); 
@@ -477,7 +531,7 @@ void HolohoverDmpcAdmmNode::state_callback(const holohover_msgs::msg::HolohoverS
     state_lock.unlock();
 }
 
-void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &ref)
+void HolohoverDmpcAdmmLqrNode::ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &ref)
 {
     if(ref.val_length != control_settings.nxd){
         RCLCPP_INFO(get_logger(), "Discarded state reference message with incorrect length. Received %d, should be %d", ref.val_length, control_settings.nxd);
@@ -489,22 +543,25 @@ void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmp
     for (unsigned int i = 0; i < ref.val_length; i++){
         state_ref(i) = ref.ref_value[i]; 
     }
-    state_ref_lock.unlock(); 
+    state_ref_lock.lock(); 
 }
 
-void HolohoverDmpcAdmmNode::get_u_acc_from_sol()
+void HolohoverDmpcAdmmLqrNode::get_u_acc_from_sol()
 {
-    //u_acc_curr = sol.block(control_settings.idx_u0,0,control_settings.nu,1); //updated in convert_u_acc_to_u_signal
-    u_acc_next = zbar.block(control_settings.idx_u1,0,control_settings.nu,1);
+    u_acc_dmpc_next = zbar.block(control_settings.idx_u1,0,control_settings.nu,1);
 }
 
-void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
+void HolohoverDmpcAdmmLqrNode::update_setpoint_in_ocp(){
 
     std::unique_lock state_lock{state_mutex, std::defer_lock};
     state_lock.lock();
     p.segment(0,control_settings.nx) = state;
-    state_lock.unlock();                           
-    p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;
+    state_at_ocp_solve = state;
+    state_lock.unlock();    
+    std::unique_lock u_acc_curr_lock{u_acc_curr_mutex, std::defer_lock};
+    u_acc_curr_lock.lock();                        
+    p.segment(control_settings.nx,control_settings.nu) = u_acc_dmpc_curr;
+    u_acc_curr_lock.unlock(); 
     std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
     state_ref_lock.lock();
     p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref;
@@ -552,7 +609,7 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
    
 }
 
-void HolohoverDmpcAdmmNode::init_dmpc()
+void HolohoverDmpcAdmmLqrNode::init_dmpc()
 {
     std::this_thread::sleep_for(std::chrono::seconds(10)); //wait until all subscribers are setup
     init_comms();
@@ -570,7 +627,7 @@ void HolohoverDmpcAdmmNode::init_dmpc()
 
 
 // Dense to Dense
-Eigen::MatrixXd HolohoverDmpcAdmmNode::casadi2Eigen ( const casadi::DM& A ){
+Eigen::MatrixXd HolohoverDmpcAdmmLqrNode::casadi2Eigen ( const casadi::DM& A ){
     // This method is based on code by Petr Listov, see https://groups.google.com/g/casadi-users/c/npPcKItdLN8
     
     casadi::Sparsity SpA = A.get_sparsity();
@@ -597,7 +654,7 @@ Eigen::MatrixXd HolohoverDmpcAdmmNode::casadi2Eigen ( const casadi::DM& A ){
 }
 
 // Dense to Dense
-Eigen::VectorXd HolohoverDmpcAdmmNode::casadi2EigenVector ( const casadi::DM& A ){
+Eigen::VectorXd HolohoverDmpcAdmmLqrNode::casadi2EigenVector ( const casadi::DM& A ){
     // This method is based on code by Petr Listov, see https://groups.google.com/g/casadi-users/c/npPcKItdLN8
     
     casadi::Sparsity SpA = A.get_sparsity();
@@ -639,14 +696,14 @@ Eigen::VectorXd HolohoverDmpcAdmmNode::casadi2EigenVector ( const casadi::DM& A 
     return DeVec;
 }
 
-casadi::DM HolohoverDmpcAdmmNode::Eigen2casadi( const Eigen::VectorXd& in){
+casadi::DM HolohoverDmpcAdmmLqrNode::Eigen2casadi( const Eigen::VectorXd& in){
     int length = in.size();
     casadi::DM out = casadi::DM::zeros(length,1);
     std::memcpy(out.ptr(), in.data(), sizeof(double)*length*1);
     return out;
 }
 
-void HolohoverDmpcAdmmNode::build_qp()
+void HolohoverDmpcAdmmLqrNode::build_qp()
 {
     sprob.read_AA(control_settings.folder_name_sprob,Nagents);
     sprob.read_ublb(control_settings.folder_name_sprob,my_id);
@@ -739,7 +796,7 @@ void HolohoverDmpcAdmmNode::build_qp()
 
 }
 
-void HolohoverDmpcAdmmNode::init_coupling()
+void HolohoverDmpcAdmmLqrNode::init_coupling()
 {
     //Coupling information
     Matrix<int, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Coup = -MatrixXi::Ones(nz,2); //col1: owning agent ID; col2: index in nz of owning agent
@@ -907,7 +964,7 @@ void HolohoverDmpcAdmmNode::init_coupling()
     return;
 }
 
-int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
+int HolohoverDmpcAdmmLqrNode::solve(unsigned int maxiter_)
 {  
     for (unsigned int iter = 0; iter < maxiter_; iter++){
 
@@ -959,21 +1016,21 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_)
     return 0;
 }
 
-void HolohoverDmpcAdmmNode::received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_idx_){
+void HolohoverDmpcAdmmLqrNode::received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_idx_){
     if(!received_vin(in_neighbor_idx_)){     
         v_in_msg_recv_buff[in_neighbor_idx_] = v_in_msg_;
         received_vin(in_neighbor_idx_) = true;
     }
 }
 
-void HolohoverDmpcAdmmNode::received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_idx_){
+void HolohoverDmpcAdmmLqrNode::received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_idx_){
     if(!received_vout(out_neighbor_idx_)){    
         v_out_msg_recv_buff[out_neighbor_idx_] = v_out_msg_;
         received_vout(out_neighbor_idx_) = true; 
     }  
 } 
 
-void HolohoverDmpcAdmmNode::send_vin_receive_vout(){
+void HolohoverDmpcAdmmLqrNode::send_vin_receive_vout(){
     //send copies in vin and receive copies in vout
     //this is done before the averaging step
 
@@ -1020,7 +1077,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(){
     return;
 }
 
-void HolohoverDmpcAdmmNode::send_vout_receive_vin(){
+void HolohoverDmpcAdmmLqrNode::send_vout_receive_vin(){
     //send originals in vout and receive copies in vin
     //this is done after the averaging step
 
@@ -1076,7 +1133,7 @@ void HolohoverDmpcAdmmNode::send_vout_receive_vin(){
 }
 
 
-void HolohoverDmpcAdmmNode::update_v_in(){
+void HolohoverDmpcAdmmLqrNode::update_v_in(){
     //update all v_in values with values from z
     for (int i = 0; i < N_in_neighbors; i++){
         for (int j = 0; j < v_in[i].nv; j++){
@@ -1087,7 +1144,7 @@ void HolohoverDmpcAdmmNode::update_v_in(){
     return;
 }
 
-void HolohoverDmpcAdmmNode::update_v_out(){
+void HolohoverDmpcAdmmLqrNode::update_v_out(){
     //update all v_out values with values from zbar
     for (int i = 0; i < N_out_neighbors; i++){
         for (int j = 0; j < v_out[i].nv; j++){
@@ -1096,7 +1153,7 @@ void HolohoverDmpcAdmmNode::update_v_out(){
     }
 }
 
-void HolohoverDmpcAdmmNode::print_time_measurements(){
+void HolohoverDmpcAdmmLqrNode::print_time_measurements(){
     
       
 
@@ -1122,7 +1179,7 @@ void HolohoverDmpcAdmmNode::print_time_measurements(){
     return;
 }
 
-void HolohoverDmpcAdmmNode::reserve_time_measurements(unsigned int new_cap){
+void HolohoverDmpcAdmmLqrNode::reserve_time_measurements(unsigned int new_cap){
     loc_timer.reserve(new_cap);
     iter_timer.reserve(new_cap);
     z_comm_timer.reserve(new_cap);
@@ -1131,7 +1188,7 @@ void HolohoverDmpcAdmmNode::reserve_time_measurements(unsigned int new_cap){
     receive_vout_timer.reserve(new_cap);
 }
 
-void HolohoverDmpcAdmmNode::clear_time_measurements(){
+void HolohoverDmpcAdmmLqrNode::clear_time_measurements(){
     admm_timer.clear();
     iter_timer.clear();
     loc_timer.clear();
@@ -1146,7 +1203,7 @@ void HolohoverDmpcAdmmNode::clear_time_measurements(){
 int main(int argc, char **argv) {
 
     rclcpp::init(argc, argv);
-    HolohoverDmpcAdmmNode::SharedPtr dmpc_admm_node = std::make_shared<HolohoverDmpcAdmmNode>();
+    HolohoverDmpcAdmmLqrNode::SharedPtr dmpc_admm_node = std::make_shared<HolohoverDmpcAdmmLqrNode>();
     rclcpp::executors::MultiThreadedExecutor executor;
     executor.add_node(dmpc_admm_node);
     executor.spin();
