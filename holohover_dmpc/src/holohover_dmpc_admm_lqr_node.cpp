@@ -22,7 +22,8 @@ HolohoverDmpcAdmmLqrNode::HolohoverDmpcAdmmLqrNode() :
         Node("dmpc_node"),
         holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
         control_settings(load_control_dmpc_settings(*this)),
-        holohover(holohover_props, control_settings.lqr_period),
+        lqr_settings(load_control_lqr_settings(*this)),
+        holohover(holohover_props, lqr_settings.period),
         sprob(control_settings.Nagents)
 {
     my_id = control_settings.my_id;
@@ -229,6 +230,25 @@ HolohoverDmpcAdmmLqrNode::HolohoverDmpcAdmmLqrNode() :
         log_file.close();
     }
 
+     // calculate LQR gain
+    Eigen::Matrix<double, Holohover::NX, Holohover::NX> &Ad = holohover.Ad;
+    Eigen::Matrix<double, Holohover::NX, Holohover::NA> &Bd = holohover.Bd;
+
+    Eigen::Matrix<double, Holohover::NX, Holohover::NX> Q;
+    Q.setZero();
+    Q.diagonal() << lqr_settings.weight_x, lqr_settings.weight_y,
+                    lqr_settings.weight_v_x, lqr_settings.weight_v_y,
+                    lqr_settings.weight_yaw, lqr_settings.weight_w_z;
+
+    Eigen::Matrix<double, Holohover::NA, Holohover::NA> R;
+    R.setZero();
+    R.diagonal() << lqr_settings.weight_a_x, lqr_settings.weight_a_y, lqr_settings.weight_w_dot_z;
+
+    Eigen::Matrix<double, Holohover::NX, Holohover::NX> P;
+    solve_riccati_iteration_discrete(Ad, Bd, Q, R, P);
+
+    K = (R + Bd.transpose() * P * Bd).ldlt().solve(Bd.transpose() * P * Ad);
+
 }
 
 HolohoverDmpcAdmmLqrNode::~HolohoverDmpcAdmmLqrNode()
@@ -364,7 +384,7 @@ void HolohoverDmpcAdmmLqrNode::init_timer()
     publish_control_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     publish_control_options.callback_group = publish_control_cb_group;
     timer = this->create_wall_timer(
-            std::chrono::duration<double>(control_settings.lqr_period),
+            std::chrono::duration<double>(lqr_settings.period),
             std::bind(&HolohoverDmpcAdmmLqrNode::publish_control, this),publish_control_cb_group);
 }
 
@@ -387,10 +407,10 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
         }
                           
     } else {
-        // predicted_state =  Ad*predicted_state + Bd*u_acc_dmpc_curr_buff;
+        predicted_state =  holohover.Ad*predicted_state + holohover.Bd*u_acc_dmpc_curr_buff;
         std::unique_lock state_lock{state_mutex, std::defer_lock};
         state_lock.lock();
-        //u_acc_lqr = K*(state - predicted_state);
+        u_acc_lqr = -K*(state - predicted_state);
         state_lock.unlock();
         u_acc = u_acc_dmpc_curr_buff + u_acc_lqr;
         if (lqr_step == 9){
@@ -398,7 +418,7 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
         } 
     }
 
-    
+    std::cout << "u_acc_lqr = " << u_acc_lqr[0] << " , " << u_acc_lqr[1] << " , " << u_acc_lqr[2] << std::endl; 
 
     // std::cout << "u_acc before conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
     // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now(); 

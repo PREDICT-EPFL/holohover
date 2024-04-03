@@ -61,6 +61,9 @@ SOFTWARE.*/
 
 #include "casadi/casadi.hpp"
 
+#include "holohover_common/riccati_solver.hpp"
+#include "control_lqr_settings.hpp"
+
 #include <memory>
 
 class HolohoverDmpcAdmmLqrNode : public rclcpp::Node
@@ -71,6 +74,7 @@ public:
 private:
     HolohoverProps holohover_props;
     ControlDMPCSettings control_settings;
+    ControlLQRSettings lqr_settings;
 
     Holohover holohover;
     
@@ -180,6 +184,7 @@ private:
     int lqr_step;
     Holohover::state_t<double> predicted_state;
     bool new_dmpc_acc_available;
+    Eigen::Matrix<double, Holohover::NA, Holohover::NX> K;
     
     //DMPC loop
     void update_setpoint_in_ocp();
