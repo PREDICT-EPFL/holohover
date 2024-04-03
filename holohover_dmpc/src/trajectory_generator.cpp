@@ -73,18 +73,18 @@ void TrajectoryGenerator::runTask() {
                 msg.val_length = 6;
                 msg.ref_value.push_back(s.coord[id].x);
                 msg.ref_value.push_back(s.coord[id].y);
+                msg.ref_value.push_back(0.0);
+                msg.ref_value.push_back(0.0);
                 msg.ref_value.push_back(s.coord[id].yaw);
-                msg.ref_value.push_back(0.0);
-                msg.ref_value.push_back(0.0);
                 msg.ref_value.push_back(0.0);
 
                 for(const auto& neighbor : gc.neighbors[id])
                 {
                     msg.ref_value.push_back(s.coord[neighbor].x);
                     msg.ref_value.push_back(s.coord[neighbor].y);
+                    msg.ref_value.push_back(0.0);
+                    msg.ref_value.push_back(0.0);
                     msg.ref_value.push_back(s.coord[neighbor].yaw);
-                    msg.ref_value.push_back(0.0);
-                    msg.ref_value.push_back(0.0);
                     msg.ref_value.push_back(0.0);
 
                     msg.val_length += 6;
