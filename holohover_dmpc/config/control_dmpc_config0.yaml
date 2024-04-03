@@ -1,6 +1,7 @@
 h0/dmpc:
   ros__parameters:
-    period: 0.100
+    dmpc_period: 0.100
+    lqr_period: 0.010
     rho: 1.0
     maxiter: 10
     nx: 6

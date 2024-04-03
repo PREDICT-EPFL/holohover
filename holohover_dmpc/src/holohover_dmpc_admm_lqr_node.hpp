@@ -16,8 +16,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.*/
 
-#ifndef HOLOHOVER_GNC_DMPC_ADMM_NODE_HPP
-#define HOLOHOVER_GNC_DMPC_ADMM_NODE_HPP
+#ifndef HOLOHOVER_GNC_DMPC_ADMM_LQR_NODE_HPP
+#define HOLOHOVER_GNC_DMPC_ADMM_LQR_NODE_HPP
 
 #include "Eigen/Dense"
 #include "Eigen/Sparse"
@@ -63,11 +63,11 @@ SOFTWARE.*/
 
 #include <memory>
 
-class HolohoverDmpcAdmmNode : public rclcpp::Node
+class HolohoverDmpcAdmmLqrNode : public rclcpp::Node
 {
 public:
-    HolohoverDmpcAdmmNode();
-    ~HolohoverDmpcAdmmNode();
+    HolohoverDmpcAdmmLqrNode();
+    ~HolohoverDmpcAdmmLqrNode();
 private:
     HolohoverProps holohover_props;
     ControlDMPCSettings control_settings;
@@ -84,8 +84,12 @@ private:
     rclcpp::Subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr reference_subscription;
     rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()    
     
-    Holohover::control_acc_t<double> u_acc_curr;
-    Holohover::control_acc_t<double> u_acc_next; //GS: m_u1
+
+    Holohover::control_acc_t<double> u_acc_dmpc_curr;
+    Holohover::control_acc_t<double> u_acc_dmpc_next;
+    Holohover::control_acc_t<double> u_acc; //sent to hovercraft
+    Holohover::control_acc_t<double> u_acc_lqr;
+    Holohover::control_acc_t<double> u_acc_dmpc_curr_buff; //LQR stores u_acc_dmpc_curr here
     Holohover::control_force_t<double> motor_velocities;
     Holohover::control_force_t<double> last_control_signal;
     Holohover::control_force_t<double> u_signal;
@@ -130,6 +134,7 @@ private:
     int N_in_neighbors;
     int N_out_neighbors;
 
+    rclcpp::TimerBase::SharedPtr timer;
     rclcpp::SubscriptionOptions receive_vin_options;
     rclcpp::SubscriptionOptions receive_vout_options;
     rclcpp::CallbackGroup::SharedPtr receive_vin_cb_group;
@@ -140,21 +145,36 @@ private:
     bool dmpc_is_initialized;
 
     std::mutex state_mutex;
-    std::mutex state_ref_mutex;   
+    std::mutex state_ref_mutex; 
+    std::mutex u_acc_curr_mutex; //GS: remove? 
+    std::mutex dmpc_lqr_mutex;
     
     void init_topics();
     void init_dmpc();
     void init_coupling();   //extract coupling metadata from coupling matrices 
     void init_comms();     
+    void init_timer();
     void build_qp(); //construct the sProb
   
 
     //callbacks
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &state_ref);
-    void publish_control(const std_msgs::msg::UInt64 &publish_control_msg);
+    void publish_control();
+    void run_admm(const std_msgs::msg::UInt64 &publish_control_msg);
+    rclcpp::SubscriptionOptions run_admm_options;
+    rclcpp::SubscriptionOptions publish_control_options;
+    rclcpp::CallbackGroup::SharedPtr run_admm_cb_group;
+    rclcpp::CallbackGroup::SharedPtr publish_control_cb_group;
     
     void publish_trajectory();
+
+    //LQR
+    int lqr_step;
+    Holohover::state_t<double> predicted_state;
+    Holohover::state_t<double> state_at_ocp_solve;
+    Holohover::state_t<double> state_at_ocp_solve_buff;
+    bool new_dmpc_acc_available;
     
     //DMPC loop
     void update_setpoint_in_ocp();
@@ -221,4 +241,4 @@ private:
 };
 
 
-#endif //HOLOHOVER_GNC_DMPC_ADMM_NODE_HPP
+#endif //HOLOHOVER_GNC_DMPC_ADMM_LQR_NODE_HPP
