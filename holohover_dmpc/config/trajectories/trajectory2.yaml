@@ -11,87 +11,87 @@ neighbors:
 trajectory:
   - step:
       - id: 0
-        x: 0.5
+        x: 0.8
+        y: -0.5
+        yaw: 0.0
+      - id: 1
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+      - id: 2
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+      - id: 3
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+  - step:
+      - id: 0
+        x: 0.8
         y: 0.5
         yaw: 0.0
       - id: 1
-        x: -1.0
-        y: -0.25
+        x: -0.3
+        y: 0.0
         yaw: 0.0
       - id: 2
-        x: -1.0
-        y: -0.25
+        x: -0.3
+        y: 0.0
         yaw: 0.0
       - id: 3
-        x: -0.5
-        y: -0.25
+        x: -0.3
+        y: 0.0
         yaw: 0.0
   - step:
       - id: 0
-        x: 0.0
+        x: 0.8
+        y: -0.5
+        yaw: 0.0
+      - id: 1
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+      - id: 2
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+      - id: 3
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+  - step:
+      - id: 0
+        x: 0.8
+        y: 0.5
+        yaw: 0.0
+      - id: 1
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+      - id: 2
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+      - id: 3
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+  - step:
+      - id: 0
+        x: 0.8
         y: 0.0
         yaw: 0.0
       - id: 1
-        x: -0.5
-        y: -0.25
+        x: -0.3
+        y: 0.0
         yaw: 0.0
       - id: 2
-        x: -1.0
-        y: -0.25
+        x: -0.3
+        y: 0.0
         yaw: 0.0
       - id: 3
-        x: -1.0
-        y: -0.25
-        yaw: 0.0
-  - step:
-      - id: 0
-        x: 0.1
-        y: -0.25
-        yaw: 0.0
-      - id: 1
-        x: -1.0
-        y: -0.25
-        yaw: 0.0
-      - id: 2
-        x: -1.0
-        y: -0.25
-        yaw: 0.0
-      - id: 3
-        x: -0.5
-        y: -0.25
-        yaw: 0.0
-  - step:
-      - id: 0
-        x: 0.1
-        y: 0.1
-        yaw: 0.0
-      - id: 1
-        x: -1.0
-        y: -0.25
-        yaw: 0.0
-      - id: 2
-        x: -0.5
-        y: -0.25
-        yaw: 0.0
-      - id: 3
-        x: -1.0
-        y: -0.25
-        yaw: 0.0
-  - step:
-      - id: 0
-        x: 0.1
-        y: 0.1
-        yaw: 0.0
-      - id: 1
-        x: -0.5
-        y: -0.25
-        yaw: 0.0
-      - id: 2
-        x: -1.0
-        y: -0.25
-        yaw: 0.0
-      - id: 3
-        x: -1.0
-        y: -0.25
+        x: -0.3
+        y: 0.0
         yaw: 0.0
   # Continue adding trajectory data for each timestep as needed
