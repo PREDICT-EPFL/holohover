@@ -211,6 +211,7 @@ private:
     doptTimer receive_vout_timer;
     Eigen::MatrixXd x_log;
     Eigen::MatrixXd u_log;
+    Eigen::MatrixXd u_before_conversion_log;
     Eigen::MatrixXd xd_log;
     int mpc_step;
     int log_buffer_size; //number of MPC steps to store before writing to log

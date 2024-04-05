@@ -241,7 +241,11 @@ private:
     void clear_time_measurements();
     void reserve_time_measurements(unsigned int new_cap);
     std::ostringstream file_name;
-    std::ofstream log_file;   
+    std::ofstream log_file;
+
+    //LQR logging
+    std::ostringstream file_name_lqr;
+    std::ofstream log_file_lqr;   
 
     //helper
     Eigen::MatrixXd casadi2Eigen ( const casadi::DM& A );

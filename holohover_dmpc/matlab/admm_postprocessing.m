@@ -14,7 +14,7 @@ for i = 1:Nagents
     file{i} = dir(str);
     t_admm{i} = readtable(file{i}.name);
     rows = 1:size(t_admm{i},1);
-    t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:17);
+    t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:20);
 end
 ADMM_iter = size(t_admm{1},1);
 MPC_steps = size(t_mpc{1},1);
@@ -46,9 +46,12 @@ for i = 1:Nagents
     uu{i}(1,:)        = t_mpc{i}.u0_1_.';
     uu{i}(2,:)        = t_mpc{i}.u0_2_.';
     uu{i}(3,:)        = t_mpc{i}.u0_3_.';
-    xxd{i}(1,:)        = t_mpc{i}.xd_1_.';
-    xxd{i}(2,:)        = t_mpc{i}.xd_2_.';
-    xxd{i}(3,:)        = t_mpc{i}.xd_3_.';
+    uubc{i}(1,:)      = t_mpc{i}.u0bc_1_.';
+    uubc{i}(2,:)      = t_mpc{i}.u0bc_2_.';
+    uubc{i}(3,:)      = t_mpc{i}.u0bc_3_.';
+    xxd{i}(1,:)       = t_mpc{i}.xd_1_.';
+    xxd{i}(2,:)       = t_mpc{i}.xd_2_.';
+    xxd{i}(3,:)       = t_mpc{i}.xd_3_.';
 
 end
 
@@ -165,6 +168,24 @@ for i = 1:Nagents
 end
 ylabel("zbar c. [ms]");
 
+figure()
+subplot(3,1,1);
+for i = 1:Nagents
+    stairs(uu{i}(1,:) - uubc{i}(1,:));
+    hold on
+end
+
+subplot(3,1,2);
+for i = 1:Nagents
+    stairs(uu{i}(2,:) - uubc{i}(2,:));
+    hold on
+end
+
+subplot(3,1,3);
+for i = 1:Nagents
+    stairs(uu{i}(3,:) - uubc{i}(3,:));
+    hold on
+end
 
 %% Detailed timing statistics
 
