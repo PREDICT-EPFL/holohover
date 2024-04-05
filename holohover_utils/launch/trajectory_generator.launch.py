@@ -17,7 +17,7 @@ def generate_launch_description():
     )
 
     trajectory_delay_arg = DeclareLaunchArgument(
-        'trajectory_delay', default_value='3.0',
+        'trajectory_delay', default_value='0.0',
         description='Delay before start recording'
     )
 
