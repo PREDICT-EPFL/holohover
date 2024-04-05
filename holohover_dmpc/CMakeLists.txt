@@ -42,6 +42,10 @@ add_executable(dmpc_trigger src/holohover_dmpc_trigger_node.cpp)
 ament_target_dependencies(dmpc_trigger rclcpp std_msgs)
 target_link_libraries(dmpc_trigger yaml-cpp)
 
+add_executable(trajectory_generator src/trajectory_generator.cpp)
+ament_target_dependencies(trajectory_generator rclcpp holohover_msgs)
+target_link_libraries(trajectory_generator yaml-cpp)
+
 install(DIRECTORY
   config
   DESTINATION share/${PROJECT_NAME}
@@ -53,7 +57,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
-  control_dmpc dmpc_trigger
+  control_dmpc dmpc_trigger trajectory_generator
   DESTINATION lib/${PROJECT_NAME}
 )
 

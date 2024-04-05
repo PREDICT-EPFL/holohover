@@ -122,7 +122,7 @@ def launch_setup(context):
     )
 
 
-    launch_description.append(rviz_launch)
+    # launch_description.append(rviz_launch)
     launch_description.append(recorder_launch)
     launch_description.append(simulator_node)
     launch_description.append(optitrack_node)
