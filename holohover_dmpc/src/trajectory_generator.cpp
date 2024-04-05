@@ -102,7 +102,6 @@ int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<TrajectoryGenerator>();
-    std::this_thread::sleep_for(std::chrono::seconds(3)); //wait for publishers to be setup
     node->runTask();
     rclcpp::shutdown();
     return 0;
