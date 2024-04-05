@@ -46,13 +46,13 @@ HolohoverDmpcAdmmLqrNode::HolohoverDmpcAdmmLqrNode() :
 
     // Dummy QP parameters for checking that ADMM works
     //initial positions
-    Vector2d x10; x10 << 0.5, 0.0;
-    Vector2d x20; x20 << 0.15, 0.3;
-    Vector2d x30; x30 << -0.15, -0.3;
-    Vector2d x40; x40 << -0.5, 0.5;
+    Vector2d x10; x10 << 0.8, 0.0;
+    Vector2d x20; x20 << -0.3, 0.0;
+    Vector2d x30; x30 << -0.3, 0.0;
+    Vector2d x40; x40 << -0.3, 0.0;
 
     //desired positions
-    Vector2d x1d; x1d << 0.8, 0.0;
+    Vector2d x1d; x1d << 0.1, 0.0;
     Vector2d x2d; x2d << -0.3, 0.0;
     Vector2d x3d; x3d << -0.3, 0.0;
     Vector2d x4d; x4d << -0.3, 0.0;
@@ -230,6 +230,14 @@ HolohoverDmpcAdmmLqrNode::HolohoverDmpcAdmmLqrNode() :
         log_file.close();
     }
 
+    file_name_lqr << ament_index_cpp::get_package_prefix("holohover_dmpc") << "/../../log/dmpc_lqr_log_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
+    log_file_lqr = std::ofstream(file_name_lqr.str());
+    if (log_file_lqr.is_open())
+    {
+        log_file_lqr << "mpc_step, u_1_dmpc_, u_2_dmpc_, u_3_dmpc_, u_1_lqr_, u_2_lqr_, u_3_lqr_, u_1_acc_, u_2_acc_, u_3_acc_, u_1_bc_, u_2_bc_, u_3_bc\n";
+        log_file_lqr.close();
+    }
+
      // calculate LQR gain
     Eigen::Matrix<double, Holohover::NX, Holohover::NX> &Ad = holohover.Ad;
     Eigen::Matrix<double, Holohover::NX, Holohover::NA> &Bd = holohover.Bd;
@@ -390,10 +398,11 @@ void HolohoverDmpcAdmmLqrNode::init_timer()
 
 void HolohoverDmpcAdmmLqrNode::publish_control() 
 {
+    const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now(); 
+    std::unique_lock dmpc_lqr_lock{dmpc_lqr_mutex, std::defer_lock};
     if (lqr_step == 0){ 
         
         if (new_dmpc_acc_available){
-            std::unique_lock dmpc_lqr_lock{dmpc_lqr_mutex, std::defer_lock};
             dmpc_lqr_lock.lock();
             //store mpc state and input
             u_acc_dmpc_curr_buff = u_acc_dmpc_curr;
@@ -404,6 +413,9 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
             dmpc_lqr_lock.unlock();
         } else{
             return; //don't send any control signal such that the hovercraft stop
+            // u_acc_dmpc_curr_buff.setZero();
+            // u_acc_lqr.setZero();
+            // lqr_step = -1;
         }
                           
     } else {
@@ -412,18 +424,19 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
         state_lock.lock();
         u_acc_lqr = -K*(state - predicted_state);
         state_lock.unlock();
-        u_acc = u_acc_dmpc_curr_buff + u_acc_lqr;
         if (lqr_step == 9){
             lqr_step = -1;
         } 
     }
 
-    std::cout << "u_acc_lqr = " << u_acc_lqr[0] << " , " << u_acc_lqr[1] << " , " << u_acc_lqr[2] << std::endl; 
+    u_acc = u_acc_dmpc_curr_buff + u_acc_lqr;
 
-    // std::cout << "u_acc before conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
-    // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now(); 
+
+    // std::cout << "u_acc_lqr = " << u_acc_lqr[0] << " , " << u_acc_lqr[1] << " , " << u_acc_lqr[2] << std::endl; 
+
+    std::cout << "u_acc before conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
     convert_u_acc_to_u_signal();    
-    // std::cout << "u_acc after conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
+    std::cout << "u_acc after conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
 
     holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";
@@ -435,11 +448,29 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
     control_msg.motor_c_1 = u_signal(4);
     control_msg.motor_c_2 = u_signal(5);
     control_publisher->publish(control_msg);
-    // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
-    // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
-    // std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;
+
     lqr_step++;
 
+    const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
+    const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
+    std::cout << "LQR loop duration_us  =" <<duration_us << std::endl;
+
+    const std::chrono::steady_clock::time_point t_start2 = std::chrono::steady_clock::now();
+
+    dmpc_lqr_lock.lock();
+    int mpc_step_ = mpc_step;
+    dmpc_lqr_lock.unlock();
+
+    log_file_lqr.open(file_name_lqr.str(),std::ios_base::app);
+    if (log_file_lqr.is_open())
+    {
+        log_file_lqr << mpc_step_ << "," << u_acc_dmpc_curr_buff(0) << "," << u_acc_dmpc_curr_buff(1) << "," << u_acc_dmpc_curr_buff(2) << "," << u_acc_lqr(0) << "," << u_acc_lqr(1) << "," << u_acc_lqr(2) << "," << u_acc(0) << "," << u_acc(1) << "," << u_acc(2) << "\n";        
+    }
+    log_file_lqr.close();
+
+    const std::chrono::steady_clock::time_point t_end2 = std::chrono::steady_clock::now();
+    const long duration_us2 = std::chrono::duration_cast<std::chrono::microseconds>(t_end2 - t_start2).count();
+    std::cout << "LQR log duration_us  =" <<duration_us2 << std::endl;
 }
 
 
@@ -487,8 +518,9 @@ void HolohoverDmpcAdmmLqrNode::run_admm(const std_msgs::msg::UInt64 &publish_con
         // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
         // std::cout << "Logging duration_us  =" <<duration_us << std::endl;
     } 
-
+    dmpc_lqr_lock.lock();
     mpc_step = mpc_step + 1;
+    dmpc_lqr_lock.unlock();
 }
 
 void HolohoverDmpcAdmmLqrNode::convert_u_acc_to_u_signal()
@@ -503,6 +535,8 @@ void HolohoverDmpcAdmmLqrNode::convert_u_acc_to_u_signal()
     // calculate next thrust and motor velocities
     Holohover::control_force_t<double> u_force_curr;
     // Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_curr;
+    std::unique_lock state_lock{state_mutex, std::defer_lock};
+    state_lock.lock();
     holohover.control_acceleration_to_force(state, u_acc, u_force_curr, u_force_curr_min, u_force_curr_max);    
     Holohover::control_force_t<double> motor_velocities_curr;
     holohover.thrust_to_signal(u_force_curr, motor_velocities_curr);
@@ -514,6 +548,7 @@ void HolohoverDmpcAdmmLqrNode::convert_u_acc_to_u_signal()
     u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);    
     holohover.signal_to_thrust(u_signal, u_force_curr);
     holohover.control_force_to_acceleration(state, u_force_curr, u_acc);
+    state_lock.unlock();
     
     // save control inputs for next iterations
     last_control_signal = u_signal;
