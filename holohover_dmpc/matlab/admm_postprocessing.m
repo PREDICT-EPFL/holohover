@@ -46,9 +46,12 @@ for i = 1:Nagents
     uu{i}(1,:)        = t_mpc{i}.u0_1_.';
     uu{i}(2,:)        = t_mpc{i}.u0_2_.';
     uu{i}(3,:)        = t_mpc{i}.u0_3_.';
-    uubc{i}(1,:)      = t_mpc{i}.u0bc_1_.';
-    uubc{i}(2,:)      = t_mpc{i}.u0bc_2_.';
-    uubc{i}(3,:)      = t_mpc{i}.u0bc_3_.';
+    try
+        uu_bc{i}(1,:)      = t_mpc{i}.u0bc_1_.';
+        uu_bc{i}(2,:)      = t_mpc{i}.u0bc_2_.';
+        uu_bc{i}(3,:)      = t_mpc{i}.u0bc_3_.';
+    catch
+    end
     xxd{i}(1,:)       = t_mpc{i}.xd_1_.';
     xxd{i}(2,:)       = t_mpc{i}.xd_2_.';
     xxd{i}(3,:)       = t_mpc{i}.xd_3_.';
@@ -168,23 +171,105 @@ for i = 1:Nagents
 end
 ylabel("zbar c. [ms]");
 
+try
 figure()
 subplot(3,1,1);
 for i = 1:Nagents
-    stairs(uu{i}(1,:) - uubc{i}(1,:));
+    stairs(uu{i}(1,:) - uu_bc{i}(1,:));
     hold on
 end
 
 subplot(3,1,2);
 for i = 1:Nagents
-    stairs(uu{i}(2,:) - uubc{i}(2,:));
+    stairs(uu{i}(2,:) - uu_bc{i}(2,:));
     hold on
 end
 
 subplot(3,1,3);
 for i = 1:Nagents
-    stairs(uu{i}(3,:) - uubc{i}(3,:));
+    stairs(uu{i}(3,:) - uu_bc{i}(3,:));
     hold on
+end
+catch
+end
+
+%%
+try
+figure()
+subplot(3,1,1);
+stairs(uu{i}(1,:));
+hold on
+stairs(uu_bc{i}(1,:));
+
+subplot(3,1,2);
+stairs(uu{i}(2,:));
+hold on
+stairs(uu_bc{i}(2,:));
+
+subplot(3,1,3);
+stairs(uu{i}(3,:));
+hold on
+stairs(uu_bc{i}(3,:));
+
+catch
+end
+
+%% detailed debugging
+
+for i = 1:Nagents
+
+figure()
+subplot(3,3,1);
+stairs(xx{i}(1,:));
+ylabel("x");
+
+subplot(3,3,2);
+stairs(xx{i}(2,:));
+ylabel("y");
+
+subplot(3,3,3);
+stairs(xx{i}(5,:));
+ylabel("yaw");
+
+subplot(3,3,4);
+stairs(xx{i}(3,:));
+ylabel("vx");
+
+subplot(3,3,5);
+stairs(xx{i}(4,:));
+ylabel("vy");
+
+subplot(3,3,6);
+stairs(xx{i}(6,:));
+ylabel("w");
+
+subplot(3,3,7);
+stairs(uu{i}(1,:));
+hold on
+try
+stairs(uu_bc{i}(1,:));
+catch
+end
+ylabel("ax");
+
+subplot(3,3,8);
+stairs(uu{i}(2,:));
+hold on
+try
+stairs(uu_bc{i}(2,:));
+catch
+end
+ylabel("ay");
+
+subplot(3,3,9);
+stairs(uu{i}(3,:));
+hold on
+try
+stairs(uu_bc{i}(3,:));
+catch
+end
+ylabel("aw");
+
 end
 
 %% Detailed timing statistics

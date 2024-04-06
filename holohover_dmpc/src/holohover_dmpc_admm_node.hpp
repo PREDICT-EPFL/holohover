@@ -94,8 +94,6 @@ private:
     
     Holohover::control_acc_t<double> u_acc_curr;
     Holohover::control_acc_t<double> u_acc_next; //GS: m_u1
-    Holohover::control_force_t<double> motor_velocities;
-    Holohover::control_force_t<double> last_control_signal;
     Holohover::control_force_t<double> u_signal;
 
     //OCP
