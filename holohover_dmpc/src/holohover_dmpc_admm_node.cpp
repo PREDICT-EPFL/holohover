@@ -33,8 +33,6 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     state_at_ocp_solve.setZero();
     u_acc_curr.setZero();
     u_acc_next.setZero();
-    motor_velocities.setZero();
-    last_control_signal.setZero();
     u_signal.setZero();
 
 
@@ -48,7 +46,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     Vector2d x40; x40 << -0.3, 0.0;
 
     //desired positions
-    Vector2d x1d; x1d << 0.8, 0.0;
+    Vector2d x1d; x1d << 0.5, 0.0;
     Vector2d x2d; x2d << -0.3, 0.0;
     Vector2d x3d; x3d << -0.3, 0.0;
     Vector2d x4d; x4d << -0.3, 0.0;
@@ -385,7 +383,7 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     control_msg.motor_b_2 = u_signal(3);
     control_msg.motor_c_1 = u_signal(4);
     control_msg.motor_c_2 = u_signal(5);
-    control_publisher->publish(control_msg);
+    // control_publisher->publish(control_msg);
     // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
     // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
     // std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;
@@ -425,30 +423,22 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
 
 void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
 {
-    motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
+    // ignore motor dynamics, because they are much faster than the dmpc sampling interval
+    std::unique_lock state_lock{state_mutex, std::defer_lock};
+    state_lock.lock();
 
-    // calculate thrust bounds for next step
-    Holohover::control_force_t<double> u_force_curr_min, u_force_curr_max;
-    holohover.signal_to_thrust<double>(holohover.Ad_motor * motor_velocities + Holohover::control_force_t<double>::Constant(holohover.Bd_motor * holohover_props.idle_signal), u_force_curr_min);
-    holohover.signal_to_thrust<double>(holohover.Ad_motor * motor_velocities + Holohover::control_force_t<double>::Constant(holohover.Bd_motor * 1.0), u_force_curr_max);
-
-    // calculate next thrust and motor velocities
+    //convert to signal
     Holohover::control_force_t<double> u_force_curr;
-    // Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_curr;
-    holohover.control_acceleration_to_force(state, u_acc_curr, u_force_curr, u_force_curr_min, u_force_curr_max);
-    Holohover::control_force_t<double> motor_velocities_curr;
-    holohover.thrust_to_signal(u_force_curr, motor_velocities_curr);
-
-    // calculate control from future motor velocities
-    u_signal = (motor_velocities_curr - holohover.Ad_motor * motor_velocities) / holohover.Bd_motor;
+    holohover.control_acceleration_to_force(state, u_acc_curr, u_force_curr);
+    holohover.thrust_to_signal(u_force_curr, u_signal);
 
     // clip between 0 and 1
     u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);    
     holohover.signal_to_thrust(u_signal, u_force_curr);
+
+    //convert back to acceleration for OCP
     holohover.control_force_to_acceleration(state, u_force_curr, u_acc_curr);
-    
-    // save control inputs for next iterations
-    last_control_signal = u_signal;
+    state_lock.unlock();
 }
 
 void HolohoverDmpcAdmmNode::publish_trajectory( )

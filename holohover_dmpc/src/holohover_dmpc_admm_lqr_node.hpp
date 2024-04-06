@@ -80,8 +80,22 @@ private:
     
     Holohover::state_t<double> state;
     Holohover::state_t<double> state_at_ocp_solve;
+    Holohover::state_t<double> state_at_ocp_solve_buff;
+    Holohover::state_t<double> state_at_conversion;
+    Holohover::state_t<double> predicted_state;
     Eigen::VectorXd state_ref;   //GS: VectorXd, because different subsystems can have different state_ref dimension
-    Eigen::VectorXd state_ref_at_ocp_solve; 
+    Eigen::VectorXd state_ref_at_ocp_solve;
+
+    Holohover::control_acc_t<double> u_acc_dmpc_curr;
+    Holohover::control_acc_t<double> u_acc_dmpc_next;
+    Holohover::control_acc_t<double> u_acc_curr; //sent to hovercraft
+    Holohover::control_acc_t<double> u_acc_bc_curr;
+    Holohover::control_acc_t<double> u_acc_lqr_curr;
+    Holohover::control_acc_t<double> u_acc_dmpc_curr_buff; //LQR stores u_acc_dmpc_curr here
+    Holohover::control_acc_t<double> u_acc_dmpc_curr_buff_log;
+    Holohover::control_force_t<double> motor_velocities;
+    Holohover::control_force_t<double> last_control_signal;
+    Holohover::control_force_t<double> u_signal; 
 
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverTrajectory>::SharedPtr HolohoverTrajectory_publisher;
@@ -94,17 +108,6 @@ private:
     rclcpp::CallbackGroup::SharedPtr state_cb_group;
     rclcpp::CallbackGroup::SharedPtr state_ref_cb_group;
     
-
-    Holohover::control_acc_t<double> u_acc_dmpc_curr;
-    Holohover::control_acc_t<double> u_acc_dmpc_next;
-    Holohover::control_acc_t<double> u_acc; //sent to hovercraft
-    Holohover::control_acc_t<double> u_acc_lqr;
-    Holohover::control_acc_t<double> u_acc_dmpc_curr_buff; //LQR stores u_acc_dmpc_curr here
-    Holohover::control_force_t<double> motor_velocities;
-    Holohover::control_force_t<double> last_control_signal;
-    Holohover::control_force_t<double> u_signal;
-
-
     //OCP
     Eigen::VectorXd p; //parameters for OCP ([x0; u0; xd])
     int my_id;
@@ -182,7 +185,6 @@ private:
 
     //LQR
     int lqr_step;
-    Holohover::state_t<double> predicted_state;
     bool new_dmpc_acc_available;
     Eigen::Matrix<double, Holohover::NA, Holohover::NX> K;
     
@@ -190,7 +192,7 @@ private:
     void update_setpoint_in_ocp();
     int solve(unsigned int maxiter_);
     void get_u_acc_from_sol();
-    void convert_u_acc_to_u_signal();
+    void clip_u_acc_dmpc_curr();
 
     //before averaging
     void update_v_in();     //place z into v_in
