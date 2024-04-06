@@ -383,7 +383,7 @@ void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish
     control_msg.motor_b_2 = u_signal(3);
     control_msg.motor_c_1 = u_signal(4);
     control_msg.motor_c_2 = u_signal(5);
-    // control_publisher->publish(control_msg);
+    control_publisher->publish(control_msg);
     // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
     // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
     // std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;

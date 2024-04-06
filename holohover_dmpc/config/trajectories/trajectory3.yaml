@@ -1,0 +1,80 @@
+time_step: 10 
+
+names: [h0, h1, h2, h3]
+ids: [0, 1, 2, 3]
+neighbors: 
+  - 0: [1]
+  - 1: [2]
+  - 2: [3]
+  - 3: []
+
+trajectory:
+  - step:
+      - id: 0
+        x: 0.95
+        y: 0.4
+        yaw: 0.0
+      - id: 1
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 2
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 3
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+  - step:
+      - id: 0
+        x: -0.2
+        y: 0.4
+        yaw: 0.0
+      - id: 1
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 2
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 3
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+  - step:
+      - id: 0
+        x: -0.2
+        y: -0.4
+        yaw: 0.0
+      - id: 1
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 2
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 3
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+  - step:
+      - id: 0
+        x: 0.95
+        y: -0.4
+        yaw: 0.0
+      - id: 1
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 2
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 3
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+# Continue adding trajectory data for each timestep as needed
