@@ -95,7 +95,7 @@ end
 %% closed-loop trajectories
 
 figure()
-subplot(5,2,1);
+subplot(5,3,1);
 for i = 1:Nagents
     plot(xx{i}(1,:));
     hold on
@@ -103,8 +103,9 @@ for i = 1:Nagents
 end
 grid on
 ylabel("x");
+ylim([-1.2,1.2]);
 
-subplot(5,2,2);
+subplot(5,3,2);
 for i = 1:Nagents
     plot(xx{i}(2,:));
     hold on
@@ -112,59 +113,81 @@ for i = 1:Nagents
     hold on
 end
 grid on
-ylim([-2,3]);
+ylim([-0.7,0.7]);
 ylabel("y");
 
-subplot(5,2,3);
+subplot(5,3,3);
+for i = 1:Nagents
+    plot(xx{i}(5,:));
+    hold on
+end
+grid on
+ylabel("yaw");
+
+subplot(5,3,4);
 for i = 1:Nagents
     plot(xx{i}(3,:));
     hold on
 end
 ylabel("vx");
 
-subplot(5,2,4);
+subplot(5,3,5);
 for i = 1:Nagents
     plot(xx{i}(4,:));
     hold on
 end
 ylabel("vy");
 
-subplot(5,2,5);
+subplot(5,3,6);
+for i = 1:Nagents
+    plot(xx{i}(6,:));
+    hold on
+end
+ylabel("w");
+
+subplot(5,3,7);
 for i = 1:Nagents
     stairs(uu{i}(1,:));
     hold on
 end
 ylabel("ax");
 
-subplot(5,2,6);
+subplot(5,3,8);
 for i = 1:Nagents
     plot(uu{i}(2,:));
     hold on
 end
 ylabel("ay");
 
-subplot(5,2,7);
+subplot(5,3,9);
+for i = 1:Nagents
+    plot(uu{i}(3,:));
+    hold on
+end
+ylabel("aw");
+
+subplot(5,3,10);
 for i = 1:Nagents
     stairs(AdmmTime(:,i));
     hold on
 end
 ylabel("Solve OCP [ms]");
 
-subplot(5,2,8);
+subplot(5,3,11);
 for i = 1:Nagents
     stairs(loc_qpTime_MPC_step);
     hold on
 end
 ylabel("Local QP [ms]");
 
-subplot(5,2,9);
+subplot(5,3,12);
 for i = 1:Nagents
     stairs(zcommTime_MPC_step);
     hold on
 end
 ylabel("z c. [ms]");
 
-subplot(5,2,10);
+subplot(5,3,13);
 for i = 1:Nagents
     stairs(zbarcommTime_MPC_step);
     hold on
