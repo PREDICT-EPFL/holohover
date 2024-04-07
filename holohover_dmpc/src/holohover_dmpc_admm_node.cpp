@@ -41,16 +41,16 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     // Dummy QP parameters for checking that ADMM works
     //initial positions
-    Vector2d x10; x10 << 0.5, 0.0;
-    Vector2d x20; x20 << 0.15, 0.3;
-    Vector2d x30; x30 << -0.15, -0.3;
-    Vector2d x40; x40 << -0.5, 0.5;
+    Vector2d x10; x10 << 0.8, 0.0;
+    Vector2d x20; x20 << -0.3, 0.0;
+    Vector2d x30; x30 << -0.3, 0.0;
+    Vector2d x40; x40 << -0.3, 0.0;
 
     //desired positions
-    Vector2d x1d; x1d << 0.0, 0.5;
-    Vector2d x2d; x2d << 0.5, 0.5;
-    Vector2d x3d; x3d << 0.5, 0.5;
-    Vector2d x4d; x4d << 0.5, 0.5;
+    Vector2d x1d; x1d << 0.8, 0.0;
+    Vector2d x2d; x2d << -0.3, 0.0;
+    Vector2d x3d; x3d << -0.3, 0.0;
+    Vector2d x4d; x4d << -0.3, 0.0;
 
     if (my_id == 0){
         p[0] = x10[0]; p[1] = x10[1];
@@ -230,10 +230,10 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     mpc_step = 0;
     logged_mpc_steps = 0;
     
-    auto now = std::chrono::system_clock::now();
-    auto localTime = std::chrono::system_clock::to_time_t(now);
+    std::time_t t = std::time(0);   // get time now
+    std::tm* now = std::localtime(&t);
     
-    file_name << ament_index_cpp::get_package_prefix("holohover_dmpc") << "/../../log/dmpc_time_measurement_" << std::put_time(std::localtime(&localTime), "%F_%H-%M-%S") << "_agent" << my_id << ".csv";
+    file_name << ament_index_cpp::get_package_prefix("holohover_dmpc") << "/../../log/dmpc_time_measurement_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
     log_file = std::ofstream(file_name.str());
     if (log_file.is_open())
     {
@@ -261,7 +261,7 @@ void HolohoverDmpcAdmmNode::init_topics()
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             "state", 10,
             std::bind(&HolohoverDmpcAdmmNode::state_callback, this, std::placeholders::_1));
-
+    
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(
             "dmpc_state_ref", 10,
             std::bind(&HolohoverDmpcAdmmNode::ref_callback, this, std::placeholders::_1));
@@ -501,7 +501,7 @@ void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmp
     } 
     for (unsigned int i = 0; i < ref.val_length; i++){
         state_ref(i) = ref.ref_value[i]; 
-    } 
+    }
 }
 
 void HolohoverDmpcAdmmNode::set_state_in_ocp()

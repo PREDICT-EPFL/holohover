@@ -122,7 +122,7 @@ def launch_setup(context):
     )
 
 
-    launch_description.append(rviz_launch)
+    # launch_description.append(rviz_launch)
     launch_description.append(recorder_launch)
     if len(hovercraft_ids_simulated) != 0:
         launch_description.append(simulator_node)

@@ -63,7 +63,7 @@ void OptitrackInterfaceNode::hovercraft_raw_pose_callback(std::shared_ptr<geomet
     m_raw.getRPY(r,p,y_raw);
 
     tf2::Matrix3x3 m_table(q_table);
-    m_raw.getRPY(r,p,y_table);
+    m_table.getRPY(r,p,y_table);
 
     q_new.setRPY(0, 0, y_raw - y_table);
     q_new.normalize();
