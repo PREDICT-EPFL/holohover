@@ -124,7 +124,8 @@ def launch_setup(context):
 
     launch_description.append(rviz_launch)
     launch_description.append(recorder_launch)
-    launch_description.append(simulator_node)
+    if len(hovercraft_ids_simulated) != 0:
+        launch_description.append(simulator_node)
     launch_description.append(optitrack_node)
     
     #################### COMMON NODES STARTING - END ####################
