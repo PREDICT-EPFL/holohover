@@ -34,6 +34,8 @@ HolohoverDmpcAdmmLqrNode::HolohoverDmpcAdmmLqrNode() :
     state_at_ocp_solve.setZero();
     state_at_ocp_solve_buff.setZero();
     state_at_conversion.setZero();
+    predicted_state_dmpc_log.setZero();
+    predicted_state_lqr_log.setZero();
 
     // init input
     u_acc_dmpc_curr.setZero();
@@ -241,7 +243,7 @@ HolohoverDmpcAdmmLqrNode::HolohoverDmpcAdmmLqrNode() :
     log_file_lqr = std::ofstream(file_name_lqr.str());
     if (log_file_lqr.is_open())
     {
-        log_file_lqr << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u_1_dmpc_, u_2_dmpc_, u_3_dmpc_, u_1_lqr_, u_2_lqr_, u_3_lqr_, u_1_bc_, u_2_bc_, u_3_bc_, u_1_acc_, u_2_acc_, u_3_acc_\n";
+        log_file_lqr << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u_1_dmpc_, u_2_dmpc_, u_3_dmpc_, u_1_lqr_, u_2_lqr_, u_3_lqr_, u_1_bc_, u_2_bc_, u_3_bc_, u_1_acc_, u_2_acc_, u_3_acc_, x_1_dmpc_, x_2_dmpc_, x_3_dmpc_, x_4_dmpc_, x_5_dmpc_, x_6_dmpc_, x_1_lqr_, x_2_lqr_, x_3_lqr_, x_4_lqr_, x_5_lqr_, x_6_lqr_\n";
         log_file_lqr.close();
     }
 
@@ -437,18 +439,24 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
         lqr_step = -1;
     }  
     
-    // calculate control for next LQR step
+    // with actuator dynamics
+    //actuator dynamics
+    motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
+    
     state_lock.lock();
     Holohover::state_t<double> state_at_conversion = state;
     state_lock.unlock();
+    
+    Holohover::control_force_t<double> u_force_curr;
+    Holohover::control_acc_t<double> u_acc_curr;
+    holohover.signal_to_thrust(motor_velocities, u_force_curr);
+    holohover.control_force_to_acceleration(state_at_conversion, u_force_curr, u_acc_curr);
+    
+    // calculate control for next LQR step    
     Holohover::state_t<double> state_ref_next =  holohover.Ad*predicted_state + holohover.Bd*u_acc_dmpc_curr_buff;
     Holohover::state_t<double> state_next = holohover.Ad * state_at_conversion + holohover.Bd * u_acc_curr;
     Holohover::control_acc_t<double> u_acc_lqr_next = -K*(state_next - state_ref_next);        
     Holohover::control_acc_t<double> u_acc_next = u_acc_dmpc_curr_buff + u_acc_lqr_next;
-
-    // with actuator dynamics
-    //actuator dynamics
-    motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
     
     // calculate thrust bounds for next step
     Holohover::control_force_t<double> u_force_next_min, u_force_next_max;
@@ -486,9 +494,9 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
     
     // convert clipped signal back
     Holohover::control_acc_t<double> u_acc_bc_next = u_acc_next; //before conversion
-    Holohover::control_force_t<double> u_force;
-    holohover.signal_to_thrust(motor_velocities, u_force);
-    holohover.control_force_to_acceleration(state_at_conversion, u_force, u_acc_next);
+    // Holohover::control_force_t<double> u_force;
+    // holohover.signal_to_thrust(motor_velocities, u_force);
+    // holohover.control_force_to_acceleration(state_at_conversion, u_force, u_acc_next);
     
     // std::cout << "u_acc before conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
     
@@ -511,17 +519,19 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
     log_file_lqr.open(file_name_lqr.str(),std::ios_base::app);
     if (log_file_lqr.is_open())
     {
-        log_file_lqr << mpc_step_ << "," << x_log_(0) << "," << x_log_(1) << "," << x_log_(2) << "," << x_log_(3) << "," << x_log_(4) << "," << x_log_(5) << "," << u_acc_dmpc_curr_buff_log_(0) << "," << u_acc_dmpc_curr_buff_log_(1) << "," << u_acc_dmpc_curr_buff_log_(2) << "," << u_acc_lqr_curr_(0) << "," << u_acc_lqr_curr_(1) << "," << u_acc_lqr_curr_(2) << "," << u_acc_bc_curr_(0) << "," << u_acc_bc_curr_(1) << "," << u_acc_bc_curr_(2) << "," << u_acc_curr_(0) << "," << u_acc_curr_(1) << "," << u_acc_curr_(2) << "\n";        
+        log_file_lqr << mpc_step_ << "," << x_log_(0) << "," << x_log_(1) << "," << x_log_(2) << "," << x_log_(3) << "," << x_log_(4) << "," << x_log_(5) << "," << u_acc_dmpc_curr_buff_log_(0) << "," << u_acc_dmpc_curr_buff_log_(1) << "," << u_acc_dmpc_curr_buff_log_(2) << "," << u_acc_lqr_curr_(0) << "," << u_acc_lqr_curr_(1) << "," << u_acc_lqr_curr_(2) << "," << u_acc_bc_curr_(0) << "," << u_acc_bc_curr_(1) << "," << u_acc_bc_curr_(2) << "," << u_acc_curr_(0) << "," << u_acc_curr_(1) << "," << u_acc_curr_(2) << "," << predicted_state_dmpc_log(0) << "," << predicted_state_dmpc_log(1) << "," << predicted_state_dmpc_log(2) << "," << predicted_state_dmpc_log(3) << "," << predicted_state_dmpc_log(4) << "," << predicted_state_dmpc_log(5) << "," << predicted_state_lqr_log(0) << "," << predicted_state_lqr_log(1) << "," << predicted_state_lqr_log(2) << "," << predicted_state_lqr_log(3) << "," << predicted_state_lqr_log(4) << "," << predicted_state_lqr_log(5) << "\n";        
     }
     log_file_lqr.close();
 
     // save control inputs for next iterations
-    u_acc_curr = u_acc_next;
+    // u_acc_curr = u_acc_next;
     u_acc_bc_curr = u_acc_bc_next;
     u_acc_lqr_curr = u_acc_lqr_next;
     u_acc_dmpc_curr_buff_log = u_acc_dmpc_curr_buff;
     last_control_signal = u_signal;
     predicted_state = state_ref_next;
+    predicted_state_dmpc_log = state_ref_next;
+    predicted_state_lqr_log = state_next;
     lqr_step++; 
 }
 
