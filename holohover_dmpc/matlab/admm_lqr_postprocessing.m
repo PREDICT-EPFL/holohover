@@ -6,7 +6,7 @@ clear all;
 clc;
 
 d = dir;
-Nagents = 1;
+Nagents = 4;
 
 for i = 1:Nagents
     str = sprintf("dmpc_lqr_log_agent%i*",i-1);
@@ -47,8 +47,18 @@ for i = 1:Nagents
     uu{i}(1,:)      = t_lqr{i}.u_1_acc_(1:LQR_steps).';
     uu{i}(2,:)      = t_lqr{i}.u_2_acc_(1:LQR_steps).';
     uu{i}(3,:)      = t_lqr{i}.u_3_acc_(1:LQR_steps).';
-    
-
+    xx_dmpc{i}(1,:) = t_lqr{i}.x_1_dmpc_(1:LQR_steps).';
+    xx_dmpc{i}(2,:) = t_lqr{i}.x_2_dmpc_(1:LQR_steps).';
+    xx_dmpc{i}(3,:) = t_lqr{i}.x_3_dmpc_(1:LQR_steps).';
+    xx_dmpc{i}(4,:) = t_lqr{i}.x_4_dmpc_(1:LQR_steps).';
+    xx_dmpc{i}(5,:) = t_lqr{i}.x_5_dmpc_(1:LQR_steps).';
+    xx_dmpc{i}(6,:) = t_lqr{i}.x_6_dmpc_(1:LQR_steps).';
+    xx_lqr{i}(1,:) = t_lqr{i}.x_1_lqr_(1:LQR_steps).';
+    xx_lqr{i}(2,:) = t_lqr{i}.x_2_lqr_(1:LQR_steps).';
+    xx_lqr{i}(3,:) = t_lqr{i}.x_3_lqr_(1:LQR_steps).';
+    xx_lqr{i}(4,:) = t_lqr{i}.x_4_lqr_(1:LQR_steps).';
+    xx_lqr{i}(5,:) = t_lqr{i}.x_5_lqr_(1:LQR_steps).';
+    xx_lqr{i}(6,:) = t_lqr{i}.x_6_lqr_(1:LQR_steps).';
 end
 
 
@@ -81,28 +91,52 @@ for i = 1:Nagents
 
 figure()
 subplot(3,3,1);
-stairs(xx{i}(1,:));
+stairs(xx{i}(1,:),'DisplayName','actual');
 ylabel("x");
+hold on
+stairs(xx_dmpc{i}(1,:),'DisplayName','DMPC-pred');
+stairs(xx_lqr{i}(1,:),'DisplayName','LQR-pred');
+legend();
 
 subplot(3,3,2);
-stairs(xx{i}(2,:));
+stairs(xx{i}(2,:),'DisplayName','actual');
 ylabel("y");
+hold on
+stairs(xx_dmpc{i}(2,:),'DisplayName','DMPC-pred');
+stairs(xx_lqr{i}(2,:),'DisplayName','LQR-pred');
+legend();
 
 subplot(3,3,3);
-stairs(xx{i}(5,:));
+stairs(xx{i}(5,:),'DisplayName','actual');
 ylabel("yaw");
+hold on
+stairs(xx_dmpc{i}(5,:),'DisplayName','DMPC-pred');
+stairs(xx_lqr{i}(5,:),'DisplayName','LQR-pred');
+legend();
 
 subplot(3,3,4);
-stairs(xx{i}(3,:));
+stairs(xx{i}(3,:),'DisplayName','actual');
 ylabel("vx");
+hold on
+stairs(xx_dmpc{i}(3,:),'DisplayName','DMPC-pred');
+stairs(xx_lqr{i}(3,:),'DisplayName','LQR-pred');
+legend();
 
 subplot(3,3,5);
-stairs(xx{i}(4,:));
+stairs(xx{i}(4,:),'DisplayName','actual');
 ylabel("vy");
+hold on
+stairs(xx_dmpc{i}(4,:),'DisplayName','DMPC-pred');
+stairs(xx_lqr{i}(4,:),'DisplayName','LQR-pred');
+legend();
 
 subplot(3,3,6);
-stairs(xx{i}(6,:));
+stairs(xx{i}(6,:),'DisplayName','actual');
 ylabel("w");
+hold on
+stairs(xx_dmpc{i}(6,:),'DisplayName','DMPC-pred');
+stairs(xx_lqr{i}(6,:),'DisplayName','LQR-pred');
+legend();
 
 subplot(3,3,7);
 stairs(uu{i}(1,:), 'DisplayName',"after conversion");

@@ -16,7 +16,7 @@
 % OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 % SOFTWARE.
 
-function sProb = holohover_sProb_acc(Nrobot,N,T,x0,u0,xd,xinit)
+function sProb = holohover_sProb_acc(Nrobot,N,dt,h,x0,u0,xd,xinit)
 
 import casadi.*
 
@@ -25,8 +25,8 @@ nu = 3; %inputs per holohover (a_x,a_y,w_z_dot)
 
 xmin = -inf(nx,1);
 xmax = inf(nx,1);
-umin = -0.2*ones(nu,1);
-umax = 0.2*ones(nu,1);
+umin = -5*ones(nu,1); %m/s^2, m/s^2, rad/s^2
+umax = 5*ones(nu,1);  %m/s^2, m/s^2, rad/s^2
 
 Ac = [0,0,1,0,0,0;
       0,0,0,1,0,0;
@@ -45,10 +45,13 @@ C =  [1,0,0,0,0,0;
       0,0,0,0,1,0];
 D = zeros(3,3);
 sysc = ss(Ac,Bc,C,D);
-sysd = c2d(sysc,T);
+sysd = c2d(sysc,h);
+sysdt = c2d(sysc,dt); %for riccati
 
 Ad = sysd.A;
 Bd = sysd.B;
+Adt = sysdt.A;
+Bdt = sysdt.B;
 
 % declare decision variables
 for i=1:Nrobot
@@ -125,25 +128,28 @@ for i=1:Nrobot
     end    
 end
 
-Q = 10*eye(nx);
-R = 1*eye(nu);
-beta = 10;
-P = beta*eye(nx);
+Q1 = diag([100,100,1,1,300,0.1]);
+Qij = diag([2000,2000,1,1,300,0.1]);
+R = 0.1*eye(nu);
+% beta = 10;
+% P = beta*eye(nx);
+P1 = idare(Adt,Bdt,Q1,R);
+Pij = idare(Adt,Bdt,Qij,R);
 
 %stage cost
 for i = 1:Nrobot
    ZZZ{i}{i} = XX{i};
    for k =  1:N
        if i == 1
-           JJ{i} = JJ{i} + 0.5 * ( XX{i}(:,k) - XXd{i}(:,1) ).' * Q * ( XX{i}(:,k) - XXd{i}(:,1) );
+           JJ{i} = JJ{i} + 0.5 * ( XX{i}(:,k) - XXd{i}(:,1) ).' * Q1 * ( XX{i}(:,k) - XXd{i}(:,1) );
        end
 
        if i > 1
-           JJ{i} = JJ{i} + 0.25*( XX{i}(:,k) - ZZZ{i}{i-1}(:,k) - XXd{i}(:,1) ).'* Q * ( XX{i}(:,k) - ZZZ{i}{i-1}(:,k) - XXd{i}(:,1) );     
+           JJ{i} = JJ{i} + 0.25*( XX{i}(:,k) - ZZZ{i}{i-1}(:,k) - XXd{i}(:,1) ).'* Qij * ( XX{i}(:,k) - ZZZ{i}{i-1}(:,k) - XXd{i}(:,1) );     
        end
 
        if i < Nrobot
-           JJ{i} = JJ{i} + 0.25*( ZZZ{i}{i+1}(:,k) - XX{i}(:,k) - XXd{i}(:,2) ).'* Q * ( ZZZ{i}{i+1}(:,k) - XX{i}(:,k) - XXd{i}(:,2) );     
+           JJ{i} = JJ{i} + 0.25*( ZZZ{i}{i+1}(:,k) - XX{i}(:,k) - XXd{i}(:,2) ).'* Qij * ( ZZZ{i}{i+1}(:,k) - XX{i}(:,k) - XXd{i}(:,2) );     
        end
        JJ{i} = JJ{i} + 0.5*UU{i}(:,k).'*R*UU{i}(:,k);
    end
@@ -153,15 +159,15 @@ end
 for i = 1:Nrobot
 k = N+1;
     if i == 1
-       JJ{i} = JJ{i} + 0.5 * ( XX{i}(:,k) - XXd{i}(:,1) ).' * P * ( XX{i}(:,k) - XXd{i}(:,1) );
+       JJ{i} = JJ{i} + 0.5 * ( XX{i}(:,k) - XXd{i}(:,1) ).' * P1 * ( XX{i}(:,k) - XXd{i}(:,1) );
     end
 
     if i > 1
-       JJ{i} = JJ{i} + 0.25*( XX{i}(:,k) - ZZZ{i}{i-1}(:,k) - XXd{i}(:,1) ).'* P * ( XX{i}(:,k) - ZZZ{i}{i-1}(:,k) - XXd{i}(:,1) );     
+       JJ{i} = JJ{i} + 0.25*( XX{i}(:,k) - ZZZ{i}{i-1}(:,k) - XXd{i}(:,1) ).'* Pij * ( XX{i}(:,k) - ZZZ{i}{i-1}(:,k) - XXd{i}(:,1) );     
     end
 
     if i < Nrobot
-       JJ{i} = JJ{i} + 0.25*( ZZZ{i}{i+1}(:,k) - XX{i}(:,k) - XXd{i}(:,2) ).'* P * ( ZZZ{i}{i+1}(:,k) - XX{i}(:,k) - XXd{i}(:,2) );     
+       JJ{i} = JJ{i} + 0.25*( ZZZ{i}{i+1}(:,k) - XX{i}(:,k) - XXd{i}(:,2) ).'* Pij * ( ZZZ{i}{i+1}(:,k) - XX{i}(:,k) - XXd{i}(:,2) );     
     end
 end
     
