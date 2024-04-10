@@ -267,31 +267,34 @@ stairs(xx{i}(6,:));
 ylabel("w");
 
 subplot(3,3,7);
-stairs(uu{i}(1,:));
+stairs(uu{i}(1,:),"DisplayName","after conversion");
 hold on
 try
-stairs(uu_bc{i}(1,:));
+stairs(uu_bc{i}(1,:),"DisplayName","before conversion");
 catch
 end
 ylabel("ax");
+legend();
 
 subplot(3,3,8);
-stairs(uu{i}(2,:));
+stairs(uu{i}(2,:),"DisplayName","after conversion");
 hold on
 try
-stairs(uu_bc{i}(2,:));
+stairs(uu_bc{i}(2,:),"DisplayName","before conversion");
 catch
 end
 ylabel("ay");
+legend();
 
 subplot(3,3,9);
-stairs(uu{i}(3,:));
+stairs(uu{i}(3,:),"DisplayName","after conversion");
 hold on
 try
-stairs(uu_bc{i}(3,:));
+stairs(uu_bc{i}(3,:),"DisplayName","before conversion");
 catch
 end
 ylabel("aw");
+legend();
 
 end
 

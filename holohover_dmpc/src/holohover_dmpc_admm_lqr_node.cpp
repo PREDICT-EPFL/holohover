@@ -426,12 +426,14 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
             dmpc_lqr_lock.unlock();
         } else{
             // return; //don't send any control signal such that the hovercraft stop
-            state_lock.lock();
-            predicted_state = state;
-            state_lock.unlock();
-            u_acc_dmpc_curr_buff.setZero();
+            // state_lock.lock();
+            // predicted_state = state;
+            // state_lock.unlock();
+            dmpc_lqr_lock.lock();
+            u_acc_dmpc_curr_buff = u_acc_dmpc_next;
+            dmpc_lqr_lock.unlock();
             lqr_step = -1;
-            std::cout << "WARNING: SET DMPC ACC TO ZERO IN LQR"  << std::endl;
+            // std::cout << "WARNING: SET DMPC ACC TO ZERO IN LQR"  << std::endl;
         }
                           
     } 
