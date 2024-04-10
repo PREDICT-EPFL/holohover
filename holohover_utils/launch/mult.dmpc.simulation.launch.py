@@ -130,7 +130,7 @@ def launch_setup(context):
         PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/dmpc.launch.py'))
     )
 
-    if common_nodes_machine == machine:
+    if common_nodes_machine == machine or machine == "all":
         launch_description.append(rviz_launch)
         launch_description.append(recorder_launch)
         if len(hovercraft_ids_simulated) != 0:
@@ -144,7 +144,7 @@ def launch_setup(context):
     # Now iterate on each hovercraft and launch the nodes for each one
     print(f"Starting {len(hovercraft)} hovercraft")
     for i in range(len(hovercraft)):
-        if hovercraft_machines[i] == machine:
+        if hovercraft_machines[i] == machine or machine == "all":
             hovercraft_launch = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_dmpc.launch.py')),
                 launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i]}.items()
