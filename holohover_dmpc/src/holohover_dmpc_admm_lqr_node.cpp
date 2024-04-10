@@ -429,10 +429,11 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
             state_lock.unlock();
             u_acc_dmpc_curr_buff.setZero();
             lqr_step = -1;
+            std::cout << "WARNING: SET DMPC ACC TO ZERO IN LQR"  << std::endl;
         }
                           
     } 
-    if (lqr_step == 9){
+    if (lqr_step == (std::floor(control_settings.dmpc_period / lqr_settings.period)-1)){
         lqr_step = -1;
     }  
     
@@ -445,6 +446,7 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
     Holohover::control_acc_t<double> u_acc_lqr_next = -K*(state_next - state_ref_next);        
     Holohover::control_acc_t<double> u_acc_next = u_acc_dmpc_curr_buff + u_acc_lqr_next;
 
+    // with actuator dynamics
     //actuator dynamics
     motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
     
@@ -460,8 +462,14 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
     holohover.thrust_to_signal(u_force_next, motor_velocities_next);
 
     // calculate control from future motor velocities
-    Holohover::control_force_t<double> u_signal = (motor_velocities_next - holohover.Ad_motor * motor_velocities) / holohover.Bd_motor;
+    u_signal = (motor_velocities_next - holohover.Ad_motor * motor_velocities) / holohover.Bd_motor;
 
+    //without actuator dynamics
+    //convert to signal
+    // Holohover::control_force_t<double> u_force_next;
+    // holohover.control_acceleration_to_force(state_at_conversion, u_acc_next, u_force_next);
+    // holohover.thrust_to_signal(u_force_next, u_signal);
+    
     // clip between 0 and 1
     u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);
 
@@ -477,9 +485,9 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
     control_publisher->publish(control_msg);
     
     // convert clipped signal back
-    Holohover::control_acc_t<double> u_acc_bc_next = u_acc_next;
+    Holohover::control_acc_t<double> u_acc_bc_next = u_acc_next; //before conversion
     Holohover::control_force_t<double> u_force;
-    holohover.signal_to_thrust(u_signal, u_force);
+    holohover.signal_to_thrust(motor_velocities, u_force);
     holohover.control_force_to_acceleration(state_at_conversion, u_force, u_acc_next);
     
     // std::cout << "u_acc before conversion = " << u_acc[0] << " , " << u_acc[1] << " , " << u_acc[2] << std::endl;
@@ -637,7 +645,7 @@ void HolohoverDmpcAdmmLqrNode::ref_callback(const holohover_msgs::msg::Holohover
     for (unsigned int i = 0; i < ref.val_length; i++){
         state_ref(i) = ref.ref_value[i]; 
     }
-    state_ref_lock.lock(); 
+    state_ref_lock.unlock(); 
 }
 
 void HolohoverDmpcAdmmLqrNode::get_u_acc_from_sol()
