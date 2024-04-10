@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    period: 0.01
+    period: 0.001
     seed: 0
 
     hovercraft_radius: 0.07

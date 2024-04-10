@@ -93,6 +93,8 @@ private:
     Holohover::control_acc_t<double> u_acc_lqr_curr;
     Holohover::control_acc_t<double> u_acc_dmpc_curr_buff; //LQR stores u_acc_dmpc_curr here
     Holohover::control_acc_t<double> u_acc_dmpc_curr_buff_log;
+    Holohover::state_t<double> predicted_state_dmpc_log;
+    Holohover::state_t<double> predicted_state_lqr_log;
     Holohover::control_force_t<double> motor_velocities;
     Holohover::control_force_t<double> last_control_signal;
     Holohover::control_force_t<double> u_signal; 
