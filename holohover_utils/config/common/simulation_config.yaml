@@ -9,7 +9,7 @@
     internal_iterations_position: 2
 
     table_size:     [2.2, 1.1]
-    table_position: [3.0, 2.5, 1.0]
+    table_position: [-1.926, 4.06, 0.0]
     table_publish_period: 1.0
 
     drag_reference_area: 0.0021

@@ -27,6 +27,6 @@ def generate_launch_description():
         output='screen'
     )
     ld.add_action(mocap_node)
-    ld.add_action(optitrack_interface_node)
+    ld.add_action(optitrack_interface_node)   
 
     return ld
