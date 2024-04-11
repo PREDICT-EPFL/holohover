@@ -239,6 +239,7 @@ private:
     Eigen::MatrixXd u_log;
     Eigen::MatrixXd xd_log;
     int mpc_step;
+    int mpc_step_since_log;
     int log_buffer_size; //number of MPC steps to store before writing to log
     int logged_mpc_steps; //number of MPC steps that have already been logged
     void print_time_measurements();
