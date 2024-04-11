@@ -426,9 +426,9 @@ void HolohoverDmpcAdmmLqrNode::publish_control()
             dmpc_lqr_lock.unlock();
         } else{
             // return; //don't send any control signal such that the hovercraft stop
-            // state_lock.lock();
-            // predicted_state = state;
-            // state_lock.unlock();
+            state_lock.lock();
+            predicted_state = state;
+            state_lock.unlock();
             dmpc_lqr_lock.lock();
             u_acc_dmpc_curr_buff = u_acc_dmpc_next;
             dmpc_lqr_lock.unlock();

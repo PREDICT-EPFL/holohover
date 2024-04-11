@@ -13,8 +13,10 @@ import yaml
 def launch_setup(context):
     
     experiment_filename = LaunchConfiguration('experiment').perform(context)
+    machine = LaunchConfiguration('machine').perform(context)
 
     print(f"Launching experiment from file: {experiment_filename}")
+    print(f"This machine is named: {machine}")
 
     launch_description = []
 
@@ -30,7 +32,9 @@ def launch_setup(context):
 
     data = yaml.safe_load(open(experiment_conf, 'r'))
     hovercraft = data["hovercraft"]
-     
+    common_nodes_machine = data["experiment"]["machine"]
+
+    hovercraft_machines = [] 
     hovercraft_names = []
     hovercraft_ids = []
     initial_states = {'x': [], 'y': [], 'theta': [], 'vx': [], 'vy': [], 'w': []}
@@ -121,11 +125,17 @@ def launch_setup(context):
         PythonLaunchDescriptionSource(os.path.join(this_dir, 'common', 'rviz.launch.py'))
     )
 
+    dmpc_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/dmpc.launch.py'))
+    )
 
-    # launch_description.append(rviz_launch)
-    launch_description.append(recorder_launch)
-    launch_description.append(simulator_node)
-    launch_description.append(optitrack_node)
+    if common_nodes_machine == machine or machine == "all":
+        # launch_description.append(rviz_launch)
+        launch_description.append(recorder_launch)
+        if len(hovercraft_ids_simulated) != 0:
+            launch_description.append(simulator_node)
+        launch_description.append(optitrack_node)
+        launch_description.append(dmpc_launch)
     
     #################### COMMON NODES STARTING - END ####################
    
@@ -155,14 +165,19 @@ def generate_launch_description():
         description='Experiment File'
     ))
 
+    ld.add_action(DeclareLaunchArgument(
+        'machine', default_value='master',
+        description='Machine Name'
+    ))
+
     ld.add_action(opfunc)
 
-    # DMPC
-    this_dir = os.path.dirname(os.path.abspath(__file__))
-    dmpc_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/dmpc.launch.py'))
-    )
-    ld.add_action(dmpc_launch)   
+    # # DMPC
+    # this_dir = os.path.dirname(os.path.abspath(__file__))
+    # dmpc_launch = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/dmpc.launch.py'))
+    # )
+    # ld.add_action(dmpc_launch)   
 
     return ld
 
