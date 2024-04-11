@@ -1,6 +1,6 @@
 holohover_dmpc_trigger:
   ros__parameters:
-    dmpc_period: 0.100
+    dmpc_period: 0.050
     rho: 5.0
     maxiter: 50
     nx: 6
