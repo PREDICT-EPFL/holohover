@@ -226,6 +226,7 @@ HolohoverDmpcAdmmLqrNode::HolohoverDmpcAdmmLqrNode() :
     u_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
     xd_log = -MatrixXd::Ones(log_buffer_size,control_settings.nxd);
     mpc_step = 0;
+    mpc_step_since_log = 0;
     logged_mpc_steps = 0;
     
     std::time_t t = std::time(0);   // get time now
@@ -570,22 +571,23 @@ void HolohoverDmpcAdmmLqrNode::run_admm(const std_msgs::msg::UInt64 &publish_con
 
     publish_trajectory();
 
-    x_log.block(mpc_step,0,1,control_settings.nx) = state_at_ocp_solve.transpose(); 
-    u_log.block(mpc_step,0,1,control_settings.nu) = u_acc_dmpc_curr.transpose();
-    xd_log.block(mpc_step,0,1,control_settings.nxd) = state_ref.transpose();
+    x_log.block(mpc_step_since_log,0,1,control_settings.nx) = state_at_ocp_solve.transpose(); 
+    u_log.block(mpc_step_since_log,0,1,control_settings.nu) = u_acc_dmpc_curr.transpose();
+    xd_log.block(mpc_step_since_log,0,1,control_settings.nxd) = state_ref.transpose();
 
-    if (mpc_step == log_buffer_size - 1) {
+    if (mpc_step_since_log == log_buffer_size - 1) {
         // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
         print_time_measurements();
         clear_time_measurements();
-        mpc_step = -1; //gets increased to 0 below
+        mpc_step_since_log = -1; //gets increased to 0 below
         // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
         // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
         // std::cout << "Logging duration_us  =" <<duration_us << std::endl;
     } 
     dmpc_lqr_lock.lock();
-    mpc_step = mpc_step + 1;
+    mpc_step++;
     dmpc_lqr_lock.unlock();
+    mpc_step_since_log++;
 }
 
 void HolohoverDmpcAdmmLqrNode::clip_u_acc_dmpc_curr()
