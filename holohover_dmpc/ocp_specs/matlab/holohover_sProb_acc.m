@@ -128,8 +128,9 @@ for i=1:Nrobot
     end    
 end
 
-Q1 = diag([50,50,1,1,300,0.1]);
-Qij = diag([1000,1000,1,1,300,0.1]);
+Q1 = diag([14,14,3,3,20,3]);
+Qij = diag([14,14,3,3,20,3]);
+
 R = 0.1*eye(nu);
 % beta = 10;
 % P = beta*eye(nx);

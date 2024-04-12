@@ -1,0 +1,34 @@
+
+experiment:
+  name: experiment1
+  description: "This is the first experiment - it contains 4 hovercraft with a line type graph and... ToDo"
+  machine: master
+
+hovercraft:
+  - name: h0
+    id: 0
+    initial_state: [0.5, 0, 0, 0, 0, 0]
+    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    simulate: False
+    machine: la016
+
+  - name: h1
+    id: 1
+    initial_state: [0.2, 0, 0, 0, 0, 0]
+    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    simulate: True
+    machine: la017
+
+  - name: h2
+    id: 2
+    initial_state: [-0.1, 0, 0, 0, 0, 0]
+    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    simulate: True
+    machine: la016
+
+  - name: h3
+    id: 3
+    initial_state: [-0.4, 0, 0, 0, 0, 0]
+    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    simulate: True
+    machine: la017

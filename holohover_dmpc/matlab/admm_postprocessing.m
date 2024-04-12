@@ -1,13 +1,14 @@
 % Plot time and closed-loop
 
 
-close all;
+%close all;
 clear all;
 clc;
 
 d = dir;
 Nagents = 4;
-Nadmm = 10; %admm iterations per MPC step
+Nadmm = 20; %admm iterations per MPC step
+dt = 0.050; %sampling time
 
 for i = 1:Nagents
     str = sprintf("dmpc_time_measurement_agent%i*",i-1);
@@ -54,7 +55,7 @@ for i = 1:Nagents
     end
     xxd{i}(1,:)       = t_mpc{i}.xd_1_.';
     xxd{i}(2,:)       = t_mpc{i}.xd_2_.';
-    xxd{i}(3,:)       = t_mpc{i}.xd_3_.';
+    xxd{i}(3,:)       = t_mpc{i}.xd_5_.';
 
 end
 
@@ -94,12 +95,15 @@ end
 
 %% closed-loop trajectories
 
+t = 0:dt:(MPC_steps-1)*dt;
+lw = 2;
+
 figure()
 subplot(5,3,1);
 for i = 1:Nagents
-    plot(xx{i}(1,:));
+    plot(t,xx{i}(1,:),'LineWidth',lw);
     hold on
-    plot(xxd{i}(1,:),'-k','LineWidth',1.2);
+    plot(t,xxd{i}(1,:),'-k','LineWidth',1.2);
 end
 grid on
 ylabel("x");
@@ -107,9 +111,9 @@ ylim([-1.2,1.2]);
 
 subplot(5,3,2);
 for i = 1:Nagents
-    plot(xx{i}(2,:));
+    plot(t,xx{i}(2,:),'LineWidth',lw);
     hold on
-    plot(xxd{i}(2,:),'-k','LineWidth',1.2);
+    plot(t,xxd{i}(2,:),'-k','LineWidth',1.2);
     hold on
 end
 grid on
@@ -118,7 +122,7 @@ ylabel("y");
 
 subplot(5,3,3);
 for i = 1:Nagents
-    plot(xx{i}(5,:));
+    plot(t,xx{i}(5,:),'LineWidth',lw);
     hold on
 end
 grid on
@@ -126,70 +130,76 @@ ylabel("yaw");
 
 subplot(5,3,4);
 for i = 1:Nagents
-    plot(xx{i}(3,:));
+    plot(t,xx{i}(3,:),'LineWidth',lw);
     hold on
 end
 ylabel("vx");
+grid on
 
 subplot(5,3,5);
 for i = 1:Nagents
-    plot(xx{i}(4,:));
+    plot(t,xx{i}(4,:),'LineWidth',lw);
     hold on
 end
 ylabel("vy");
+grid on
 
 subplot(5,3,6);
 for i = 1:Nagents
-    plot(xx{i}(6,:));
+    plot(t,xx{i}(6,:),'LineWidth',lw);
     hold on
 end
 ylabel("w");
+grid on
 
 subplot(5,3,7);
 for i = 1:Nagents
-    stairs(uu{i}(1,:));
+    stairs(t,uu{i}(1,:),'LineWidth',lw);
     hold on
 end
 ylabel("ax");
+grid on
 
 subplot(5,3,8);
 for i = 1:Nagents
-    plot(uu{i}(2,:));
+    plot(t,uu{i}(2,:),'LineWidth',lw);
     hold on
 end
 ylabel("ay");
+grid on
 
 subplot(5,3,9);
 for i = 1:Nagents
-    plot(uu{i}(3,:));
+    plot(t,uu{i}(3,:),'LineWidth',lw);
     hold on
 end
 ylabel("aw");
+grid on
 
 subplot(5,3,10);
 for i = 1:Nagents
-    stairs(AdmmTime(:,i));
+    stairs(t,AdmmTime(:,i));
     hold on
 end
 ylabel("Solve OCP [ms]");
 
 subplot(5,3,11);
 for i = 1:Nagents
-    stairs(loc_qpTime_MPC_step);
+    stairs(t,loc_qpTime_MPC_step);
     hold on
 end
 ylabel("Local QP [ms]");
 
 subplot(5,3,12);
 for i = 1:Nagents
-    stairs(zcommTime_MPC_step);
+    stairs(t,zcommTime_MPC_step);
     hold on
 end
 ylabel("z c. [ms]");
 
 subplot(5,3,13);
 for i = 1:Nagents
-    stairs(zbarcommTime_MPC_step);
+    stairs(t,zbarcommTime_MPC_step);
     hold on
 end
 ylabel("zbar c. [ms]");
@@ -198,19 +208,19 @@ try
 figure()
 subplot(3,1,1);
 for i = 1:Nagents
-    stairs(uu{i}(1,:) - uu_bc{i}(1,:));
+    stairs(t,uu_bc{i}(1,:) - uu_bc{i}(1,:));
     hold on
 end
 
 subplot(3,1,2);
 for i = 1:Nagents
-    stairs(uu{i}(2,:) - uu_bc{i}(2,:));
+    stairs(t,uu{i}(2,:) - uu_bc{i}(2,:));
     hold on
 end
 
 subplot(3,1,3);
 for i = 1:Nagents
-    stairs(uu{i}(3,:) - uu_bc{i}(3,:));
+    stairs(t,uu{i}(3,:) - uu_bc{i}(3,:));
     hold on
 end
 catch
@@ -220,19 +230,19 @@ end
 try
 figure()
 subplot(3,1,1);
-stairs(uu{i}(1,:));
+stairs(t,uu{i}(1,:));
 hold on
-stairs(uu_bc{i}(1,:));
+stairs(t,uu_bc{i}(1,:));
 
 subplot(3,1,2);
-stairs(uu{i}(2,:));
+stairs(t,uu{i}(2,:));
 hold on
-stairs(uu_bc{i}(2,:));
+stairs(t,uu_bc{i}(2,:));
 
 subplot(3,1,3);
-stairs(uu{i}(3,:));
+stairs(t,uu{i}(3,:));
 hold on
-stairs(uu_bc{i}(3,:));
+stairs(t,uu_bc{i}(3,:));
 
 catch
 end
@@ -243,54 +253,54 @@ for i = 1:Nagents
 
 figure()
 subplot(3,3,1);
-stairs(xx{i}(1,:));
+stairs(t,xx{i}(1,:));
 ylabel("x");
 
 subplot(3,3,2);
-stairs(xx{i}(2,:));
+stairs(t,xx{i}(2,:));
 ylabel("y");
 
 subplot(3,3,3);
-stairs(xx{i}(5,:));
+stairs(t,xx{i}(5,:));
 ylabel("yaw");
 
 subplot(3,3,4);
-stairs(xx{i}(3,:));
+stairs(t,xx{i}(3,:));
 ylabel("vx");
 
 subplot(3,3,5);
-stairs(xx{i}(4,:));
+stairs(t,xx{i}(4,:));
 ylabel("vy");
 
 subplot(3,3,6);
-stairs(xx{i}(6,:));
+stairs(t,xx{i}(6,:));
 ylabel("w");
 
 subplot(3,3,7);
-stairs(uu{i}(1,:),"DisplayName","after conversion");
+stairs(t,uu{i}(1,:),"DisplayName","after conversion");
 hold on
 try
-stairs(uu_bc{i}(1,:),"DisplayName","before conversion");
+stairs(t,uu_bc{i}(1,:),"DisplayName","before conversion");
 catch
 end
 ylabel("ax");
 legend();
 
 subplot(3,3,8);
-stairs(uu{i}(2,:),"DisplayName","after conversion");
+stairs(t,uu{i}(2,:),"DisplayName","after conversion");
 hold on
 try
-stairs(uu_bc{i}(2,:),"DisplayName","before conversion");
+stairs(t,uu_bc{i}(2,:),"DisplayName","before conversion");
 catch
 end
 ylabel("ay");
 legend();
 
 subplot(3,3,9);
-stairs(uu{i}(3,:),"DisplayName","after conversion");
+stairs(t,uu{i}(3,:),"DisplayName","after conversion");
 hold on
 try
-stairs(uu_bc{i}(3,:),"DisplayName","before conversion");
+stairs(t,uu_bc{i}(3,:),"DisplayName","before conversion");
 catch
 end
 ylabel("aw");
