@@ -1,7 +1,7 @@
 h3/dmpc:
   ros__parameters:
     dmpc_period: 0.050
-    rho: 4.0
+    rho: 1.0
     maxiter: 20
     nx: 6
     nu: 3
@@ -20,7 +20,7 @@ h3/dmpc:
     idx_x0: 126
     Nagents: 4
     my_id: 3
-    folder_name_sprob: "sProb_chain_QP_N20_acc_050"
+    folder_name_sprob: "sProb_chain_QP_N20_acc_050_damped"
 /**:
 #control_lqr:
   ros__parameters:

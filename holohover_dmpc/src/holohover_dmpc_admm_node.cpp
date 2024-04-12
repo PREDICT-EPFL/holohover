@@ -40,7 +40,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     // Dummy QP parameters for checking that ADMM works
     //initial positions
-    Vector2d x10; x10 << 0.8, 0.0;
+    Vector2d x10; x10 << 0.5, 0.0;
     Vector2d x20; x20 << -0.3, 0.0;
     Vector2d x30; x30 << -0.3, 0.0;
     Vector2d x40; x40 << -0.3, 0.0;

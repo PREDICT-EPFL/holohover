@@ -49,7 +49,7 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     log_file_lqr = std::ofstream(file_name_lqr.str());
     if (log_file_lqr.is_open())
     {
-        log_file_lqr << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u_1_dmpc_, u_2_dmpc_, u_3_dmpc_, u_1_lqr_, u_2_lqr_, u_3_lqr_, u_1_bc_, u_2_bc_, u_3_bc_, u_1_acc_, u_2_acc_, u_3_acc_\n";
+        log_file_lqr << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, xd_1_, xd_2_, xd_5_, u_1_dmpc_, u_2_dmpc_, u_3_dmpc_, u_1_lqr_, u_2_lqr_, u_3_lqr_, u_1_bc_, u_2_bc_, u_3_bc_, u_1_acc_, u_2_acc_, u_3_acc_\n";
         log_file_lqr.close();
     }
     //GS END
@@ -143,7 +143,7 @@ void HolohoverControlLQRNode::publish_control()
     log_file_lqr.open(file_name_lqr.str(),std::ios_base::app);
     if (log_file_lqr.is_open())
     {
-        log_file_lqr << 0 << "," << state(0) << "," << state(1) << "," << state(2) << "," << state(3) << "," << state(4) << "," << state(5) << "," << 0.0 << "," << 0.0 << "," << 0.0 << "," << u_acc_lqr_curr(0) << "," << u_acc_lqr_curr(1) << "," << u_acc_lqr_curr(2) << "," << u_acc_bc_curr(0) << "," << u_acc_bc_curr(1) << "," << u_acc_bc_curr(2) << "," << u_acc_curr(0) << "," << u_acc_curr(1) << "," << u_acc_curr(2) << "\n";        
+        log_file_lqr << 0 << "," << state(0) << "," << state(1) << "," << state(2) << "," << state(3) << "," << state(4) << "," << state(5) << "," << state_ref(0) << "," << state_ref(1) << "," << state_ref(2) << "," << 0.0 << "," << 0.0 << "," << 0.0 << "," << u_acc_lqr_curr(0) << "," << u_acc_lqr_curr(1) << "," << u_acc_lqr_curr(2) << "," << u_acc_bc_curr(0) << "," << u_acc_bc_curr(1) << "," << u_acc_bc_curr(2) << "," << u_acc_curr(0) << "," << u_acc_curr(1) << "," << u_acc_curr(2) << "\n";        
     }
     log_file_lqr.close();
 
