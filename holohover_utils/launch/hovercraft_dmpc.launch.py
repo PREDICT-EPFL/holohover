@@ -48,7 +48,7 @@ def launch_setup(context):
     controller_node = Node(
         name="dmpc",
         package="holohover_dmpc",
-        executable="control_dmpc",
+        executable="control_dmpc_dsqp",
         parameters=[control_dmpc_config,
         {"holohover_props_file": params}],
         namespace=name,

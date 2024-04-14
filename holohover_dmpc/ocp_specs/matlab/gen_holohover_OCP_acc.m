@@ -24,7 +24,7 @@ import casadi.*
 
 % scenario
 Nrobot = 4;
-N = 40;          %horizon
+N = 20;          %horizon
 dt = 0.050;       %sampling interval seconds
 h = 0.050; %OCP shooting interval
 xx0 = {[0.5;0;zeros(4,1)],[0.15;0.3;zeros(4,1)],[-0.15;-0.3;zeros(4,1)],[-0.5;0;zeros(4,1)]};
@@ -44,7 +44,7 @@ xxd{4} = [x4d];
 xinit = []; %solver initialization
 
 % setup OCP
-sProb = holohover_sProb_acc(Nrobot,N,dt,h,xx0,uu0,xxd,xinit);
+sProb = holohover_sProb_QCQP(Nrobot,N,dt,h,xx0,uu0,xxd,xinit);
 
 %export C code
 gen_c_sProb(sProb);
