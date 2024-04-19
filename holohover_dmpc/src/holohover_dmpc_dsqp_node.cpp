@@ -41,9 +41,9 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     // Dummy QP parameters for checking that ADMM works
     //initial positions
     Vector2d x10; x10 << 0.5, 0.0;
-    Vector2d x20; x20 << -0.3, 0.0;
-    Vector2d x30; x30 << -0.3, 0.0;
-    Vector2d x40; x40 << -0.3, 0.0;
+    Vector2d x20; x20 << 0.2, 0.0;
+    Vector2d x30; x30 << -0.1, 0.0;
+    Vector2d x40; x40 << -0.4, 0.0;
 
     //desired positions
     Vector2d x1d; x1d << 0.5, 0.0;
@@ -592,6 +592,8 @@ void HolohoverDmpcDsqpNode::init_dmpc()
     gam   = VectorXd::Zero(nz);
 
     solve(10); //initializes data structures in admm and warm start for first MPC step
+
+
     clear_time_measurements();
 
     return;

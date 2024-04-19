@@ -11,6 +11,23 @@ neighbors:
 trajectory:
   - step:
       - id: 0
+        x: 0.5
+        y: 0.3
+        yaw: 0.0
+      - id: 1
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+      - id: 2
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+      - id: 3
+        x: -0.3
+        y: 0.0
+        yaw: 0.0
+  - step:
+      - id: 0
         x: 0.2
         y: -0.3
         yaw: 0.0
