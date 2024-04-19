@@ -130,10 +130,10 @@ for i=1:Nrobot
         end
     end
     %minimum distance constraint
-    dmin = 0.25; %meter
+    dmin = 0.3; %meter
     for j = 2:N+1
         if i > 1
-            hh{i} = [hh{i}; (-(XX{i}(:,j) - ZZZ{i}{i-1}(:,j)).' * (XX{i}(:,j) - ZZZ{i}{i-1}(:,j)) + dmin^2) - slacks{i}];            
+            hh{i} = [hh{i}; (-(XX{i}(1:2,j) - ZZZ{i}{i-1}(1:2,j)).' * (XX{i}(1:2,j) - ZZZ{i}{i-1}(1:2,j)) + dmin^2) - slacks{i}];            
         end
     end
     if i > 1
@@ -244,6 +244,11 @@ for i = 2:Nrobot
     AA{i} = [AA{i},zeros(size(AA{i},1),1)];
     llbxu{i} = [llbxu{i}; 0];
     uubxu{i} = [uubxu{i}; inf];
+end
+
+% regularization
+for i = 1:Nrobot
+    JJ{i} = JJ{i} + 10^(-6)*XXU{i}.'*XXU{i};
 end
 
 % set up sProb
