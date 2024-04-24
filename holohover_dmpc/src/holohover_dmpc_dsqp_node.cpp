@@ -91,8 +91,6 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
         }
     }
 
-    // ub_file = sprob.ub[my_id];
-    // lb_file = sprob.lb[my_id];
     nz = sprob.A[my_id].cols();
     z = Eigen::VectorXd::Zero(nz);
     zbar = Eigen::VectorXd::Zero(nz);
@@ -393,14 +391,9 @@ void HolohoverDmpcDsqpNode::publish_control(const std_msgs::msg::UInt64 &publish
         return;
     }
 
-    // std::cout << "u_acc_curr before conversion = " << u_acc_curr[0] << " , " << u_acc_curr[1] << " , " << u_acc_curr[2] << std::endl;
     u_before_conversion_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
-    // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now(); 
     convert_u_acc_to_u_signal();
     u_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
-
-    // std::cout << "u_acc_curr after conversion = " << u_acc_curr[0] << " , " << u_acc_curr[1] << " , " << u_acc_curr[2] << std::endl; 
-
 
     holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";
@@ -412,22 +405,13 @@ void HolohoverDmpcDsqpNode::publish_control(const std_msgs::msg::UInt64 &publish
     control_msg.motor_c_1 = u_signal(4);
     control_msg.motor_c_2 = u_signal(5);
     control_publisher->publish(control_msg);
-    // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
-    // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
-    // std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;
-
-
+   
     update_setpoint_in_ocp();
 
-    
-    // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
-    dsqp_timer.tic();
+        dsqp_timer.tic();
     solve(control_settings.maxiter);      
     dsqp_timer.toc();
-    // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
-    // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
-    // std::cout << "ADMM duration_ms  =" <<duration_us/1000 << std::endl;
-
+    
     get_u_acc_from_sol();
 
     publish_trajectory();
@@ -436,13 +420,9 @@ void HolohoverDmpcDsqpNode::publish_control(const std_msgs::msg::UInt64 &publish
     xd_log.block(mpc_step,0,1,control_settings.nxd) = state_ref_at_ocp_solve.transpose();
 
     if (mpc_step == log_buffer_size - 1) {
-        // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
         print_time_measurements();
         clear_time_measurements();
         mpc_step = -1; //gets increased to 0 below
-        // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
-        // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
-        // std::cout << "Logging duration_us  =" <<duration_us << std::endl;
     } 
 
     u_acc_curr = u_acc_next;
@@ -538,48 +518,7 @@ void HolohoverDmpcDsqpNode::update_setpoint_in_ocp(){
     state_ref_lock.lock();
     state_ref_at_ocp_solve = state_ref;
     p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref_at_ocp_solve;
-    state_ref_lock.unlock();
-
-    // std::string function_library = control_settings.folder_name_sprob + "/locFuns.so";
-
-    // casadi::DM z_cas;
-    // casadi::DM p_cas;
-
-    // // Use CasADi's "external" to load the compiled function
-    // casadi::Function f; // = casadi::external("gradFun1","sProb_chain/locFuns.so");
-    // std::string str;
-
-    // std::vector<casadi::DM> arg; // = {z};
-    // std::vector<casadi::DM> res; // = f(arg);
-
-    // int nz_ = g.size();
-
-
-    // VectorXd z = Eigen::VectorXd::Zero(nz_);
-  
-    // z_cas = Eigen2casadi(z);
-    // p_cas = Eigen2casadi(p);
-
-    // //g
-    // str = "gradFun" + std::to_string(my_id+1); //convert to matlab index
-    // f = casadi::external(str,function_library);
-    // arg = {z_cas,p_cas};
-    // res = f(arg);
-    // sprob.g[my_id]= casadi2EigenVector(res[0]);
-    
-    // //beq
-    // str = "eqfun" + std::to_string(my_id+1); //convert to matlab index
-    // f = casadi::external(str,function_library);
-    // // arg = {z_cas};
-    // res = f(arg);
-    // int ng_ = res[0].size1();
-    // int cols_ = res[0].size2();
-    // sprob.beq[my_id] = Eigen::VectorXd::Zero(ng_);        
-    // std::memcpy(sprob.beq[my_id].data(), res.at(0).ptr(), sizeof(double)*ng_*cols_);
-    // sprob.beq[my_id] = -sprob.beq[my_id];
-
-    // g = sprob.g[my_id];
-   
+    state_ref_lock.unlock();   
 }
 
 void HolohoverDmpcDsqpNode::init_dmpc()
@@ -1014,15 +953,10 @@ int HolohoverDmpcDsqpNode::solve(unsigned int maxiter_)
             g_bar = sprob.g[my_id]  + gam - rho*zbar;
 
             //PIQP
-            // if (inner_iter == 0 && GN == false){  //update constraints and Hessian
-            //     H_bar = sprob.H[my_id] + rho * MatrixXd::Identity(nz,nz);
-            //     loc_prob.update(H_bar.sparseView(), g_bar, sprob.Aeq[my_id].sparseView() , sprob.beq[my_id] , sprob.Aineq[my_id].sparseView() , sprob.bineq[my_id], piqp::nullopt, piqp::nullopt,true); 
-            // } else if (inner_iter == 0 && GN == true){  //update constraints
-            //     loc_prob.update(piqp::nullopt, g_bar, sprob.Aeq[my_id].sparseView() , sprob.beq[my_id] , sprob.Aineq[my_id].sparseView() , sprob.bineq[my_id], piqp::nullopt, piqp::nullopt,true); 
             if (inner_iter == 0){
                 H_bar = sprob.H[my_id] + rho * MatrixXd::Identity(nz,nz);
                 loc_prob.setup(H_bar.sparseView(), g_bar, sprob.Aeq[my_id].sparseView() , sprob.beq[my_id] , sprob.Aineq[my_id].sparseView() , sprob.bineq[my_id], lb, ub); 
-            } else{ //update ADMM gradient
+            } else{
                 loc_prob.update(piqp::nullopt, g_bar, piqp::nullopt , piqp::nullopt , piqp::nullopt , piqp::nullopt, piqp::nullopt, piqp::nullopt,true);
             }  
             
