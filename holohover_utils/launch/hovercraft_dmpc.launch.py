@@ -12,6 +12,7 @@ def launch_setup(context):
     index  = LaunchConfiguration('index').perform(context)
     name   = LaunchConfiguration('name').perform(context)
     params = LaunchConfiguration('params').perform(context)
+    opt_alg = LaunchConfiguration('opt_alg').perform(context) #admm or dsqp
     
     print(f"\t- hovercraft\t\tID: {index} - Name: {name}")
     print(f"Configuration file: {params}")
@@ -48,7 +49,7 @@ def launch_setup(context):
     controller_node = Node(
         name="dmpc",
         package="holohover_dmpc",
-        executable="control_dmpc_dsqp",
+        executable="control_dmpc_" + opt_alg,
         parameters=[control_dmpc_config,
         {"holohover_props_file": params}],
         namespace=name,

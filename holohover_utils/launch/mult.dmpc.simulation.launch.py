@@ -14,9 +14,11 @@ def launch_setup(context):
     
     experiment_filename = LaunchConfiguration('experiment').perform(context)
     machine = LaunchConfiguration('machine').perform(context)
+    opt_alg = LaunchConfiguration('opt_alg').perform(context) #admm or dsqp
 
     print(f"Launching experiment from file: {experiment_filename}")
     print(f"This machine is named: {machine}")
+    print(f"Optimization method for DMPC is: {opt_alg}")
 
     launch_description = []
 
@@ -147,7 +149,7 @@ def launch_setup(context):
         if hovercraft_machines[i] == machine or machine == "all":
             hovercraft_launch = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_dmpc.launch.py')),
-                launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i]}.items()
+                launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i], 'opt_alg': opt_alg}.items()
             )
             
             launch_description.append(hovercraft_launch)
