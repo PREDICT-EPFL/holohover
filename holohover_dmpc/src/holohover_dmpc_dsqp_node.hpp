@@ -108,8 +108,6 @@ private:
     Eigen::VectorXd g;
     Eigen::VectorXd lb;
     Eigen::VectorXd ub;
-    // Eigen::VectorXd ub_file; //upper bounds as specified in csv file
-    // Eigen::VectorXd lb_file; //lower bounds as specified in csv fi 
     
     //problem metadata
     Eigen::Vector<bool, Eigen::Dynamic> isOriginal;    //nz x 1
