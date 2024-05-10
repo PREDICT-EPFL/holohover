@@ -7,7 +7,7 @@ clc;
 
 d = dir;
 Nagents = 4;
-Nadmm = 20; %admm iterations per MPC step
+Nadmm = 1; %admm iterations per MPC step
 dt = 0.050; %sampling time
 
 for i = 1:Nagents
@@ -15,10 +15,19 @@ for i = 1:Nagents
     file{i} = dir(str);
     t_admm{i} = readtable(file{i}.name);
     rows = 1:size(t_admm{i},1);
-    t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:20);
+    if Nadmm > 1
+        t_mpc{i} = t_admm{i}(mod(rows_dsqp,Nadmm)==1,1:20);
+    else
+        t_mpc{i} = t_admm{i}(:,1:20);
+    end
 end
 ADMM_iter = size(t_admm{1},1);
 MPC_steps = size(t_mpc{1},1);
+
+for i = 1:Nagents
+    ADMM_iter = min(ADMM_iter, size(t_admm{i},1));
+    MPC_steps = min(MPC_steps, size(t_mpc{i},1));
+end
 
 AdmmTime        = -ones(MPC_steps,Nagents);
 AdmmIterTime    = -ones(ADMM_iter,Nagents);
@@ -32,30 +41,30 @@ for i = 1:Nagents
 end
 
 for i = 1:Nagents
-    AdmmTime(:,i)     = t_mpc{i}.admm_time_us_/1000;
-    AdmmIterTime(:,i) = t_admm{i}.admm_iter_time_us_/1000;
-    Loc_qpTime(:,i)   = t_admm{i}.loc_qp_time_us_/1000;
-    ZcommTime(:,i)= t_admm{i}.zcomm_time_us_/1000;
-    ZbarcommTime(:,i) = t_admm{i}.zbarcomm_time_us_/1000;
+    AdmmTime(:,i)     = t_mpc{i}.admm_time_us_(1:MPC_steps)/1000;
+    AdmmIterTime(:,i) = t_admm{i}.admm_iter_time_us_(1:ADMM_iter)/1000;
+    Loc_qpTime(:,i)   = t_admm{i}.loc_qp_time_us_(1:ADMM_iter)/1000;
+    ZcommTime(:,i)= t_admm{i}.zcomm_time_us_(1:ADMM_iter)/1000;
+    ZbarcommTime(:,i) = t_admm{i}.zbarcomm_time_us_(1:ADMM_iter)/1000;
 
-    xx{i}(1,:)        = t_mpc{i}.x0_1_.';
-    xx{i}(2,:)        = t_mpc{i}.x0_2_.';
-    xx{i}(3,:)        = t_mpc{i}.x0_3_.';
-    xx{i}(4,:)        = t_mpc{i}.x0_4_.';
-    xx{i}(5,:)        = t_mpc{i}.x0_5_.';
-    xx{i}(6,:)        = t_mpc{i}.x0_6_.';
-    uu{i}(1,:)        = t_mpc{i}.u0_1_.';
-    uu{i}(2,:)        = t_mpc{i}.u0_2_.';
-    uu{i}(3,:)        = t_mpc{i}.u0_3_.';
+    xx{i}(1,:)        = t_mpc{i}.x0_1_(1:MPC_steps).';
+    xx{i}(2,:)        = t_mpc{i}.x0_2_(1:MPC_steps).';
+    xx{i}(3,:)        = t_mpc{i}.x0_3_(1:MPC_steps).';
+    xx{i}(4,:)        = t_mpc{i}.x0_4_(1:MPC_steps).';
+    xx{i}(5,:)        = t_mpc{i}.x0_5_(1:MPC_steps).';
+    xx{i}(6,:)        = t_mpc{i}.x0_6_(1:MPC_steps).';
+    uu{i}(1,:)        = t_mpc{i}.u0_1_(1:MPC_steps).';
+    uu{i}(2,:)        = t_mpc{i}.u0_2_(1:MPC_steps).';
+    uu{i}(3,:)        = t_mpc{i}.u0_3_(1:MPC_steps).';
     try
         uu_bc{i}(1,:)      = t_mpc{i}.u0bc_1_.';
         uu_bc{i}(2,:)      = t_mpc{i}.u0bc_2_.';
         uu_bc{i}(3,:)      = t_mpc{i}.u0bc_3_.';
     catch
     end
-    xxd{i}(1,:)       = t_mpc{i}.xd_1_.';
-    xxd{i}(2,:)       = t_mpc{i}.xd_2_.';
-    xxd{i}(3,:)       = t_mpc{i}.xd_5_.';
+    xxd{i}(1,:)       = t_mpc{i}.xd_1_(1:MPC_steps).';
+    xxd{i}(2,:)       = t_mpc{i}.xd_2_(1:MPC_steps).';
+    xxd{i}(3,:)       = t_mpc{i}.xd_5_(1:MPC_steps).';
 
 end
 
@@ -102,7 +111,9 @@ figure()
 subplot(5,3,1);
 for i = 1:Nagents
     plot(t,xx{i}(1,:),'LineWidth',lw);
-    hold on
+    hold on;
+end
+for i = 1:Nagents
     plot(t,xxd{i}(1,:),'-k','LineWidth',1.2);
 end
 grid on
@@ -113,8 +124,9 @@ subplot(5,3,2);
 for i = 1:Nagents
     plot(t,xx{i}(2,:),'LineWidth',lw);
     hold on
+end
+for i = 1:Nagents
     plot(t,xxd{i}(2,:),'-k','LineWidth',1.2);
-    hold on
 end
 grid on
 ylim([-0.7,0.7]);
@@ -185,21 +197,21 @@ ylabel("Solve OCP [ms]");
 
 subplot(5,3,11);
 for i = 1:Nagents
-    stairs(t,loc_qpTime_MPC_step);
+    stairs(t,Loc_qpTime(:,i));
     hold on
 end
 ylabel("Local QP [ms]");
 
 subplot(5,3,12);
 for i = 1:Nagents
-    stairs(t,zcommTime_MPC_step);
+    stairs(t,ZcommTime(:,i));
     hold on
 end
 ylabel("z c. [ms]");
 
 subplot(5,3,13);
 for i = 1:Nagents
-    stairs(t,zbarcommTime_MPC_step);
+    stairs(t,ZbarcommTime(:,i));
     hold on
 end
 ylabel("zbar c. [ms]");
