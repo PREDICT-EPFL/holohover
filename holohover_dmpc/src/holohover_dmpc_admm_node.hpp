@@ -83,7 +83,9 @@ private:
     rclcpp::Publisher<holohover_msgs::msg::HolohoverTrajectory>::SharedPtr HolohoverTrajectory_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr reference_subscription;
-    rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()
+    // rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()
+
+    rclcpp::TimerBase::SharedPtr timer;
 
     rclcpp::SubscriptionOptions state_options;
     rclcpp::SubscriptionOptions state_ref_options;
@@ -158,7 +160,7 @@ private:
     //callbacks
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &state_ref);
-    void publish_control(const std_msgs::msg::UInt64 &publish_control_msg);
+    void publish_control();
     
     void publish_trajectory();
     
