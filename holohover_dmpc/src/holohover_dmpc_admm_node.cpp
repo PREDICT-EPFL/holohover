@@ -223,6 +223,8 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_\n";
         log_file.close();
     }
+    std::cout << "calling publish_control" << std::endl;
+    publish_control();
 
 }
 
@@ -258,9 +260,9 @@ void HolohoverDmpcAdmmNode::init_topics()
     publish_control_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     publish_control_options.callback_group = publish_control_cb_group;        
 
-    dmpc_trigger_subscription = this->create_subscription<std_msgs::msg::UInt64>(
-            "/dmpc/trigger", 10,
-            std::bind(&HolohoverDmpcAdmmNode::publish_control, this, std::placeholders::_1),publish_control_options);
+    // dmpc_trigger_subscription = this->create_subscription<std_msgs::msg::UInt64>(
+    //         "/dmpc/trigger", 10,
+    //         std::bind(&HolohoverDmpcAdmmNode::publish_control, this, std::placeholders::_1),publish_control_options);
 }
 
 void HolohoverDmpcAdmmNode::init_comms(){
@@ -354,9 +356,8 @@ void HolohoverDmpcAdmmNode::init_comms(){
     return;
 }
 
-void HolohoverDmpcAdmmNode::publish_control(const std_msgs::msg::UInt64 &publish_control_msg)
+void HolohoverDmpcAdmmNode::publish_control()
 {
-    std::ignore = publish_control_msg;
 
     if(!dmpc_is_initialized){
         update_setpoint_in_ocp();
@@ -557,6 +558,7 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
 void HolohoverDmpcAdmmNode::init_dmpc()
 {
     std::this_thread::sleep_for(std::chrono::seconds(10)); //wait until all subscribers are setup
+    RCLCPP_INFO(get_logger(), "Initializing comms");
     init_comms();
     RCLCPP_INFO(get_logger(), "Comms initialized");
     z     = VectorXd::Zero(nz);
@@ -565,6 +567,14 @@ void HolohoverDmpcAdmmNode::init_dmpc()
 
     solve(10); //initializes data structures in admm and warm start for first MPC step
     clear_time_measurements();
+
+    const std::chrono::steady_clock::time_point t_ = std::chrono::steady_clock::now();
+    auto tsec_ = std::chrono::duration_cast<std::chrono::seconds>(t_.time_since_epoch());
+    const std::chrono::steady_clock::time_point t_wake_ = std::chrono::steady_clock::time_point(tsec_ + std::chrono::seconds(2));
+    std::this_thread::sleep_until(t_wake_);
+    timer = this->create_wall_timer(
+            std::chrono::duration<double>(control_settings.dmpc_period),
+            std::bind(&HolohoverDmpcAdmmNode::publish_control, this), publish_control_cb_group);
 
     return;
 }
