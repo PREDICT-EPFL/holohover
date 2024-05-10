@@ -83,7 +83,7 @@ private:
     rclcpp::Publisher<holohover_msgs::msg::HolohoverTrajectory>::SharedPtr HolohoverTrajectory_publisher;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr reference_subscription;
-    // rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()
+    rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()
 
     rclcpp::TimerBase::SharedPtr timer;
 
@@ -151,7 +151,7 @@ private:
     std::mutex state_ref_mutex;   
     
     void init_topics();
-    void init_dmpc();
+    void init_dmpc(const std_msgs::msg::UInt64 &publish_control_msg);
     void init_coupling();   //extract coupling metadata from coupling matrices 
     void init_comms();     
     void build_qp(); //construct the sProb
