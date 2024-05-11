@@ -3,89 +3,92 @@
 
 RvizInterfaceNode::RvizInterfaceNode() :
         Node("rviz_interface"),
-        holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
-        holohover(holohover_props)
+        simulation_settings(load_simulation_settings(*this)),
+        holohover_props(load_holohover_pros("/root/ros2_ws/install/holohover_utils/share/holohover_utils/config/common/holohover_params.yaml")),//declare_parameter<std::string>("holohover_props_file"))),
+        holohover(holohover_props),
+        colors(declare_parameter<std::vector<double>>("color"))
 {
-    int id = declare_parameter<int>("id");
+    RCLCPP_INFO(get_logger(), "Starting rviz interface node.");
 
-    RCLCPP_INFO(get_logger(), "Starting rviz node for id: %d", id);
+    
 
-    marker_id_counter = 1000 * id;
-
-    std::vector<double> colors = declare_parameter<std::vector<double>>("color");
-
-    holohover_marker = create_marker("holohover", 0.75, 0.75, 0.75);
-    holohover_marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
-    holohover_marker.mesh_resource = "package://holohover_utils/gui/holohover.stl";
-    holohover_marker.scale.x = 1;
-    holohover_marker.scale.y = 1;
-    holohover_marker.scale.z = 1;
-    holohover_marker.color.r = colors[0];
-    holohover_marker.color.g = colors[1];
-    holohover_marker.color.b = colors[2];
-    holohover_marker.color.a = colors[3];
-
-    for (int i = 0; i < 6; i++)
-    {
-        thrust_vector_markers[i] = create_marker("thrust_vectors", 1.0, 0.5, 0.0);
-        thrust_vector_markers[i].type = visualization_msgs::msg::Marker::ARROW;
-        thrust_vector_markers[i].scale.x = 0.01;
-        thrust_vector_markers[i].scale.y = 0.02;
-        thrust_vector_markers[i].scale.z = 0.02;
-        thrust_vector_markers[i].points.resize(2);
-    }
-    past_trajectory_marker = create_marker("past_trajectory", 0.75, 0.5, 0);
-    past_trajectory_marker.type = visualization_msgs::msg::Marker::CUBE;
-    past_trajectory_marker.scale.x = 0.005;
-    past_trajectory_marker.scale.y = 0.005;
-    past_trajectory_marker.scale.z = 0.005;
-    past_trajectory_marker.lifetime = rclcpp::Duration(10,0);
-
-    reference_marker = create_marker("reference", 0.75, 0, 0);
-    reference_marker.type = visualization_msgs::msg::Marker::CYLINDER;
-    reference_marker.scale.x = 0.01;
-    reference_marker.scale.y = 0.01;
-    reference_marker.scale.z = 0.02;
-
-    reference_direction_marker = create_marker("reference_direction", 0.75, 0.75, 0);
-    reference_direction_marker.type = visualization_msgs::msg::Marker::ARROW;
-    reference_direction_marker.scale.x = 0.01;
-    reference_direction_marker.scale.y = 0.02;
-    reference_direction_marker.scale.z = 0.02;
-    reference_direction_marker.points.resize(2);
-
-    reference_velocity_marker = create_marker("velocity", 0.75, 0.25, 0);
-    reference_velocity_marker.type = visualization_msgs::msg::Marker::ARROW;
-    reference_velocity_marker.scale.x = 0.01;
-    reference_velocity_marker.scale.y = 0.02;
-    reference_velocity_marker.scale.z = 0.02;
-    reference_velocity_marker.points.resize(2);
-
-    reference_holohover_marker = create_marker("holohover_reference", 0.5, 0.5, 0.5);
-    reference_holohover_marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
-    reference_holohover_marker.mesh_resource = "package://holohover_utils/gui/holohover.stl";
-    reference_holohover_marker.scale.x = 0.3;
-    reference_holohover_marker.scale.y = 0.3;
-    reference_holohover_marker.scale.z = 0.3;
-
-    for (int i = 0; i < 20; i++)
-    {
-        next_pos_marker[i] = create_marker("mpc_traj_pos", 0, 0, 0.75);
-        next_pos_marker[i].type = visualization_msgs::msg::Marker::CYLINDER;
-        next_pos_marker[i].scale.x = 0.005;
-        next_pos_marker[i].scale.y = 0.005;
-        next_pos_marker[i].scale.z = 0.05;
-
-        next_vel_marker[i] = create_marker("mpc_traj_vel", 0.75, 0, 0.75);
-        next_vel_marker[i].type = visualization_msgs::msg::Marker::ARROW;
-        next_vel_marker[i].scale.x = 0.01;
-        next_vel_marker[i].scale.y = 0.01;
-        next_vel_marker[i].scale.z = 0.01;
-        next_vel_marker[i].points.resize(2);
-    }
-
+    init_props();
     init_topics();
     init_timer();
+}
+
+
+void RvizInterfaceNode::publish_visualization()
+{
+    visualization_msgs::msg::MarkerArray markers;
+    markers.markers.reserve(8 * simulation_settings.hovercraft_ids.size());
+
+    auto header_now = now();
+
+    for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
+        //RCLCPP_INFO(get_logger(), "Publish visualization - Hovercraft id: %ld", simulation_settings.hovercraft_ids[i]);
+        
+        // body to world rotation matrix
+        Eigen::Matrix2d rotation_matrix;
+        holohover.body_to_world_rotation_matrix(current_states[i], rotation_matrix);
+
+        // Holohover model
+        holohover_markers[i].holohover.header.stamp = header_now;
+        holohover_markers[i].holohover.pose.position.x = current_states[i](0);
+        holohover_markers[i].holohover.pose.position.y = current_states[i](1);
+        holohover_markers[i].holohover.pose.position.z = 0.015; // center holohover 3d mdoel
+        tf2::Quaternion q;
+        q.setRPY(0, 0, current_states[i](4));
+        holohover_markers[i].holohover.pose.orientation.x = q.getX();
+        holohover_markers[i].holohover.pose.orientation.y = q.getY();
+        holohover_markers[i].holohover.pose.orientation.z = q.getZ();
+        holohover_markers[i].holohover.pose.orientation.w = q.getW();
+
+        // past_trajectory
+        holohover_markers[i].past_trajectory.header.stamp = header_now;
+        holohover_markers[i].past_trajectory.id = marker_id_counter++;
+        holohover_markers[i].past_trajectory.pose.position.x = current_states[i](0);
+        holohover_markers[i].past_trajectory.pose.position.y = current_states[i](1);
+
+        // thrust arrows
+        double propeller_height = 0.045;
+        double thrust_scaling = 0.2;
+        double min_display_force = 0.01; 
+
+        for (int j = 0; j < 3; j++) {
+            Eigen::Vector2d start_point_1 = rotation_matrix * motor_pos.col(2 * j);
+            Eigen::Vector2d start_point_2 = rotation_matrix * motor_pos.col(2 * j + 1);
+
+            Eigen::Vector2d end_point_1 = rotation_matrix * (motor_pos.col(2 * j) - motor_dir.col(2 * j) * fmax(current_controls[i](2 * j), min_display_force) * thrust_scaling);
+            Eigen::Vector2d end_point_2 = rotation_matrix * (motor_pos.col(2 * j + 1) - motor_dir.col(2 * j + 1) * fmax(current_controls[i](2 * j + 1), min_display_force) * thrust_scaling);
+
+            holohover_markers[i].thrust_vector[2 * j].header.stamp = header_now;
+            holohover_markers[i].thrust_vector[2 * j].points[0].x = start_point_1(0) + current_states[i](0);
+            holohover_markers[i].thrust_vector[2 * j].points[0].y = start_point_1(1) + current_states[i](1);
+            holohover_markers[i].thrust_vector[2 * j].points[0].z = propeller_height;
+            holohover_markers[i].thrust_vector[2 * j].points[1].x = end_point_1(0) + current_states[i](0);
+            holohover_markers[i].thrust_vector[2 * j].points[1].y = end_point_1(1) + current_states[i](1);
+            holohover_markers[i].thrust_vector[2 * j].points[1].z = propeller_height;
+
+            holohover_markers[i].thrust_vector[2 * j + 1].header.stamp = header_now;
+            holohover_markers[i].thrust_vector[2 * j + 1].points[0].x = start_point_2(0) + current_states[i](0);
+            holohover_markers[i].thrust_vector[2 * j + 1].points[0].y = start_point_2(1) + current_states[i](1);
+            holohover_markers[i].thrust_vector[2 * j + 1].points[0].z = propeller_height;
+            holohover_markers[i].thrust_vector[2 * j + 1].points[1].x = end_point_2(0) + current_states[i](0);
+            holohover_markers[i].thrust_vector[2 * j + 1].points[1].y = end_point_2(1) + current_states[i](1);
+            holohover_markers[i].thrust_vector[2 * j + 1].points[1].z = propeller_height;
+        }
+
+        markers.markers.push_back(holohover_markers[i].holohover);
+
+        markers.markers.push_back(holohover_markers[i].past_trajectory);
+
+        for (auto &thrust_vector_marker : holohover_markers[i].thrust_vector)
+        {
+            markers.markers.push_back(thrust_vector_marker);
+        }
+    }
+    viz_publisher->publish(markers);
 }
 
 void RvizInterfaceNode::init_topics()
@@ -93,22 +96,74 @@ void RvizInterfaceNode::init_topics()
     viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>(
             "/visualization/drone", 10);
 
-    state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
-            "state", 10,
-            std::bind(&RvizInterfaceNode::state_callback, this, std::placeholders::_1));
-    
-    //trajectory_subscription = this->create_subscription<holohover_msgs::msg::HolohoverTrajectory>(
-    //        "HolohoverTrajectory", rclcpp::SensorDataQoS(),
-    //        std::bind(&RvizInterfaceNode::trajectory_callback, this, std::placeholders::_1));
-    
-    reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
-            "state_ref", 10,
-            std::bind(&RvizInterfaceNode::ref_callback, this, std::placeholders::_1));
-    
-    control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
-            "control", rclcpp::SensorDataQoS(),
-            std::bind(&RvizInterfaceNode::control_callback, this, std::placeholders::_1));
-    
+    for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
+        RCLCPP_INFO(get_logger(), "Init topics - Hovercraft id: %ld", simulation_settings.hovercraft_ids[i]);
+
+        // control subscriptions
+        auto topic_name = "/" + simulation_settings.hovercraft_names[i] + "/control";
+
+        std::function<void(const holohover_msgs::msg::HolohoverControlStamped::SharedPtr)> callback = 
+                std::bind(&RvizInterfaceNode::control_callback, this, std::placeholders::_1, i);
+
+        control_subscriptions.push_back(
+            this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(topic_name, rclcpp::SensorDataQoS(), callback));
+
+        // STATE subscriptions
+        topic_name = "/" + simulation_settings.hovercraft_names[i] + "/state";
+
+        std::function<void(const holohover_msgs::msg::HolohoverStateStamped::SharedPtr)> callback2 = 
+                std::bind(&RvizInterfaceNode::state_callback, this, std::placeholders::_1, i);
+
+        state_subscriptions.push_back(
+            this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(topic_name, rclcpp::SensorDataQoS(), callback2));
+        
+
+        // MARKERS
+        std::vector<double> col = std::vector<double>(colors.begin() + i * 4, colors.begin() + (i + 1) * 4);;
+        holohover_markers.push_back(init_holohover_markers(simulation_settings.hovercraft_names[i], col)); //simulation_settings.colors[i]));
+
+        Holohover::state_t<double> state;
+        current_states.push_back(state);
+
+        Holohover::control_force_t<double> control;
+        control.setZero();
+        current_controls.push_back(control);
+    }
+}
+
+HolohoverMarkers RvizInterfaceNode::init_holohover_markers(std::string name, std::vector<double> colors)
+{
+    HolohoverMarkers holohover_markers;
+
+    holohover_markers.holohover = create_marker(name, 0.75, 0.75, 0.75);
+    holohover_markers.holohover.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
+    holohover_markers.holohover.mesh_resource = "package://holohover_utils/gui/holohover.stl";
+    holohover_markers.holohover.scale.x = 1;
+    holohover_markers.holohover.scale.y = 1;
+    holohover_markers.holohover.scale.z = 1;
+    holohover_markers.holohover.color.r = colors[0];
+    holohover_markers.holohover.color.g = colors[1];
+    holohover_markers.holohover.color.b = colors[2];
+    holohover_markers.holohover.color.a = colors[3];
+
+    for (int i = 0; i < 6; i++)
+    {
+        holohover_markers.thrust_vector[i] = create_marker(name, 1.0, 0.5, 0.0);
+        holohover_markers.thrust_vector[i].type = visualization_msgs::msg::Marker::ARROW;
+        holohover_markers.thrust_vector[i].scale.x = 0.01;
+        holohover_markers.thrust_vector[i].scale.y = 0.02;
+        holohover_markers.thrust_vector[i].scale.z = 0.02;
+        holohover_markers.thrust_vector[i].points.resize(2);
+    }
+
+    holohover_markers.past_trajectory = create_marker(name, 0.75, 0.5, 0);
+    holohover_markers.past_trajectory.type = visualization_msgs::msg::Marker::CUBE;
+    holohover_markers.past_trajectory.scale.x = 0.005;
+    holohover_markers.past_trajectory.scale.y = 0.005;
+    holohover_markers.past_trajectory.scale.z = 0.005;
+    holohover_markers.past_trajectory.lifetime = rclcpp::Duration(2,0);
+
+    return holohover_markers;
 }
 
 void RvizInterfaceNode::init_timer()
@@ -134,66 +189,35 @@ visualization_msgs::msg::Marker RvizInterfaceNode::create_marker(const std::stri
     return marker;
 }
 
-void RvizInterfaceNode::publish_visualization()
+void RvizInterfaceNode::state_callback(holohover_msgs::msg::HolohoverStateStamped::SharedPtr state_msg, long int hovercraft_id)
 {
-    // body to world rotation matrix
-    Eigen::Matrix2d rotation_matrix;
-    holohover.body_to_world_rotation_matrix(current_state, rotation_matrix);
+    // RCLCPP_INFO(get_logger(), "STATE CALLBACK - Hovercraft id: %ld", hovercraft_id);
 
-    // Holohover model
-    holohover_marker.header.stamp = now();
-    holohover_marker.pose.position.x = current_state(0);
-    holohover_marker.pose.position.y = current_state(1);
-    holohover_marker.pose.position.z = 0.015; // center holohover 3d mdoel
-    tf2::Quaternion q;
-    q.setRPY(0, 0, current_state(4));
-    holohover_marker.pose.orientation.x = q.getX();
-    holohover_marker.pose.orientation.y = q.getY();
-    holohover_marker.pose.orientation.z = q.getZ();
-    holohover_marker.pose.orientation.w = q.getW();
+    current_states[hovercraft_id](0) = state_msg->state_msg.x;
+    current_states[hovercraft_id](1) = state_msg->state_msg.y;
+    current_states[hovercraft_id](2) = state_msg->state_msg.v_x;
+    current_states[hovercraft_id](3) = state_msg->state_msg.v_y;
+    current_states[hovercraft_id](4) = state_msg->state_msg.yaw;
+    current_states[hovercraft_id](5) = state_msg->state_msg.w_z;
+}
 
-    // reference model
-    reference_holohover_marker.header.stamp = now();
-    reference_holohover_marker.pose.position.x = ref.x;
-    reference_holohover_marker.pose.position.y = ref.y;
-    reference_holohover_marker.pose.position.z = 0.005; // center holohover 3d mdoel
-    tf2::Quaternion q_ref;
-    q_ref.setRPY(0, 0, ref.yaw);
-    reference_holohover_marker.pose.orientation.x = q_ref.getX();
-    reference_holohover_marker.pose.orientation.y = q_ref.getY();
-    reference_holohover_marker.pose.orientation.z = q_ref.getZ();
-    reference_holohover_marker.pose.orientation.w = q_ref.getW();
+void RvizInterfaceNode::control_callback(holohover_msgs::msg::HolohoverControlStamped::SharedPtr control, long int hovercraft_id) 
+{
+    // RCLCPP_INFO(get_logger(), "CONTROL CALLBACK - Hovercraft id: %ld", hovercraft_id);
 
-    // past_trajectory
-    past_trajectory_marker = create_marker("past_trajectory", 0.75, 0.5, 0);
-    past_trajectory_marker.type = visualization_msgs::msg::Marker::CUBE;
-    past_trajectory_marker.scale.x = 0.005;
-    past_trajectory_marker.scale.y = 0.005;
-    past_trajectory_marker.scale.z = 0.005;
-    past_trajectory_marker.lifetime = rclcpp::Duration(10,0);
-    past_trajectory_marker.pose.position.x = current_state(0);
-    past_trajectory_marker.pose.position.y = current_state(1);
-    // REFERENCE POITN
-    reference_marker.pose.position.x = ref.x;
-    reference_marker.pose.position.y = ref.y;
-    //REFERENCE DIRECTION
-    reference_direction_marker.points[0].x = ref.x;
-    reference_direction_marker.points[0].y = ref.y;
-    reference_direction_marker.points[1].x = ref.x+0.05*cos(ref.yaw);
-    reference_direction_marker.points[1].y = ref.y+0.05*sin(ref.yaw);
-    // REFERENCE VELOCITY
-    reference_velocity_marker.points[0].x = ref.x;
-    reference_velocity_marker.points[0].y = ref.y;
-    reference_velocity_marker.points[1].x = ref.x+ref.v_x;
-    reference_velocity_marker.points[1].y = ref.y+ref.v_y;
+    current_controls[hovercraft_id](0) = control->motor_a_1;
+    current_controls[hovercraft_id](1) = control->motor_a_2;
+    current_controls[hovercraft_id](2) = control->motor_b_1;
+    current_controls[hovercraft_id](3) = control->motor_b_2;
+    current_controls[hovercraft_id](4) = control->motor_c_1;
+    current_controls[hovercraft_id](5) = control->motor_c_2;
+}
 
-    // thrust arrows
-    double propeller_height = 0.045;
-    double thrust_scaling = 0.2;
-    double min_display_force = 0.01; 
+void RvizInterfaceNode::init_props()
+{
+    RCLCPP_INFO(get_logger(), "INIT PROPS");
 
     // position vector for the propeller pairs
-    Eigen::Matrix<double, 2, 6> motor_pos;
     motor_pos(0, 0) = holohover_props.motor_pos_a_1[0];
     motor_pos(1, 0) = holohover_props.motor_pos_a_1[1];
     motor_pos(0, 1) = holohover_props.motor_pos_a_2[0];
@@ -208,7 +232,6 @@ void RvizInterfaceNode::publish_visualization()
     motor_pos(1, 5) = holohover_props.motor_pos_c_2[1];
 
     // motor force direction vectors
-    Eigen::Matrix<double, 2, 6> motor_dir;
     motor_dir(0, 0) = holohover_props.learned_motor_vec_a_1[0];
     motor_dir(1, 0) = holohover_props.learned_motor_vec_a_1[1];
     motor_dir(0, 1) = holohover_props.learned_motor_vec_a_2[0];
@@ -221,111 +244,6 @@ void RvizInterfaceNode::publish_visualization()
     motor_dir(1, 4) = holohover_props.learned_motor_vec_c_1[1];
     motor_dir(0, 5) = holohover_props.learned_motor_vec_c_2[0];
     motor_dir(1, 5) = holohover_props.learned_motor_vec_c_2[1];
-
-    for (int i = 0; i < 3; i++) {
-        Eigen::Vector2d start_point_1 = rotation_matrix * motor_pos.col(2 * i);
-        Eigen::Vector2d start_point_2 = rotation_matrix * motor_pos.col(2 * i + 1);
-
-        Eigen::Vector2d end_point_1 = rotation_matrix * (motor_pos.col(2 * i) - motor_dir.col(2 * i) * fmax(current_control(2 * i), min_display_force) * thrust_scaling);
-        Eigen::Vector2d end_point_2 = rotation_matrix * (motor_pos.col(2 * i + 1) - motor_dir.col(2 * i + 1) * fmax(current_control(2 * i + 1), min_display_force) * thrust_scaling);
-
-        thrust_vector_markers[2 * i].header.stamp = now();
-        thrust_vector_markers[2 * i].points[0].x = start_point_1(0) + current_state(0);
-        thrust_vector_markers[2 * i].points[0].y = start_point_1(1) + current_state(1);
-        thrust_vector_markers[2 * i].points[0].z = propeller_height;
-        thrust_vector_markers[2 * i].points[1].x = end_point_1(0) + current_state(0);
-        thrust_vector_markers[2 * i].points[1].y = end_point_1(1) + current_state(1);
-        thrust_vector_markers[2 * i].points[1].z = propeller_height;
-
-        thrust_vector_markers[2 * i + 1].header.stamp = now();
-        thrust_vector_markers[2 * i + 1].points[0].x = start_point_2(0) + current_state(0);
-        thrust_vector_markers[2 * i + 1].points[0].y = start_point_2(1) + current_state(1);
-        thrust_vector_markers[2 * i + 1].points[0].z = propeller_height;
-        thrust_vector_markers[2 * i + 1].points[1].x = end_point_2(0) + current_state(0);
-        thrust_vector_markers[2 * i + 1].points[1].y = end_point_2(1) + current_state(1);
-        thrust_vector_markers[2 * i + 1].points[1].z = propeller_height;
-    }
-
-    for (int i = 0; i < 20; i++) {
-        // next_pos_marker[i].lifetime = rclcpp::Duration(2,0);
-        next_pos_marker[i].pose.position.x = next_state[i](0);
-        next_pos_marker[i].pose.position.y = next_state[i](1);
-        next_pos_marker[i].pose.position.z = 0.025;
-
-        next_vel_marker[i].points[0].x = next_state[i](0);
-        next_vel_marker[i].points[0].y = next_state[i](1);
-        next_vel_marker[i].points[0].z = 0;
-        next_vel_marker[i].points[1].x = next_state[i](0)+next_state[i](2);
-        next_vel_marker[i].points[1].y = next_state[i](1)+next_state[i](3);
-        next_vel_marker[i].points[1].z = 0;
-
-    }
-
-    // publish markers
-    visualization_msgs::msg::MarkerArray markers;
-    markers.markers.reserve(10);
-    markers.markers.push_back(holohover_marker);
-    markers.markers.push_back(reference_holohover_marker);
-    markers.markers.push_back(past_trajectory_marker);
-    markers.markers.push_back(reference_marker);
-    markers.markers.push_back(reference_direction_marker);
-    markers.markers.push_back(reference_velocity_marker);
-    //markers.markers.push_back(next_pos_marker);
-
-    for (auto &thrust_vector_marker : thrust_vector_markers)
-    {
-        markers.markers.push_back(thrust_vector_marker);
-    }
-
-    for (auto &next_pos_marker : next_pos_marker)
-    {
-        markers.markers.push_back(next_pos_marker);
-    }
-
-    for (auto &next_vel_marker : next_vel_marker)
-    {
-        markers.markers.push_back(next_vel_marker);
-    }
-
-    viz_publisher->publish(markers);
-}
-
-void RvizInterfaceNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg)
-{
-    current_state(0) = state_msg.state_msg.x ;
-    current_state(1) = state_msg.state_msg.y ;
-    current_state(2) = state_msg.state_msg.v_x;
-    current_state(3) = state_msg.state_msg.v_y;
-    current_state(4) = state_msg.state_msg.yaw;
-    current_state(5) = state_msg.state_msg.w_z;
-}
-
-void RvizInterfaceNode::trajectory_callback(const holohover_msgs::msg::HolohoverTrajectory &state_trajectory)
-{
-    //next_state = state_trajectory.state_trajectory[0];
-    for (int i = 0; i < 20; i++) {
-        next_state[i](0) = state_trajectory.state_trajectory[i].x ;
-        next_state[i](1) = state_trajectory.state_trajectory[i].y ;
-        next_state[i](2) = state_trajectory.state_trajectory[i].v_x ;
-        next_state[i](3) = state_trajectory.state_trajectory[i].v_y ;
-        next_state[i](4) = state_trajectory.state_trajectory[i].yaw ;
-        next_state[i](5) = state_trajectory.state_trajectory[i].w_z ;
-    }
-}
-
-void RvizInterfaceNode::control_callback(const holohover_msgs::msg::HolohoverControlStamped &control)
-{
-    current_control(0) = control.motor_a_1;
-    current_control(1) = control.motor_a_2;
-    current_control(2) = control.motor_b_1;
-    current_control(3) = control.motor_b_2;
-    current_control(4) = control.motor_c_1;
-    current_control(5) = control.motor_c_2;
-}
-
-void RvizInterfaceNode::ref_callback(const holohover_msgs::msg::HolohoverState &pose)
-{
-    ref = pose;
 }
 
 int main(int argc, char **argv) {

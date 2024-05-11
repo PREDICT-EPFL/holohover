@@ -46,11 +46,13 @@ def launch_setup(context):
     hovercraft_ids_simulated = []
     initial_states_simulated = {'x': [], 'y': [], 'theta': [], 'vx': [], 'vy': [], 'w': []}
     holohover_params_simulated = []
+    colors = []
 
     for h in hovercraft:
         hovercraft_machines.append(h['machine'])
         hovercraft_names.append(h['name'])
         hovercraft_ids.append(int(h['id']))
+        colors += h['color']
         holohover_params.append(os.path.join(
             get_package_share_directory('holohover_utils'),
             'config',
@@ -103,12 +105,31 @@ def launch_setup(context):
         output='screen'
     )
 
+
+    rviz_interface_node = Node(
+        package="holohover_utils",
+        executable="rviz_interface",
+        parameters=[simulator_config,
+                    { "hovercraft_ids" :       hovercraft_ids, 
+                      "hovercraft_names" :     hovercraft_names,
+                      "initial_state_x":       initial_states['x'], 
+                      "initial_state_y":       initial_states['y'], 
+                      "initial_state_theta":   initial_states['theta'], 
+                      "initial_state_vx":      initial_states['vx'], 
+                      "initial_state_vy":      initial_states['vy'], 
+                      "initial_state_w":       initial_states['w'],
+                      "holohover_props_files": holohover_params,
+                      "color": colors,                                        
+                    }],
+        output='screen'
+    )
+
     optitrack_node = Node(
         package="holohover_utils",
         executable="optitrack_interface",
         parameters=[simulator_config,
-                    { "hovercraft_ids" :          hovercraft_ids, 
-                      "hovercraft_names" :    hovercraft_names,
+                    { "hovercraft_ids" :       hovercraft_ids, 
+                      "hovercraft_names" :     hovercraft_names,
                       "initial_state_x":       initial_states['x'], 
                       "initial_state_y":       initial_states['y'], 
                       "initial_state_theta":   initial_states['theta'], 
@@ -133,6 +154,7 @@ def launch_setup(context):
     )
 
     if common_nodes_machine == machine or machine == "all":
+        launch_description.append(rviz_interface_node)
         launch_description.append(rviz_launch)
         launch_description.append(recorder_launch)
         if len(hovercraft_ids_simulated) != 0:

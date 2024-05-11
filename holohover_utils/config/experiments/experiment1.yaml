@@ -9,6 +9,7 @@ hovercraft:
     id: 0
     initial_state: [0.9, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    color : [0.0, 0.0, 1.0, 1.0]
     simulate: True
     machine: la016
 
@@ -16,6 +17,7 @@ hovercraft:
     id: 1
     initial_state: [0.6, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    color : [1.0, 0.0, 0.0, 1.0]
     simulate: True
     machine: la017
 
@@ -23,6 +25,7 @@ hovercraft:
     id: 2
     initial_state: [0.3, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    color : [0.54, 0.0, 0.54, 1.0]
     simulate: True
     machine: la016
 
@@ -30,5 +33,6 @@ hovercraft:
     id: 3
     initial_state: [0, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    color : [1.0, 1.0, 0.0, 1.0] #yellow
     simulate: True
     machine: la017
