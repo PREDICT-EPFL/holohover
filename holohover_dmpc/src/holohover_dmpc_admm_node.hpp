@@ -166,17 +166,17 @@ private:
     
     //DMPC loop
     void update_setpoint_in_ocp();
-    int solve(unsigned int maxiter_);
+    int solve(unsigned int maxiter_, bool sync_admm);
     void get_u_acc_from_sol();
     void convert_u_acc_to_u_signal();
 
     //before averaging
     void update_v_in();     //place z into v_in
-    void send_vin_receive_vout();
+    void send_vin_receive_vout(bool sync_admm);
 
     //after averaging
     void update_v_out();
-    void send_vout_receive_vin();
+    void send_vout_receive_vin(bool sync_admm);
 
     //ADMM communication
     std::vector<std::vector<int>> v_in_msg_idx_first_received;
@@ -186,6 +186,9 @@ private:
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_out_msg;
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_in_msg_recv_buff;
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_out_msg_recv_buff;
+
+    std::mutex v_in_mutex;
+    std::mutex v_out_mutex;
 
     std::vector<rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_publisher;
     std::vector<rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_publisher;
