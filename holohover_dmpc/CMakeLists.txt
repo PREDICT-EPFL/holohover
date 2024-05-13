@@ -33,7 +33,7 @@ endif()
 
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
-add_executable(control_dmpc_admm src/holohover_dmpc_admm_node.cpp src/sProb.cpp src/doptTimer.cpp)
+add_executable(control_dmpc_admm src/holohover_dmpc_admm_node.cpp src/sProb.cpp src/doptTimer.cpp src/rcl_timer_helper.c)
 ament_target_dependencies(control_dmpc_admm rclcpp geometry_msgs holohover_msgs holohover_common)
 target_link_libraries(control_dmpc_admm casadi yaml-cpp Eigen3::Eigen piqp::piqp)
 
@@ -44,7 +44,6 @@ target_link_libraries(control_dmpc_dsqp casadi yaml-cpp Eigen3::Eigen piqp::piqp
 add_executable(control_dmpc_lqr src/holohover_dmpc_admm_lqr_node.cpp src/sProb.cpp src/doptTimer.cpp)
 ament_target_dependencies(control_dmpc_lqr rclcpp geometry_msgs holohover_msgs holohover_common)
 target_link_libraries(control_dmpc_lqr casadi yaml-cpp Eigen3::Eigen piqp::piqp)
-
 
 add_executable(dmpc_trigger src/holohover_dmpc_trigger_node.cpp)
 ament_target_dependencies(dmpc_trigger rclcpp std_msgs)

@@ -572,15 +572,17 @@ void HolohoverDmpcAdmmNode::init_dmpc(const std_msgs::msg::UInt64 &publish_contr
         solve(10,true); //initializes data structures in admm and warm start for first MPC step
         clear_time_measurements();
 
-        const std::chrono::milliseconds dt_((int) (control_settings.dmpc_period*1000));
-        const std::chrono::steady_clock::time_point t_ = std::chrono::steady_clock::now();
-        const std::chrono::milliseconds tmsec_ = std::chrono::duration_cast<std::chrono::milliseconds>(t_.time_since_epoch());
-        uint64_t offset = (uint64_t) ( tmsec_/dt_);
-        const std::chrono::steady_clock::time_point t_wake_ = std::chrono::steady_clock::time_point( (offset + 3)*dt_ );
-        std::this_thread::sleep_until(t_wake_);
-        timer = this->create_wall_timer(
-                std::chrono::duration<double>(control_settings.dmpc_period),
-                std::bind(&HolohoverDmpcAdmmNode::publish_control, this), publish_control_cb_group);
+        timer = rclcpp::create_timer(
+            this, std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME),
+            std::chrono::duration<double>(control_settings.dmpc_period),
+            std::bind(&HolohoverDmpcAdmmNode::publish_control, this), publish_control_cb_group);
+
+        int64_t dt = (int64_t) (control_settings.dmpc_period * 1e9);
+        int64_t time_since_epoch = get_last_call_time(timer->get_timer_handle().get());
+        int64_t offset = time_since_epoch / dt;
+        int64_t t_wake = (offset + 3) * dt;
+        set_next_call_time(const_cast<rcl_timer_t*>(timer->get_timer_handle().get()), t_wake);
+        RCLCPP_INFO(get_logger(), "First timer callback at %ld", t_wake);
 
         dmpc_is_initialized = true;
     } 
