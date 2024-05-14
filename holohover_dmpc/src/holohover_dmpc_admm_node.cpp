@@ -343,14 +343,14 @@ void HolohoverDmpcAdmmNode::init_comms(){
     }
 
 
-    // for (int i = 0; i < N_out_neighbors; i++){
-    //     v_out_msg[i].idx_length = 0;
-    //     v_out_msg[i].idx.resize(0);  //reduce ADMM message size for solve      
-    // }
-    // for (int i = 0; i < N_in_neighbors; i++){
-    //     v_in_msg[i].idx_length = 0;
-    //     v_in_msg[i].idx.resize(0);  //reduce ADMM message size for solve
-    // }   
+    for (int i = 0; i < N_out_neighbors; i++){
+        v_out_msg[i].idx_length = 0;
+        v_out_msg[i].idx.resize(0);  //reduce ADMM message size for solve      
+    }
+    for (int i = 0; i < N_in_neighbors; i++){
+        v_in_msg[i].idx_length = 0;
+        v_in_msg[i].idx.resize(0);  //reduce ADMM message size for solve
+    }   
 
     return;
 }
