@@ -1044,7 +1044,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
         if(!sync_admm){ 
             std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
             long duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
-            if (duration_ms > 20){
+            if (duration_ms > 3){
                 RCLCPP_INFO(get_logger(), "proceeding ADMM without having received all v_out messages");
                 break;
             }
@@ -1131,7 +1131,7 @@ void HolohoverDmpcAdmmNode::send_vout_receive_vin(bool sync_admm){
         if(!sync_admm){ 
             std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
             long duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
-            if (duration_ms > 20){
+            if (duration_ms > 3){
                 RCLCPP_INFO(get_logger(), "proceeding ADMM without having received all v_in messages");
                 break;
             }

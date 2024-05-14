@@ -7,8 +7,8 @@ clc;
 
 d = dir;
 Nagents = 4;
-Nadmm = 20; %admm iterations per MPC step
-dt = 0.050; %sampling time
+Nadmm = 15; %admm iterations per MPC step
+dt = 0.100; %sampling time
 
 for i = 1:Nagents
     str = sprintf("dmpc_time_measurement_agent%i*",i-1);
