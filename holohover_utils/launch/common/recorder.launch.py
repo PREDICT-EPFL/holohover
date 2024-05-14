@@ -25,7 +25,7 @@ def generate_launch_description():
     filename = os.path.join(
         get_package_share_directory('holohover_utils'),
         '../../../../log/',
-        datetime.datetime.now().strftime('/root/ros2_ws/log/rosbag-%Y-%m-%d_%H-%M-%S')
+        datetime.datetime.now().strftime('rosbag-%Y-%m-%d_%H-%M-%S')
     )
 
     print("ROSBAG logging in: ", filename)
