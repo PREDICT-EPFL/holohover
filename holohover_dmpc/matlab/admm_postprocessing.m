@@ -7,7 +7,7 @@ clc;
 
 d = dir;
 Nagents = 4;
-Nadmm = 1; %admm iterations per MPC step
+Nadmm = 20; %admm iterations per MPC step
 dt = 0.050; %sampling time
 
 for i = 1:Nagents
@@ -16,7 +16,7 @@ for i = 1:Nagents
     t_admm{i} = readtable(file{i}.name);
     rows = 1:size(t_admm{i},1);
     if Nadmm > 1
-        t_mpc{i} = t_admm{i}(mod(rows_dsqp,Nadmm)==1,1:20);
+        t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:20);
     else
         t_mpc{i} = t_admm{i}(:,1:20);
     end
@@ -96,10 +96,12 @@ for i = 1:Nagents
     end
 end
 
-for i = 1:MPC_steps
-    loc_qpTime_MPC_step(i) = sum( loc_qpTime( (i-1)*Nadmm+1 : i*Nadmm ) );
-    zcommTime_MPC_step(i) = sum( zcommTime( (i-1)*Nadmm+1 : i*Nadmm ) );
-    zbarcommTime_MPC_step(i) = sum( zbarcommTime( (i-1)*Nadmm+1 : i*Nadmm ) );
+for j = 1:Nagents
+    for i = 1:MPC_steps
+        loc_qpTime_MPC_step(i,j) = sum( Loc_qpTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
+        zcommTime_MPC_step(i,j) = sum( ZcommTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
+        zbarcommTime_MPC_step(i,j) = sum( ZbarcommTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
+    end
 end
 
 %% closed-loop trajectories
@@ -197,21 +199,21 @@ ylabel("Solve OCP [ms]");
 
 subplot(5,3,11);
 for i = 1:Nagents
-    stairs(t,Loc_qpTime(:,i));
+    stairs(t,loc_qpTime_MPC_step(:,i));
     hold on
 end
 ylabel("Local QP [ms]");
 
 subplot(5,3,12);
 for i = 1:Nagents
-    stairs(t,ZcommTime(:,i));
+    stairs(t,zcommTime_MPC_step(:,i));
     hold on
 end
 ylabel("z c. [ms]");
 
 subplot(5,3,13);
 for i = 1:Nagents
-    stairs(t,ZbarcommTime(:,i));
+    stairs(t,zbarcommTime_MPC_step(:,i));
     hold on
 end
 ylabel("zbar c. [ms]");
