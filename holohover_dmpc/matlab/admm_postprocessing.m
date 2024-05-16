@@ -7,7 +7,7 @@ clc;
 
 d = dir;
 Nagents = 4;
-Nadmm = 15; %admm iterations per MPC step
+Nadmm = 5; %admm iterations per MPC step
 dt = 0.100; %sampling time
 
 for i = 1:Nagents
