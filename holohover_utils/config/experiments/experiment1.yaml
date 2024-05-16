@@ -12,7 +12,7 @@ hovercraft:
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     color : [0.0, 0.0, 1.0, 1.0]
     simulate: True
-    machine: la016
+    machine: pi
 
   - name: h1
     id: 1
