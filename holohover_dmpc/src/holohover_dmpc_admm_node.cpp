@@ -150,10 +150,12 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         v_out_sub_topic.append(std::to_string(neighbor_id));
         v_out_sub_topic.append("copyofagent");
         v_out_sub_topic.append(std::to_string(my_id));
-        bound_received_vout_callback[i] = std::bind(&HolohoverDmpcAdmmNode::received_vout_callback, this, std::placeholders::_1, i); 
+        bound_received_vout_callback[i] = std::bind(&HolohoverDmpcAdmmNode::received_vout_callback, this, std::placeholders::_1, i);
+
         v_out_subscriber[i] = this->create_subscription<holohover_msgs::msg::HolohoverADMMStamped>(
                             v_out_sub_topic, rclcpp::SystemDefaultsQoS(),
                             bound_received_vout_callback[i],receive_vout_options);
+        // rclcpp::QoS(1)
     }
 
     // v_in
@@ -1044,7 +1046,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
         if(!sync_admm){ 
             std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
             long duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
-            if (duration_ms > 3){
+            if (duration_ms > 50){
                 RCLCPP_INFO(get_logger(), "proceeding ADMM without having received all v_out messages");
                 break;
             }
@@ -1131,7 +1133,7 @@ void HolohoverDmpcAdmmNode::send_vout_receive_vin(bool sync_admm){
         if(!sync_admm){ 
             std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
             long duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
-            if (duration_ms > 3){
+            if (duration_ms > 50){
                 RCLCPP_INFO(get_logger(), "proceeding ADMM without having received all v_in messages");
                 break;
             }
