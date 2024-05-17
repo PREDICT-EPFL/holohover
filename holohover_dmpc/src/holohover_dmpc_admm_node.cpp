@@ -937,7 +937,11 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_, bool sync_admm)
     for (unsigned int iter = 0; iter < maxiter_; iter++){
 
         // std::cout << "Starting ADMM iteration " << iter << std::endl;
-        iter_timer.tic(),
+        iter_timer.tic();
+
+        if (v_in_msg[0].seq_number%50 == 0){
+            gam = VectorXd::Zero(nz);
+        }
 
         //Step 1: local z update
         loc_timer.tic();
