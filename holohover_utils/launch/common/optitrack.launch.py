@@ -21,12 +21,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    optitrack_interface_node = Node(
-        package="holohover_utils",
-        executable="optitrack_interface",
-        output='screen'
-    )
     ld.add_action(mocap_node)
-    ld.add_action(optitrack_interface_node)   
 
     return ld
