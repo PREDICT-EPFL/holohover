@@ -3,6 +3,7 @@ experiment:
   name: experiment1
   description: "2 hovercraft"
   machine: master
+  rviz_props_file: "common/holohover_params.yaml" 
 
 hovercraft:
   - name: h0

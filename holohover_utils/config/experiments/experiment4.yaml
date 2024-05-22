@@ -1,6 +1,7 @@
 experiment:
   name: experiment4
   description: "Test single LQR for debugging reasons"
+  rviz_props_file: "common/holohover_params.yaml" 
 
 hovercraft:
   - name: h0

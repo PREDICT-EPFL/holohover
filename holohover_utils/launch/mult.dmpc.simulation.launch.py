@@ -35,6 +35,10 @@ def launch_setup(context):
     data = yaml.safe_load(open(experiment_conf, 'r'))
     hovercraft = data["hovercraft"]
     common_nodes_machine = data["experiment"]["machine"]
+    rviz_props_file = os.path.join(
+        get_package_share_directory('holohover_utils'),
+        'config',
+        data["experiment"]["rviz_props_file"])
      
     hovercraft_machines = []
     hovercraft_names = []
@@ -110,7 +114,8 @@ def launch_setup(context):
         package="holohover_utils",
         executable="rviz_interface",
         parameters=[simulator_config,
-                    { "hovercraft_ids" :       hovercraft_ids, 
+                    { "rviz_props_file" :      rviz_props_file,
+                      "hovercraft_ids" :       hovercraft_ids, 
                       "hovercraft_names" :     hovercraft_names,
                       "initial_state_x":       initial_states['x'], 
                       "initial_state_y":       initial_states['y'], 
