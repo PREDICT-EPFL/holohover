@@ -4,7 +4,7 @@
 RvizInterfaceNode::RvizInterfaceNode() :
         Node("rviz_interface"),
         simulation_settings(load_simulation_settings(*this)),
-        holohover_props(load_holohover_pros("/root/ros2_ws/install/holohover_utils/share/holohover_utils/config/common/holohover_params.yaml")),//declare_parameter<std::string>("holohover_props_file"))),
+        holohover_props(load_holohover_pros(declare_parameter<std::string>("rviz_props_file"))),
         holohover(holohover_props),
         colors(declare_parameter<std::vector<double>>("color"))
 {
