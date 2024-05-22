@@ -47,6 +47,7 @@ def launch_setup(context):
         {"holohover_props_file": params}],
         namespace=name,
         output='both'
+        prefix='nice -n -19'
     )
     
     launch_description.append(controller_node)        
