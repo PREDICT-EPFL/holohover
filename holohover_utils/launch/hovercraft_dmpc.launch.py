@@ -46,7 +46,7 @@ def launch_setup(context):
         parameters=[control_dmpc_config,
         {"holohover_props_file": params}],
         namespace=name,
-        output='both'
+        output='both',
         prefix='nice -n -19'
     )
     
