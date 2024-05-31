@@ -286,7 +286,7 @@ void HolohoverDmpcDsqpNode::init_topics()
 
     dmpc_trigger_subscription = this->create_subscription<std_msgs::msg::UInt64>(
             "/dmpc/trigger", 10,
-            std::bind(&HolohoverDmpcDsqpNode::publish_control, this, std::placeholders::_1),publish_control_options);
+            std::bind(&HolohoverDmpcDsqpNode::init_dmpc, this, std::placeholders::_1),publish_control_options);
 }
 
 void HolohoverDmpcDsqpNode::init_comms(){
@@ -380,16 +380,15 @@ void HolohoverDmpcDsqpNode::init_comms(){
     return;
 }
 
-void HolohoverDmpcDsqpNode::publish_control(const std_msgs::msg::UInt64 &publish_control_msg)
+void HolohoverDmpcDsqpNode::publish_control()
 {
-    std::ignore = publish_control_msg;
 
-    if(!dmpc_is_initialized){
-        update_setpoint_in_ocp();
-        init_dmpc();
-        dmpc_is_initialized = true;
-        return;
-    }
+    // if(!dmpc_is_initialized){
+    //     update_setpoint_in_ocp();
+    //     init_dmpc();
+    //     dmpc_is_initialized = true;
+    //     return;
+    // }
 
     u_before_conversion_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
     convert_u_acc_to_u_signal();
@@ -408,8 +407,8 @@ void HolohoverDmpcDsqpNode::publish_control(const std_msgs::msg::UInt64 &publish
    
     update_setpoint_in_ocp();
 
-        dsqp_timer.tic();
-    solve(control_settings.maxiter);      
+    dsqp_timer.tic();
+    solve(control_settings.maxiter,false);      
     dsqp_timer.toc();
     
     get_u_acc_from_sol();
@@ -521,19 +520,36 @@ void HolohoverDmpcDsqpNode::update_setpoint_in_ocp(){
     state_ref_lock.unlock();   
 }
 
-void HolohoverDmpcDsqpNode::init_dmpc()
+void HolohoverDmpcDsqpNode::init_dmpc(const std_msgs::msg::UInt64 &publish_control_msg)
 {
-    std::this_thread::sleep_for(std::chrono::seconds(10)); //wait until all subscribers are setup
-    init_comms();
-    RCLCPP_INFO(get_logger(), "Comms initialized");
-    z     = VectorXd::Zero(nz);
-    zbar  = VectorXd::Zero(nz);
-    gam   = VectorXd::Zero(nz);
+    std::ignore = publish_control_msg;
+    if(!dmpc_is_initialized){
+        std::this_thread::sleep_for(std::chrono::seconds(10)); //wait until all subscribers are setup
+        update_setpoint_in_ocp();
+        RCLCPP_INFO(get_logger(), "Initializing comms");
+        init_comms();
+        RCLCPP_INFO(get_logger(), "Comms initialized");
+        z     = VectorXd::Zero(nz);
+        zbar  = VectorXd::Zero(nz);
+        gam   = VectorXd::Zero(nz);
 
-    solve(10); //initializes data structures in admm and warm start for first MPC step
+        solve(10,true); //initializes data structures in admm and warm start for first MPC step
+        clear_time_measurements();
 
+        timer = rclcpp::create_timer(
+            this, std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME),
+            std::chrono::duration<double>(control_settings.dmpc_period),
+            std::bind(&HolohoverDmpcDsqpNode::publish_control, this), publish_control_cb_group);
 
-    clear_time_measurements();
+        int64_t dt = (int64_t) (control_settings.dmpc_period * 1e9);
+        int64_t time_since_epoch = get_last_call_time(timer->get_timer_handle().get());
+        int64_t offset = time_since_epoch / dt;
+        int64_t t_wake = (offset + 3) * dt;
+        set_next_call_time(const_cast<rcl_timer_t*>(timer->get_timer_handle().get()), t_wake);
+        RCLCPP_INFO(get_logger(), "First timer callback at %ld", t_wake);
+
+        dmpc_is_initialized = true;
+    } 
 
     return;
 }
@@ -934,7 +950,7 @@ void HolohoverDmpcDsqpNode::init_coupling()
     return;
 }
 
-int HolohoverDmpcDsqpNode::solve(unsigned int maxiter_)
+int HolohoverDmpcDsqpNode::solve(unsigned int maxiter_, bool sync_admm)
 {      
     for (unsigned int iter = 0; iter < maxiter_; iter++){
         dsqp_iter_timer.tic();
@@ -975,7 +991,7 @@ int HolohoverDmpcDsqpNode::solve(unsigned int maxiter_)
             //Communication
             z_comm_timer.tic();
             update_v_in();
-            send_vin_receive_vout();
+            send_vin_receive_vout(sync_admm);
             z_comm_timer.toc();
 
             //Step 2: averaging
@@ -989,7 +1005,7 @@ int HolohoverDmpcDsqpNode::solve(unsigned int maxiter_)
             //Communication
             zbar_comm_timer.tic();
             update_v_out();
-            send_vout_receive_vin();
+            send_vout_receive_vin(sync_admm);
             zbar_comm_timer.toc();
 
             // Step 3: dual update
@@ -1005,20 +1021,26 @@ int HolohoverDmpcDsqpNode::solve(unsigned int maxiter_)
 }
 
 void HolohoverDmpcDsqpNode::received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_idx_){
-    if(!received_vin(in_neighbor_idx_)){     
-        v_in_msg_recv_buff[in_neighbor_idx_] = v_in_msg_;
-        received_vin(in_neighbor_idx_) = true;
-    }
+    // if(!received_vin(in_neighbor_idx_)){
+    std::unique_lock v_in_lock{v_in_mutex, std::defer_lock};
+    v_in_lock.lock();     
+    v_in_msg_recv_buff[in_neighbor_idx_] = v_in_msg_;
+    received_vin(in_neighbor_idx_) = true;
+    v_in_lock.unlock();
+    // }
 }
 
 void HolohoverDmpcDsqpNode::received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_idx_){
-    if(!received_vout(out_neighbor_idx_)){    
-        v_out_msg_recv_buff[out_neighbor_idx_] = v_out_msg_;
-        received_vout(out_neighbor_idx_) = true; 
-    }  
+    // if(!received_vout(out_neighbor_idx_)){
+    std::unique_lock v_out_lock{v_out_mutex, std::defer_lock};
+    v_out_lock.lock();    
+    v_out_msg_recv_buff[out_neighbor_idx_] = v_out_msg_;
+    received_vout(out_neighbor_idx_) = true;
+    v_out_lock.unlock(); 
+    // }  
 } 
 
-void HolohoverDmpcDsqpNode::send_vin_receive_vout(){
+void HolohoverDmpcDsqpNode::send_vin_receive_vout(bool sync_admm){
     //send copies in vin and receive copies in vout
     //this is done before the averaging step
 
@@ -1036,7 +1058,8 @@ void HolohoverDmpcDsqpNode::send_vin_receive_vout(){
     receive_vout_timer.tic();
     Eigen::Array<bool,Dynamic,1> received(N_out_neighbors,1);
     received.fill(false);
-
+    std::unique_lock v_out_lock{v_out_mutex, std::defer_lock};
+    const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
     while (!received.all()){
         for (int i = 0; i < N_out_neighbors; i++){
             if (!received(i)){
@@ -1044,14 +1067,24 @@ void HolohoverDmpcDsqpNode::send_vin_receive_vout(){
                     received(i) = true;
                     received_vout(i) = false; 
                     int idx = 0;
+                    v_out_lock.lock();
                     for (int j = 0; j < v_out_msg_recv_buff[i].val_length; j++){
                         idx = v_out_msg_idx_first_received[i][j];
                         auto og_idx = idx_to_og_idx.find(idx);
                         if (og_idx != idx_to_og_idx.end()){
                             XV[og_idx->second].push_back(v_out_msg_recv_buff[i].value[j]); //careful: the order in XV will depend on the order in which the messages arrive. But that does not affect the average value.
                         }
-                    }                    
+                    }
+                    v_out_lock.unlock();                     
                 }
+            }
+        }
+        if(!sync_admm){ 
+            std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
+            long duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
+            if (duration_ms > 50){
+                RCLCPP_INFO(get_logger(), "proceeding ADMM without having received all v_out messages");
+                break;
             }
         }
         // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
@@ -1059,13 +1092,33 @@ void HolohoverDmpcDsqpNode::send_vin_receive_vout(){
         //     v_in_publisher[i]->publish(v_in_msg[i]); //ros
         // }
     }
+
+    //if no ne message was receied, load last received message into XV and perform averaging with the old value
+    if(!sync_admm){ 
+        for (int i = 0; i < N_out_neighbors; i++){
+            if (!received(i)){
+                int idx = 0;
+                v_out_lock.lock();
+                for (int j = 0; j < v_out_msg_recv_buff[i].val_length; j++){
+                    idx = v_out_msg_idx_first_received[i][j];
+                    auto og_idx = idx_to_og_idx.find(idx);
+                    if (og_idx != idx_to_og_idx.end()){
+                        XV[og_idx->second].push_back(v_out_msg_recv_buff[i].value[j]); //careful: the order in XV will depend on the order in which the messages arrive. But that does not affect the average value.
+                    }
+                } 
+                v_out_lock.unlock();
+            }
+        }  
+    }
+
+
     receive_vout_timer.toc();
 
 
     return;
 }
 
-void HolohoverDmpcDsqpNode::send_vout_receive_vin(){
+void HolohoverDmpcDsqpNode::send_vout_receive_vin(bool sync_admm){
     //send originals in vout and receive copies in vin
     //this is done after the averaging step
 
@@ -1094,12 +1147,15 @@ void HolohoverDmpcDsqpNode::send_vout_receive_vin(){
     received.fill(false);
     int cpy_idx = 0;
     int og_idx = 0;
+    std::unique_lock v_in_lock{v_in_mutex, std::defer_lock};
+    const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
     while (!received.all()){
         for (int i = 0; i < N_in_neighbors; i++){
             if (!received(i)){
                 if (received_vin(i)){
                     received_vin(i) = false;
                     received(i) = true;
+                    v_in_lock.lock();
                     for (int j = 0; j < v_in_msg_recv_buff[i].val_length; j++){
                         og_idx = v_in_msg_idx_first_received[i][j];
                         auto tmp = v_in[i].og_idx_to_cpy_idx.find(og_idx);
@@ -1108,7 +1164,16 @@ void HolohoverDmpcDsqpNode::send_vout_receive_vin(){
                             zbar[cpy_idx] = v_in_msg_recv_buff[i].value[j];
                         }  
                     }
+                    v_in_lock.unlock();
                 }
+            }
+        }
+        if(!sync_admm){ 
+            std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
+            long duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
+            if (duration_ms > 50){
+                RCLCPP_INFO(get_logger(), "proceeding ADMM without having received all v_in messages");
+                break;
             }
         }
         // std::this_thread::sleep_for(std::chrono::milliseconds(5000));

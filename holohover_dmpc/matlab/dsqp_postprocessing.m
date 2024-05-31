@@ -7,9 +7,9 @@ clc;
 
 d = dir;
 Nagents = 4;
-Ndsqp = 1; %dsqp iterations per MPC step
-Nadmm = 30; %admm iterations per sqp iteration
-dt = 0.050; %sampling time
+Ndsqp = 5; %dsqp iterations per MPC step
+Nadmm = 1; %admm iterations per sqp iteration
+dt = 0.100; %sampling time
 
 for i = 1:Nagents
     str = sprintf("dmpc_time_measurement_agent%i*",i-1);
@@ -21,7 +21,11 @@ rows_ = min(rows);
 rows = 1:rows_;
 for i = 1:Nagents
     t_admm{i} = t_admm{i}(rows,:);
-    t_dsqp{i} = t_admm{i}(mod(rows,Nadmm)==1,1:25);
+    if Nadmm > 1
+        t_dsqp{i} = t_admm{i}(mod(rows,Nadmm)==1,1:25);
+    else
+        t_dsqp{i} = t_admm{i}(:,1:25);
+    end
     rows_dsqp = 1:size(t_dsqp{i},1);
     if Ndsqp > 1
         t_mpc{i} = t_dsqp{i}(mod(rows_dsqp,Ndsqp)==1,1:20);
@@ -45,31 +49,31 @@ for i = 1:Nagents
 end
 
 for i = 1:Nagents
-    DsqpTime(:,i)     = t_mpc{i}.dsqp_time_us_/1000;
+    DsqpTime(:,i)     = t_mpc{i}.dsqp_time_us_(1:MPC_steps)/1000;
     %AdmmTime(:,i)     = t_mpc{i}.admm_time_us_/1000;
     %AdmmIterTime(:,i) = t_admm{i}.admm_iter_time_us_/1000;
-    Loc_qpTime(:,i)   = t_admm{i}.loc_qp_time_us_/1000;
-    ZcommTime(:,i)= t_admm{i}.zcomm_time_us_/1000;
-    ZbarcommTime(:,i) = t_admm{i}.zbarcomm_time_us_/1000;
+    Loc_qpTime(:,i)   = t_admm{i}.loc_qp_time_us_(1:ADMM_iter)/1000;
+    ZcommTime(:,i)= t_admm{i}.zcomm_time_us_(1:ADMM_iter)/1000;
+    ZbarcommTime(:,i) = t_admm{i}.zbarcomm_time_us_(1:ADMM_iter)/1000;
 
-    xx{i}(1,:)        = t_mpc{i}.x0_1_.';
-    xx{i}(2,:)        = t_mpc{i}.x0_2_.';
-    xx{i}(3,:)        = t_mpc{i}.x0_3_.';
-    xx{i}(4,:)        = t_mpc{i}.x0_4_.';
-    xx{i}(5,:)        = t_mpc{i}.x0_5_.';
-    xx{i}(6,:)        = t_mpc{i}.x0_6_.';
-    uu{i}(1,:)        = t_mpc{i}.u0_1_.';
-    uu{i}(2,:)        = t_mpc{i}.u0_2_.';
-    uu{i}(3,:)        = t_mpc{i}.u0_3_.';
+    xx{i}(1,:)        = t_mpc{i}.x0_1_(1:MPC_steps).';
+    xx{i}(2,:)        = t_mpc{i}.x0_2_(1:MPC_steps).';
+    xx{i}(3,:)        = t_mpc{i}.x0_3_(1:MPC_steps).';
+    xx{i}(4,:)        = t_mpc{i}.x0_4_(1:MPC_steps).';
+    xx{i}(5,:)        = t_mpc{i}.x0_5_(1:MPC_steps).';
+    xx{i}(6,:)        = t_mpc{i}.x0_6_(1:MPC_steps).';
+    uu{i}(1,:)        = t_mpc{i}.u0_1_(1:MPC_steps).';
+    uu{i}(2,:)        = t_mpc{i}.u0_2_(1:MPC_steps).';
+    uu{i}(3,:)        = t_mpc{i}.u0_3_(1:MPC_steps).';
     try
-        uu_bc{i}(1,:)      = t_mpc{i}.u0bc_1_.';
-        uu_bc{i}(2,:)      = t_mpc{i}.u0bc_2_.';
-        uu_bc{i}(3,:)      = t_mpc{i}.u0bc_3_.';
+        uu_bc{i}(1,:)      = t_mpc{i}.u0bc_1_(1:MPC_steps).';
+        uu_bc{i}(2,:)      = t_mpc{i}.u0bc_2_(1:MPC_steps).';
+        uu_bc{i}(3,:)      = t_mpc{i}.u0bc_3_(1:MPC_steps).';
     catch
     end
-    xxd{i}(1,:)       = t_mpc{i}.xd_1_.';
-    xxd{i}(2,:)       = t_mpc{i}.xd_2_.';
-    xxd{i}(3,:)       = t_mpc{i}.xd_5_.';
+    xxd{i}(1,:)       = t_mpc{i}.xd_1_(1:MPC_steps).';
+    xxd{i}(2,:)       = t_mpc{i}.xd_2_(1:MPC_steps).';
+    xxd{i}(3,:)       = t_mpc{i}.xd_5_(1:MPC_steps).';
 
 end
 
@@ -101,6 +105,7 @@ zbarcommTime= max(ZbarcommTime,[],2);
 %         end
 %     end
 % end
+
 
 for i = 1:MPC_steps
     loc_qpTime_MPC_step(i) = sum( loc_qpTime( (i-1)*Nadmm*Ndsqp+1 : i*Nadmm*Ndsqp ) );

@@ -98,9 +98,9 @@ end
 
 for j = 1:Nagents
     for i = 1:MPC_steps
-        loc_qpTime_MPC_step(i,j) = sum( Loc_qpTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
-        zcommTime_MPC_step(i,j) = sum( ZcommTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
-        zbarcommTime_MPC_step(i,j) = sum( ZbarcommTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
+        Loc_qpTime_MPC_step(i,j) = sum( Loc_qpTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
+        ZcommTime_MPC_step(i,j) = sum( ZcommTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
+        ZbarcommTime_MPC_step(i,j) = sum( ZbarcommTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
     end
 end
 
@@ -199,21 +199,21 @@ ylabel("Solve OCP [ms]");
 
 subplot(5,3,11);
 for i = 1:Nagents
-    stairs(t,loc_qpTime_MPC_step(:,i));
+    stairs(t,Loc_qpTime_MPC_step(:,i));
     hold on
 end
 ylabel("Local QP [ms]");
 
 subplot(5,3,12);
 for i = 1:Nagents
-    stairs(t,zcommTime_MPC_step(:,i));
+    stairs(t,ZcommTime_MPC_step(:,i));
     hold on
 end
 ylabel("z c. [ms]");
 
 subplot(5,3,13);
 for i = 1:Nagents
-    stairs(t,zbarcommTime_MPC_step(:,i));
+    stairs(t,ZbarcommTime_MPC_step(:,i));
     hold on
 end
 ylabel("zbar c. [ms]");
