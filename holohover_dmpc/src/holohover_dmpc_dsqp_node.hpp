@@ -25,6 +25,7 @@ SOFTWARE.*/
 
 
 #include "rclcpp/rclcpp.hpp"
+#include "rcl_timer_helper.h"
 #include "geometry_msgs/msg/pose2_d.hpp"
 
 #include "std_msgs/msg/u_int64.hpp"
@@ -85,6 +86,8 @@ private:
     rclcpp::Subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr reference_subscription;
     rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()
 
+    rclcpp::TimerBase::SharedPtr timer;
+    
     rclcpp::SubscriptionOptions state_options;
     rclcpp::SubscriptionOptions state_ref_options;
     rclcpp::SubscriptionOptions publish_control_options;
@@ -152,7 +155,7 @@ private:
     std::mutex state_ref_mutex;   
     
     void init_topics();
-    void init_dmpc();
+    void init_dmpc(const std_msgs::msg::UInt64 &publish_control_msg);
     void init_coupling();   //extract coupling metadata from coupling matrices 
     void init_comms();     
     void build_qp(Eigen::VectorXd zbar, Eigen::VectorXd nu, Eigen::VectorXd mu, bool GN, bool eval_HessF); //construct the sProb
@@ -161,23 +164,23 @@ private:
     //callbacks
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &state_ref);
-    void publish_control(const std_msgs::msg::UInt64 &publish_control_msg);
+    void publish_control();
     
     void publish_trajectory();
     
     //DMPC loop
     void update_setpoint_in_ocp();
-    int solve(unsigned int maxiter_);
+    int solve(unsigned int maxiter_, bool sync_admm);
     void get_u_acc_from_sol();
     void convert_u_acc_to_u_signal();
 
     //before averaging
     void update_v_in();     //place z into v_in
-    void send_vin_receive_vout();
+    void send_vin_receive_vout(bool sync_admm);
 
     //after averaging
     void update_v_out();
-    void send_vout_receive_vin();
+    void send_vout_receive_vin(bool sync_admm);
 
     //ADMM communication
     std::vector<std::vector<int>> v_in_msg_idx_first_received;
@@ -190,6 +193,9 @@ private:
 
     std::vector<rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_publisher;
     std::vector<rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_publisher;
+
+    std::mutex v_in_mutex;
+    std::mutex v_out_mutex;
 
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_subscriber;
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_subscriber;
