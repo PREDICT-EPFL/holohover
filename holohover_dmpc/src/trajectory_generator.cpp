@@ -2,21 +2,30 @@
 
 TrajectoryGenerator::TrajectoryGenerator() : 
     Node("trajectory_generator"),
-    filename(declare_parameter<std::string>("trajectory_file")),
-    config(YAML::LoadFile(filename)),
-    gc(parseGeneralConfig(config))
+    names(declare_parameter<std::vector<std::string>>("names")),
+    ids(declare_parameter<std::vector<long int>>("ids"))
 {
-    for(const auto& id : gc.ids)
+    for(const auto& id : ids)
     {
-        auto topic_name = "/" + gc.names[id] + "/dmpc_state_ref";
+        auto topic_name = "/" + names[id] + "/dmpc_state_ref";
         publishers[id] = this->create_publisher<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(topic_name, 10);
     }
 
-    rate = std::make_shared<rclcpp::Rate>(1.0/gc.time_step);
+    service = create_service<holohover_msgs::srv::TrajectoryGeneratorTrigger>("trajectory_generator", std::bind(&TrajectoryGenerator::runTask, this,
+                                std::placeholders::_1, std::placeholders::_2));
 }
 
 
-void TrajectoryGenerator::runTask() {
+void TrajectoryGenerator::runTask(const std::shared_ptr<holohover_msgs::srv::TrajectoryGeneratorTrigger::Request>  request,
+                                  const std::shared_ptr<holohover_msgs::srv::TrajectoryGeneratorTrigger::Response> response) {
+    (void)response;
+    
+    std::string filename = request->filename.data;
+    YAML::Node config = YAML::LoadFile(filename);
+    GeneralConfig gc = parseGeneralConfig(config);
+
+    rate = std::make_shared<rclcpp::Rate>(1.0/gc.time_step);
+
     Step s;
     for (const auto& step : config["trajectory"])
     {
@@ -102,8 +111,7 @@ int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<TrajectoryGenerator>();
-    std::this_thread::sleep_for(std::chrono::seconds(3)); //wait for publishers to be setup
-    node->runTask();
+    rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
 }

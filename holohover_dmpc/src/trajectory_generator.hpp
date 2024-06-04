@@ -3,6 +3,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "holohover_msgs/msg/holohover_dmpc_state_ref_stamped.hpp"
+#include "holohover_msgs/srv/trajectory_generator_trigger.hpp"
 #include "yaml-cpp/yaml.h"
 
 struct GeneralConfig {
@@ -26,14 +27,13 @@ class TrajectoryGenerator : public rclcpp::Node
 public:
     TrajectoryGenerator();
 
-    void runTask();
+    void runTask(const std::shared_ptr<holohover_msgs::srv::TrajectoryGeneratorTrigger::Request> request,
+          std::shared_ptr<holohover_msgs::srv::TrajectoryGeneratorTrigger::Response>      response);
 private:
-    std::string filename;
-
-    YAML::Node config;
-
-    GeneralConfig gc;
-
+    rclcpp::Service<holohover_msgs::srv::TrajectoryGeneratorTrigger>::SharedPtr service;
+    
+    std::vector<std::string> names;
+    std::vector<long int> ids;
     std::map<int, rclcpp::Publisher<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr> publishers;
 
     std::shared_ptr<rclcpp::Rate> rate;
