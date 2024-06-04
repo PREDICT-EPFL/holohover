@@ -36,7 +36,8 @@ def launch_setup(context):
         executable="navigation",
         parameters=[navigation_config, {'holohover_props_file' : params}],
         namespace= name,
-        output='screen'
+        output='screen',
+        prefix='nice -n -19'
     )
     
     controller_node = Node(
