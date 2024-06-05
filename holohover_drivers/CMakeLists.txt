@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(holohover_drivers)
 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
@@ -22,12 +24,14 @@ message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(holohover_msgs REQUIRED)
+find_package(libgpiod REQUIRED)
 
-add_executable(control_driver src/control_driver_node.cpp src/msp.cpp)
-ament_target_dependencies(control_driver rclcpp holohover_msgs)
+add_executable(holohover_driver src/holohover_driver_node.cpp src/msp.cpp src/pmw3389dm.cpp)
+ament_target_dependencies(holohover_driver rclcpp holohover_msgs)
+target_link_libraries(holohover_driver libgpiod::libgpiod)
 
 install(TARGETS
-  control_driver
+  holohover_driver
   DESTINATION lib/${PROJECT_NAME}
 )
 

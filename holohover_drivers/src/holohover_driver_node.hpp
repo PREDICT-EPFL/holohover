@@ -1,9 +1,10 @@
-#ifndef HOLOHOVER_DRIVERS_HOLOHOVER_CONTROL_DRIVER_NODE_HPP
-#define HOLOHOVER_DRIVERS_HOLOHOVER_CONTROL_DRIVER_NODE_HPP
+#ifndef HOLOHOVER_DRIVERS_HOLOHOVER_DRIVER_NODE_HPP
+#define HOLOHOVER_DRIVERS_HOLOHOVER_DRIVER_NODE_HPP
 
 #include "rclcpp/rclcpp.hpp"
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "msp.hpp"
+#include "pmw3389dm.hpp"
 
 #define UART_TIMEOUT 100
 
@@ -15,15 +16,17 @@
 #define MOTOR_C_1  4
 #define MOTOR_C_2  5
 
-class HolohoverControlDriverNode : public rclcpp::Node
+class HolohoverDriverNode : public rclcpp::Node
 {
 public:
-    HolohoverControlDriverNode();
+    HolohoverDriverNode();
 private:
     MSP msp;
     msp_motor_t motors;
     bool motor_are_reset = false;
     rclcpp::Time last_control_msg_time;
+
+    PMW3389DM mouse_sensor;
 
     rclcpp::TimerBase::SharedPtr watchdog_timer;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_subscription;
@@ -34,4 +37,4 @@ private:
     void reset_motors();
 };
 
-#endif //HOLOHOVER_DRIVERS_HOLOHOVER_CONTROL_DRIVER_NODE_HPP
+#endif //HOLOHOVER_DRIVERS_HOLOHOVER_DRIVER_NODE_HPP

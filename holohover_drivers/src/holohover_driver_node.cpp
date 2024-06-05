@@ -1,13 +1,20 @@
-#include "control_driver_node.hpp"
+#include "holohover_driver_node.hpp"
 
-HolohoverControlDriverNode::HolohoverControlDriverNode() :
+HolohoverDriverNode::HolohoverDriverNode() :
     Node("control_driver")
 {
-    std::string device = this->declare_parameter<std::string>("device");
+    std::string betaflight_device = this->declare_parameter<std::string>("betaflight_device");
     unsigned int baud = this->declare_parameter<int>("baud_rate", 1000000);
 
-    if (!msp.begin(device.c_str(), baud)) {
+    std::string mouse_sensor_device = this->declare_parameter<std::string>("mouse_sensor_device");
+    std::string mouse_sensor_n_reset_line_name = this->declare_parameter<std::string>("mouse_sensor_n_reset_line_name");
+
+    if (!msp.begin(betaflight_device.c_str(), baud)) {
         throw std::runtime_error("Could not setup uart connection");
+    }
+
+    if (!mouse_sensor.begin(mouse_sensor_device.c_str(), mouse_sensor_n_reset_line_name.c_str())) {
+        RCLCPP_ERROR(this->get_logger(), "Failed initializing mouse sensor");
     }
 
     reset_motors();
@@ -15,22 +22,22 @@ HolohoverControlDriverNode::HolohoverControlDriverNode() :
 
     watchdog_timer = this->create_wall_timer(
         std::chrono::milliseconds(100),
-        std::bind(&HolohoverControlDriverNode::watchdog_callback, this));
+        std::bind(&HolohoverDriverNode::watchdog_callback, this));
 
     control_subscription = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(
             "control",
             rclcpp::SensorDataQoS(),
-            std::bind(&HolohoverControlDriverNode::control_callback, this, std::placeholders::_1));
+            std::bind(&HolohoverDriverNode::control_callback, this, std::placeholders::_1));
 }
 
-void HolohoverControlDriverNode::watchdog_callback()
+void HolohoverDriverNode::watchdog_callback()
 {
     if (this->now() > last_control_msg_time + std::chrono::milliseconds(MOTOR_WATCHDOG_TIMEOUT)) {
         reset_motors();
     }
 }
 
-void HolohoverControlDriverNode::control_callback(const holohover_msgs::msg::HolohoverControlStamped& msg)
+void HolohoverDriverNode::control_callback(const holohover_msgs::msg::HolohoverControlStamped& msg)
 {
     motors.motor[MOTOR_A_1] = 1000 + (int)(1000 * msg.motor_a_1);
     motors.motor[MOTOR_A_2] = 1000 + (int)(1000 * msg.motor_a_2);
@@ -47,7 +54,7 @@ void HolohoverControlDriverNode::control_callback(const holohover_msgs::msg::Hol
     motor_are_reset = false;
 }
 
-void HolohoverControlDriverNode::reset_motors()
+void HolohoverDriverNode::reset_motors()
 {
     if (!motor_are_reset) {
         for (int i = 0; i < MSP_MAX_SUPPORTED_MOTORS; i++) {
@@ -64,7 +71,7 @@ void HolohoverControlDriverNode::reset_motors()
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<HolohoverControlDriverNode>());
+    rclcpp::spin(std::make_shared<HolohoverDriverNode>());
     rclcpp::shutdown();
     return 0;
 }
