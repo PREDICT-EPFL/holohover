@@ -106,12 +106,12 @@ bool MSP::begin(const char *device, unsigned int baud)
         return false;
     }
 
-    if (ioctl(fd, TIOCEXCL, NULL) < 0) {
-        std::cerr << "Could not get exclusive access to port: " << device << std::endl;
-        close(fd);
-        fd = -1;
-        return false;
-    }
+//    if (ioctl(fd, TIOCEXCL, NULL) < 0) {
+//        std::cerr << "Could not get exclusive access to port: " << device << std::endl;
+//        close(fd);
+//        fd = -1;
+//        return false;
+//    }
 
     if (!isatty(fd)) {
         std::cerr << "File descriptor " << device << " is not pointing to tty device" << std::endl;
