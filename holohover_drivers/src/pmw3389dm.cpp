@@ -124,7 +124,7 @@ int PMW3389DM::read_reg(uint8_t address, uint8_t* rx_buf)
     struct spi_ioc_transfer xfer[2];
     memset(xfer, 0, 2 * sizeof(*xfer));
 
-    uint8_t tx_data = address | 0x7f;
+    uint8_t tx_data = address & 0x7f;
 
     xfer[0].tx_buf = (__u64) &tx_data;
     xfer[0].rx_buf = (__u64) 0;
@@ -133,8 +133,8 @@ int PMW3389DM::read_reg(uint8_t address, uint8_t* rx_buf)
 
     xfer[1].tx_buf = (__u64) 0;
     xfer[1].rx_buf = (__u64) rx_buf;
-    xfer[0].len = 1;
-    xfer[0].delay_usecs = 1; // t_SCLK-NCS (read) 120ns
+    xfer[1].len = 1;
+    xfer[1].delay_usecs = 1; // t_SCLK-NCS (read) 120ns
 
     int retv = ioctl(fd, SPI_IOC_MESSAGE(2), xfer);
 
@@ -249,16 +249,16 @@ int PMW3389DM::power_up_and_upload_firmware()
 
     retv = read_reg(PRODUCT_ID, &data);
     if (retv < 0) return retv;
-    printf("Product_ID: 0x%02X", data);
+    printf("Product_ID: 0x%02X\n", data);
     retv = read_reg(INVERSE_PRODUCT_ID, &data);
     if (retv < 0) return retv;
-    printf("Inverse_Product_ID: 0x%02X", data);
+    printf("Inverse_Product_ID: 0x%02X\n", data);
     retv = read_reg(SROM_ID, &data);
     if (retv < 0) return retv;
-    printf("SROM_Version: 0x%02X", data);
+    printf("SROM_Version: 0x%02X\n", data);
     retv = read_reg(MOTION, &data);
     if (retv < 0) return retv;
-    printf("Motion: 0x%02X", data);
+    printf("Motion: 0x%02X\n", data);
     fflush(stdout);
 
     return retv;
