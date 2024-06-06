@@ -16,6 +16,7 @@ h3/dmpc:
     Nagents: 4
     my_id: 3
     folder_name_sprob: "sProb_chain_QP_N10_acc_100_damped"
+    file_name_trajectory: ""
 /**:
 #control_lqr:
   ros__parameters:
