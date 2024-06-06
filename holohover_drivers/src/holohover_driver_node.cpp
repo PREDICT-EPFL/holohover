@@ -15,6 +15,8 @@ HolohoverDriverNode::HolohoverDriverNode() :
 
     if (!mouse_sensor.begin(mouse_sensor_device.c_str(), mouse_sensor_n_reset_line_name.c_str())) {
         RCLCPP_ERROR(this->get_logger(), "Failed initializing mouse sensor");
+    } else if (mouse_sensor.power_up_and_upload_firmware() < 0) {
+        RCLCPP_ERROR(this->get_logger(), "Failed uploading firmware to mouse sensor");
     }
 
     reset_motors();
