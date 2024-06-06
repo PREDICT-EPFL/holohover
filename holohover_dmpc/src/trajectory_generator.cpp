@@ -21,8 +21,16 @@ void TrajectoryGenerator::runTask(const std::shared_ptr<holohover_msgs::srv::Tra
     (void)response;
     
     std::string filename = request->filename.data;
-    YAML::Node config = YAML::LoadFile(filename);
-    GeneralConfig gc = parseGeneralConfig(config);
+    YAML::Node config;
+    GeneralConfig gc;
+
+    try {
+        config = YAML::LoadFile(filename);
+        gc = parseGeneralConfig(config);
+    } catch (const std::exception& e) {
+        RCLCPP_ERROR(this->get_logger(), "Error reading YAML file. Exception: %s", e.what());
+        return;
+    }
 
     rate = std::make_shared<rclcpp::Rate>(1.0/gc.time_step);
 
@@ -85,6 +93,7 @@ void TrajectoryGenerator::runTask(const std::shared_ptr<holohover_msgs::srv::Tra
 
         rate->sleep();
     }
+    RCLCPP_INFO(this->get_logger(), "Trajectory finished.");
 }
 
 GeneralConfig TrajectoryGenerator::parseGeneralConfig(YAML::Node& config)
