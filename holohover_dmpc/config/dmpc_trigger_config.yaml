@@ -16,3 +16,4 @@ holohover_dmpc_trigger:
     Nagents: 4
     my_id: 0
     folder_name_sprob: "sProb_chain_QP_N7_acc"
+    file_name_trajectory: ""

@@ -24,6 +24,7 @@ struct ControlDMPCSettings
     int Nagents;
     int my_id;
     std::string folder_name_sprob;
+    std::string file_name_trajectory;
 };
 
 ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
@@ -47,6 +48,14 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     settings.Nagents = node.declare_parameter<int>("Nagents");
     settings.my_id = node.declare_parameter<int>("my_id");
     settings.folder_name_sprob = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/ocp_specs/" + node.declare_parameter<std::string>("folder_name_sprob");
+    
+    
+    std::string tmp_ = node.declare_parameter<std::string>("file_name_trajectory");
+    if (tmp_.empty()){
+        settings.file_name_trajectory = "";
+    } else{
+        settings.file_name_trajectory = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/config/trajectories/" + tmp_;
+    } 
 
     return settings;
 }

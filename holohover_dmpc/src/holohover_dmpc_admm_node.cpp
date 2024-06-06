@@ -213,7 +213,9 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     u_before_conversion_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
     xd_log = -MatrixXd::Ones(log_buffer_size,control_settings.nxd);
     mpc_step = 0;
+    mpc_step_since_log = 0;
     logged_mpc_steps = 0;
+    xd_ref_idx = 0;
     
     std::time_t t = std::time(0);   // get time now
     std::tm* now = std::localtime(&t);
@@ -225,6 +227,10 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_\n";
         log_file.close();
     }
+
+    if (!control_settings.file_name_trajectory.empty()){
+        sprob.csvRead(xd_ref,control_settings.file_name_trajectory,20);
+    } 
     
 
 }
@@ -369,10 +375,10 @@ void HolohoverDmpcAdmmNode::publish_control()
     // }
 
     // std::cout << "u_acc_curr before conversion = " << u_acc_curr[0] << " , " << u_acc_curr[1] << " , " << u_acc_curr[2] << std::endl;
-    u_before_conversion_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
+    u_before_conversion_log.block(mpc_step_since_log,0,1,control_settings.nu) = u_acc_curr.transpose();
     // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now(); 
     convert_u_acc_to_u_signal();
-    u_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
+    u_log.block(mpc_step_since_log,0,1,control_settings.nu) = u_acc_curr.transpose();
 
     // std::cout << "u_acc_curr after conversion = " << u_acc_curr[0] << " , " << u_acc_curr[1] << " , " << u_acc_curr[2] << std::endl; 
 
@@ -391,7 +397,6 @@ void HolohoverDmpcAdmmNode::publish_control()
     // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
     // std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;
 
-
     update_setpoint_in_ocp();
 
     
@@ -407,20 +412,21 @@ void HolohoverDmpcAdmmNode::publish_control()
 
     publish_trajectory();
 
-    x_log.block(mpc_step,0,1,control_settings.nx) = state_at_ocp_solve.transpose(); 
-    xd_log.block(mpc_step,0,1,control_settings.nxd) = state_ref_at_ocp_solve.transpose();
+    x_log.block(mpc_step_since_log,0,1,control_settings.nx) = state_at_ocp_solve.transpose(); 
+    xd_log.block(mpc_step_since_log,0,1,control_settings.nxd) = state_ref_at_ocp_solve.transpose();
 
-    if (mpc_step == log_buffer_size - 1) {
+    if (mpc_step_since_log == log_buffer_size - 1) {
         // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
         print_time_measurements();
         clear_time_measurements();
-        mpc_step = -1; //gets increased to 0 below
+        mpc_step_since_log = -1; //gets increased to 0 below
         // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
         // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
         // std::cout << "Logging duration_us  =" <<duration_us << std::endl;
     } 
 
     u_acc_curr = u_acc_next;
+    mpc_step_since_log = mpc_step_since_log + 1;
     mpc_step = mpc_step + 1;
 }
 
@@ -511,6 +517,14 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
     p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;
     std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
     state_ref_lock.lock();
+    
+    if (!control_settings.file_name_trajectory.empty() && xd_ref_idx < xd_ref.rows()){
+        if (mpc_step == std::floor(xd_ref(xd_ref_idx,0))){
+            state_ref = (xd_ref.block(xd_ref_idx,1,1,control_settings.nxd)).transpose();
+            xd_ref_idx = xd_ref_idx + 1;
+        }  
+    }
+
     state_ref_at_ocp_solve = state_ref;
     p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref_at_ocp_solve;
     state_ref_lock.unlock();
