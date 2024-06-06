@@ -80,20 +80,21 @@ bool PMW3389DM::begin_common(const char* device)
         return false;
     }
 
-    if (ioctl(fd, SPI_IOC_WR_MODE, SPI_MODE_3) < 0) {
+    uint8_t mode = SPI_MODE_3;
+    if (ioctl(fd, SPI_IOC_WR_MODE, &mode) < 0) {
         std::cerr << "Failed to set SPI mode" << std::endl;
         stop();
         return false;
     }
 
-    int bits_per_word = 8;
+    uint8_t bits_per_word = 8;
     if (ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits_per_word) < 0) {
         std::cerr << "Failed to set SPI bits per word" << std::endl;
         stop();
         return false;
     }
 
-    int speed = 2000000;
+    uint32_t speed = 2000000;
     if (ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0) {
         std::cerr << "Failed to set SPI max speed" << std::endl;
         stop();
@@ -156,7 +157,7 @@ int PMW3389DM::write_reg(uint8_t address, uint8_t data)
     xfer.len = 2;
     xfer.delay_usecs = 35; // t_SCLK-NCS (write) 35us
 
-    int retv = ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
+    int retv = ioctl(fd, SPI_IOC_MESSAGE(1), &xfer);
 
     usleep(145); // t_SWW/SWR 180us - t_SCLK-NCS
 
@@ -258,6 +259,7 @@ int PMW3389DM::power_up_and_upload_firmware()
     retv = read_reg(MOTION, &data);
     if (retv < 0) return retv;
     printf("Motion: 0x%02X", data);
+    fflush(stdout);
 
     return retv;
 }
