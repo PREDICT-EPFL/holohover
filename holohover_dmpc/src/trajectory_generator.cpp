@@ -11,16 +11,17 @@ TrajectoryGenerator::TrajectoryGenerator() :
         publishers[id] = this->create_publisher<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(topic_name, 10);
     }
 
-    service = create_service<holohover_msgs::srv::TrajectoryGeneratorTrigger>("trajectory_generator", std::bind(&TrajectoryGenerator::runTask, this,
-                                std::placeholders::_1, std::placeholders::_2));
+    // Subscribe to a topic instead of creating a service
+    subscription = this->create_subscription<holohover_msgs::msg::TrajectoryGeneratorTrigger>(
+        "trajectory_generator",
+        10,
+        std::bind(&TrajectoryGenerator::runTask, this, std::placeholders::_1)
+    );
 }
 
-
-void TrajectoryGenerator::runTask(const std::shared_ptr<holohover_msgs::srv::TrajectoryGeneratorTrigger::Request>  request,
-                                  const std::shared_ptr<holohover_msgs::srv::TrajectoryGeneratorTrigger::Response> response) {
-    (void)response;
-    
-    std::string filename = request->filename.data;
+// Modify the runTask function to take a message as input
+void TrajectoryGenerator::runTask(const holohover_msgs::msg::TrajectoryGeneratorTrigger::SharedPtr msg) {
+    std::string filename = msg->filename.data;
     YAML::Node config;
     GeneralConfig gc;
 
