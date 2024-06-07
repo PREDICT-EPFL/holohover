@@ -27,6 +27,7 @@ find_package(holohover_msgs REQUIRED)
 find_package(libgpiod REQUIRED)
 
 add_executable(holohover_driver src/holohover_driver_node.cpp src/msp.cpp src/pmw3389dm.cpp)
+target_include_directories(holohover_driver PRIVATE kernel_modules)
 ament_target_dependencies(holohover_driver rclcpp holohover_msgs)
 target_link_libraries(holohover_driver libgpiod::libgpiod)
 

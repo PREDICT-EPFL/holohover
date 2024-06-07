@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <linux/spi/spidev.h>
+#include "spideve.h"
 
 #include "pmw3389dm.hpp"
 #include "pmw3389dm_srom.hpp"
@@ -122,7 +122,7 @@ void PMW3389DM::stop()
 int PMW3389DM::read_reg(uint8_t address, uint8_t* rx_buf)
 {
     struct spi_ioc_transfer xfer[2];
-    memset(xfer, 0, 2 * sizeof(*xfer));
+    memset(xfer, 0, sizeof(xfer));
 
     uint8_t tx_data = address & 0x7f;
 
@@ -216,8 +216,8 @@ int PMW3389DM::power_up_and_upload_firmware()
     retv = write_reg(SROM_ENABLE, 0x18);
     if (retv < 0) return retv;
 
-    struct spi_ioc_transfer xfer[2];
-    memset(xfer, 0, 2 * sizeof(*xfer));
+    struct spi_ioc_transfer xfer[firmware_length + 1];
+    memset(xfer, 0, sizeof(xfer));
 
     uint8_t tx_data = SROM_LOAD_BURST | 0x80;
     xfer[0].tx_buf = (__u64) &tx_data;
@@ -225,13 +225,14 @@ int PMW3389DM::power_up_and_upload_firmware()
     xfer[0].len = 1;
     xfer[0].delay_usecs = 15;
 
-    xfer[1].tx_buf = (__u64) firmware_data;
-    xfer[1].rx_buf = (__u64) 0;
-    xfer[1].len = firmware_length;
-    xfer[1].delay_usecs = 15;
-    xfer[1].word_delay_usecs = 15;
+    for (int i = 0; i < firmware_length; i++) {
+        xfer[i + 1].tx_buf = (__u64) (firmware_data + i);
+        xfer[i + 1].rx_buf = (__u64) 0;
+        xfer[i + 1].len = 1;
+        xfer[i + 1].delay_usecs = 15;
+    }
 
-    retv = ioctl(fd, SPI_IOC_MESSAGE(2), xfer);
+    retv = ioctl(fd, SPI_IOC_MESSAGE_E(firmware_length + 1), xfer);
     if (retv < 0) {
         std::cerr << "Failed uploading firmware" << std::endl;
         return retv;
