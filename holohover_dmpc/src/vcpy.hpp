@@ -26,6 +26,7 @@ SOFTWARE.*/
 class vCpy{
     public:
         Eigen::Vector<double, Eigen::Dynamic> val;
+        Eigen::Vector<double, Eigen::Dynamic> gam;
         Eigen::Vector<int, Eigen::Dynamic> og_idx;
         Eigen::Vector<int, Eigen::Dynamic> cpy_idx;
         std::map<int,int> og_idx_to_cpy_idx;
@@ -38,6 +39,7 @@ class vCpy{
             original_agent = 0;
             copying_agent = 0;
             val = Eigen::VectorXd(0);
+            gam = Eigen::VectorXd(0); //consensus lagrange multiplier gamma
             og_idx = Eigen::VectorXi(0);
             cpy_idx = Eigen::VectorXi(0);
         }

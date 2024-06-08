@@ -114,8 +114,9 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     for (int i = 0; i < N_og; i++){
         XV.push_back(std::vector<double>());
         auto idx = og_idx_to_idx.find(i);
-        XV[i].resize(numCopies(idx->second)+1); //XV stores local original variable and copies from out-neighbors
+        XV[i].resize(2*(numCopies(idx->second)+1)); //XV stores local original variable and copies from out-neighbors and dual variables
     }
+
 
     //initialize comms
     // v_out
@@ -131,6 +132,8 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         v_out_msg[i].val_length = v_out[i].nv;
         v_out_msg[i].idx_length = v_out[i].nv;
         v_out_msg[i].value.resize(v_out_msg[i].val_length);
+        v_out_msg[i].gam_length = 0; //only send dual variables with v_in msg (before averaging)
+        v_out_msg[i].gamma.resize(v_out_msg[i].gam_length);  
         v_out_msg[i].idx.resize(v_out_msg[i].idx_length);
         v_out_msg[i].seq_number = 0;
         for (int idx_row = 0; idx_row<v_out_msg[i].val_length; idx_row++) {
@@ -170,12 +173,15 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
         v_in_msg[i].val_length = v_in[i].nv;
         v_in_msg[i].value.resize(v_in_msg[i].val_length);
+        v_in_msg[i].gam_length = v_in[i].nv;  
+        v_in_msg[i].gamma.resize(v_in_msg[i].gam_length); 
         v_in_msg[i].idx_length = v_in[i].nv;
         v_in_msg[i].idx.resize(v_in_msg[i].idx_length);
         Eigen::VectorXi::Map(&v_in_msg[i].idx[0], v_in[i].og_idx.size()) = v_in[i].og_idx;
         v_in_msg[i].seq_number = 0;
         for (int idx_row = 0; idx_row<v_in_msg[i].val_length; idx_row++) {
             v_in_msg[i].value[idx_row] = std::numeric_limits<double>::quiet_NaN();
+            v_in_msg[i].gamma[idx_row] = std::numeric_limits<double>::quiet_NaN();
         }
         v_in_msg[i].id_sender = my_id;
 
@@ -282,6 +288,7 @@ void HolohoverDmpcAdmmNode::init_comms(){
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
         Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
+        Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
         v_in_publisher[i]->publish(v_in_msg[i]);
     }
 
@@ -887,6 +894,7 @@ void HolohoverDmpcAdmmNode::init_coupling()
         v_in[j].original_agent = in_neighbors[j];
         v_in[j].copying_agent = my_id;
         v_in[j].val = VectorXd::Zero(nij);
+        v_in[j].gam = VectorXd::Zero(nij); 
         v_in[j].cpy_idx = VectorXi::Zero(nij);
         v_in[j].og_idx = VectorXi::Zero(nij);
         v_in[j].nv = nij;
@@ -908,6 +916,7 @@ void HolohoverDmpcAdmmNode::init_coupling()
         v_out[j].original_agent = my_id;
         v_out[j].nv = nv_out[out_neighbors[j]];
         v_out[j].val = VectorXd::Zero(v_out[j].nv);
+        v_out[j].gam = VectorXd::Zero(0); 
         v_out[j].cpy_idx = VectorXi::Zero(v_out[j].nv);
         v_out[j].og_idx = VectorXi::Zero(v_out[j].nv);
         int k = out_neighbors[j];
@@ -953,9 +962,9 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_, bool sync_admm)
         // std::cout << "Starting ADMM iteration " << iter << std::endl;
         iter_timer.tic();
 
-        if (v_in_msg[0].seq_number%50 == 0){
-            gam = VectorXd::Zero(nz);
-        }
+        // if (v_in_msg[0].seq_number%50 == 0){
+        //     gam = VectorXd::Zero(nz);
+        // }
 
         //Step 1: local z update
         loc_timer.tic();
@@ -970,6 +979,7 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_, bool sync_admm)
             auto idx = og_idx_to_idx.find(i);
             XV[i].clear();
             XV[i].push_back(z(idx->second));
+            XV[i].push_back(gam(idx->second) / rho); 
         }
         loc_timer.toc();
 
@@ -982,7 +992,7 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_, bool sync_admm)
         //Step 2: averaging
         double avg;
         for (int i = 0; i < N_og; i++){
-            avg = std::accumulate(XV[i].begin(), XV[i].end(), 0.0) / XV[i].size();
+            avg = std::accumulate(XV[i].begin(), XV[i].end(), 0.0) / (0.5*XV[i].size()); //multiply the denominator by 0.5, because XV includes entries from the primal variable z and from the dual variable 
             auto idx = og_idx_to_idx.find(i);
             zbar[idx->second] = avg;
         }
@@ -1033,6 +1043,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
         Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
+        Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
         v_in_publisher[i]->publish(v_in_msg[i]); //ros
     }
     send_vin_timer.toc();
@@ -1055,6 +1066,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
                         auto og_idx = idx_to_og_idx.find(idx);
                         if (og_idx != idx_to_og_idx.end()){
                             XV[og_idx->second].push_back(v_out_msg_recv_buff[i].value[j]); //careful: the order in XV will depend on the order in which the messages arrive. But that does not affect the average value.
+                            XV[og_idx->second].push_back(v_out_msg_recv_buff[i].gamma[j] / rho);
                         }
                     }
                     v_out_lock.unlock();                    
@@ -1086,6 +1098,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
                     auto og_idx = idx_to_og_idx.find(idx);
                     if (og_idx != idx_to_og_idx.end()){
                         XV[og_idx->second].push_back(v_out_msg_recv_buff[i].value[j]); //careful: the order in XV will depend on the order in which the messages arrive. But that does not affect the average value.
+                        XV[og_idx->second].push_back(v_out_msg_recv_buff[i].gamma[j] / rho);
                     }
                 } 
                 v_out_lock.unlock();
@@ -1172,6 +1185,7 @@ void HolohoverDmpcAdmmNode::update_v_in(){
     for (int i = 0; i < N_in_neighbors; i++){
         for (int j = 0; j < v_in[i].nv; j++){
             v_in[i].val[j] = z[v_in[i].cpy_idx[j]];
+            v_in[i].gam[j] = gam[v_in[i].cpy_idx[j]];   
         }
     }
 
