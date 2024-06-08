@@ -2,6 +2,7 @@
 #define HOLOHOVER_DMPC_TRAJECTORY_GENERATOR_HPP
 
 #include "rclcpp/rclcpp.hpp"
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include "holohover_msgs/msg/holohover_dmpc_state_ref_stamped.hpp"
 #include "holohover_msgs/msg/trajectory_generator_trigger.hpp"
 #include "yaml-cpp/yaml.h"
@@ -28,9 +29,7 @@ public:
     TrajectoryGenerator();
 
 private:
-    void runTask(holohover_msgs::msg::TrajectoryGeneratorTrigger::SharedPtr request);
-
-    rclcpp::Subscription<holohover_msgs::msg::TrajectoryGeneratorTrigger>::SharedPtr subscription;
+    void runTask(std::string filename);
     
     std::vector<std::string> names;
     std::vector<long int> ids;

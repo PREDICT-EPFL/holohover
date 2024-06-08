@@ -151,7 +151,8 @@ def launch_setup(context):
         executable="trajectory_generator",
         parameters=[{ "ids" :       hovercraft_ids, 
                       "names" :     hovercraft_names}],
-        output='both'    
+        output='both',
+        prefix='xterm -e'
     )
 
     recorder_launch = IncludeLaunchDescription(

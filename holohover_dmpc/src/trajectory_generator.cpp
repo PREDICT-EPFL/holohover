@@ -5,25 +5,29 @@ TrajectoryGenerator::TrajectoryGenerator() :
     names(declare_parameter<std::vector<std::string>>("names")),
     ids(declare_parameter<std::vector<long int>>("ids"))
 {
+    std::string filename;
+
     for(const auto& id : ids)
     {
         auto topic_name = "/" + names[id] + "/dmpc_state_ref";
         publishers[id] = this->create_publisher<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(topic_name, 10);
     }
 
-    // Subscribe to a topic instead of creating a service
-    subscription = this->create_subscription<holohover_msgs::msg::TrajectoryGeneratorTrigger>(
-        "trajectory_generator",
-        10,
-        std::bind(&TrajectoryGenerator::runTask, this, std::placeholders::_1)
-    );
+    while(true)
+    {
+        std::cout << "Insert the name of the YAML file: ";
+        std::cin >> filename;
+        std::string package_share_directory = ament_index_cpp::get_package_share_directory("holohover_dmpc");
+        runTask(package_share_directory + "/config/trajectories/" + filename);
+    }
 }
 
 // Modify the runTask function to take a message as input
-void TrajectoryGenerator::runTask(const holohover_msgs::msg::TrajectoryGeneratorTrigger::SharedPtr msg) {
-    std::string filename = msg->filename.data;
+void TrajectoryGenerator::runTask(std::string filename) {
     YAML::Node config;
     GeneralConfig gc;
+
+    RCLCPP_INFO(this->get_logger(), "Opening trajectory file: %s", filename.c_str());
 
     try {
         config = YAML::LoadFile(filename);
