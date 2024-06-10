@@ -36,7 +36,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     u_signal.setZero();
 
 
-    p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd);
+    p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd+control_settings.nud);
 
     // Dummy QP parameters for checking that ADMM works
     //initial positions
@@ -70,6 +70,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     state(0) = p(0); state(1) = p(1); state(2) = p(2); state(3) = p(3); state(4) = p(4); state(5) = p(5);
     state_ref = p.segment(control_settings.nx+control_settings.nu,control_settings.nxd); //todo
     state_ref_at_ocp_solve = state_ref;
+    input_ref = Eigen::VectorXd::Zero(control_settings.nud);
     build_qp();
 
     nz = sprob.H[my_id].rows();
@@ -217,11 +218,13 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     x_log = -MatrixXd::Ones(log_buffer_size,control_settings.nx);
     u_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
     u_before_conversion_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
-    xd_log = -MatrixXd::Ones(log_buffer_size,control_settings.nxd);
+    xd_log = -MatrixXd::Ones(log_buffer_size,control_settings.nx); //not nxd, because we only store the current setpoint if xd is a trajectory
+    ud_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
     mpc_step = 0;
     mpc_step_since_log = 0;
     logged_mpc_steps = 0;
     xd_ref_idx = 0;
+    ud_ref_idx = 0;
     
     std::time_t t = std::time(0);   // get time now
     std::tm* now = std::localtime(&t);
@@ -230,13 +233,18 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     log_file = std::ofstream(file_name.str());
     if (log_file.is_open())
     {
-        log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_\n";
+        log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_\n";
         log_file.close();
     }
 
-    if (!control_settings.file_name_trajectory.empty()){
-        sprob.csvRead(xd_ref,control_settings.file_name_trajectory,20);
-    } 
+    if (!control_settings.file_name_xd_trajectory.empty()){
+        sprob.csvRead(xd_ref,control_settings.file_name_xd_trajectory,20);
+    }
+
+    if (!control_settings.file_name_ud_trajectory.empty()){
+        sprob.csvRead(ud_ref,control_settings.file_name_ud_trajectory,20);
+        p.segment(control_settings.nx+control_settings.nu+control_settings.nxd,control_settings.nud) = input_ref;
+    }  
     
 
 }
@@ -420,7 +428,11 @@ void HolohoverDmpcAdmmNode::publish_control()
     publish_trajectory();
 
     x_log.block(mpc_step_since_log,0,1,control_settings.nx) = state_at_ocp_solve.transpose(); 
-    xd_log.block(mpc_step_since_log,0,1,control_settings.nxd) = state_ref_at_ocp_solve.transpose();
+    xd_log.block(mpc_step_since_log,0,1,control_settings.nx) = state_ref_at_ocp_solve.transpose().segment(0,control_settings.nx);
+    
+    if (!control_settings.file_name_ud_trajectory.empty()){
+        ud_log.block(mpc_step_since_log,0,1,control_settings.nu) = input_ref.transpose().segment(0,control_settings.nu);
+    } 
 
     if (mpc_step_since_log == log_buffer_size - 1) {
         // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
@@ -525,7 +537,7 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
     std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
     state_ref_lock.lock();
     
-    if (!control_settings.file_name_trajectory.empty() && xd_ref_idx < xd_ref.rows()){
+    if (!control_settings.file_name_xd_trajectory.empty() && xd_ref_idx < xd_ref.rows()){
         if (mpc_step == std::floor(xd_ref(xd_ref_idx,0))){
             state_ref = (xd_ref.block(xd_ref_idx,1,1,control_settings.nxd)).transpose();
             xd_ref_idx = xd_ref_idx + 1;
@@ -535,6 +547,15 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
     state_ref_at_ocp_solve = state_ref;
     p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref_at_ocp_solve;
     state_ref_lock.unlock();
+
+    if (!control_settings.file_name_ud_trajectory.empty() && ud_ref_idx < ud_ref.rows()){
+        if (mpc_step == std::floor(ud_ref(ud_ref_idx,0))){
+            input_ref = (ud_ref.block(ud_ref_idx,1,1,control_settings.nud)).transpose();
+            ud_ref_idx = ud_ref_idx + 1;
+        }
+        p.segment(control_settings.nx+control_settings.nu+control_settings.nxd,control_settings.nud) = input_ref;
+    } 
+
 
     std::string function_library = control_settings.folder_name_sprob + "/locFuns.so";
 
@@ -1213,7 +1234,7 @@ void HolohoverDmpcAdmmNode::print_time_measurements(){
             log_file.open(file_name.str(),std::ios_base::app);
             if (log_file.is_open())
             {
-                log_file << logged_mpc_steps+k << "," << x_log(k,0) << "," << x_log(k,1) << "," << x_log(k,2) << "," << x_log(k,3) << "," << x_log(k,4) << "," << x_log(k,5) << "," << u_log(k,0) << "," << u_before_conversion_log(k,1) << "," << u_before_conversion_log(k,2) << "," << u_before_conversion_log(k,0) << "," << u_log(k,1) << "," << u_log(k,2) << "," << xd_log(k,0) << "," << xd_log(k,1) << "," << xd_log(k,2) << "," << xd_log(k,3) << "," << xd_log(k,4) << "," << xd_log(k,5) << "," << admm_timer.m_log[k] << "," << i << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";        
+                log_file << logged_mpc_steps+k << "," << x_log(k,0) << "," << x_log(k,1) << "," << x_log(k,2) << "," << x_log(k,3) << "," << x_log(k,4) << "," << x_log(k,5) << "," << u_log(k,0) << "," << u_before_conversion_log(k,1) << "," << u_before_conversion_log(k,2) << "," << u_before_conversion_log(k,0) << "," << u_log(k,1) << "," << u_log(k,2) << "," << xd_log(k,0) << "," << xd_log(k,1) << "," << xd_log(k,2) << "," << xd_log(k,3) << "," << xd_log(k,4) << "," << xd_log(k,5) << "," << ud_log(k,0) << "," << ud_log(k,1) << "," << ud_log(k,2) << "," << admm_timer.m_log[k] << "," << i << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";        
             }
             log_file.close();
 

@@ -14,6 +14,7 @@ struct ControlDMPCSettings
     unsigned int nx; //state dimension
     unsigned int nu; //input dimension
     unsigned int nxd; //dimension of setpoint
+    unsigned int nud; //dimension of input setpoint
     unsigned int N; //horizon
     int idx_eqx0; //equality constraint for initial condition
     int idx_equ0; //equality constraint for u0
@@ -24,7 +25,8 @@ struct ControlDMPCSettings
     int Nagents;
     int my_id;
     std::string folder_name_sprob;
-    std::string file_name_trajectory;
+    std::string file_name_xd_trajectory;
+    std::string file_name_ud_trajectory;
 };
 
 ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
@@ -38,6 +40,7 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     settings.nx = node.declare_parameter<int>("nx");
     settings.nu = node.declare_parameter<int>("nu");
     settings.nxd = node.declare_parameter<int>("nxd");
+    settings.nud = node.declare_parameter<int>("nud");
     settings.N = node.declare_parameter<int>("N");
     settings.idx_eqx0 = node.declare_parameter<int>("idx_eqx0");
     settings.idx_equ0 = node.declare_parameter<int>("idx_equ0");
@@ -50,12 +53,19 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     settings.folder_name_sprob = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/ocp_specs/" + node.declare_parameter<std::string>("folder_name_sprob");
     
     
-    std::string tmp_ = node.declare_parameter<std::string>("file_name_trajectory");
+    std::string tmp_ = node.declare_parameter<std::string>("file_name_xd_trajectory");
     if (tmp_.empty()){
-        settings.file_name_trajectory = "";
+        settings.file_name_xd_trajectory = "";
     } else{
-        settings.file_name_trajectory = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/config/trajectories/" + tmp_;
-    } 
+        settings.file_name_xd_trajectory = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/config/trajectories/" + tmp_;
+    }
+
+    tmp_ = node.declare_parameter<std::string>("file_name_ud_trajectory");
+    if (tmp_.empty()){
+        settings.file_name_ud_trajectory = "";
+    } else{
+        settings.file_name_ud_trajectory = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/config/trajectories/" + tmp_;
+    }
 
     return settings;
 }

@@ -257,8 +257,8 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
         log_file.close();
     }
 
-    if (!control_settings.file_name_trajectory.empty()){
-        sprob.csvRead(xd_ref,control_settings.file_name_trajectory,20);
+    if (!control_settings.file_name_xd_trajectory.empty()){
+        sprob.csvRead(xd_ref,control_settings.file_name_xd_trajectory,20);
     } 
 
 }
@@ -529,7 +529,7 @@ void HolohoverDmpcDsqpNode::update_setpoint_in_ocp(){
     std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
     state_ref_lock.lock();
 
-    if (!control_settings.file_name_trajectory.empty() && xd_ref_idx < xd_ref.rows()){
+    if (!control_settings.file_name_xd_trajectory.empty() && xd_ref_idx < xd_ref.rows()){
         if (mpc_step == std::floor(xd_ref(xd_ref_idx,0))){
             state_ref = (xd_ref.block(xd_ref_idx,1,1,control_settings.nxd)).transpose();
             xd_ref_idx = xd_ref_idx + 1;

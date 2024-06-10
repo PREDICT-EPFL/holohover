@@ -7,6 +7,7 @@ holohover_dmpc_trigger:
     nx: 6
     nu: 3
     nxd: 12
+    nud: 0
     N: 7
     idx_eqx0: 0
     idx_equ0: 6
@@ -16,4 +17,5 @@ holohover_dmpc_trigger:
     Nagents: 4
     my_id: 0
     folder_name_sprob: "sProb_chain_QP_N7_acc"
-    file_name_trajectory: ""
+    file_name_xd_trajectory: ""
+    file_name_ud_trajectory: ""

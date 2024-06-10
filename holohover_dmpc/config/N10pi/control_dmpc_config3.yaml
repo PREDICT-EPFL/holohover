@@ -7,6 +7,7 @@ h3/dmpc:
     nx: 6
     nu: 3
     nxd: 6
+    nud: 0
     N: 10
     idx_eqx0: 0
     idx_equ0: 6
@@ -16,7 +17,8 @@ h3/dmpc:
     Nagents: 4
     my_id: 3
     folder_name_sprob: "sProb_chain_QP_N10_acc_100_damped"
-    file_name_trajectory: ""
+    file_name_xd_trajectory: ""
+    file_name_ud_trajectory: ""
 /**:
 #control_lqr:
   ros__parameters:

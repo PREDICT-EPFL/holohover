@@ -20,7 +20,7 @@ def launch_setup(context):
     control_dmpc_config = os.path.join(
         get_package_share_directory('holohover_dmpc'),
         'config',
-        'N10pi',
+        'N20pi_traj',
         'control_dmpc_config' + str(index) + '.yaml'
     )
 
