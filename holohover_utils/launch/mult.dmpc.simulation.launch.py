@@ -176,10 +176,10 @@ def launch_setup(context):
         launch_description.append(optitrack_node)
         launch_description.append(dmpc_launch)
         launch_description.append(trajectory_generator_node)
-    
+
     #################### COMMON NODES STARTING - END ####################
    
-    #################### HOVERCRAFTS STARTING ####################
+    #################### HOVERCRAFT STARTING ####################
     # Now iterate on each hovercraft and launch the nodes for each one
     print(f"Starting {len(hovercraft)} hovercraft")
     for i in range(len(hovercraft)):
@@ -196,9 +196,9 @@ def launch_setup(context):
                     'file_name_ud_trajectory': data["experiment"]["file_name_ud_trajectory"],
                     }.items()
             )
-            
+
             launch_description.append(hovercraft_launch)
-    #################### HOVERCRAFTS STARTING - END ####################
+    #################### HOVERCRAFT STARTING - END ####################
 
     return launch_description
 
@@ -206,7 +206,6 @@ def launch_setup(context):
 def generate_launch_description():
     ld = LaunchDescription()
 
-    # Simulator
     opfunc = OpaqueFunction(function = launch_setup)
 
     ld.add_action(DeclareLaunchArgument(

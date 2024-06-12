@@ -29,20 +29,14 @@ def launch_setup(context):
         'navigation_config.yaml'
     )
 
-    specific_configuration = os.path.join(
-        get_package_share_directory('holohover_utils'),
-        'config/hovercraft',
-        name,
-        'config.yaml'
-    )
-
     # - - - Nodes
     navigation_node = Node(
         package="holohover_navigation",
         executable="navigation",
         parameters=[navigation_config, {'holohover_props_file' : params}],
         namespace= name,
-        output='screen'
+        output='screen',
+        prefix='nice -n -19'
     )
     
     controller_node = Node(
@@ -52,20 +46,12 @@ def launch_setup(context):
         parameters=[control_lqr_config,
         {"holohover_props_file": params}],
         namespace=name,
-        output='both'
-    )
-    
-    rviz_interface_node = Node(
-        package="holohover_utils",
-        executable="rviz_interface",
-        parameters=[specific_configuration, {'id': int(index), 'holohover_props_file' : params}],
-        namespace= name,
-        output='screen'
+        output='both',
+        prefix='nice -n -19'
     )
     
     launch_description.append(controller_node)        
     launch_description.append(navigation_node)
-    launch_description.append(rviz_interface_node)
 
     return launch_description
 
