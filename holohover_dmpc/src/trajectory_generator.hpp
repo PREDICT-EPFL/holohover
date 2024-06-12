@@ -4,7 +4,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include "holohover_msgs/msg/holohover_dmpc_state_ref_stamped.hpp"
-#include "holohover_msgs/msg/trajectory_generator_trigger.hpp"
 #include "yaml-cpp/yaml.h"
 
 struct GeneralConfig {
