@@ -19,18 +19,3 @@ h0/dmpc:
     folder_name_sprob: "sProb_chain_QP_N10_100_traj"
     file_name_xd_trajectory: "clover_100/clover_traj_xd.csv"
     file_name_ud_trajectory: "clover_100/clover_traj_ud.csv"
-/**:
-#control_lqr:
-  ros__parameters:
-    period: 0.01
-
-    weight_x: 14.0
-    weight_y: 14.0
-    weight_v_x: 0.01
-    weight_v_y: 0.01
-    weight_yaw: 10.0
-    weight_w_z: 0.01
-
-    weight_a_x: 10.0
-    weight_a_y: 10.0
-    weight_w_dot_z: 10.0

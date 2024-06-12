@@ -7,6 +7,7 @@ h2/dmpc:
     nx: 6
     nu: 3
     nxd: 12
+    nud: 0
     N: 20
     idx_eqx0: 0
     idx_equ0: 6
@@ -15,20 +16,6 @@ h2/dmpc:
     idx_x0: 126
     Nagents: 4
     my_id: 2
-    # folder_name_sprob: "sProb_chain_QP_N20_acc_050_damped"
     folder_name_sprob: "sProb_chain_QCQP_N20"
-/**:
-#control_lqr:
-  ros__parameters:
-    period: 0.01
-
-    weight_x: 14.0
-    weight_y: 14.0
-    weight_v_x: 0.01
-    weight_v_y: 0.01
-    weight_yaw: 10.0
-    weight_w_z: 0.01
-
-    weight_a_x: 10.0
-    weight_a_y: 10.0
-    weight_w_dot_z: 10.0
+    file_name_xd_trajectory: ""
+    file_name_ud_trajectory: ""
