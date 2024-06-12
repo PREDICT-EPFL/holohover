@@ -3,7 +3,7 @@ h2/dmpc:
     dmpc_period: 0.050
     rho: 5.0
     maxiter: 30
-    max_inner_iter: 1
+    max_outer_iter: 1
     nx: 6
     nu: 3
     nxd: 12

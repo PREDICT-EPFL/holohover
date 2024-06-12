@@ -3,7 +3,7 @@ holohover_dmpc_trigger:
     dmpc_period: 1.000
     rho: 5.0
     maxiter: 3
-    max_inner_iter: 5
+    max_outer_iter: 5
     nx: 6
     nu: 3
     nxd: 12

@@ -79,6 +79,7 @@ private:
     Holohover::state_t<double> state_at_ocp_solve;
     Eigen::VectorXd state_ref;   //GS: VectorXd, because different subsystems can have different state_ref dimension
     Eigen::VectorXd state_ref_at_ocp_solve;
+    Eigen::VectorXd input_ref;
 
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverTrajectory>::SharedPtr HolohoverTrajectory_publisher;
@@ -170,7 +171,7 @@ private:
     
     //DMPC loop
     void update_setpoint_in_ocp();
-    int solve(unsigned int maxiter_, bool sync_admm);
+    int solve(unsigned int max_outer_iter_, bool sync_admm);
     void get_u_acc_from_sol();
     void convert_u_acc_to_u_signal();
 
@@ -224,6 +225,7 @@ private:
     Eigen::MatrixXd u_log;
     Eigen::MatrixXd u_before_conversion_log;
     Eigen::MatrixXd xd_log;
+    Eigen::MatrixXd ud_log;
     int mpc_step;
     int mpc_step_since_log;
     int log_buffer_size; //number of MPC steps to store before writing to log
@@ -236,7 +238,9 @@ private:
 
     //reference trajectories
     Eigen::MatrixXd xd_ref;
-    unsigned xd_ref_idx; //current row in xd_ref for reading xd   
+    Eigen::MatrixXd ud_ref;
+    unsigned xd_ref_idx; //current row in xd_ref for reading xd
+    unsigned ud_ref_idx;   
 
     //helper
     Eigen::MatrixXd casadi2Eigen ( const casadi::DM& A );

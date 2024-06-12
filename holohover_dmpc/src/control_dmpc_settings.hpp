@@ -10,7 +10,7 @@ struct ControlDMPCSettings
     double dmpc_period; //seconds
     double rho;
     unsigned int maxiter;
-    unsigned int max_inner_iter;
+    unsigned int max_outer_iter;
     unsigned int nx; //state dimension
     unsigned int nu; //input dimension
     unsigned int nxd; //dimension of setpoint
@@ -36,7 +36,7 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     settings.dmpc_period = node.declare_parameter<double>("dmpc_period");
     settings.rho = node.declare_parameter<double>("rho");
     settings.maxiter = node.declare_parameter<int>("maxiter"); 
-    settings.max_inner_iter = node.declare_parameter<int>("max_inner_iter");
+    settings.max_outer_iter = node.declare_parameter<int>("max_outer_iter");
     settings.nx = node.declare_parameter<int>("nx");
     settings.nu = node.declare_parameter<int>("nu");
     settings.nxd = node.declare_parameter<int>("nxd");
