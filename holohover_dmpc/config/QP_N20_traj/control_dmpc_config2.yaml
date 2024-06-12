@@ -18,4 +18,4 @@ h2/dmpc:
     my_id: 2
     folder_name_sprob: "sProb_chain_QP_N20_050_traj"
     file_name_xd_trajectory: ""
-    file_name_ud_trajectory: "clover_50/clover_traj_ud_50.csv"
+    file_name_ud_trajectory: "clover_50/clover_traj_ud_N20_50.csv"

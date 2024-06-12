@@ -2,7 +2,7 @@ h1/dmpc:
   ros__parameters:
     dmpc_period: 0.100
     rho: 5.0
-    maxiter: 5
+    maxiter: 30
     max_outer_iter: 1
     nx: 6
     nu: 3
@@ -18,4 +18,4 @@ h1/dmpc:
     my_id: 1
     folder_name_sprob: "sProb_chain_QP_N10_100_traj"
     file_name_xd_trajectory: ""
-    file_name_ud_trajectory: "clover_100/clover_traj_ud.csv"
+    file_name_ud_trajectory: "clover_100/clover_traj_ud_N10_100.csv"

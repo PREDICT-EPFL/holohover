@@ -1,4 +1,4 @@
-h3/dmpc:
+h0/dmpc:
   ros__parameters:
     dmpc_period: 0.050
     rho: 5.0
@@ -6,16 +6,16 @@ h3/dmpc:
     max_outer_iter: 1
     nx: 6
     nu: 3
-    nxd: 6
+    nxd: 132
     nud: 60
     N: 20
     idx_eqx0: 0
     idx_equ0: 6
     idx_u0: 252
     idx_u1: 255
-    idx_x0: 126
+    idx_x0: 0
     Nagents: 4
-    my_id: 3
-    folder_name_sprob: "sProb_chain_QP_N20_050_traj"
-    file_name_xd_trajectory: ""
+    my_id: 0
+    folder_name_sprob: "sProb_chain_QCQP_N20_050_traj"
+    file_name_xd_trajectory: "clover_50/clover_traj_xd_N20_50.csv"
     file_name_ud_trajectory: "clover_50/clover_traj_ud_N20_50.csv"
