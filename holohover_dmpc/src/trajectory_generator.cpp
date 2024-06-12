@@ -2,21 +2,43 @@
 
 TrajectoryGenerator::TrajectoryGenerator() : 
     Node("trajectory_generator"),
-    filename(declare_parameter<std::string>("trajectory_file")),
-    config(YAML::LoadFile(filename)),
-    gc(parseGeneralConfig(config))
+    names(declare_parameter<std::vector<std::string>>("names")),
+    ids(declare_parameter<std::vector<long int>>("ids"))
 {
-    for(const auto& id : gc.ids)
+    std::string filename;
+
+    for(const auto& id : ids)
     {
-        auto topic_name = "/" + gc.names[id] + "/dmpc_state_ref";
+        auto topic_name = "/" + names[id] + "/dmpc_state_ref";
         publishers[id] = this->create_publisher<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(topic_name, 10);
     }
 
-    rate = std::make_shared<rclcpp::Rate>(1.0/gc.time_step);
+    while(true)
+    {
+        std::cout << "Insert the name of the YAML file: ";
+        std::cin >> filename;
+        std::string package_share_directory = ament_index_cpp::get_package_share_directory("holohover_dmpc");
+        runTask(package_share_directory + "/config/trajectories/" + filename);
+    }
 }
 
+// Modify the runTask function to take a message as input
+void TrajectoryGenerator::runTask(std::string filename) {
+    YAML::Node config;
+    GeneralConfig gc;
 
-void TrajectoryGenerator::runTask() {
+    RCLCPP_INFO(this->get_logger(), "Opening trajectory file: %s", filename.c_str());
+
+    try {
+        config = YAML::LoadFile(filename);
+        gc = parseGeneralConfig(config);
+    } catch (const std::exception& e) {
+        RCLCPP_ERROR(this->get_logger(), "Error reading YAML file. Exception: %s", e.what());
+        return;
+    }
+
+    rate = std::make_shared<rclcpp::Rate>(1.0/gc.time_step);
+
     Step s;
     for (const auto& step : config["trajectory"])
     {
@@ -76,6 +98,7 @@ void TrajectoryGenerator::runTask() {
 
         rate->sleep();
     }
+    RCLCPP_INFO(this->get_logger(), "Trajectory finished.");
 }
 
 GeneralConfig TrajectoryGenerator::parseGeneralConfig(YAML::Node& config)
@@ -102,8 +125,7 @@ int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<TrajectoryGenerator>();
-    std::this_thread::sleep_for(std::chrono::seconds(3)); //wait for publishers to be setup
-    node->runTask();
+    rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
 }

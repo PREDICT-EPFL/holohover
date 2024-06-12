@@ -2,6 +2,7 @@
 #define HOLOHOVER_DMPC_TRAJECTORY_GENERATOR_HPP
 
 #include "rclcpp/rclcpp.hpp"
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include "holohover_msgs/msg/holohover_dmpc_state_ref_stamped.hpp"
 #include "yaml-cpp/yaml.h"
 
@@ -26,14 +27,11 @@ class TrajectoryGenerator : public rclcpp::Node
 public:
     TrajectoryGenerator();
 
-    void runTask();
 private:
-    std::string filename;
-
-    YAML::Node config;
-
-    GeneralConfig gc;
-
+    void runTask(std::string filename);
+    
+    std::vector<std::string> names;
+    std::vector<long int> ids;
     std::map<int, rclcpp::Publisher<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr> publishers;
 
     std::shared_ptr<rclcpp::Rate> rate;

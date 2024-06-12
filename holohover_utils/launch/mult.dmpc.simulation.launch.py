@@ -146,6 +146,15 @@ def launch_setup(context):
         output='screen'
     )
 
+    trajectory_generator_node = Node(
+        package="holohover_dmpc",
+        executable="trajectory_generator",
+        parameters=[{ "ids" :       hovercraft_ids, 
+                      "names" :     hovercraft_names}],
+        output='both',
+        prefix='xterm -e'
+    )
+
     recorder_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(this_dir, 'common', 'recorder.launch.py'))
     )
@@ -166,6 +175,7 @@ def launch_setup(context):
             launch_description.append(simulator_node)
         launch_description.append(optitrack_node)
         launch_description.append(dmpc_launch)
+        launch_description.append(trajectory_generator_node)
     
     #################### COMMON NODES STARTING - END ####################
    
