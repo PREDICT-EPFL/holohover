@@ -124,7 +124,7 @@ void HolohoverNavigationNode::pose_callback(const geometry_msgs::msg::PoseStampe
             RCLCPP_INFO_STREAM(this->get_logger(), "Received Message from the past: " << (pose_time - last_update).seconds() * 1e3 << " ms");
         } 
         if((current_time - last_update).seconds() >= 25e-3) {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Not predicting because last update was too long ago " << (pose_time - last_update).seconds() * 1e3 << " ms");
+            RCLCPP_INFO_STREAM(this->get_logger(), "Not predicting because last update was too long ago " << (current_time - last_update).seconds() * 1e3 << " ms");
         }
     }
 
