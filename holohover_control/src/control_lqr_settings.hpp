@@ -17,6 +17,10 @@ struct ControlLQRSettings
     double weight_a_x;
     double weight_a_y;
     double weight_w_dot_z;
+
+    double initial_x;
+    double initial_y;
+    double initial_yaw;
 };
 
 ControlLQRSettings load_control_lqr_settings(rclcpp::Node &node)
@@ -35,6 +39,10 @@ ControlLQRSettings load_control_lqr_settings(rclcpp::Node &node)
     settings.weight_a_x = node.declare_parameter<double>("weight_a_x");
     settings.weight_a_y = node.declare_parameter<double>("weight_a_y");
     settings.weight_w_dot_z = node.declare_parameter<double>("weight_w_dot_z");
+
+    settings.initial_x = node.declare_parameter<double>("initial_x");
+    settings.initial_y = node.declare_parameter<double>("initial_y");
+    settings.initial_yaw = node.declare_parameter<double>("initial_yaw");
 
     return settings;
 }
