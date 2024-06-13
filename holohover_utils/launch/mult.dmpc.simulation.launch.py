@@ -186,7 +186,16 @@ def launch_setup(context):
         if hovercraft_machines[i] == machine or machine == "all":
             hovercraft_launch = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_dmpc.launch.py')),
-                launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i], 'opt_alg': opt_alg}.items()
+                launch_arguments={
+                    'index': str(i),
+                    'name': hovercraft_names[i],
+                    'params': holohover_params[i],
+                    'opt_alg': opt_alg,
+                    'dmpc_config_folder': data["experiment"]["dmpc_config_folder"],
+                    'folder_name_sprob': data["experiment"]["folder_name_sprob"],
+                    'file_name_xd_trajectory': data["experiment"]["file_name_xd_trajectory"],
+                    'file_name_ud_trajectory': data["experiment"]["file_name_ud_trajectory"],
+                    }.items()
             )
             
             launch_description.append(hovercraft_launch)
