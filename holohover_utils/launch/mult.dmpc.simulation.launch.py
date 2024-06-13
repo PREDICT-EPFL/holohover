@@ -192,7 +192,6 @@ def launch_setup(context):
                     'params': holohover_params[i],
                     'opt_alg': opt_alg,
                     'dmpc_config_folder': data["experiment"]["dmpc_config_folder"],
-                    'folder_name_sprob': data["experiment"]["folder_name_sprob"],
                     'file_name_xd_trajectory': data["experiment"]["file_name_xd_trajectory"],
                     'file_name_ud_trajectory': data["experiment"]["file_name_ud_trajectory"],
                     }.items()

@@ -238,13 +238,10 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     }
 
     if (!control_settings.file_name_xd_trajectory.empty()){
-        RCLCPP_INFO(get_logger(), "reading xd: %s", control_settings.file_name_xd_trajectory.c_str());
-
         sprob.csvRead(xd_ref,control_settings.file_name_xd_trajectory,20);
     }
 
     if (!control_settings.file_name_ud_trajectory.empty()){
-        RCLCPP_INFO(get_logger(), "reading ud: %s", control_settings.file_name_ud_trajectory.c_str());
         sprob.csvRead(ud_ref,control_settings.file_name_ud_trajectory,20);
         p.segment(control_settings.nx+control_settings.nu+control_settings.nxd,control_settings.nud) = input_ref;
     }  
@@ -541,7 +538,6 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
     state_ref_lock.lock();
     
     if (!control_settings.file_name_xd_trajectory.empty() && xd_ref_idx < xd_ref.rows()){
-        
         if (mpc_step == std::floor(xd_ref(xd_ref_idx,0))){
             state_ref = (xd_ref.block(xd_ref_idx,1,1,control_settings.nxd)).transpose();
             xd_ref_idx = xd_ref_idx + 1;
@@ -608,7 +604,7 @@ void HolohoverDmpcAdmmNode::init_dmpc(const std_msgs::msg::UInt64 &publish_contr
 
     std::ignore = publish_control_msg;
     if(!dmpc_is_initialized){
-        std::this_thread::sleep_for(std::chrono::seconds(1)); //wait until all subscribers are setup
+        std::this_thread::sleep_for(std::chrono::seconds(10)); //wait until all subscribers are setup
         update_setpoint_in_ocp();
         RCLCPP_INFO(get_logger(), "Initializing comms");
         init_comms();
