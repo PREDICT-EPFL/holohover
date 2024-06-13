@@ -41,10 +41,6 @@ add_executable(control_dmpc_dsqp src/holohover_dmpc_dsqp_node.cpp src/sProb.cpp 
 ament_target_dependencies(control_dmpc_dsqp rclcpp geometry_msgs holohover_msgs holohover_common)
 target_link_libraries(control_dmpc_dsqp casadi yaml-cpp Eigen3::Eigen piqp::piqp)
 
-add_executable(control_dmpc_lqr src/holohover_dmpc_admm_lqr_node.cpp src/sProb.cpp src/doptTimer.cpp)
-ament_target_dependencies(control_dmpc_lqr rclcpp geometry_msgs holohover_msgs holohover_common)
-target_link_libraries(control_dmpc_lqr casadi yaml-cpp Eigen3::Eigen piqp::piqp)
-
 add_executable(dmpc_trigger src/holohover_dmpc_trigger_node.cpp)
 ament_target_dependencies(dmpc_trigger rclcpp std_msgs)
 target_link_libraries(dmpc_trigger yaml-cpp)
@@ -64,7 +60,7 @@ install(DIRECTORY
 )
 
 install(TARGETS
-  control_dmpc_admm dmpc_trigger trajectory_generator control_dmpc_lqr control_dmpc_dsqp
+  control_dmpc_admm dmpc_trigger trajectory_generator control_dmpc_dsqp
   DESTINATION lib/${PROJECT_NAME}
 )
 

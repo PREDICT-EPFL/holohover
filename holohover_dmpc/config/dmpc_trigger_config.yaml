@@ -3,10 +3,11 @@ holohover_dmpc_trigger:
     dmpc_period: 1.000
     rho: 5.0
     maxiter: 3
-    max_inner_iter: 5
+    max_outer_iter: 5
     nx: 6
     nu: 3
     nxd: 12
+    nud: 0
     N: 7
     idx_eqx0: 0
     idx_equ0: 6
@@ -16,3 +17,5 @@ holohover_dmpc_trigger:
     Nagents: 4
     my_id: 0
     folder_name_sprob: "sProb_chain_QP_N7_acc"
+    file_name_xd_trajectory: ""
+    file_name_ud_trajectory: ""

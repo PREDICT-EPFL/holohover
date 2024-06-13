@@ -36,7 +36,7 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     u_signal.setZero();
 
 
-    p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd);
+    p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd+control_settings.nud);
 
     // Dummy QP parameters for checking that ADMM works
     //initial positions
@@ -70,6 +70,7 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     state(0) = p(0); state(1) = p(1); state(2) = p(2); state(3) = p(3); state(4) = p(4); state(5) = p(5);
     state_ref = p.segment(control_settings.nx+control_settings.nu,control_settings.nxd); //todo
     state_ref_at_ocp_solve = state_ref;
+    input_ref = Eigen::VectorXd::Zero(control_settings.nud);
 
     //init QP
 
@@ -140,7 +141,7 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     for (int i = 0; i < N_og; i++){
         XV.push_back(std::vector<double>());
         auto idx = og_idx_to_idx.find(i);
-        XV[i].resize(numCopies(idx->second)+1); //XV stores local original variable and copies from out-neighbors
+        XV[i].resize(2*(numCopies(idx->second)+1)); //XV stores local original variable and copies from out-neighbors and dual variables
     }
 
     //initialize comms
@@ -157,6 +158,8 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
         v_out_msg[i].val_length = v_out[i].nv;
         v_out_msg[i].idx_length = v_out[i].nv;
         v_out_msg[i].value.resize(v_out_msg[i].val_length);
+        v_out_msg[i].gam_length = 0; //only send dual variables with v_in msg (before averaging)
+        v_out_msg[i].gamma.resize(v_out_msg[i].gam_length);  
         v_out_msg[i].idx.resize(v_out_msg[i].idx_length);
         v_out_msg[i].seq_number = 0;
         for (int idx_row = 0; idx_row<v_out_msg[i].val_length; idx_row++) {
@@ -194,12 +197,15 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
 
         v_in_msg[i].val_length = v_in[i].nv;
         v_in_msg[i].value.resize(v_in_msg[i].val_length);
+        v_in_msg[i].gam_length = v_in[i].nv;  
+        v_in_msg[i].gamma.resize(v_in_msg[i].gam_length);
         v_in_msg[i].idx_length = v_in[i].nv;
         v_in_msg[i].idx.resize(v_in_msg[i].idx_length);
         Eigen::VectorXi::Map(&v_in_msg[i].idx[0], v_in[i].og_idx.size()) = v_in[i].og_idx;
         v_in_msg[i].seq_number = 0;
         for (int idx_row = 0; idx_row<v_in_msg[i].val_length; idx_row++) {
             v_in_msg[i].value[idx_row] = std::numeric_limits<double>::quiet_NaN();
+            v_in_msg[i].gamma[idx_row] = std::numeric_limits<double>::quiet_NaN();
         }
         v_in_msg[i].id_sender = my_id;
 
@@ -230,14 +236,18 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
 
     log_buffer_size = 1;
     dsqp_timer.reserve(log_buffer_size);
-    reserve_time_measurements(log_buffer_size*control_settings.maxiter);
+    reserve_time_measurements(log_buffer_size*control_settings.max_outer_iter);
 
     x_log = -MatrixXd::Ones(log_buffer_size,control_settings.nx);
     u_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
     u_before_conversion_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
-    xd_log = -MatrixXd::Ones(log_buffer_size,control_settings.nxd);
+    xd_log = -MatrixXd::Ones(log_buffer_size,control_settings.nx);
+    ud_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
     mpc_step = 0;
+    mpc_step_since_log = 0;
     logged_mpc_steps = 0;
+    xd_ref_idx = 0;
+    ud_ref_idx = 0;
     
     std::time_t t = std::time(0);   // get time now
     std::tm* now = std::localtime(&t);
@@ -246,9 +256,17 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     log_file = std::ofstream(file_name.str());
     if (log_file.is_open())
     {
-        log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, dsqp_time_us_, dsqp_iter_, dsqp_iter_time_us_, build_qp_time_us_, reg_qp_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_\n";
+        log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, dsqp_time_us_, dsqp_iter_, dsqp_iter_time_us_, build_qp_time_us_, reg_qp_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_\n";
         log_file.close();
     }
+
+    if (!control_settings.file_name_xd_trajectory.empty()){
+        sprob.csvRead(xd_ref,control_settings.file_name_xd_trajectory,20);
+    }
+    if (!control_settings.file_name_ud_trajectory.empty()){
+        sprob.csvRead(ud_ref,control_settings.file_name_ud_trajectory,20);
+        p.segment(control_settings.nx+control_settings.nu+control_settings.nxd,control_settings.nud) = input_ref;
+    } 
 
 }
 
@@ -299,6 +317,7 @@ void HolohoverDmpcDsqpNode::init_comms(){
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
         Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
+        Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
         v_in_publisher[i]->publish(v_in_msg[i]);
     }
 
@@ -390,9 +409,9 @@ void HolohoverDmpcDsqpNode::publish_control()
     //     return;
     // }
 
-    u_before_conversion_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
+    u_before_conversion_log.block(mpc_step_since_log,0,1,control_settings.nu) = u_acc_curr.transpose();
     convert_u_acc_to_u_signal();
-    u_log.block(mpc_step,0,1,control_settings.nu) = u_acc_curr.transpose();
+    u_log.block(mpc_step_since_log,0,1,control_settings.nu) = u_acc_curr.transpose();
 
     holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";
@@ -408,24 +427,29 @@ void HolohoverDmpcDsqpNode::publish_control()
     update_setpoint_in_ocp();
 
     dsqp_timer.tic();
-    solve(control_settings.maxiter,false);      
+    solve(control_settings.max_outer_iter,false);      
     dsqp_timer.toc();
     
     get_u_acc_from_sol();
 
     publish_trajectory();
 
-    x_log.block(mpc_step,0,1,control_settings.nx) = state_at_ocp_solve.transpose(); 
-    xd_log.block(mpc_step,0,1,control_settings.nxd) = state_ref_at_ocp_solve.transpose();
+    x_log.block(mpc_step_since_log,0,1,control_settings.nx) = state_at_ocp_solve.transpose(); 
+    xd_log.block(mpc_step_since_log,0,1,control_settings.nx) = state_ref_at_ocp_solve.transpose().segment(0,control_settings.nx);
 
-    if (mpc_step == log_buffer_size - 1) {
+    if (!control_settings.file_name_ud_trajectory.empty()){
+        ud_log.block(mpc_step_since_log,0,1,control_settings.nu) = input_ref.transpose().segment(0,control_settings.nu);
+    }
+
+    if (mpc_step_since_log == log_buffer_size - 1) {
         print_time_measurements();
         clear_time_measurements();
-        mpc_step = -1; //gets increased to 0 below
+        mpc_step_since_log = -1; //gets increased to 0 below
     } 
 
     u_acc_curr = u_acc_next;
-    mpc_step = mpc_step + 1;
+    mpc_step_since_log += 1;
+    mpc_step += 1;
 }
 
 void HolohoverDmpcDsqpNode::convert_u_acc_to_u_signal()
@@ -515,9 +539,26 @@ void HolohoverDmpcDsqpNode::update_setpoint_in_ocp(){
     p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;
     std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
     state_ref_lock.lock();
+
+    if (!control_settings.file_name_xd_trajectory.empty() && xd_ref_idx < xd_ref.rows()){
+        if (mpc_step == std::floor(xd_ref(xd_ref_idx,0))){
+            state_ref = (xd_ref.block(xd_ref_idx,1,1,control_settings.nxd)).transpose();
+            xd_ref_idx = xd_ref_idx + 1;
+        }  
+    }
+
     state_ref_at_ocp_solve = state_ref;
     p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref_at_ocp_solve;
-    state_ref_lock.unlock();   
+    state_ref_lock.unlock();
+
+    if (!control_settings.file_name_ud_trajectory.empty() && ud_ref_idx < ud_ref.rows()){
+        if (mpc_step == std::floor(ud_ref(ud_ref_idx,0))){
+            input_ref = (ud_ref.block(ud_ref_idx,1,1,control_settings.nud)).transpose();
+            ud_ref_idx = ud_ref_idx + 1;
+        }
+        p.segment(control_settings.nx+control_settings.nu+control_settings.nxd,control_settings.nud) = input_ref;
+    }
+
 }
 
 void HolohoverDmpcDsqpNode::init_dmpc(const std_msgs::msg::UInt64 &publish_control_msg)
@@ -891,6 +932,7 @@ void HolohoverDmpcDsqpNode::init_coupling()
         v_in[j].original_agent = in_neighbors[j];
         v_in[j].copying_agent = my_id;
         v_in[j].val = VectorXd::Zero(nij);
+        v_in[j].gam = VectorXd::Zero(nij); 
         v_in[j].cpy_idx = VectorXi::Zero(nij);
         v_in[j].og_idx = VectorXi::Zero(nij);
         v_in[j].nv = nij;
@@ -912,6 +954,7 @@ void HolohoverDmpcDsqpNode::init_coupling()
         v_out[j].original_agent = my_id;
         v_out[j].nv = nv_out[out_neighbors[j]];
         v_out[j].val = VectorXd::Zero(v_out[j].nv);
+        v_out[j].gam = VectorXd::Zero(0); 
         v_out[j].cpy_idx = VectorXi::Zero(v_out[j].nv);
         v_out[j].og_idx = VectorXi::Zero(v_out[j].nv);
         int k = out_neighbors[j];
@@ -950,16 +993,16 @@ void HolohoverDmpcDsqpNode::init_coupling()
     return;
 }
 
-int HolohoverDmpcDsqpNode::solve(unsigned int maxiter_, bool sync_admm)
+int HolohoverDmpcDsqpNode::solve(unsigned int max_outer_iter_, bool sync_admm)
 {      
-    for (unsigned int iter = 0; iter < maxiter_; iter++){
+    for (unsigned int iter = 0; iter < max_outer_iter_; iter++){
         dsqp_iter_timer.tic();
 
         build_qp_timer.tic();
         build_qp(zbar,nu,mu,GN,false);       
         build_qp_timer.toc();
         admm_timer.tic();
-        for (unsigned int inner_iter = 0; inner_iter < control_settings.max_inner_iter; inner_iter++){ 
+        for (unsigned int inner_iter = 0; inner_iter < control_settings.maxiter; inner_iter++){ 
 
             // std::cout << "Starting ADMM iteration " << iter << std::endl;
             iter_timer.tic(),
@@ -985,6 +1028,7 @@ int HolohoverDmpcDsqpNode::solve(unsigned int maxiter_, bool sync_admm)
                 auto idx = og_idx_to_idx.find(i);
                 XV[i].clear();
                 XV[i].push_back(z(idx->second));
+                XV[i].push_back(gam(idx->second) / rho);
             }
             loc_timer.toc();
 
@@ -997,7 +1041,7 @@ int HolohoverDmpcDsqpNode::solve(unsigned int maxiter_, bool sync_admm)
             //Step 2: averaging
             double avg;
             for (int i = 0; i < N_og; i++){
-                avg = std::accumulate(XV[i].begin(), XV[i].end(), 0.0) / XV[i].size();
+                avg = std::accumulate(XV[i].begin(), XV[i].end(), 0.0) / (0.5*XV[i].size()); //multiply the denominator by 0.5, because XV includes entries from the primal variable z and from the dual variable 
                 auto idx = og_idx_to_idx.find(i);
                 zbar[idx->second] = avg;
             }
@@ -1051,6 +1095,7 @@ void HolohoverDmpcDsqpNode::send_vin_receive_vout(bool sync_admm){
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
         Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
+        Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
         v_in_publisher[i]->publish(v_in_msg[i]); //ros
     }
     send_vin_timer.toc();
@@ -1073,6 +1118,7 @@ void HolohoverDmpcDsqpNode::send_vin_receive_vout(bool sync_admm){
                         auto og_idx = idx_to_og_idx.find(idx);
                         if (og_idx != idx_to_og_idx.end()){
                             XV[og_idx->second].push_back(v_out_msg_recv_buff[i].value[j]); //careful: the order in XV will depend on the order in which the messages arrive. But that does not affect the average value.
+                            XV[og_idx->second].push_back(v_out_msg_recv_buff[i].gamma[j] / rho);
                         }
                     }
                     v_out_lock.unlock();                     
@@ -1104,6 +1150,7 @@ void HolohoverDmpcDsqpNode::send_vin_receive_vout(bool sync_admm){
                     auto og_idx = idx_to_og_idx.find(idx);
                     if (og_idx != idx_to_og_idx.end()){
                         XV[og_idx->second].push_back(v_out_msg_recv_buff[i].value[j]); //careful: the order in XV will depend on the order in which the messages arrive. But that does not affect the average value.
+                        XV[og_idx->second].push_back(v_out_msg_recv_buff[i].gamma[j] / rho);
                     }
                 } 
                 v_out_lock.unlock();
@@ -1191,6 +1238,7 @@ void HolohoverDmpcDsqpNode::update_v_in(){
     for (int i = 0; i < N_in_neighbors; i++){
         for (int j = 0; j < v_in[i].nv; j++){
             v_in[i].val[j] = z[v_in[i].cpy_idx[j]];
+            v_in[i].gam[j] = gam[v_in[i].cpy_idx[j]]; 
         }
     }
 
@@ -1201,7 +1249,7 @@ void HolohoverDmpcDsqpNode::update_v_out(){
     //update all v_out values with values from zbar
     for (int i = 0; i < N_out_neighbors; i++){
         for (int j = 0; j < v_out[i].nv; j++){
-            v_out[i].val[j] = zbar[v_out[i].og_idx[j]];
+            v_out[i].val[j] = zbar[v_out[i].og_idx[j]];            
         }
     }
 }
@@ -1215,12 +1263,12 @@ void HolohoverDmpcDsqpNode::print_time_measurements(){
     int l = 0; //SQP step
     unsigned int row = 0;
     while (row < N_rows){
-        for (unsigned int i = 0; i < control_settings.maxiter; i++){   
-            for (unsigned int j = 0; j < control_settings.max_inner_iter; j++){   
+        for (unsigned int i = 0; i < control_settings.max_outer_iter; i++){   
+            for (unsigned int j = 0; j < control_settings.maxiter; j++){   
                 log_file.open(file_name.str(),std::ios_base::app);
                 if (log_file.is_open())
                 {
-                    log_file << logged_mpc_steps+k << "," << x_log(k,0) << "," << x_log(k,1) << "," << x_log(k,2) << "," << x_log(k,3) << "," << x_log(k,4) << "," << x_log(k,5) << "," << u_log(k,0) << "," << u_before_conversion_log(k,1) << "," << u_before_conversion_log(k,2) << "," << u_before_conversion_log(k,0) << "," << u_log(k,1) << "," << u_log(k,2) << "," << xd_log(k,0) << "," << xd_log(k,1) << "," << xd_log(k,2) << "," << xd_log(k,3) << "," << xd_log(k,4) << "," << xd_log(k,5) << "," << dsqp_timer.m_log[k] << "," << i << "," << dsqp_iter_timer.m_log[l] << "," << build_qp_timer.m_log[l] << "," << reg_timer.m_log[l] << "," <<  admm_timer.m_log[l] << "," << j << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";        
+                    log_file << logged_mpc_steps+k << "," << x_log(k,0) << "," << x_log(k,1) << "," << x_log(k,2) << "," << x_log(k,3) << "," << x_log(k,4) << "," << x_log(k,5) << "," << u_log(k,0) << "," << u_before_conversion_log(k,1) << "," << u_before_conversion_log(k,2) << "," << u_before_conversion_log(k,0) << "," << u_log(k,1) << "," << u_log(k,2) << "," << xd_log(k,0) << "," << xd_log(k,1) << "," << xd_log(k,2) << "," << xd_log(k,3) << "," << xd_log(k,4) << "," << xd_log(k,5) << "," << ud_log(k,0) << "," << ud_log(k,1) << "," << ud_log(k,2) << "," << dsqp_timer.m_log[k] << "," << i << "," << dsqp_iter_timer.m_log[l] << "," << build_qp_timer.m_log[l] << "," << reg_timer.m_log[l] << "," <<  admm_timer.m_log[l] << "," << j << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";        
                 }
                 log_file.close();
 
@@ -1241,12 +1289,12 @@ void HolohoverDmpcDsqpNode::reserve_time_measurements(unsigned int new_cap){
     reg_timer.reserve(new_cap);
     dsqp_iter_timer.reserve(new_cap);
     admm_timer.reserve(new_cap);
-    loc_timer.reserve(control_settings.max_inner_iter * new_cap);
-    iter_timer.reserve(control_settings.max_inner_iter * new_cap);
-    z_comm_timer.reserve(control_settings.max_inner_iter * new_cap);
-    zbar_comm_timer.reserve(control_settings.max_inner_iter * new_cap);
-    send_vin_timer.reserve(control_settings.max_inner_iter * new_cap);
-    receive_vout_timer.reserve(control_settings.max_inner_iter * new_cap);
+    loc_timer.reserve(control_settings.maxiter * new_cap);
+    iter_timer.reserve(control_settings.maxiter * new_cap);
+    z_comm_timer.reserve(control_settings.maxiter * new_cap);
+    zbar_comm_timer.reserve(control_settings.maxiter * new_cap);
+    send_vin_timer.reserve(control_settings.maxiter * new_cap);
+    receive_vout_timer.reserve(control_settings.maxiter * new_cap);
 }
 
 void HolohoverDmpcDsqpNode::clear_time_measurements(){

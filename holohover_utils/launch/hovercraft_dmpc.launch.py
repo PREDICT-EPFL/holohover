@@ -13,14 +13,19 @@ def launch_setup(context):
     name   = LaunchConfiguration('name').perform(context)
     params = LaunchConfiguration('params').perform(context)
     opt_alg = LaunchConfiguration('opt_alg').perform(context) #admm or dsqp
+    dmpc_config_folder = LaunchConfiguration('dmpc_config_folder').perform(context)
     
+    file_name_xd_trajectory = LaunchConfiguration('file_name_xd_trajectory').perform(context) if index == "0" else ""
+    file_name_ud_trajectory = LaunchConfiguration('file_name_ud_trajectory').perform(context)
+
     print(f"\t- hovercraft\t\tID: {index} - Name: {name}")
+    print(f"\t - xd trajectory file: {file_name_xd_trajectory}")
     print(f"Configuration file: {params}")
     
     control_dmpc_config = os.path.join(
         get_package_share_directory('holohover_dmpc'),
         'config',
-        'N10pi',
+        dmpc_config_folder,
         'control_dmpc_config' + str(index) + '.yaml'
     )
 
@@ -45,7 +50,7 @@ def launch_setup(context):
         package="holohover_dmpc",
         executable="control_dmpc_" + opt_alg,
         parameters=[control_dmpc_config,
-        {"holohover_props_file": params}],
+        {"holohover_props_file": params, 'file_name_xd_trajectory': file_name_xd_trajectory, 'file_name_ud_trajectory': file_name_ud_trajectory }],
         namespace=name,
         output='both',
         prefix='nice -n -19'
