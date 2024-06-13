@@ -19,3 +19,4 @@ holohover_dmpc_trigger:
     folder_name_sprob: "sProb_chain_QP_N7_acc"
     file_name_xd_trajectory: ""
     file_name_ud_trajectory: ""
+    obstacles: [""]

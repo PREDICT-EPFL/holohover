@@ -233,6 +233,7 @@ def launch_setup(context):
                     'dmpc_config_folder': data["experiment"]["dmpc_config_folder"],
                     'file_name_xd_trajectory': data["experiment"]["file_name_xd_trajectory"],
                     'file_name_ud_trajectory': data["experiment"]["file_name_ud_trajectory"],
+                    'obstacles': '---'.join(obstacle_names),
                     }.items()
             )
 

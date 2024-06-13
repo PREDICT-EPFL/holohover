@@ -27,6 +27,8 @@ struct ControlDMPCSettings
     std::string folder_name_sprob;
     std::string file_name_xd_trajectory;
     std::string file_name_ud_trajectory;
+
+    std::vector<std::string> obstacles;
 };
 
 ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
@@ -66,6 +68,8 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     } else{
         settings.file_name_ud_trajectory = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/config/trajectories/" + tmp_;
     }
+
+    settings.obstacles = node.declare_parameter<std::vector<std::string>>("obstacles");
 
     return settings;
 }

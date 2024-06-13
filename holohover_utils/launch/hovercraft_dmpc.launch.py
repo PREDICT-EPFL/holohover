@@ -18,6 +18,8 @@ def launch_setup(context):
     file_name_xd_trajectory = LaunchConfiguration('file_name_xd_trajectory').perform(context) if index == "0" else ""
     file_name_ud_trajectory = LaunchConfiguration('file_name_ud_trajectory').perform(context)
 
+    obstacles = LaunchConfiguration('obstacles').perform(context)
+
     print(f"\t- hovercraft\t\tID: {index} - Name: {name}")
     print(f"\t - xd trajectory file: {file_name_xd_trajectory}")
     print(f"Configuration file: {params}")
@@ -50,7 +52,7 @@ def launch_setup(context):
         package="holohover_dmpc",
         executable="control_dmpc_" + opt_alg,
         parameters=[control_dmpc_config,
-        {"holohover_props_file": params, 'file_name_xd_trajectory': file_name_xd_trajectory, 'file_name_ud_trajectory': file_name_ud_trajectory }],
+        {"holohover_props_file": params, 'file_name_xd_trajectory': file_name_xd_trajectory, 'file_name_ud_trajectory': file_name_ud_trajectory, 'obstacles': obstacles.split('---')}],
         namespace=name,
         output='both',
         prefix='nice -n -19'
