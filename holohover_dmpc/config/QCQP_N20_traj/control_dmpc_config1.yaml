@@ -17,5 +17,3 @@ h1/dmpc:
     Nagents: 4
     my_id: 1
     folder_name_sprob: "sProb_chain_QCQP_N20_050_traj"
-    file_name_xd_trajectory: ""
-    file_name_ud_trajectory: "clover_50/clover_traj_ud_N20_50.csv"

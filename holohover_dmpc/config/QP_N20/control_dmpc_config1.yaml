@@ -23,5 +23,3 @@ h1/dmpc:
     Nagents: 4
     my_id: 1
     folder_name_sprob: "sProb_chain_QP_N20_acc_050_damped"
-    file_name_xd_trajectory: ""
-    file_name_ud_trajectory: ""
