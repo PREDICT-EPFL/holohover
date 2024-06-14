@@ -675,10 +675,10 @@ static const struct file_operations spidev_fops = {
  */
 
 static dev_t spidev_nr;
-
 static struct class spidev_class = {
-		.name = "spideve",
+	.name = "spideve",
 };
+static struct cdev spidev_device;
 
 #ifdef CONFIG_OF
 static const struct of_device_id spidev_dt_ids[] = {
@@ -771,7 +771,7 @@ static int spidev_probe(struct spi_device *spi)
 	if (minor < N_SPI_MINORS) {
 		struct device *dev;
 
-		spidev->devt = MKDEV(spidev_nr, minor);
+		spidev->devt = MKDEV(MAJOR(spidev_nr), minor);
 		dev = device_create(&spidev_class, &spi->dev, spidev->devt,
 				    spidev, "spideve%d.%d",
 				    spi->master->bus_num, spi->chip_select);
@@ -840,13 +840,22 @@ static int __init spidev_init(void)
 	int status;
 
 	status = alloc_chrdev_region(&spidev_nr, 0, N_SPI_MINORS, "spideve");
-	if(status < 0) {
-		printk("Device Nr. could not be allocated!\n");
+	if (status < 0) {
+		printk("spideve: Device Nr. could not be allocated!\n");
 		return status;
 	}
 
 	status = class_register(&spidev_class);
 	if (status) {
+		unregister_chrdev_region(spidev_nr, N_SPI_MINORS);
+		return status;
+	}
+
+	cdev_init(&spidev_device, &spidev_fops);
+	status = cdev_add(&spidev_device, spidev_nr, N_SPI_MINORS);
+	if (status < 0) {
+		printk("spideve: Registering of device to kernel failed!\n");
+		class_unregister(&spidev_class);
 		unregister_chrdev_region(spidev_nr, N_SPI_MINORS);
 		return status;
 	}
