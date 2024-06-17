@@ -36,7 +36,7 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     u_signal.setZero();
 
 
-    p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd+control_settings.nud);
+    p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd+control_settings.nud+2*control_settings.Nobs);
 
     // Dummy QP parameters for checking that ADMM works
     //initial positions
@@ -59,10 +59,13 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
         p[0] = x20[0]; p[1] = x20[1];
         p[9] = x2d[0]; p[10] = x2d[1];
         p[15] = x3d[0]; p[16] = x3d[1];     
-    } else if (my_id == 2){
+    } else if (my_id == 2 && my_id < control_settings.Nagents){
         p[0] = x30[0]; p[1] = x30[1];
         p[9] = x3d[0]; p[10] = x3d[1];
         p[15] = x4d[0]; p[16] = x4d[1]; 
+    } else if (my_id == 2 && my_id == control_settings.Nagents){
+        p[0] = x30[0]; p[1] = x30[1];
+        p[9] = x3d[0]; p[10] = x3d[1];
     } else if (my_id == 3){
         p[0] = x40[0]; p[1] = x40[1];
         p[9] = x4d[0]; p[10] = x4d[1];
@@ -71,6 +74,12 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     state_ref = p.segment(control_settings.nx+control_settings.nu,control_settings.nxd); //todo
     state_ref_at_ocp_solve = state_ref;
     input_ref = Eigen::VectorXd::Zero(control_settings.nud);
+    obs_pos = 10*Eigen::VectorXd::Ones(2*control_settings.Nobs);
+    if(control_settings.Nobs > 0){
+        p.tail(2*control_settings.Nobs) = obs_pos;
+    } 
+    
+
 
     //init QP
 
@@ -305,6 +314,16 @@ void HolohoverDmpcDsqpNode::init_topics()
     dmpc_trigger_subscription = this->create_subscription<std_msgs::msg::UInt64>(
             "/dmpc/trigger", 10,
             std::bind(&HolohoverDmpcDsqpNode::init_dmpc, this, std::placeholders::_1),publish_control_options);
+
+    obs_subscriptions.resize(control_settings.Nobs);
+    bound_obs_callback.resize(control_settings.Nobs);
+    for (int i = 0; i < control_settings.Nobs; i++){
+        std::string str_ = "o" + std::to_string(control_settings.Nagents + i);
+        bound_obs_callback[i] = std::bind(&HolohoverDmpcDsqpNode::obs_callback, this, std::placeholders::_1, i); 
+        obs_subscriptions[i] = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
+            str_, 10,
+            bound_obs_callback[i],state_options); 
+    } 
 }
 
 void HolohoverDmpcDsqpNode::init_comms(){
@@ -559,6 +578,12 @@ void HolohoverDmpcDsqpNode::update_setpoint_in_ocp(){
         p.segment(control_settings.nx+control_settings.nu+control_settings.nxd,control_settings.nud) = input_ref;
     }
 
+    if(control_settings.Nobs > 0){
+        std::unique_lock obs_lock{obs_mutex, std::defer_lock};
+        obs_lock.lock();
+        p.tail(2*control_settings.Nobs) = obs_pos;
+        obs_lock.unlock();
+    } 
 }
 
 void HolohoverDmpcDsqpNode::init_dmpc(const std_msgs::msg::UInt64 &publish_control_msg)
@@ -1063,6 +1088,19 @@ int HolohoverDmpcDsqpNode::solve(unsigned int max_outer_iter_, bool sync_admm)
     
     return 0;
 }
+
+void HolohoverDmpcDsqpNode::obs_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state, int obs_idx_){
+    if (2*obs_idx_ < obs_pos.size()){
+        std::unique_lock obs_lock{obs_mutex, std::defer_lock};
+        obs_lock.lock(); 
+        obs_pos(2*obs_idx_) = msg_state.state_msg.x;
+        state(2*obs_idx_+1) = msg_state.state_msg.y;
+        obs_lock.unlock();
+    } else {
+       RCLCPP_INFO(get_logger(), "Did not update obstacle position because index is out of bounds"); 
+    } 
+    
+} 
 
 void HolohoverDmpcDsqpNode::received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_idx_){
     // if(!received_vin(in_neighbor_idx_)){

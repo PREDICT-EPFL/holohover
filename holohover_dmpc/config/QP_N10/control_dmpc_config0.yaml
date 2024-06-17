@@ -15,5 +15,6 @@ h0/dmpc:
     idx_u1: 135
     idx_x0: 0
     Nagents: 4
+    Nobs: 0
     my_id: 0
     folder_name_sprob: "sProb_chain_QP_N10_acc_100_damped"
