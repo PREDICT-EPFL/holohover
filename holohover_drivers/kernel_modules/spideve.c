@@ -82,7 +82,7 @@ struct spidev_data {
 static LIST_HEAD(device_list);
 static DEFINE_MUTEX(device_list_lock);
 
-static unsigned bufsiz = 4096;
+static unsigned bufsiz = 524288;
 module_param(bufsiz, uint, S_IRUGO);
 MODULE_PARM_DESC(bufsiz, "data bytes in biggest supported SPI message");
 
@@ -334,8 +334,10 @@ spidev_get_ioc_message(unsigned int cmd, struct spi_ioc_transfer __user *u_ioc,
 	if (_IOC_NR(cmd) == _IOC_NR(SPI_IOC_MESSAGE(0))) {
 		if ((tmp % sizeof(struct spi_ioc_transfer)) != 0)
 			return ERR_PTR(-EINVAL);
-		*n_ioc = tmp / sizeof(struct spi_ioc_transfer);
+	} else {
+		tmp = tmp * sizeof(struct spi_ioc_transfer);
 	}
+	*n_ioc = tmp / sizeof(struct spi_ioc_transfer);
 	if (*n_ioc == 0)
 		return NULL;
 
