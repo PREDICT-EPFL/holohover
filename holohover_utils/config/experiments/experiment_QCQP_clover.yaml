@@ -7,7 +7,7 @@ experiment:
   
   file_name_xd_trajectory: "clover_50/clover_traj_xd_N20_50.csv"
   file_name_ud_trajectory: "clover_50/clover_traj_ud_N20_50.csv"
-  dmpc_config_folder: "QCQP_N10_traj"
+  dmpc_config_folder: "QCQP_N20_traj"
    
 
 hovercraft:
