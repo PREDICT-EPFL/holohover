@@ -44,7 +44,8 @@ xxd{4} = [x4d];
 xinit = []; %solver initialization
 
 % setup OCP
-sProb = holohover_sProb_acc(Nrobot,N,dt,h,xx0,uu0,xxd,xinit);
+%sProb = holohover_sProb_acc(Nrobot,N,dt,h,xx0,uu0,xxd,xinit);
+sProb = holohover_sProb_QCQP(Nrobot,N,dt,h,xx0,uu0,xxd,xinit);
 
 %export C code
 gen_c_sProb(sProb);
