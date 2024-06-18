@@ -2,7 +2,7 @@ h0/dmpc:
   ros__parameters:
     dmpc_period: 0.100
     rho: 4.0
-    maxiter: 30
+    maxiter: 6
     max_outer_iter: 1
     nx: 6
     nu: 3
@@ -17,4 +17,4 @@ h0/dmpc:
     Nagents: 4
     Nobs: 0
     my_id: 0
-    folder_name_sprob: "sProb_chain_QCQP_N10"
+    folder_name_sprob: "sProb_chain_QCQP_N10_2"
