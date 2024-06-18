@@ -264,3 +264,26 @@ int PMW3389DM::power_up_and_upload_firmware()
 
     return retv;
 }
+
+int PMW3389DM::init_burst_read()
+{
+    return write_reg(MOTION_BURST, 0x01);
+}
+
+int PMW3389DM::burst_read(uint8_t *rx_buf)
+{
+    struct spi_ioc_transfer xfer[2];
+    memset(xfer, 0, sizeof(xfer));
+
+    uint8_t tx_data = MOTION_BURST;
+    xfer[0].tx_buf = (__u64) &tx_data;
+    xfer[0].rx_buf = (__u64) 0;
+    xfer[0].len = 1;
+    xfer[0].delay_usecs = 35; // t_SRAD_MOTBR 35us
+
+    xfer[1].tx_buf = (__u64) 0;
+    xfer[1].rx_buf = (__u64) rx_buf;
+    xfer[1].len = 12;
+
+    return ioctl(fd, SPI_IOC_MESSAGE(2), xfer);
+}

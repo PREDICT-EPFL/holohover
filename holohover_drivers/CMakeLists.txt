@@ -26,13 +26,16 @@ find_package(rclcpp REQUIRED)
 find_package(holohover_msgs REQUIRED)
 find_package(libgpiod REQUIRED)
 
-add_executable(holohover_driver src/holohover_driver_node.cpp src/msp.cpp src/pmw3389dm.cpp)
-target_include_directories(holohover_driver PRIVATE kernel_modules)
-ament_target_dependencies(holohover_driver rclcpp holohover_msgs)
-target_link_libraries(holohover_driver libgpiod::libgpiod)
+add_executable(holohover_fc src/holohover_fc_node.cpp src/msp.cpp)
+ament_target_dependencies(holohover_fc rclcpp holohover_msgs)
+
+add_executable(holohover_mouse_sensor src/holohover_mouse_sensor_node.cpp src/pmw3389dm.cpp)
+target_include_directories(holohover_mouse_sensor PRIVATE kernel_modules)
+ament_target_dependencies(holohover_mouse_sensor rclcpp holohover_msgs)
+target_link_libraries(holohover_mouse_sensor libgpiod::libgpiod)
 
 install(TARGETS
-  holohover_driver
+        holohover_fc holohover_mouse_sensor
   DESTINATION lib/${PROJECT_NAME}
 )
 

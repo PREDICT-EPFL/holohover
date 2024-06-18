@@ -1,10 +1,10 @@
-#ifndef HOLOHOVER_DRIVERS_HOLOHOVER_DRIVER_NODE_HPP
-#define HOLOHOVER_DRIVERS_HOLOHOVER_DRIVER_NODE_HPP
+#ifndef HOLOHOVER_DRIVERS_HOLOHOVER_FC_NODE_HPP
+#define HOLOHOVER_DRIVERS_HOLOHOVER_FC_NODE_HPP
 
 #include "rclcpp/rclcpp.hpp"
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
+#include "holohover_msgs/msg/holohover_imu_stamped.hpp"
 #include "msp.hpp"
-#include "pmw3389dm.hpp"
 
 #define UART_TIMEOUT 100
 
@@ -16,25 +16,28 @@
 #define MOTOR_C_1  4
 #define MOTOR_C_2  5
 
-class HolohoverDriverNode : public rclcpp::Node
+class HolohoverFCNode : public rclcpp::Node
 {
 public:
-    HolohoverDriverNode();
+    HolohoverFCNode();
 private:
     MSP msp;
     msp_motor_t motors;
+    msp_raw_imu_t imu;
     bool motor_are_reset = false;
     rclcpp::Time last_control_msg_time;
 
-    PMW3389DM mouse_sensor;
-
     rclcpp::TimerBase::SharedPtr watchdog_timer;
+    rclcpp::TimerBase::SharedPtr imu_timer;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_subscription;
+    rclcpp::Publisher<holohover_msgs::msg::HolohoverIMUStamped>::SharedPtr imu_publisher;
 
     void watchdog_callback();
     void control_callback(const holohover_msgs::msg::HolohoverControlStamped& msg);
 
+    void imu_callback();
+
     void reset_motors();
 };
 
-#endif //HOLOHOVER_DRIVERS_HOLOHOVER_DRIVER_NODE_HPP
+#endif //HOLOHOVER_DRIVERS_HOLOHOVER_FC_NODE_HPP
