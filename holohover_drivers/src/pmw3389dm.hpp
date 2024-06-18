@@ -16,6 +16,8 @@ public:
     int read_reg(uint8_t address, uint8_t* rx_buf);
     int write_reg(uint8_t address, uint8_t data);
     int power_up_and_upload_firmware();
+    int init_burst_read();
+    int burst_read(uint8_t* rx_buf);
 
 private:
     bool begin_common(const char* device);
