@@ -53,6 +53,7 @@
 #define MSP_SERVO_CONFIGURATIONS 120
 #define MSP_NAV_STATUS           121 // navigation status
 #define MSP_SENSOR_ALIGNMENT     126 // orientation of acc,gyro,mag
+#define MSP_BATTERY_STATE        130 // Connected/Disconnected, Voltage, Current Used
 #define MSP_STATUS_EX            150
 #define MSP_SENSOR_STATUS        151
 #define MSP_BOXIDS               119
@@ -578,6 +579,16 @@ struct msp_sensor_alignment_t {
     uint8_t mag_align;    // one of MSP_SENSOR_ALIGN_XXX
 } __attribute__ ((packed));
 
+// MSP_BATTERY_STATE reply
+struct msp_battery_state_t {
+    uint8_t cell_count;     // 0 indicates battery not detected
+    uint16_t capacity;      // in mAh
+    uint8_t legacy_voltage; // in 0.1V steps
+    uint16_t mah_drawn;     // milli amps hours drawn from battery
+    int16_t amperage;       // current in 0.01A steps, range is -320A to 320A
+    uint8_t state;          // 0: OK, 1: WARNING, 2: CRITICAL, 3: NOT_PRESENT, 4: INIT
+    uint16_t voltage;       // in 0.01V steps
+} __attribute__ ((packed));
 
 // MSP_CALIBRATION_DATA reply
 struct msp_calibration_data_t {
