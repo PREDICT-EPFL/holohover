@@ -17,4 +17,4 @@ h0/dmpc:
     Nagents: 3
     Nobs: 1
     my_id: 0
-    folder_name_sprob: "sProb_chain_QCQP_N20"
+    folder_name_sprob: "sProb_chain_QCQP_N20_obs"

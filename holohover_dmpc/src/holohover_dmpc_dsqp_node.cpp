@@ -318,7 +318,7 @@ void HolohoverDmpcDsqpNode::init_topics()
     obs_subscriptions.resize(control_settings.Nobs);
     bound_obs_callback.resize(control_settings.Nobs);
     for (int i = 0; i < control_settings.Nobs; i++){
-        std::string str_ = "o" + std::to_string(control_settings.Nagents + i);
+        std::string str_ = "/o" + std::to_string(control_settings.Nagents + i) + "/state";
         bound_obs_callback[i] = std::bind(&HolohoverDmpcDsqpNode::obs_callback, this, std::placeholders::_1, i); 
         obs_subscriptions[i] = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
             str_, 10,
@@ -583,6 +583,7 @@ void HolohoverDmpcDsqpNode::update_setpoint_in_ocp(){
         obs_lock.lock();
         p.tail(2*control_settings.Nobs) = obs_pos;
         obs_lock.unlock();
+        std::cout << "I am agent " << my_id << " and I updated the obstacle position to " << p.tail(2) << std::endl;
     } 
 }
 
@@ -1090,11 +1091,11 @@ int HolohoverDmpcDsqpNode::solve(unsigned int max_outer_iter_, bool sync_admm)
 }
 
 void HolohoverDmpcDsqpNode::obs_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state, int obs_idx_){
-    if (2*obs_idx_ < obs_pos.size()){
+    if (2*obs_idx_+1 < obs_pos.size()){
         std::unique_lock obs_lock{obs_mutex, std::defer_lock};
         obs_lock.lock(); 
         obs_pos(2*obs_idx_) = msg_state.state_msg.x;
-        state(2*obs_idx_+1) = msg_state.state_msg.y;
+        obs_pos(2*obs_idx_+1) = msg_state.state_msg.y;
         obs_lock.unlock();
     } else {
        RCLCPP_INFO(get_logger(), "Did not update obstacle position because index is out of bounds"); 

@@ -14,6 +14,7 @@ h1/dmpc:
     idx_u0: 378
     idx_u1: 381
     idx_x0: 126
-    Nagents: 4
+    Nagents: 3
+    Nobs: 1
     my_id: 1
-    folder_name_sprob: "sProb_chain_QCQP_N20"
+    folder_name_sprob: "sProb_chain_QCQP_N20_obs"
