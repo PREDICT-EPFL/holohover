@@ -8,6 +8,7 @@ HolohoverFCNode::HolohoverFCNode() :
 
     bool enable_imu = this->declare_parameter<bool>("enable_imu", false);
     double imu_period = this->declare_parameter<double>("imu_period", 0.01);
+    double diagnostics_period = this->declare_parameter<double>("diagnostics_period", 1);
 
     if (!msp.begin(device.c_str(), baud)) {
         throw std::runtime_error("Could not setup uart connection");
@@ -26,12 +27,17 @@ HolohoverFCNode::HolohoverFCNode() :
             std::bind(&HolohoverFCNode::control_callback, this, std::placeholders::_1));
 
     if (enable_imu) {
-        watchdog_timer = this->create_wall_timer(
+        imu_timer = this->create_wall_timer(
                 std::chrono::duration<double>(imu_period),
                 std::bind(&HolohoverFCNode::imu_callback, this));
 
         imu_publisher = this->create_publisher<holohover_msgs::msg::HolohoverIMUStamped>("imu", rclcpp::SensorDataQoS());
     }
+
+    diagnostics_timer = this->create_wall_timer(
+            std::chrono::duration<double>(diagnostics_period),
+            std::bind(&HolohoverFCNode::diagnostics_callback, this));
+    voltage_publisher = this->create_publisher<std_msgs::msg::Float32>("voltage", 10);
 }
 
 void HolohoverFCNode::watchdog_callback()
@@ -77,6 +83,18 @@ void HolohoverFCNode::imu_callback()
         imu_publisher->publish(imu_msg);
     } else {
         RCLCPP_WARN(this->get_logger(), "MSP raw imu request failed.");
+    }
+}
+
+void HolohoverFCNode::diagnostics_callback()
+{
+    ssize_t msp_battery_state_result = msp.request(MSP_BATTERY_STATE, reinterpret_cast<uint8_t*>(&battery_state), sizeof(battery_state), UART_TIMEOUT);
+    if (msp_battery_state_result >= 0) {
+        std_msgs::msg::Float32 msg;
+        msg.data = (float) battery_state.voltage * 100;
+        voltage_publisher->publish(msg);
+    } else {
+        RCLCPP_WARN(this->get_logger(), "MSP battery state request failed.");
     }
 }
 
