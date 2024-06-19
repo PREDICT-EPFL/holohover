@@ -26,7 +26,7 @@ HolohoverMouseSensorNode::HolohoverMouseSensorNode() :
 
 void HolohoverMouseSensorNode::mouse_callback()
 {
-    uint8_t burst_buffer[8];
+    uint8_t burst_buffer[12];
     int retv = mouse_sensor.burst_read(burst_buffer);
     rclcpp::Time current_time = this->now();
     if (retv >= 0) {
@@ -38,28 +38,29 @@ void HolohoverMouseSensorNode::mouse_callback()
             return;
         }
 
-        holohover_msgs::msg::HolohoverMouseStamped mouse_msg;
-        mouse_msg.header.frame_id = "body";
-        mouse_msg.header.stamp = current_time;
+        if (last_period_valid_measurement)
+        {
+            holohover_msgs::msg::HolohoverMouseStamped mouse_msg;
+            mouse_msg.header.frame_id = "body";
+            mouse_msg.header.stamp = current_time;
 
-        if (motion) {
-            // movement count since last call
-            int16_t delta_x = (int16_t) ((burst_buffer[3] << 8) | burst_buffer[2]);
-            int16_t delta_y = (int16_t) ((burst_buffer[5] << 8) | burst_buffer[4]);
+            if (motion) {
+                // movement count since last call
+                int16_t delta_x = (int16_t) ((burst_buffer[3] << 8) | burst_buffer[2]);
+                int16_t delta_y = (int16_t) ((burst_buffer[5] << 8) | burst_buffer[4]);
 
-            // last term converts inch to meters
-            double dist_x = (double) delta_x / 16000 * 0.0254;
-            double dist_y = (double) delta_y / 16000 * 0.0254;
-            double diff_time = (current_time - last_measurement_time).seconds();
+                // last term converts inch to meters
+                double dist_x = (double) delta_x / 16000 * 0.0254;
+                double dist_y = (double) delta_y / 16000 * 0.0254;
+                double diff_time = (current_time - last_measurement_time).seconds();
 
-            mouse_msg.v_x = dist_x / diff_time;
-            mouse_msg.v_y = -dist_y / diff_time;
-        } else {
-            mouse_msg.v_x = 0;
-            mouse_msg.v_y = 0;
-        }
+                mouse_msg.v_x = dist_x / diff_time;
+                mouse_msg.v_y = -dist_y / diff_time;
+            } else {
+                mouse_msg.v_x = 0;
+                mouse_msg.v_y = 0;
+            }
 
-        if (last_period_valid_measurement) {
             mouse_publisher->publish(mouse_msg);
         }
 
