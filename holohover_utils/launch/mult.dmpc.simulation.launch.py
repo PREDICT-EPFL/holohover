@@ -14,11 +14,9 @@ def launch_setup(context):
     
     experiment_filename = LaunchConfiguration('experiment').perform(context)
     machine = LaunchConfiguration('machine').perform(context)
-    opt_alg = LaunchConfiguration('opt_alg').perform(context) #admm or dsqp
 
     print(f"Launching experiment from file: {experiment_filename}")
     print(f"This machine is named: {machine}")
-    print(f"Optimization method for DMPC is: {opt_alg}")
 
     launch_description = []
 
@@ -34,7 +32,10 @@ def launch_setup(context):
 
     data = yaml.safe_load(open(experiment_conf, 'r'))
     hovercraft = data["hovercraft"]
+    obstacles = data["obstacles"] if "obstacles" in data else []
     common_nodes_machine = data["experiment"]["machine"]
+    opt_alg = data["experiment"]["opt_alg"] # admm or dsqp
+
     rviz_props_file = os.path.join(
         get_package_share_directory('holohover_utils'),
         'config',
@@ -52,6 +53,11 @@ def launch_setup(context):
     holohover_params_simulated = []
     colors = []
 
+    obstacle_machines = []
+    obstacle_names = []
+    obstacle_params = []
+    obstacle_initial_states = {'x': [], 'y': [], 'theta': [], 'vx': [], 'vy': [], 'w': []}
+
     for h in hovercraft:
         hovercraft_machines.append(h['machine'])
         hovercraft_names.append(h['name'])
@@ -66,6 +72,39 @@ def launch_setup(context):
         for i, val in enumerate(initial_state):
             initial_states[list(initial_states.keys())[i]].append(float(val))
 
+        if h['simulate']:
+            hovercraft_names_simulated.append(h['name'])
+            hovercraft_ids_simulated.append(int(h['id']))
+            holohover_params_simulated.append(os.path.join(
+                get_package_share_directory('holohover_utils'),
+                'config',
+                h['holohover_props']))
+
+            initial_state = h['initial_state']
+            for i, val in enumerate(initial_state):
+                initial_states_simulated[list(initial_states_simulated.keys())[i]].append(float(val))
+
+    for h in obstacles:
+        params = os.path.join(
+            get_package_share_directory('holohover_utils'),
+            'config',
+            h['holohover_props'])
+
+        obstacle_machines.append(h['machine'])
+        obstacle_names.append(h['name'])
+        obstacle_params.append(params)
+
+        hovercraft_machines.append(h['machine'])
+        hovercraft_names.append(h['name'])
+        hovercraft_ids.append(int(h['id']))
+        colors += h['color']
+        holohover_params.append(params)
+
+        initial_state = h['initial_state']
+        for i, val in enumerate(initial_state):
+            initial_states[list(initial_states.keys())[i]].append(float(val))
+            obstacle_initial_states[list(obstacle_initial_states.keys())[i]].append(float(val))
+            
         if h['simulate']:
             hovercraft_names_simulated.append(h['name'])
             hovercraft_ids_simulated.append(int(h['id']))
@@ -104,7 +143,7 @@ def launch_setup(context):
                       "initial_state_vx":      initial_states_simulated['vx'], 
                       "initial_state_vy":      initial_states_simulated['vy'], 
                       "initial_state_w":       initial_states_simulated['w'],
-                      "holohover_props_files": holohover_params_simulated                                          
+                      "holohover_props_files": holohover_params_simulated
                     }],
         output='screen'
     )
@@ -176,10 +215,10 @@ def launch_setup(context):
         launch_description.append(optitrack_node)
         launch_description.append(dmpc_launch)
         launch_description.append(trajectory_generator_node)
-    
+
     #################### COMMON NODES STARTING - END ####################
    
-    #################### HOVERCRAFTS STARTING ####################
+    #################### HOVERCRAFT STARTING ####################
     # Now iterate on each hovercraft and launch the nodes for each one
     print(f"Starting {len(hovercraft)} hovercraft")
     for i in range(len(hovercraft)):
@@ -194,11 +233,34 @@ def launch_setup(context):
                     'dmpc_config_folder': data["experiment"]["dmpc_config_folder"],
                     'file_name_xd_trajectory': data["experiment"]["file_name_xd_trajectory"],
                     'file_name_ud_trajectory': data["experiment"]["file_name_ud_trajectory"],
+                    'obstacles': '---'.join(obstacle_names),
                     }.items()
             )
-            
+
             launch_description.append(hovercraft_launch)
-    #################### HOVERCRAFTS STARTING - END ####################
+    #################### HOVERCRAFT STARTING - END ####################
+
+    #################### OBSTACLES STARTING ####################
+    # Now iterate on each hovercraft and launch the nodes for each one
+    print(f"Starting {len(obstacles)} obstacles")
+
+    for i in range(len(obstacles)):
+        if obstacle_machines[i] == machine or machine == "all":
+            obstacle_launch = IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_lqr.launch.py')),
+                launch_arguments=
+                    {'index': str(i),
+                     'name': obstacle_names[i],
+                     'params': obstacle_params[i],
+                     'initial_x': str(obstacle_initial_states['x'][i]),
+                     'initial_y': str(obstacle_initial_states['y'][i]),
+                     'initial_yaw': str(obstacle_initial_states['theta'][i])
+                     }.items()
+            )
+
+            launch_description.append(obstacle_launch)
+    #################### OBSTACLES STARTING - END ####################
+
 
     return launch_description
 
@@ -206,7 +268,6 @@ def launch_setup(context):
 def generate_launch_description():
     ld = LaunchDescription()
 
-    # Simulator
     opfunc = OpaqueFunction(function = launch_setup)
 
     ld.add_action(DeclareLaunchArgument(

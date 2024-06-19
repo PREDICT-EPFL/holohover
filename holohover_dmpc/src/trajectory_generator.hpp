@@ -4,7 +4,9 @@
 #include "rclcpp/rclcpp.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include "holohover_msgs/msg/holohover_dmpc_state_ref_stamped.hpp"
+#include "holohover_msgs/msg/holohover_state.hpp"
 #include "yaml-cpp/yaml.h"
+#include <thread>
 
 struct GeneralConfig {
     double time_step;
@@ -28,13 +30,13 @@ public:
     TrajectoryGenerator();
 
 private:
-    void runTask(std::string filename);
-    
+    void dmpcGenerator(GeneralConfig& gc, YAML::Node& config);
+    void obstGenerator(GeneralConfig& gc, YAML::Node& config);
+
     std::vector<std::string> names;
     std::vector<long int> ids;
-    std::map<int, rclcpp::Publisher<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr> publishers;
-
-    std::shared_ptr<rclcpp::Rate> rate;
+    std::map<int, rclcpp::Publisher<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr> dmpc_publishers;
+    std::map<int, rclcpp::Publisher<holohover_msgs::msg::HolohoverState>::SharedPtr> obst_publishers;
 
     GeneralConfig parseGeneralConfig(YAML::Node& config);
 

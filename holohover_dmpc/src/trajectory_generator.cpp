@@ -5,39 +5,80 @@ TrajectoryGenerator::TrajectoryGenerator() :
     names(declare_parameter<std::vector<std::string>>("names")),
     ids(declare_parameter<std::vector<long int>>("ids"))
 {
-    std::string filename;
+    std::string filename, obst_filename;
 
     for(const auto& id : ids)
     {
-        auto topic_name = "/" + names[id] + "/dmpc_state_ref";
-        publishers[id] = this->create_publisher<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(topic_name, 10);
+        if (names[id].rfind("h", 0) == 0) { 
+            auto topic_name = "/" + names[id] + "/dmpc_state_ref";
+            RCLCPP_INFO(this->get_logger(), "Publishing to : %s", topic_name.c_str());
+
+            dmpc_publishers[id] = this->create_publisher<holohover_msgs::msg::HolohoverDmpcStateRefStamped>(topic_name, 10);
+        } else if (names[id].rfind("o", 0) == 0){
+            auto topic_name = "/" + names[id] + "/state_ref";
+            RCLCPP_INFO(this->get_logger(), "Publishing to : %s", topic_name.c_str());
+
+            obst_publishers[id] = this->create_publisher<holohover_msgs::msg::HolohoverState>(topic_name, 10);
+        }
     }
+
+    std::string package_share_directory = ament_index_cpp::get_package_share_directory("holohover_dmpc");
+
+    YAML::Node config, obst_config;
+    GeneralConfig gc, obst_gc;
 
     while(true)
     {
-        std::cout << "Insert the name of the YAML file: ";
-        std::cin >> filename;
-        std::string package_share_directory = ament_index_cpp::get_package_share_directory("holohover_dmpc");
-        runTask(package_share_directory + "/config/trajectories/" + filename);
+        while(true) {
+            try {
+                std::cout << "Insert the name of the YAML file for DMPC hovercraft: ";
+                std::cin >> filename;
+
+                std::string path = package_share_directory + "/config/trajectories/" + filename;
+                RCLCPP_INFO(this->get_logger(), "Opening trajectory file: %s", path.c_str());
+                config = YAML::LoadFile(path);
+                gc = parseGeneralConfig(config);
+                break;
+            } catch (const std::exception& e) {
+                RCLCPP_ERROR(this->get_logger(), "Error reading YAML file for DMPC. Exception: %s", e.what());
+            }
+        }
+
+        while(true) {
+            std::cout << "Insert the name of the YAML file for LQR obstacles (or none): ";
+            std::cin >> obst_filename;
+
+            if(obst_filename == "none") {
+                RCLCPP_INFO(this->get_logger(), "No obstacles trajectory file provided.");
+                break;
+            }
+
+            try {
+                std::string path = package_share_directory + "/config/trajectories_obstacles/" + obst_filename;
+                RCLCPP_INFO(this->get_logger(), "Opening obstacles trajectory file: %s", path.c_str());
+                obst_config = YAML::LoadFile(path);
+                obst_gc = parseGeneralConfig(obst_config);
+                
+                break;
+            } catch (const std::exception& e) {
+                RCLCPP_ERROR(this->get_logger(), "Error reading YAML file for obstacles. Exception: %s", e.what());
+            }
+        }
+
+        
+        std::thread dmpc(&TrajectoryGenerator::dmpcGenerator, this, std::ref(gc), std::ref(config));
+        if (obst_filename != "none") {
+            //RCLCPP_INFO(this->get_logger(), "Running obstgenerator!");
+
+            std::thread obst(&TrajectoryGenerator::obstGenerator, this, std::ref(obst_gc), std::ref(obst_config));
+            obst.join();
+        }
+        dmpc.join();
     }
 }
 
-// Modify the runTask function to take a message as input
-void TrajectoryGenerator::runTask(std::string filename) {
-    YAML::Node config;
-    GeneralConfig gc;
-
-    RCLCPP_INFO(this->get_logger(), "Opening trajectory file: %s", filename.c_str());
-
-    try {
-        config = YAML::LoadFile(filename);
-        gc = parseGeneralConfig(config);
-    } catch (const std::exception& e) {
-        RCLCPP_ERROR(this->get_logger(), "Error reading YAML file. Exception: %s", e.what());
-        return;
-    }
-
-    rate = std::make_shared<rclcpp::Rate>(1.0/gc.time_step);
+void TrajectoryGenerator::dmpcGenerator(GeneralConfig& gc, YAML::Node& config) {
+    auto rate = rclcpp::Rate(1.0/gc.time_step);
 
     Step s;
     for (const auto& step : config["trajectory"])
@@ -47,7 +88,7 @@ void TrajectoryGenerator::runTask(std::string filename) {
             return;
         }
 
-        RCLCPP_INFO(this->get_logger(), "Trajectory step...");
+        RCLCPP_INFO(this->get_logger(), "DMPC Trajectory step...");
         RCLCPP_INFO(this->get_logger(), "\tID\tx\t\ty\t\tyaw");
 
         for (const auto& element : step["step"])
@@ -93,13 +134,50 @@ void TrajectoryGenerator::runTask(std::string filename) {
                 msg.val_length += 6;
             }
 
-            publishers[id]->publish(msg);
+            dmpc_publishers[id]->publish(msg);
         }
 
-        rate->sleep();
+        rate.sleep();
     }
-    RCLCPP_INFO(this->get_logger(), "Trajectory finished.");
+    RCLCPP_INFO(this->get_logger(), "DMPC Trajectory finished.");
 }
+
+
+
+void TrajectoryGenerator::obstGenerator(GeneralConfig& gc, YAML::Node& config) {
+    //rate = std::make_shared<rclcpp::Rate>(1.0/gc.time_step);
+    auto rate = rclcpp::Rate(1.0/gc.time_step);
+    Step s;
+    for (const auto& step : config["trajectory"])
+    {
+        if(!rclcpp::ok())
+            return;
+
+        RCLCPP_INFO(this->get_logger(), "OBSTACLE Trajectory step...");
+        RCLCPP_INFO(this->get_logger(), "\tID\tx\t\ty\t\tyaw");
+
+        for (const auto& element : step["step"])
+        {
+            holohover_msgs::msg::HolohoverState msg;
+
+            msg.x   = element["x"].as<double>();
+            msg.y   = element["y"].as<double>();
+            msg.yaw = element["yaw"].as<double>();
+            msg.v_x  = 0.0;
+            msg.v_y  = 0.0;
+            msg.w_z = 0.0;
+
+            obst_publishers[element["id"].as<int>()]->publish(msg);
+
+            RCLCPP_INFO(this->get_logger(), "\t%d\t%f\t%f\t%f", element["id"].as<int>(), msg.x, msg.y, msg.yaw);
+        }
+
+        rate.sleep();
+    }
+    RCLCPP_INFO(this->get_logger(), "Obstacle Trajectory finished.");
+}
+
+
 
 GeneralConfig TrajectoryGenerator::parseGeneralConfig(YAML::Node& config)
 {
@@ -109,12 +187,15 @@ GeneralConfig TrajectoryGenerator::parseGeneralConfig(YAML::Node& config)
     gc.names     = config["names"].as<std::vector<std::string>>();
     gc.ids       = config["ids"].as<std::vector<int>>();
 
-    for (const auto& neighbor : config["neighbors"]) 
+    if (config["neighbors"])
     {
-        for (const auto& pair : neighbor)
+        for (const auto& neighbor : config["neighbors"]) 
         {
-            int id = pair.first.as<int>();
-            gc.neighbors[id] = pair.second.as<std::vector<int>>();
+            for (const auto& pair : neighbor)
+            {
+                int id = pair.first.as<int>();
+                gc.neighbors[id] = pair.second.as<std::vector<int>>();
+            }
         }
     }
 

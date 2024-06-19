@@ -4,10 +4,11 @@ experiment:
   description: "Rectangle point to point transition and dt = 0.05"
   machine: master
   rviz_props_file: "common/holohover_params.yaml"
+  opt_alg: "dsqp"
   
   file_name_xd_trajectory: ""
   file_name_ud_trajectory: ""
-  dmpc_config_folder: "QCQP_N20"
+  dmpc_config_folder: "QCQP_N10"
    
 
 hovercraft:

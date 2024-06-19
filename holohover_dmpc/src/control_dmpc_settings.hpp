@@ -23,10 +23,13 @@ struct ControlDMPCSettings
     int idx_x0;
 
     int Nagents;
+    int Nobs;
     int my_id;
     std::string folder_name_sprob;
     std::string file_name_xd_trajectory;
     std::string file_name_ud_trajectory;
+
+    std::vector<std::string> obstacles;
 };
 
 ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
@@ -49,6 +52,7 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     settings.idx_x0 = node.declare_parameter<int>("idx_x0");
 
     settings.Nagents = node.declare_parameter<int>("Nagents");
+    settings.Nobs = node.declare_parameter<int>("Nobs");
     settings.my_id = node.declare_parameter<int>("my_id");
     settings.folder_name_sprob = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/ocp_specs/" + node.declare_parameter<std::string>("folder_name_sprob");
     
@@ -66,6 +70,8 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     } else{
         settings.file_name_ud_trajectory = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/config/trajectories/" + tmp_;
     }
+
+    settings.obstacles = node.declare_parameter<std::vector<std::string>>("obstacles");
 
     return settings;
 }

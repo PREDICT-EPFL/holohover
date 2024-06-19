@@ -100,6 +100,13 @@ private:
     Holohover::control_acc_t<double> u_acc_next; //GS: m_u1
     Holohover::control_force_t<double> u_signal;
 
+    //obstacles
+    Eigen::VectorXd obs_pos; //obstacle positions
+    std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr> obs_subscriptions;
+    std::vector<std::function<void(const holohover_msgs::msg::HolohoverStateStamped &obs_msg_)>> bound_obs_callback;
+    void obs_callback(const holohover_msgs::msg::HolohoverStateStamped &obs_msg_, int obs_id_);
+    std::mutex obs_mutex;
+
     //OCP
     Eigen::VectorXd p; //parameters for OCP ([x0; u0; xd])
     int my_id;

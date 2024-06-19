@@ -25,6 +25,15 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         holohover(holohover_props, control_settings.dmpc_period),
         sprob(control_settings.Nagents)
 {
+
+
+    //  - -      ToDo from AG
+    // here's the list of the obstacles:
+    RCLCPP_INFO(get_logger(), "DMPC NODE: list of obstacles: ");
+    for (const auto &obstacle : control_settings.obstacles)
+        RCLCPP_INFO(get_logger(), "\t\tobstacle: %s", obstacle.c_str());
+    // - - - end ToDo from AG
+
     my_id = control_settings.my_id;
     Nagents = control_settings.Nagents;    
 

@@ -13,9 +13,9 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     last_control_signal.setZero();
 
     // init ref
-    ref.x = 0;
-    ref.y = 0;
-    ref.yaw = 0;
+    ref.x = control_settings.initial_x;
+    ref.y = control_settings.initial_y;
+    ref.yaw = control_settings.initial_yaw;
 
     // calculate LQR gain
     Eigen::Matrix<double, Holohover::NX, Holohover::NX> &Ad = holohover.Ad;

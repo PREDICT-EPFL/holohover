@@ -12,6 +12,9 @@ def launch_setup(context):
     index  = LaunchConfiguration('index').perform(context)
     name   = LaunchConfiguration('name').perform(context)
     params = LaunchConfiguration('params').perform(context)
+    initial_x = float(LaunchConfiguration('initial_x').perform(context))    
+    initial_y = float(LaunchConfiguration('initial_y').perform(context))    
+    initial_yaw = float(LaunchConfiguration('initial_yaw').perform(context))    
     
     print(f"\t- hovercraft\t\tID: {index} - Name: {name}")
     print(f"Configuration file: {params}")
@@ -29,20 +32,14 @@ def launch_setup(context):
         'navigation_config.yaml'
     )
 
-    specific_configuration = os.path.join(
-        get_package_share_directory('holohover_utils'),
-        'config/hovercraft',
-        name,
-        'config.yaml'
-    )
-
     # - - - Nodes
     navigation_node = Node(
         package="holohover_navigation",
         executable="navigation",
         parameters=[navigation_config, {'holohover_props_file' : params}],
         namespace= name,
-        output='screen'
+        output='screen',
+        prefix='nice -n -19'
     )
     
     controller_node = Node(
@@ -50,22 +47,14 @@ def launch_setup(context):
         package="holohover_control",
         executable="control_lqr",
         parameters=[control_lqr_config,
-        {"holohover_props_file": params}],
+        {"holohover_props_file": params, "initial_x": initial_x, "initial_y": initial_y, "initial_yaw": initial_yaw}],
         namespace=name,
-        output='both'
-    )
-    
-    rviz_interface_node = Node(
-        package="holohover_utils",
-        executable="rviz_interface",
-        parameters=[specific_configuration, {'id': int(index), 'holohover_props_file' : params}],
-        namespace= name,
-        output='screen'
+        output='both',
+        prefix='nice -n -19'
     )
     
     launch_description.append(controller_node)        
     launch_description.append(navigation_node)
-    launch_description.append(rviz_interface_node)
 
     return launch_description
 
@@ -90,6 +79,20 @@ def generate_launch_description():
         description='Holohover params config file path.'
     ))
 
+    ld.add_action(DeclareLaunchArgument(
+        'initial_x', default_value='0.0',
+        description='Initial X position.'
+    ))
+
+    ld.add_action(DeclareLaunchArgument(
+        'initial_y', default_value='0.0',
+        description='Initial Y position.'
+    ))
+
+    ld.add_action(DeclareLaunchArgument(
+        'initial_yaw', default_value='0.0',
+        description='Initial Yaw angle.'
+    ))
 
     ld.add_action(opfunc)   
 
