@@ -1,0 +1,8 @@
+/**:
+  ros__parameters:
+    # FC Node
+    device: "/dev/ttyS2"
+
+    # Mouse sensor node
+    device: "/dev/spideve3.0"
+    n_reset_line_name: "PIN_11"
