@@ -4,6 +4,7 @@ experiment:
   description: "Clover trajectory tacking with QCQP formulation and dt = 0.05"
   machine: master
   rviz_props_file: "common/holohover_params.yaml"
+  opt_alg: "dsqp"
   
   file_name_xd_trajectory: "clover_50/clover_traj_xd_N20_50.csv"
   file_name_ud_trajectory: "clover_50/clover_traj_ud_N20_50.csv"

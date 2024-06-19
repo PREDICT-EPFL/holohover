@@ -14,11 +14,9 @@ def launch_setup(context):
     
     experiment_filename = LaunchConfiguration('experiment').perform(context)
     machine = LaunchConfiguration('machine').perform(context)
-    opt_alg = LaunchConfiguration('opt_alg').perform(context) #admm or dsqp
 
     print(f"Launching experiment from file: {experiment_filename}")
     print(f"This machine is named: {machine}")
-    print(f"Optimization method for DMPC is: {opt_alg}")
 
     launch_description = []
 
@@ -36,6 +34,8 @@ def launch_setup(context):
     hovercraft = data["hovercraft"]
     obstacles = data["obstacles"] if "obstacles" in data else []
     common_nodes_machine = data["experiment"]["machine"]
+    opt_alg = data["experiment"]["opt_alg"] # admm or dsqp
+
     rviz_props_file = os.path.join(
         get_package_share_directory('holohover_utils'),
         'config',

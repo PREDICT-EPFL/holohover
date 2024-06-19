@@ -2,6 +2,7 @@ experiment:
   name: experiment4
   description: "Test single LQR for debugging reasons"
   rviz_props_file: "common/holohover_params.yaml" 
+  opt_alg: "admm"
 
   file_name_xd_trajectory: "clover_50/clover_traj_xd_N20_50.csv"
   file_name_ud_trajectory: "clover_50/clover_traj_ud_N20_50.csv"
