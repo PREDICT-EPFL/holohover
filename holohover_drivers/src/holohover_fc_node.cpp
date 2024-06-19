@@ -72,9 +72,9 @@ void HolohoverFCNode::imu_callback()
         imu_msg.header.frame_id = "body";
         imu_msg.header.stamp = this->now();
 
-        imu_msg.acc.x = (double) imu.acc[1] / 32767 * 16 * 4 * 9.81;
-        imu_msg.acc.y = -((double) imu.acc[0] / 32767 * 16 * 4 * 9.81);
-        imu_msg.acc.z = -((double) imu.acc[2] / 32767 * 16 * 4 * 9.81);
+        imu_msg.acc.x = (double) imu.acc[1] / (512 * 4) * 9.81;
+        imu_msg.acc.y = -((double) imu.acc[0] / (512 * 4) * 9.81);
+        imu_msg.acc.z = -((double) imu.acc[2] / (512 * 4) * 9.81);
 
         imu_msg.gyro.x = (double) imu.gyro[1] / 32767 * 2000 / 180 * M_PI;
         imu_msg.gyro.y = -((double) imu.gyro[0] / 32767 * 2000 / 180 * M_PI);
@@ -91,7 +91,7 @@ void HolohoverFCNode::diagnostics_callback()
     ssize_t msp_battery_state_result = msp.request(MSP_BATTERY_STATE, reinterpret_cast<uint8_t*>(&battery_state), sizeof(battery_state), UART_TIMEOUT);
     if (msp_battery_state_result >= 0) {
         std_msgs::msg::Float32 msg;
-        msg.data = (float) battery_state.voltage * 100;
+        msg.data = (float) battery_state.voltage / 100;
         voltage_publisher->publish(msg);
     } else {
         RCLCPP_WARN(this->get_logger(), "MSP battery state request failed.");
