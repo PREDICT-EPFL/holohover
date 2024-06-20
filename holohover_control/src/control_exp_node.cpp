@@ -42,15 +42,15 @@ HolohoverControlExpNode::HolohoverControlExpNode() :
 void HolohoverControlExpNode::init_topics()
 {
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
-            "drone/control",
+            "control",
             rclcpp::SensorDataQoS());
 
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
-            "navigation/state", 10,
+            "state", 10,
             std::bind(&HolohoverControlExpNode::state_callback, this, std::placeholders::_1));
 
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
-            "control/ref", 10,
+            "state_ref", 10,
             std::bind(&HolohoverControlExpNode::ref_callback, this, std::placeholders::_1));
 }
 

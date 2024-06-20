@@ -1,4 +1,4 @@
-control_lqr:
+/**:
   ros__parameters:
     rand_sig_duration: 100000.0
     rand_sig_max: 0.6
