@@ -3,7 +3,7 @@
 HolohoverFCNode::HolohoverFCNode() :
     Node("fc")
 {
-    std::string device = this->declare_parameter<std::string>("device");
+    std::string device = this->declare_parameter<std::string>("fc_device");
     unsigned int baud = this->declare_parameter<int>("baud_rate", 1000000);
 
     bool enable_imu = this->declare_parameter<bool>("enable_imu", false);

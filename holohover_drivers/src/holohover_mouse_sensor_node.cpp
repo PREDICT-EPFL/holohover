@@ -4,7 +4,7 @@ HolohoverMouseSensorNode::HolohoverMouseSensorNode() :
     Node("mouse_sensor"),
     last_period_valid_measurement(false)
 {
-    std::string device = this->declare_parameter<std::string>("device");
+    std::string device = this->declare_parameter<std::string>("mouse_device");
     std::string n_reset_line_name = this->declare_parameter<std::string>("n_reset_line_name");
     double period = this->declare_parameter<double>("period", 0.01);
 
