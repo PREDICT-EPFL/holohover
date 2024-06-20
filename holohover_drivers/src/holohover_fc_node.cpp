@@ -115,7 +115,9 @@ void HolohoverFCNode::reset_motors()
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<HolohoverFCNode>());
+    auto node = std::make_shared<HolohoverFCNode>();
+    rclcpp::spin(node);
+    node->reset_motors();
     rclcpp::shutdown();
     return 0;
 }

@@ -21,6 +21,8 @@ class HolohoverFCNode : public rclcpp::Node
 {
 public:
     HolohoverFCNode();
+    void reset_motors();
+
 private:
     MSP msp;
     msp_motor_t motors;
@@ -41,8 +43,6 @@ private:
 
     void imu_callback();
     void diagnostics_callback();
-
-    void reset_motors();
 };
 
 #endif //HOLOHOVER_DRIVERS_HOLOHOVER_FC_NODE_HPP
