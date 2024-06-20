@@ -130,9 +130,9 @@ void SimulatorNode::init_timer()
             std::chrono::duration<double>(simulation_settings.period),
             std::bind(&SimulatorNode::simulation_step, this));
 
-    table_timer = this->create_wall_timer(
-            std::chrono::duration<double>(simulation_settings.table_publish_period),
-            std::bind(&SimulatorNode::table_publisher, this));
+    // table_timer = this->create_wall_timer(
+    //         std::chrono::duration<double>(simulation_settings.table_publish_period),
+    //         std::bind(&SimulatorNode::table_publisher, this));
 }
 
 void SimulatorNode::table_publisher()
