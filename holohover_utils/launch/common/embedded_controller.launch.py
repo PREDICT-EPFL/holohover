@@ -7,32 +7,9 @@ from launch.substitutions import LaunchConfiguration
 import yaml
 
 def launch_setup(context):
-    experiment_filename = LaunchConfiguration('experiment').perform(context)
-    machine = LaunchConfiguration('machine').perform(context)
-    name = ''
     launch_description = []
-
-    this_dir = os.path.dirname(os.path.abspath(__file__))
+    name = LaunchConfiguration('name').perform(context)
     
-    experiment_conf = os.path.join(
-        get_package_share_directory('holohover_utils'), 
-        'config', 
-        'experiments', 
-        experiment_filename
-    )
-
-    data = yaml.safe_load(open(experiment_conf, 'r'))
-    hovercraft = data["hovercraft"]
-     
-    for h in hovercraft:
-        if h['machine'] == machine:
-            name = h['name']
-            break
-    
-    if name == '':
-        print("Not starting any controller")
-        return launch_description
-
     print("Starting controller for hovercraft", name)
 
 
@@ -75,13 +52,8 @@ def generate_launch_description():
     opfunc = OpaqueFunction(function = launch_setup)
 
     ld.add_action(DeclareLaunchArgument(
-        'experiment', default_value='experiment1.yaml',
-        description='Experiment File'
-    ))
-
-    ld.add_action(DeclareLaunchArgument(
-        'machine', default_value='master',
-        description='Machine Name'
+        'name', default_value='h0',
+        description='Hovercraft name'
     ))
 
     ld.add_action(opfunc)

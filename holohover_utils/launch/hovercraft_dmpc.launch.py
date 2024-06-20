@@ -59,7 +59,7 @@ def launch_setup(context):
     )
     
     launch_description.append(controller_node)        
-    launch_description.append(navigation_node)
+    #launch_description.append(navigation_node)
     
     return launch_description
 

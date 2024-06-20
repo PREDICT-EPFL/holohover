@@ -119,104 +119,27 @@ def launch_setup(context):
 
     #################### EXPERIMENT FILE PARSING - END ####################
      
-
-    #################### COMMON NODES STARTING ####################
-    print(f" - - - - STARTING SIMULATION EXPERIMENT  - - - - ")
-    print(f"Running experiment:\t\t{data['experiment']['name']}")
-    print(f"Experiment description:\t\t{data['experiment']['description']}")
-
-    simulator_config = os.path.join(
-        get_package_share_directory('holohover_utils'),
-        'config/common',
-        'simulation_config.yaml'
-    )
-
-
-    simulator_node = Node(
-        package="holohover_simulator",
-        executable="simulator",
-        parameters=[simulator_config,
-                    { "hovercraft_ids" :       hovercraft_ids_simulated, 
-                      "hovercraft_names" :     hovercraft_names_simulated,
-                      "initial_state_x":       initial_states_simulated['x'], 
-                      "initial_state_y":       initial_states_simulated['y'], 
-                      "initial_state_theta":   initial_states_simulated['theta'], 
-                      "initial_state_vx":      initial_states_simulated['vx'], 
-                      "initial_state_vy":      initial_states_simulated['vy'], 
-                      "initial_state_w":       initial_states_simulated['w'],
-                      "holohover_props_files": holohover_params_simulated
-                    }],
-        output='screen'
-    )
-
-    trajectory_generator_node = Node(
-        package="holohover_dmpc",
-        executable="trajectory_generator",
-        parameters=[{ "ids" :       hovercraft_ids, 
-                      "names" :     hovercraft_names}],
-        output='both',
-        prefix='xterm -e'
-    )
-
-    recorder_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common', 'recorder.launch.py'))
-    )
-
-    dmpc_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/dmpc.launch.py'))
-        )
-
-    if common_nodes_machine == machine or machine == "all":
-        launch_description.append(recorder_launch)
-        launch_description.append(dmpc_launch)
-        launch_description.append(trajectory_generator_node)
-        if len(hovercraft_ids_simulated) != 0:
-            launch_description.append(simulator_node)
-
-    #################### COMMON NODES STARTING - END ####################
-   
     #################### HOVERCRAFT STARTING ####################
     # Now iterate on each hovercraft and launch the nodes for each one
-    print(f"Starting {len(hovercraft)} hovercraft controllers")
+
+    navigation_config = os.path.join(
+        get_package_share_directory('holohover_utils'),
+        'config/common',
+        'navigation_config.yaml'
+    )
+    print(f"Starting {len(hovercraft)} hovercraft EKF")
     for i in range(len(hovercraft)):
-        if hovercraft_machines[i] == machine or machine == "all":
-            hovercraft_launch = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_dmpc.launch.py')),
-                launch_arguments={
-                    'index': str(i),
-                    'name': hovercraft_names[i],
-                    'params': holohover_params[i],
-                    'opt_alg': opt_alg,
-                    'dmpc_config_folder': data["experiment"]["dmpc_config_folder"],
-                    'file_name_xd_trajectory': data["experiment"]["file_name_xd_trajectory"],
-                    'file_name_ud_trajectory': data["experiment"]["file_name_ud_trajectory"],
-                    'obstacles': '---'.join(obstacle_names),
-                    }.items()
-            )
-
-            launch_description.append(hovercraft_launch)
+        # - - - Nodes
+        navigation_node = Node(
+            package="holohover_navigation",
+            executable="navigation",
+            parameters=[navigation_config, {'holohover_props_file' : holohover_params[i]}],
+            namespace= hovercraft_names[i],
+            output='screen',
+            #prefix='nice -n -19'
+        )
+        launch_description.append(navigation_node)
     #################### HOVERCRAFT STARTING - END ####################
-
-    #################### OBSTACLES STARTING ####################
-    # Now iterate on each hovercraft and launch the nodes for each one
-    print(f"Starting {len(obstacles)} obstacles")
-
-    for i in range(len(obstacles)):
-        if obstacle_machines[i] == machine or machine == "all":
-            obstacle_launch = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_lqr.launch.py')),
-                launch_arguments=
-                    {'index': str(i),
-                     'name': obstacle_names[i],
-                     'params': obstacle_params[i],
-                     'initial_x': str(obstacle_initial_states['x'][i]),
-                     'initial_y': str(obstacle_initial_states['y'][i]),
-                     'initial_yaw': str(obstacle_initial_states['theta'][i])
-                     }.items()
-            )
-
-            launch_description.append(obstacle_launch)
-    #################### OBSTACLES STARTING - END ####################
 
 
     return launch_description
