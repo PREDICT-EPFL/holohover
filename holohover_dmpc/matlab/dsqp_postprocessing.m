@@ -8,8 +8,8 @@ clc;
 d = dir;
 Nagents = 4;
 Ndsqp = 1; %dsqp iterations per MPC step
-Nadmm = 30; %admm iterations per sqp iteration
-dt = 0.050; %sampling time
+Nadmm = 6; %admm iterations per sqp iteration
+dt = 0.100; %sampling time
 
 for i = 1:Nagents
     str = sprintf("dmpc_time_measurement_agent%i*",i-1);
@@ -35,6 +35,7 @@ for i = 1:Nagents
 end
 ADMM_iter = size(t_admm{1},1);
 MPC_steps = size(t_mpc{1},1);
+DSQP_iter = size(t_dsqp{1},1);
 
 SqpTime         = -ones(MPC_steps,Nagents);
 %AdmmTime        = -ones(MPC_steps,Nagents);
@@ -52,6 +53,7 @@ for i = 1:Nagents
     DsqpTime(:,i)     = t_mpc{i}.dsqp_time_us_(1:MPC_steps)/1000;
     %AdmmTime(:,i)     = t_mpc{i}.admm_time_us_/1000;
     %AdmmIterTime(:,i) = t_admm{i}.admm_iter_time_us_/1000;
+    build_qpTime(:,i) = t_dsqp{i}.build_qp_time_us_(1:DSQP_iter)/1000;
     Loc_qpTime(:,i)   = t_admm{i}.loc_qp_time_us_(1:ADMM_iter)/1000;
     ZcommTime(:,i)= t_admm{i}.zcomm_time_us_(1:ADMM_iter)/1000;
     ZbarcommTime(:,i) = t_admm{i}.zbarcomm_time_us_(1:ADMM_iter)/1000;
@@ -115,6 +117,7 @@ for i = 1:MPC_steps
         Loc_qpTime_MPC_step(i,j) = sum( Loc_qpTime( (i-1)*Nadmm*Ndsqp+1 : i*Nadmm*Ndsqp , j ));
         ZcommTime_MPC_step(i,j) = sum( ZcommTime( (i-1)*Nadmm*Ndsqp+1 : i*Nadmm*Ndsqp , j ) );
         ZbarcommTime_MPC_step(i,j) = sum( ZbarcommTime( (i-1)*Nadmm*Ndsqp+1 : i*Nadmm*Ndsqp , j ) );
+        Build_qpTime_MPC_step(i,j) = sum( build_qpTime( (i-1)*Ndsqp+1 : i*Ndsqp , j ));
     end
 end
 
@@ -133,6 +136,7 @@ end
 grid on
 ylabel("x");
 ylim([-1.2,1.2]);
+legend();
 
 subplot(5,3,2);
 for i = 1:Nagents
@@ -144,6 +148,7 @@ end
 grid on
 ylim([-0.7,0.7]);
 ylabel("y");
+legend();
 
 subplot(5,3,3);
 for i = 1:Nagents
@@ -152,6 +157,7 @@ for i = 1:Nagents
 end
 grid on
 ylabel("yaw");
+legend();
 
 subplot(5,3,4);
 for i = 1:Nagents
@@ -160,6 +166,7 @@ for i = 1:Nagents
 end
 ylabel("vx");
 grid on
+legend();
 
 subplot(5,3,5);
 for i = 1:Nagents
@@ -168,6 +175,7 @@ for i = 1:Nagents
 end
 ylabel("vy");
 grid on
+legend();
 
 subplot(5,3,6);
 for i = 1:Nagents
@@ -176,6 +184,7 @@ for i = 1:Nagents
 end
 ylabel("w");
 grid on
+legend();
 
 subplot(5,3,7);
 for i = 1:Nagents
@@ -184,6 +193,7 @@ for i = 1:Nagents
 end
 ylabel("ax");
 grid on
+legend();
 
 subplot(5,3,8);
 for i = 1:Nagents
@@ -192,6 +202,7 @@ for i = 1:Nagents
 end
 ylabel("ay");
 grid on
+legend();
 
 subplot(5,3,9);
 for i = 1:Nagents
@@ -200,6 +211,7 @@ for i = 1:Nagents
 end
 ylabel("aw");
 grid on
+legend();
 
 subplot(5,3,10);
 for i = 1:Nagents
@@ -207,6 +219,7 @@ for i = 1:Nagents
     hold on
 end
 ylabel("Solve OCP [ms]");
+legend();
 
 subplot(5,3,11);
 for i = 1:Nagents
@@ -214,6 +227,7 @@ for i = 1:Nagents
     hold on
 end
 ylabel("Local QP [ms]");
+legend();
 
 subplot(5,3,12);
 for i = 1:Nagents
@@ -221,6 +235,7 @@ for i = 1:Nagents
     hold on
 end
 ylabel("z c. [ms]");
+legend();
 
 subplot(5,3,13);
 for i = 1:Nagents
@@ -228,6 +243,8 @@ for i = 1:Nagents
     hold on
 end
 ylabel("zbar c. [ms]");
+legend();
+
 
 subplot(5,3,14);
 for i = 1:Nagents-1
@@ -238,6 +255,14 @@ for i = 1:Nagents-1
     hold on;
 end
 ylabel("distance [m]");
+legend();
+
+subplot(5,3,15);
+for i = 1:Nagents
+    stairs(t,Build_qpTime_MPC_step(:,i));
+    hold on;
+end
+ylabel("build QP [ms]");
 legend();
 
 

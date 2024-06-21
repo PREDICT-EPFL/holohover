@@ -583,7 +583,6 @@ void HolohoverDmpcDsqpNode::update_setpoint_in_ocp(){
         obs_lock.lock();
         p.tail(2*control_settings.Nobs) = obs_pos;
         obs_lock.unlock();
-        std::cout << "I am agent " << my_id << " and I updated the obstacle position to " << p.tail(2) << std::endl;
     } 
 }
 
