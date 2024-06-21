@@ -370,6 +370,27 @@ legend();
 
 end
 
+%%
+figure();
+for i = 1:Nagents
+subplot(3,1,1);
+plot(Loc_qpTime(:,i));
+hold on
+ylabel("loc solve");
+
+subplot(3,1,2);
+plot(ZcommTime(:,i));
+hold on
+ylabel("z comm.");
+
+subplot(3,1,3);
+plot(ZbarcommTime(:,i));
+ylabel("zbar comm.")
+hold on
+
+
+end
+
 %% Detailed timing statistics
 
 % figure('units','normalized','outerposition',[0 0 1 1])
