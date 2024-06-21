@@ -9,7 +9,7 @@
 
 #define UART_TIMEOUT 100
 
-#define MOTOR_WATCHDOG_TIMEOUT 100
+#define MOTOR_WATCHDOG_TIMEOUT 500
 #define MOTOR_A_1  0
 #define MOTOR_A_2  1
 #define MOTOR_B_1  2
