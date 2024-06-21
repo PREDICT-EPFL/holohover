@@ -7,7 +7,7 @@ clc;
 
 d = dir;
 Nagents = 4;
-Nadmm = 5; %admm iterations per MPC step
+Nadmm = 6; %admm iterations per MPC step
 dt = 0.100; %sampling time
 
 for i = 1:Nagents
@@ -16,9 +16,9 @@ for i = 1:Nagents
     t_admm{i} = readtable(file{i}.name);
     rows = 1:size(t_admm{i},1);
     if Nadmm > 1
-        t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:20);
+        t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:23);
     else
-        t_mpc{i} = t_admm{i}(:,1:20);
+        t_mpc{i} = t_admm{i}(:,1:23);
     end
 end
 ADMM_iter = size(t_admm{1},1);
@@ -324,43 +324,53 @@ end
 
 %% Detailed timing statistics
 
-% figure('units','normalized','outerposition',[0 0 1 1])
-% for i = 1:Nagents
-%     subplot(Nagents,7,(i-1)*7+2); stairs(AdmmTime(:,i)); title('Solve OCP');
-% end
-% %saveas(gcf,'mpc_times_detailed.png','png')
-% 
-% figure('units','normalized','outerposition',[0 0 1 1])
-% for i = 1:Nagents
-%     for k = 1:Nadmm
-%         subplot(Nagents,Nadmm,(i-1)*Nadmm+k); stairs(admmIterTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); title(str); str = sprintf('Agent %i',i); ylabel(str);
-%     end
-% end
-% %saveas(gcf,'admm_iter_times_detailed.png','png')
-% 
-% figure('units','normalized','outerposition',[0 0 1 1])
-% for i = 1:Nagents
-%     for k = 1:Nadmm
-%         subplot(Nagents,Nadmm,(i-1)*Nadmm+k); stairs(loc_qpTimeIter{i}{k}); str = sprintf('loc QP ADMM Iter %i',k); title(str); str = sprintf('Agent %i',i); ylabel(str);
-%     end
-% end
-% %saveas(gcf,'loc_qp_times_detailed.png','png')
-% 
-% figure('units','normalized','outerposition',[0 0 1 1])
-% for i = 1:Nagents
-%     for k = 1:Nadmm
-%         subplot(Nagents,Nadmm,(i-1)*Nadmm+k); stairs(zcommTimeIter{i}{k}); str = sprintf('zcomm ADMM Iter %i',k); title(str); str = sprintf('Agent %i',i); ylabel(str);
-%     end
-% end
-% %saveas(gcf,'zcomm_times_detailed.png','png')
-% 
-% figure('units','normalized','outerposition',[0 0 1 1])
-% for i = 1:Nagents
-%     for k = 1:Nadmm
-%         subplot(Nagents,Nadmm,(i-1)*Nadmm+k); stairs(zbarcommTimeIter{i}{k}); str = sprintf('zbarcomm ADMM Iter %i',k); title(str); str = sprintf('Agent %i',i); ylabel(str);
-%     end
-% end
-% %saveas(gcf,'zbarcomm_times_detailed.png','png')
+figure('units','normalized','outerposition',[0 0 1 1])
+for i = 1:Nagents
+    subplot(Nagents,7,(i-1)*7+2); stairs(AdmmTime(:,i)); title('Solve OCP');
+end
+%saveas(gcf,'mpc_times_detailed.png','png')
+
+figure('units','normalized','outerposition',[0 0 1 1])
+for i = 1:Nagents
+    for k = 1:Nadmm
+        subplot(Nagents,Nadmm,(i-1)*Nadmm+k); stairs(admmIterTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); title(str); str = sprintf('Agent %i',i); ylabel(str);
+    end
+end
+%saveas(gcf,'admm_iter_times_detailed.png','png')
+
+figure('units','normalized','outerposition',[0 0 1 1])
+for i = 1:Nagents
+    for k = 1:Nadmm
+        subplot(Nagents,Nadmm,(i-1)*Nadmm+k); stairs(loc_qpTimeIter{i}{k}); str = sprintf('loc QP ADMM Iter %i',k); title(str); str = sprintf('Agent %i',i); ylabel(str);
+    end
+end
+%saveas(gcf,'loc_qp_times_detailed.png','png')
+
+figure('units','normalized','outerposition',[0 0 1 1])
+for i = 1:Nagents
+    for k = 1:Nadmm
+        subplot(Nagents,Nadmm,(i-1)*Nadmm+k); stairs(zcommTimeIter{i}{k}); str = sprintf('zcomm ADMM Iter %i',k); title(str); str = sprintf('Agent %i',i); ylabel(str);
+    end
+end
+%saveas(gcf,'zcomm_times_detailed.png','png')
+
+figure('units','normalized','outerposition',[0 0 1 1])
+for i = 1:Nagents
+    for k = 1:Nadmm
+        subplot(Nagents,Nadmm,(i-1)*Nadmm+k); stairs(zbarcommTimeIter{i}{k}); str = sprintf('zbarcomm ADMM Iter %i',k); title(str); str = sprintf('Agent %i',i); ylabel(str);
+    end
+end
+%saveas(gcf,'zbarcomm_times_detailed.png','png')
+
+%% detailed timing statistics in one figure
+figure()
+for i = 1:Nagents
+for k = 1:Nadmm
+    subplot(3,Nadmm,k); stairs(loc_qpTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("loc QP"); xlabel("MPC step"); title(str); legend(); hold on;
+    subplot(3,Nadmm,Nadmm+k); stairs(zcommTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("z comm."); xlabel("MPC step"); title(str); legend(); hold on;
+    subplot(3,Nadmm,2*Nadmm+k); stairs(zbarcommTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("zbar comm."); xlabel("MPC step"); title(str); legend(); hold on;
+end
+end
 
 %% Histogram
 
@@ -385,6 +395,28 @@ for i = 1:Nagents
     subplot(Nagents,5,(i-1)*5+5)
     histogram(t_admm{i}.zbarcomm_time_us_/1000);
     xlabel('zbar communication time / ms','Interpreter','latex');
+end
+
+
+%%
+figure();
+for i = 1:Nagents
+subplot(3,1,1);
+plot(Loc_qpTime(:,i));
+hold on
+ylabel("loc solve");
+
+subplot(3,1,2);
+plot(ZcommTime(:,i));
+hold on
+ylabel("z comm.");
+
+subplot(3,1,3);
+plot(ZbarcommTime(:,i));
+ylabel("zbar comm.")
+hold on
+
+
 end
 
 
