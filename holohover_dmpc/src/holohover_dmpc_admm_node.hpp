@@ -50,6 +50,7 @@ SOFTWARE.*/
 #include <thread>
 #include <cfloat> //DBL_MAX
 #include <mutex>
+#include <queue>
 
 #include <iostream>
 #include <iomanip>
@@ -188,6 +189,8 @@ private:
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_out_msg;
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_in_msg_recv_buff;
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_out_msg_recv_buff;
+    std::vector<std::queue<holohover_msgs::msg::HolohoverADMMStamped>> v_in_msg_recv_queue;
+    std::vector<std::queue<holohover_msgs::msg::HolohoverADMMStamped>> v_out_msg_recv_queue;
 
     std::mutex v_in_mutex;
     std::mutex v_out_mutex;
@@ -198,8 +201,8 @@ private:
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_subscriber;
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_subscriber;
 
-    Eigen::Array<bool,Dynamic,1> received_vin;
-    Eigen::Array<bool,Dynamic,1> received_vout;
+    //Eigen::Array<bool,Dynamic,1> received_vin;
+    //Eigen::Array<bool,Dynamic,1> received_vout;
 
     void received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_id_); //
     void received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_id_); //

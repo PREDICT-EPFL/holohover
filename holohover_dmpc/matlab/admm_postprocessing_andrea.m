@@ -5,15 +5,25 @@
 clear all;
 clc;
 
+
+[stat, dir_name] = system("ls ~/holohover-docker/log/ -rt | tail -n1");
+
+str = sprintf("cp ~/holohover-docker/log/%s/*/log/dmpc* ./tmp",strtrim(dir_name));
+system(str);
+
+
 d = dir;
 Nagents = 4;
 Nadmm = 4; %admm iterations per MPC step
 dt = 0.100; %sampling time
 
 for i = 1:Nagents
-    str = sprintf("dmpc_time_measurement_agent%i*",i-1);
-    file{i} = dir(str);
-    t_admm{i} = readtable(file{i}.name);
+    str = "";
+    filename = "";
+    str = sprintf("tmp/dmpc_time_measurement_agent%i*",i-1);
+    name = dir(str);
+    filename = sprintf("tmp/%s",name.name);
+    t_admm{i} = readtable(filename);
     rows = 1:size(t_admm{i},1);
     if Nadmm > 1
         t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:23);
@@ -21,6 +31,9 @@ for i = 1:Nagents
         t_mpc{i} = t_admm{i}(:,1:23);
     end
 end
+
+system("rm ./tmp/*");
+
 ADMM_iter = size(t_admm{1},1);
 MPC_steps = size(t_mpc{1},1);
 

@@ -31,8 +31,6 @@ class doptTimer{
         void toc();
         void clear();
         void reserve(unsigned int new_cap);
-
-    private:
         std::chrono::steady_clock::time_point m_tic;
         std::chrono::steady_clock::time_point m_toc;
 
