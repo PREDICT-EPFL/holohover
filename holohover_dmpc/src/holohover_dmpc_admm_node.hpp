@@ -192,8 +192,8 @@ private:
     std::vector<std::queue<holohover_msgs::msg::HolohoverADMMStamped>> v_in_msg_recv_queue;
     std::vector<std::queue<holohover_msgs::msg::HolohoverADMMStamped>> v_out_msg_recv_queue;
 
-    std::mutex v_in_mutex;
-    std::mutex v_out_mutex;
+    std::unique_ptr<std::mutex[] >  v_in_mutex;
+    std::unique_ptr<std::mutex[] >  v_out_mutex;
 
     std::vector<rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_publisher;
     std::vector<rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_publisher;
