@@ -54,8 +54,9 @@ def launch_setup(context):
         parameters=[control_dmpc_config,
         {"holohover_props_file": params, 'file_name_xd_trajectory': file_name_xd_trajectory, 'file_name_ud_trajectory': file_name_ud_trajectory, 'obstacles': obstacles.split('---')}],
         namespace=name,
-        output='both',
-        prefix='nice -n -19'
+        output='screen',
+        #prefix='gdb -ex run --args',
+        prefix='nice -n -19',
     )
     
     launch_description.append(controller_node)        

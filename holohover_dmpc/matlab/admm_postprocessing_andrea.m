@@ -6,7 +6,7 @@ clear all;
 clc;
 
 
-[stat, dir_name] = system("ls ~/holohover-docker/log/ -rt | tail -n1");
+[stat, dir_name] = system("ls ~/holohover-docker/log -rt | grep remote | tail -n1");
 
 str = sprintf("cp ~/holohover-docker/log/%s/*/log/dmpc* ./tmp",strtrim(dir_name));
 system(str);
@@ -14,7 +14,7 @@ system(str);
 
 d = dir;
 Nagents = 4;
-Nadmm = 4; %admm iterations per MPC step
+Nadmm = 3; %admm iterations per MPC step
 dt = 0.100; %sampling time
 
 for i = 1:Nagents

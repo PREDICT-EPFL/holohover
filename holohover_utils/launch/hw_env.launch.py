@@ -189,12 +189,20 @@ def launch_setup(context):
         PythonLaunchDescriptionSource(os.path.join(this_dir, 'common', 'rviz.launch.py'))
     )
 
+    ekf_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(this_dir, 'mult_ekf.launch.py')),
+        launch_arguments=
+                    {'experiment': experiment_filename}.items()
+    )
+
     if common_nodes_machine == machine or machine == "all":
         launch_description.append(rviz_interface_node)
         launch_description.append(rviz_launch)
         #if len(hovercraft_ids_simulated) != 0:
         #    launch_description.append(simulator_node)
         launch_description.append(optitrack_node)
+        launch_description.append(ekf_launch)
+        
         
     #################### COMMON NODES STARTING - END ####################
    

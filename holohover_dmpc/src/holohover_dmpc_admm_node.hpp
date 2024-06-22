@@ -39,6 +39,8 @@ SOFTWARE.*/
 #include "holohover_msgs/msg/holohover_trajectory.hpp"
 #include "holohover_msgs/msg/holohover_laopt_speed_stamped.hpp"
 #include "control_dmpc_settings.hpp"
+//#include "readerwriterqueue.h"
+#include <condition_variable>
 
 #include <ament_index_cpp/get_package_prefix.hpp>
 
@@ -189,11 +191,19 @@ private:
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_out_msg;
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_in_msg_recv_buff;
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_out_msg_recv_buff;
-    std::vector<std::queue<holohover_msgs::msg::HolohoverADMMStamped>> v_in_msg_recv_queue;
-    std::vector<std::queue<holohover_msgs::msg::HolohoverADMMStamped>> v_out_msg_recv_queue;
+    //std::vector<moodycamel::ReaderWriterQueue<holohover_msgs::msg::HolohoverADMMStamped>> v_in_msg_recv_queue;
+    //std::vector<moodycamel::ReaderWriterQueue<holohover_msgs::msg::HolohoverADMMStamped>> v_out_msg_recv_queue;
+    std::vector<std::vector<holohover_msgs::msg::HolohoverADMMStamped>> v_in_msg_recv_queue;
+    std::vector<std::vector<holohover_msgs::msg::HolohoverADMMStamped>> v_out_msg_recv_queue;
 
-    std::unique_ptr<std::mutex[] >  v_in_mutex;
-    std::unique_ptr<std::mutex[] >  v_out_mutex;
+
+    //std::unique_ptr<std::mutex[] >  v_in_mutex;
+    //std::unique_ptr<std::mutex[] >  v_out_mutex;
+
+    std::condition_variable v_in_cv;
+    std::mutex v_in_mutex;
+    std::condition_variable v_out_cv;
+    std::mutex v_out_mutex;
 
     std::vector<rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_publisher;
     std::vector<rclcpp::Publisher<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_publisher;

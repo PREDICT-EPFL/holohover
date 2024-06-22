@@ -6,9 +6,9 @@ experiment:
   rviz_props_file: "common/holohover_params.yaml"
   opt_alg: "admm"
   
-  file_name_xd_trajectory: "rectangle_100.csv"
+  file_name_xd_trajectory: ""
   file_name_ud_trajectory: ""
-  dmpc_config_folder: "QP_N10"
+  dmpc_config_folder: "QP_N5"
    
 
 hovercraft:
@@ -18,7 +18,7 @@ hovercraft:
     holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [0.0, 0.0, 1.0, 1.0]
     simulate: True
-    machine: la016
+    machine: la017
 
   - name: h1
     id: 1
@@ -26,7 +26,7 @@ hovercraft:
     holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 0.0, 0.0, 1.0]
     simulate: True
-    machine: la017
+    machine: radxa
 
   - name: h2
     id: 2
@@ -34,7 +34,7 @@ hovercraft:
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     color : [0.54, 0.0, 0.54, 1.0]
     simulate: True
-    machine: la016
+    machine: radxa_h0
 
   - name: h3
     id: 3
@@ -42,4 +42,4 @@ hovercraft:
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 1.0, 0.0, 1.0] #yellow
     simulate: True
-    machine: la017
+    machine: radxa_h1

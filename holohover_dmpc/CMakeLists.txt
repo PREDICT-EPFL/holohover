@@ -31,15 +31,18 @@ if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
   endif()
 endif()
 
+#set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+
+
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(control_dmpc_admm src/holohover_dmpc_admm_node.cpp src/sProb.cpp src/doptTimer.cpp src/rcl_timer_helper.c)
 ament_target_dependencies(control_dmpc_admm rclcpp geometry_msgs holohover_msgs holohover_common)
 target_link_libraries(control_dmpc_admm casadi yaml-cpp Eigen3::Eigen piqp::piqp)
 
-add_executable(control_dmpc_dsqp src/holohover_dmpc_dsqp_node.cpp src/sProb.cpp src/doptTimer.cpp src/rcl_timer_helper.c)
-ament_target_dependencies(control_dmpc_dsqp rclcpp geometry_msgs holohover_msgs holohover_common)
-target_link_libraries(control_dmpc_dsqp casadi yaml-cpp Eigen3::Eigen piqp::piqp)
+# add_executable(control_dmpc_dsqp src/holohover_dmpc_dsqp_node.cpp src/sProb.cpp src/doptTimer.cpp src/rcl_timer_helper.c)
+# ament_target_dependencies(control_dmpc_dsqp rclcpp geometry_msgs holohover_msgs holohover_common)
+# target_link_libraries(control_dmpc_dsqp casadi yaml-cpp Eigen3::Eigen piqp::piqp)
 
 add_executable(dmpc_trigger src/holohover_dmpc_trigger_node.cpp)
 ament_target_dependencies(dmpc_trigger rclcpp std_msgs)
@@ -59,8 +62,9 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}
 )
 
+# control_dmpc_dsqp
 install(TARGETS
-  control_dmpc_admm dmpc_trigger trajectory_generator control_dmpc_dsqp
+  control_dmpc_admm dmpc_trigger trajectory_generator 
   DESTINATION lib/${PROJECT_NAME}
 )
 
