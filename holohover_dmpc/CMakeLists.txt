@@ -24,6 +24,8 @@ find_package(geometry_msgs)
 find_package(holohover_msgs REQUIRED)
 find_package(holohover_common REQUIRED)
 
+find_package(quill REQUIRED)
+
 #set build type to RELEASE by default
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
   if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
@@ -38,7 +40,7 @@ message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(control_dmpc_admm src/holohover_dmpc_admm_node.cpp src/sProb.cpp src/doptTimer.cpp src/rcl_timer_helper.c)
 ament_target_dependencies(control_dmpc_admm rclcpp geometry_msgs holohover_msgs holohover_common)
-target_link_libraries(control_dmpc_admm casadi yaml-cpp Eigen3::Eigen piqp::piqp)
+target_link_libraries(control_dmpc_admm casadi yaml-cpp quill::quill Eigen3::Eigen piqp::piqp)
 
 # add_executable(control_dmpc_dsqp src/holohover_dmpc_dsqp_node.cpp src/sProb.cpp src/doptTimer.cpp src/rcl_timer_helper.c)
 # ament_target_dependencies(control_dmpc_dsqp rclcpp geometry_msgs holohover_msgs holohover_common)

@@ -65,6 +65,12 @@ SOFTWARE.*/
 
 #include "casadi/casadi.hpp"
 
+#include "quill/Backend.h"
+#include "quill/Frontend.h"
+#include "quill/LogMacros.h"
+#include "quill/Logger.h"
+#include "quill/sinks/FileSink.h"
+
 #include <memory>
 
 class HolohoverDmpcAdmmNode : public rclcpp::Node
@@ -232,14 +238,14 @@ private:
     void print_time_measurements();
     void clear_time_measurements();
     void reserve_time_measurements(unsigned int new_cap);
-    std::ostringstream file_name;
-    std::ofstream log_file; 
 
     //control logging
     doptTimer get_state_timer;
     doptTimer convert_u_acc_timer;  
     doptTimer publish_signal_timer;
     doptTimer update_setpoint_timer;
+
+    quill::Logger* quill_logger; 
 
     //reference trajectories
     Eigen::MatrixXd xd_ref;
