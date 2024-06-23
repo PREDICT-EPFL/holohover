@@ -16,9 +16,9 @@ for i = 1:Nagents
     t_admm{i} = readtable(file{i}.name);
     rows = 1:size(t_admm{i},1);
     if Nadmm > 1
-        t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:26);
+        t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:27);
     else
-        t_mpc{i} = t_admm{i}(:,1:26);
+        t_mpc{i} = t_admm{i}(:,1:27);
     end
 end
 ADMM_iter = size(t_admm{1},1);

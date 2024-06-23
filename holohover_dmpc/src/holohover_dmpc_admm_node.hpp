@@ -39,7 +39,6 @@ SOFTWARE.*/
 #include "holohover_msgs/msg/holohover_trajectory.hpp"
 #include "holohover_msgs/msg/holohover_laopt_speed_stamped.hpp"
 #include "control_dmpc_settings.hpp"
-//#include "readerwriterqueue.h"
 #include <condition_variable>
 
 #include <ament_index_cpp/get_package_prefix.hpp>

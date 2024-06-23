@@ -27,12 +27,9 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 {
 
 
-    //  - -      ToDo from AG
-    // here's the list of the obstacles:
     RCLCPP_INFO(get_logger(), "DMPC NODE: list of obstacles: ");
     for (const auto &obstacle : control_settings.obstacles)
         RCLCPP_INFO(get_logger(), "\t\tobstacle: %s", obstacle.c_str());
-    // - - - end ToDo from AG
 
     my_id = control_settings.my_id;
     Nagents = control_settings.Nagents;    
@@ -321,28 +318,17 @@ void HolohoverDmpcAdmmNode::init_comms(){
     //receive vout
 
     Eigen::Array<bool,Dynamic,1> received(N_out_neighbors,1);
-    received.fill(false);
-    //std::vector<std::unique_lock<std::mutex>> v_out_lock;
-    //v_out_lock.resize(N_out_neighbors);
-    //for (int i = 0; i < N_out_neighbors; i++){
-    //    v_out_lock[i] = std::unique_lock(v_out_mutex[i],std::defer_lock); 
-    //} 
+    received.fill(false); 
     while (!received.all()){
         std::unique_lock<std::mutex> lock(v_out_mutex);
         for (int i = 0; i < N_out_neighbors; i++){
             if (!received(i)){                
-                //v_out_lock[i].lock();
                 if (v_out_msg_recv_queue[i].size() > 0) {
-                    
-                //if (!v_out_msg_recv_queue[i].empty()){ //has received a new message
                     received(i) = true;
                     v_out_msg_recv_buff[i] = v_out_msg_recv_queue[i][0];
                     v_out_msg_recv_queue[i].clear();
-                    //v_out_msg_recv_buff[i] = v_out_msg_recv_queue[i].front();
-                    //v_out_msg_recv_queue[i].pop();
                     v_out_msg_idx_first_received[i] = v_out_msg_recv_buff[i].idx;
                 }
-                //v_out_lock[i].unlock();
             }
         }
         if(!received.all()){
@@ -379,27 +365,17 @@ void HolohoverDmpcAdmmNode::init_comms(){
 
     //receive vin
     received = Eigen::Array<bool,Dynamic,1>(N_in_neighbors,1);
-    received.fill(false);
-    //std::vector<std::unique_lock<std::mutex>> v_in_lock;
-    //v_in_lock.resize(N_in_neighbors);
-    //for (int i = 0; i < N_in_neighbors; i++){
-        //v_in_lock[i] = std::unique_lock(v_in_mutex[i],std::defer_lock); 
-    //} 
+    received.fill(false); 
     while (!received.all()){
         std::unique_lock<std::mutex> lock(v_in_mutex);
         for (int i = 0; i < N_in_neighbors; i++){
             if (!received(i)){
-                //v_in_lock[i].lock();
                 if (v_in_msg_recv_queue[i].size() > 0){
-                //if (!v_in_msg_recv_queue[i].empty()){
                     received(i) = true;
-                    //v_in_msg_recv_buff[i] = v_in_msg_recv_queue[i].front();
-                    //v_in_msg_recv_queue[i].pop();
                     v_in_msg_recv_buff[i] = v_in_msg_recv_queue[i][0];
                     v_in_msg_recv_queue[i].clear();
                     v_in_msg_idx_first_received[i] = v_in_msg_recv_buff[i].idx;
                 }
-                //v_in_lock[i].unlock();
             }
         }
         if(!received.all()){
@@ -1101,17 +1077,15 @@ bool HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
     bool is_async = false;
 
     //send vin
+    send_vin_timer.tic();
     for (int i = 0; i < N_in_neighbors; i++){
         v_in_msg[i].seq_number += 1;
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
         Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
         Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
-    }
-    send_vin_timer.tic();
-
-    for (int i = 0; i < N_in_neighbors; i++){
         v_in_publisher[i]->publish(v_in_msg[i]); //ros
+
     }
     send_vin_timer.toc();
     //receive vout
@@ -1120,12 +1094,11 @@ bool HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
     received.fill(false);
     
     const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
-    const std::chrono::steady_clock::time_point t_wake = t_start + std::chrono::milliseconds(5);
+    //const std::chrono::steady_clock::time_point t_wake = t_start + std::chrono::milliseconds(5);
     while (!received.all()){
         
         std::unique_lock<std::mutex> lock(v_out_mutex);
 
-        //std::this_thread::yield();
         for (int i = 0; i < N_out_neighbors; i++){
             if (!received(i)){
                 //v_out_lock[i].lock();
@@ -1157,6 +1130,7 @@ bool HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
             }            
         }
         if (!received.all()){
+            const std::chrono::steady_clock::time_point t_wake = t_start + std::chrono::milliseconds(5);
             v_out_cv.wait_until(lock,t_wake);
         }
     }
@@ -1210,15 +1184,13 @@ bool HolohoverDmpcAdmmNode::send_vout_receive_vin(bool sync_admm){
     int cpy_idx = 0;
     int og_idx = 0;
     const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
-    const std::chrono::steady_clock::time_point t_wake = t_start + std::chrono::milliseconds(5);
+    //const std::chrono::steady_clock::time_point t_wake = t_start + std::chrono::milliseconds(5);
     while (!received.all()){
         
         std::unique_lock<std::mutex> lock(v_in_mutex);
 
-        //std::this_thread::yield();
         for (int i = 0; i < N_in_neighbors; i++){
             if (!received(i)){
-                //v_in_lock[i].lock();
                 for (auto it = v_in_msg_recv_queue[i].begin(); it != v_in_msg_recv_queue[i].end();) {
                     if (it->seq_number < v_out_msg[i].seq_number) {
                         RCLCPP_INFO(get_logger(), "receive vin: sent seq_number %ld and received seq_number %ld from neighbor %d", v_out_msg[i].seq_number, it->seq_number, i);
@@ -1254,6 +1226,7 @@ bool HolohoverDmpcAdmmNode::send_vout_receive_vin(bool sync_admm){
             }
         }
         if (!received.all()){
+            const std::chrono::steady_clock::time_point t_wake = t_start + std::chrono::milliseconds(5);
             v_in_cv.wait_until(lock,t_wake);
         }       
     }
