@@ -422,7 +422,7 @@ void HolohoverDmpcAdmmNode::init_comms(){
 void HolohoverDmpcAdmmNode::publish_control()
 {
     
-    //const std::chrono::steady_clock::time_point t_start_ = std::chrono::steady_clock::now();
+    const std::chrono::steady_clock::time_point t_start_ = std::chrono::steady_clock::now();
     // if(!dmpc_is_initialized){
     //     update_setpoint_in_ocp();
     //     init_dmpc();
@@ -449,12 +449,16 @@ void HolohoverDmpcAdmmNode::publish_control()
     control_msg.motor_c_1 = u_signal(4);
     control_msg.motor_c_2 = u_signal(5);
     control_publisher->publish(control_msg);
-    // const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
-    // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
-    // std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;
+    const std::chrono::steady_clock::time_point t_end_ = std::chrono::steady_clock::now();
+    const long duration_us_ = std::chrono::duration_cast<std::chrono::microseconds>(t_end_ - t_start_).count();
+    RCLCPP_INFO(get_logger(), "Signal conversion and publishing duration_us  = %ld", duration_us_);
+    //std::cout << "Signal conversion and publishing duration_us  =" <<duration_us << std::endl;
 
+    const std::chrono::steady_clock::time_point t_start1 = std::chrono::steady_clock::now();
     update_setpoint_in_ocp();
-
+    const std::chrono::steady_clock::time_point t_end1 = std::chrono::steady_clock::now();
+    const long duration_us1 = std::chrono::duration_cast<std::chrono::microseconds>(t_end1 - t_start1).count();
+    RCLCPP_INFO(get_logger(), "update setpoint duration_us  = %ld", duration_us1);
     
     // const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
     admm_timer.tic();
@@ -464,7 +468,9 @@ void HolohoverDmpcAdmmNode::publish_control()
     // const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
     // std::cout << "ADMM duration_ms  =" <<duration_us/1000 << std::endl;
 
+    const std::chrono::steady_clock::time_point t_start2 = std::chrono::steady_clock::now();
     get_u_acc_from_sol();
+
 
     //publish_trajectory();
 
@@ -473,16 +479,19 @@ void HolohoverDmpcAdmmNode::publish_control()
     
     if (!control_settings.file_name_ud_trajectory.empty()){
         ud_log.block(mpc_step_since_log,0,1,control_settings.nu) = input_ref.transpose().segment(0,control_settings.nu);
-    } 
+    }
+    const std::chrono::steady_clock::time_point t_end2 = std::chrono::steady_clock::now();
+    const long duration_us2 = std::chrono::duration_cast<std::chrono::microseconds>(t_end2 - t_start2).count();
+    RCLCPP_INFO(get_logger(), "get uacc from sol and updating xlog took  = %ld", duration_us2); 
 
     if (mpc_step_since_log == log_buffer_size - 1) {
-        //const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
+        const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
         print_time_measurements();
         clear_time_measurements();
         mpc_step_since_log = -1; //gets increased to 0 below
-        //const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
-        //const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
-        //RCLCPP_INFO(get_logger(), "Logging duration_us = %d", duration_us);
+        const std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
+        const long duration_us = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
+        RCLCPP_INFO(get_logger(), "Logging duration_us = %ld", duration_us);
         // std::cout << "Logging duration_us  =" <<duration_us << std::endl;
     } 
 
@@ -1160,6 +1169,7 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
     const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
     const std::chrono::steady_clock::time_point t_wake = t_start + std::chrono::milliseconds(5);
     while (!received.all()){
+        
         std::unique_lock<std::mutex> lock(v_out_mutex);
 
         //std::this_thread::yield();
@@ -1192,18 +1202,19 @@ void HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
                 //v_out_lock[i].unlock();*/                
             }
         }
-        if (!received.all()){
-            v_out_cv.wait_until(lock,t_wake);
-        }
         if(!sync_admm){ 
             std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
             long duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
             long duration_since_ocp_solve_start = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - admm_timer.m_tic).count();
-            if (duration_ms > 50 || duration_since_ocp_solve_start > 0.75*control_settings.dmpc_period*1000){
+            if (duration_ms > 25 || duration_since_ocp_solve_start > 0.75*control_settings.dmpc_period*1000){
                 RCLCPP_INFO(get_logger(), "proceeding ADMM without having received all v_out messages");
                 break;
             }            
-        }  
+        }
+        if (!received.all()){
+            v_out_cv.wait_until(lock,t_wake);
+        }
+          
         // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         // for (int i = 0; i < N_in_neighbors; i++){
         //     v_in_publisher[i]->publish(v_in_msg[i]); //ros
@@ -1268,6 +1279,7 @@ void HolohoverDmpcAdmmNode::send_vout_receive_vin(bool sync_admm){
     const std::chrono::steady_clock::time_point t_start = std::chrono::steady_clock::now();
     const std::chrono::steady_clock::time_point t_wake = t_start + std::chrono::milliseconds(5);
     while (!received.all()){
+        
         std::unique_lock<std::mutex> lock(v_in_mutex);
 
         //std::this_thread::yield();
@@ -1317,19 +1329,20 @@ void HolohoverDmpcAdmmNode::send_vout_receive_vin(bool sync_admm){
                 //v_in_lock[i].unlock();
             }
         }
-        if (!received.all()){
-            v_in_cv.wait_until(lock,t_wake);
-        }
-        
         if(!sync_admm){ 
             std::chrono::steady_clock::time_point t_end = std::chrono::steady_clock::now();
             long duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
             long duration_since_ocp_solve_start = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - admm_timer.m_tic).count();
-            if (duration_ms > 50 || duration_since_ocp_solve_start > 0.75*control_settings.dmpc_period*1000 ){
+            if (duration_ms > 25 || duration_since_ocp_solve_start > 0.75*control_settings.dmpc_period*1000 ){
                 //RCLCPP_INFO(get_logger(), "proceeding ADMM without having received all v_in messages");
                 break;
             }
-        } 
+        }
+        if (!received.all()){
+            v_in_cv.wait_until(lock,t_wake);
+        }
+        
+         
         // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         // for (int i = 0; i < N_out_neighbors; i++){
         //     v_out_publisher[i]->publish(v_out_msg[i]); //ros

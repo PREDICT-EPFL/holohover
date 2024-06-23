@@ -8,7 +8,7 @@ experiment:
   
   file_name_xd_trajectory: ""
   file_name_ud_trajectory: ""
-  dmpc_config_folder: "QP_N5"
+  dmpc_config_folder: "QP_N10"
    
 
 hovercraft:
