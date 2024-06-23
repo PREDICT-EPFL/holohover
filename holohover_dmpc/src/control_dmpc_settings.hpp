@@ -21,6 +21,8 @@ struct ControlDMPCSettings
     int idx_u0;
     int idx_u1;
     int idx_x0;
+    double max_wait_time; //seconds
+    double max_wait_fraction; //from 0 to 1
 
     int Nagents;
     int Nobs;
@@ -50,6 +52,8 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     settings.idx_u0 = node.declare_parameter<int>("idx_u0");
     settings.idx_u1 = node.declare_parameter<int>("idx_u1");
     settings.idx_x0 = node.declare_parameter<int>("idx_x0");
+    settings.max_wait_time = node.declare_parameter<double>("max_wait_time");
+    settings.max_wait_fraction = node.declare_parameter<double>("max_wait_fraction");
 
     settings.Nagents = node.declare_parameter<int>("Nagents");
     settings.Nobs = node.declare_parameter<int>("Nobs");

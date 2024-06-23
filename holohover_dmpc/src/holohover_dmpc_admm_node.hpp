@@ -177,11 +177,11 @@ private:
 
     //before averaging
     void update_v_in();     //place z into v_in
-    void send_vin_receive_vout(bool sync_admm);
+    bool send_vin_receive_vout(bool sync_admm);
 
     //after averaging
     void update_v_out();
-    void send_vout_receive_vin(bool sync_admm);
+    bool send_vout_receive_vin(bool sync_admm);
 
     //ADMM communication
     std::vector<std::vector<int>> v_in_msg_idx_first_received;
@@ -191,14 +191,8 @@ private:
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_out_msg;
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_in_msg_recv_buff;
     std::vector<holohover_msgs::msg::HolohoverADMMStamped> v_out_msg_recv_buff;
-    //std::vector<moodycamel::ReaderWriterQueue<holohover_msgs::msg::HolohoverADMMStamped>> v_in_msg_recv_queue;
-    //std::vector<moodycamel::ReaderWriterQueue<holohover_msgs::msg::HolohoverADMMStamped>> v_out_msg_recv_queue;
     std::vector<std::vector<holohover_msgs::msg::HolohoverADMMStamped>> v_in_msg_recv_queue;
     std::vector<std::vector<holohover_msgs::msg::HolohoverADMMStamped>> v_out_msg_recv_queue;
-
-
-    //std::unique_ptr<std::mutex[] >  v_in_mutex;
-    //std::unique_ptr<std::mutex[] >  v_out_mutex;
 
     std::condition_variable v_in_cv;
     std::mutex v_in_mutex;
@@ -210,9 +204,6 @@ private:
 
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_subscriber;
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_subscriber;
-
-    //Eigen::Array<bool,Dynamic,1> received_vin;
-    //Eigen::Array<bool,Dynamic,1> received_vout;
 
     void received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_id_); //
     void received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_id_); //
@@ -232,6 +223,8 @@ private:
     Eigen::MatrixXd u_before_conversion_log;
     Eigen::MatrixXd xd_log;
     Eigen::MatrixXd ud_log;
+    Eigen::MatrixXi z_async;
+    Eigen::MatrixXi zbar_async;
     int mpc_step;
     int mpc_step_since_log;
     int log_buffer_size; //number of MPC steps to store before writing to log
@@ -240,7 +233,12 @@ private:
     void clear_time_measurements();
     void reserve_time_measurements(unsigned int new_cap);
     std::ostringstream file_name;
-    std::ofstream log_file;   
+    std::ofstream log_file; 
+
+    //control logging
+    doptTimer convert_u_acc_timer;  
+    doptTimer publish_signal_timer;
+    doptTimer update_setpoint_timer;
 
     //reference trajectories
     Eigen::MatrixXd xd_ref;

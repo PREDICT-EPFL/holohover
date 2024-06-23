@@ -21,3 +21,5 @@ holohover_dmpc_trigger:
     file_name_xd_trajectory: ""
     file_name_ud_trajectory: ""
     obstacles: [""]
+    max_wait_time: 0.025
+    max_wait_fraction: 0.75

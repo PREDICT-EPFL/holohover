@@ -59,6 +59,8 @@ for i = 1:Nagents
     Loc_qpTime(:,i)   = t_admm{i}.loc_qp_time_us_(1:ADMM_iter)/1000;
     ZcommTime(:,i)= t_admm{i}.zcomm_time_us_(1:ADMM_iter)/1000;
     ZbarcommTime(:,i) = t_admm{i}.zbarcomm_time_us_(1:ADMM_iter)/1000;
+    Zasync(:,i) = t_admm{i}.z_is_async(1:ADMM_iter);
+    Zbarasync(:,i) = t_admm{i}.zbar_is_async(1:ADMM_iter);
 
     xx{i}(1,:)        = t_mpc{i}.x0_1_(1:MPC_steps).';
     xx{i}(2,:)        = t_mpc{i}.x0_2_(1:MPC_steps).';
@@ -99,12 +101,15 @@ for i = 1:Nagents
             loc_qpTimeIter{i}{k} = Loc_qpTime(mod(rows,Nadmm)==k,i);
             zcommTimeIter{i}{k} = ZcommTime(mod(rows,Nadmm)==k,i);
             zbarcommTimeIter{i}{k} = ZbarcommTime(mod(rows,Nadmm)==k,i);
-
+            zasyncIter{i}{k} = Zasync(mod(rows,Nadmm)==k,i);
+            zbarasyncIter{i}{k} = Zbarasync(mod(rows,Nadmm)==k,i);
         else
             admmIterTimeIter{i}{k} = AdmmIterTime(mod(rows,Nadmm)==0,i);
             loc_qpTimeIter{i}{k} = Loc_qpTime(mod(rows,Nadmm)==0,i);
             zcommTimeIter{i}{k} = ZcommTime(mod(rows,Nadmm)==0,i);
             zbarcommTimeIter{i}{k} = ZbarcommTime(mod(rows,Nadmm)==0,i);
+            zasyncIter{i}{k} = Zasync(mod(rows,Nadmm)==0,i);
+            zbarasyncIter{i}{k} = Zbarasync(mod(rows,Nadmm)==0,i);
         end
     end
 end
@@ -114,6 +119,7 @@ for j = 1:Nagents
         Loc_qpTime_MPC_step(i,j) = sum( Loc_qpTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
         ZcommTime_MPC_step(i,j) = sum( ZcommTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
         ZbarcommTime_MPC_step(i,j) = sum( ZbarcommTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
+        MPC_step_time(i,j) = ( t_mpc{j}.convert_uacc_time_us_(i) + t_mpc{j}.publish_signal_time_us_(i) + t_mpc{j}.update_setpoint_time_us_(i) + t_mpc{j}.admm_time_us_(i) ) / 1000;
     end
 end
 
@@ -230,6 +236,13 @@ for i = 1:Nagents
     hold on
 end
 ylabel("zbar c. [ms]");
+
+subplot(5,3,14);
+for i = 1:Nagents
+    stairs(t,MPC_step_time(:,i));
+    hold on
+end
+ylabel("MPC step time [ms]");
 
 % try
 % figure()
@@ -379,9 +392,11 @@ ylabel("zbar c. [ms]");
 figure('units','normalized','outerposition',[0 0 1 1])
 for i = 1:Nagents
 for k = 1:Nadmm
-    subplot(3,Nadmm,k); stairs(loc_qpTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("loc QP"); xlabel("MPC step"); title(str); legend(); hold on;
-    subplot(3,Nadmm,Nadmm+k); stairs(zcommTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("z comm."); xlabel("MPC step"); title(str); legend(); hold on;
-    subplot(3,Nadmm,2*Nadmm+k); stairs(zbarcommTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("zbar comm."); xlabel("MPC step"); title(str); legend(); hold on;
+    subplot(5,Nadmm,k); stairs(loc_qpTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("loc QP"); xlabel("MPC step"); title(str); legend(); hold on;
+    subplot(5,Nadmm,Nadmm+k); stairs(zcommTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("z comm."); xlabel("MPC step"); title(str); legend(); hold on;
+    subplot(5,Nadmm,2*Nadmm+k); stairs(zbarcommTimeIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("zbar comm."); xlabel("MPC step"); title(str); legend(); hold on;
+    subplot(5,Nadmm,3*Nadmm+k); stairs(zasyncIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("z is async"); xlabel("MPC step"); title(str); legend(); hold on;
+    subplot(5,Nadmm,4*Nadmm+k); stairs(zbarasyncIter{i}{k}); str = sprintf('ADMM Iter %i',k); ylabel("zbar is async"); xlabel("MPC step"); title(str); legend(); hold on;
 end
 end
 
