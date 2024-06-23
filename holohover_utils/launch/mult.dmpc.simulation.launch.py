@@ -58,6 +58,8 @@ def launch_setup(context):
     obstacle_params = []
     obstacle_initial_states = {'x': [], 'y': [], 'theta': [], 'vx': [], 'vy': [], 'w': []}
 
+    all_simulated = True
+
     for h in hovercraft:
         hovercraft_machines.append(h['machine'])
         hovercraft_names.append(h['name'])
@@ -83,6 +85,8 @@ def launch_setup(context):
             initial_state = h['initial_state']
             for i, val in enumerate(initial_state):
                 initial_states_simulated[list(initial_states_simulated.keys())[i]].append(float(val))
+        else:
+            all_simulated = False
 
     for h in obstacles:
         params = os.path.join(
@@ -144,7 +148,8 @@ def launch_setup(context):
                       "initial_state_vx":      initial_states_simulated['vx'], 
                       "initial_state_vy":      initial_states_simulated['vy'], 
                       "initial_state_w":       initial_states_simulated['w'],
-                      "holohover_props_files": holohover_params_simulated
+                      "holohover_props_files": holohover_params_simulated,
+                      "are_all_simulated":     all_simulated,
                     }],
         output='screen'
     )

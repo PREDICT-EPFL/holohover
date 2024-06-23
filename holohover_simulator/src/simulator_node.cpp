@@ -130,10 +130,27 @@ void SimulatorNode::init_timer()
             std::chrono::duration<double>(simulation_settings.period),
             std::bind(&SimulatorNode::simulation_step, this));
 
-    table_timer = this->create_wall_timer(
-             std::chrono::duration<double>(simulation_settings.table_publish_period),
-             std::bind(&SimulatorNode::table_publisher, this));
+    if(simulation_settings.are_all_simulated)
+    {
+        table_timer = this->create_wall_timer(
+                std::chrono::duration<double>(simulation_settings.table_publish_period),
+                std::bind(&SimulatorNode::table_publisher, this));
+    } 
+    else
+    {
+        table_pose_subscription = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+            "/optitrack/table_pose_raw", rclcpp::SensorDataQoS(),
+            std::bind(&SimulatorNode::table_callback, this, std::placeholders::_1));
+    }
+
 }
+
+void SimulatorNode::table_callback(const geometry_msgs::msg::PoseStamped &raw_pose)
+{
+    simulation_settings.table_position[0] = raw_pose.pose.position.x;
+    simulation_settings.table_position[1] = raw_pose.pose.position.y;
+}
+
 
 void SimulatorNode::table_publisher()
 {

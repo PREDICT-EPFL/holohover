@@ -10,6 +10,7 @@ struct SimulationSettings
     int internal_iterations_velocity;
     int internal_iterations_position;
 
+    bool are_all_simulated;
     std::vector<long int> hovercraft_ids;
     std::vector<std::string> hovercraft_names;
     std::vector<std::string> holohover_props_files;
@@ -63,6 +64,7 @@ SimulationSettings load_simulation_settings(rclcpp::Node &node)
     settings.internal_iterations_velocity = node.declare_parameter<int>("internal_iterations_velocity");
     settings.internal_iterations_position = node.declare_parameter<int>("internal_iterations_position");
 
+    settings.are_all_simulated    = node.declare_parameter<bool>("are_all_simulated", false);
     settings.hovercraft_ids       = node.declare_parameter<std::vector<long int>>("hovercraft_ids");
     settings.hovercraft_names     = node.declare_parameter<std::vector<std::string>>("hovercraft_names");
     settings.holohover_props_files= node.declare_parameter<std::vector<std::string>>("holohover_props_files");

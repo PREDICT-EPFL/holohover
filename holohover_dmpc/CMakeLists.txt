@@ -33,9 +33,6 @@ if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
   endif()
 endif()
 
-#set(CMAKE_BUILD_TYPE "RelWithDebInfo")
-
-
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(control_dmpc_admm src/holohover_dmpc_admm_node.cpp src/sProb.cpp src/doptTimer.cpp src/rcl_timer_helper.c)
@@ -64,9 +61,8 @@ install(DIRECTORY
   DESTINATION share/${PROJECT_NAME}
 )
 
-# control_dmpc_dsqp
 install(TARGETS
-  control_dmpc_admm dmpc_trigger trajectory_generator 
+  control_dmpc_admm dmpc_trigger trajectory_generator control_dmpc_dsqp
   DESTINATION lib/${PROJECT_NAME}
 )
 
