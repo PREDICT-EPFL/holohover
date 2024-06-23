@@ -31,7 +31,7 @@ hovercraft:
   - name: h2
     id: 2
     initial_state: [0.3, 0, 0, 0, 0, 0]
-    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [0.54, 0.0, 0.54, 1.0]
     simulate: False
     machine: radxa_h2
@@ -39,7 +39,7 @@ hovercraft:
   - name: h3
     id: 3
     initial_state: [0, 0, 0, 0, 0, 0]
-    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 1.0, 0.0, 1.0] #yellow
     simulate: False
     machine: radxa_h3
