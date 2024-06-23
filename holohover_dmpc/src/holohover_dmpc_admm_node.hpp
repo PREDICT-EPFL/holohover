@@ -236,6 +236,7 @@ private:
     std::ofstream log_file; 
 
     //control logging
+    doptTimer get_state_timer;
     doptTimer convert_u_acc_timer;  
     doptTimer publish_signal_timer;
     doptTimer update_setpoint_timer;

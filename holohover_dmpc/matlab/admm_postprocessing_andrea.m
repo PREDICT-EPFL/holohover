@@ -26,9 +26,9 @@ for i = 1:Nagents
     t_admm{i} = readtable(filename);
     rows = 1:size(t_admm{i},1);
     if Nadmm > 1
-        t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:23);
+        t_mpc{i} = t_admm{i}(mod(rows,Nadmm)==1,1:27);
     else
-        t_mpc{i} = t_admm{i}(:,1:23);
+        t_mpc{i} = t_admm{i}(:,1:27);
     end
 end
 
@@ -119,7 +119,7 @@ for j = 1:Nagents
         Loc_qpTime_MPC_step(i,j) = sum( Loc_qpTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
         ZcommTime_MPC_step(i,j) = sum( ZcommTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
         ZbarcommTime_MPC_step(i,j) = sum( ZbarcommTime( (i-1)*Nadmm+1 : i*Nadmm , j)  );
-        MPC_step_time(i,j) = ( t_mpc{j}.convert_uacc_time_us_(i) + t_mpc{j}.publish_signal_time_us_(i) + t_mpc{j}.update_setpoint_time_us_(i) + t_mpc{j}.admm_time_us_(i) ) / 1000;
+        MPC_step_time(i,j) = ( t_mpc{j}.get_state_time_us_(i) + t_mpc{j}.convert_uacc_time_us_(i) + t_mpc{j}.publish_signal_time_us_(i) + t_mpc{j}.update_setpoint_time_us_(i) + t_mpc{j}.admm_time_us_(i) ) / 1000;
     end
 end
 
@@ -448,7 +448,13 @@ hold on
 end
 
 
-
+figure('units','normalized','outerposition',[0 0 1 1])
+for i = 1:Nagents
+subplot(4,1,1); plot(t_mpc{i}.convert_uacc_time_us_/1000); ylabel("convert acc to signal"); hold on;
+subplot(4,1,2); plot(t_mpc{i}.publish_signal_time_us_/1000); ylabel("publish signal"); hold on;
+subplot(4,1,3); plot(t_mpc{i}.update_setpoint_time_us_/1000); ylabel("update OCP"); hold on;
+subplot(4,1,4); plot(t_mpc{i}.get_state_time_us_/1000); ylabel("update state"); hold on;
+end
 
 
 

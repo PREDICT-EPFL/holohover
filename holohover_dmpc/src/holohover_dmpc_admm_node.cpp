@@ -77,6 +77,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         p[9] = x4d[0]; p[10] = x4d[1];
     }
     state(0) = p(0); state(1) = p(1); state(2) = p(2); state(3) = p(3); state(4) = p(4); state(5) = p(5);
+    state_at_ocp_solve = state;
     state_ref = p.segment(control_settings.nx+control_settings.nu,control_settings.nxd); //todo
     state_ref_at_ocp_solve = state_ref;
     input_ref = Eigen::VectorXd::Zero(control_settings.nud);
@@ -227,6 +228,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     convert_u_acc_timer.reserve(log_buffer_size);
     publish_signal_timer.reserve(log_buffer_size);
     update_setpoint_timer.reserve(log_buffer_size);
+    get_state_timer.reserve(log_buffer_size);
 
     x_log = -MatrixXd::Ones(log_buffer_size,control_settings.nx);
     u_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
@@ -248,7 +250,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     log_file = std::ofstream(file_name.str());
     if (log_file.is_open())
     {
-        log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, convert_uacc_time_us_, publish_signal_time_us_, update_setpoint_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_, z_is_async, zbar_is_async\n";
+        log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, get_state_time_us_, convert_uacc_time_us_, publish_signal_time_us_, update_setpoint_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_, z_is_async, zbar_is_async\n";
         log_file.close();
     }
 
@@ -427,6 +429,12 @@ void HolohoverDmpcAdmmNode::init_comms(){
 void HolohoverDmpcAdmmNode::publish_control()
 {
     
+    get_state_timer.tic();
+    std::unique_lock state_lock{state_mutex, std::defer_lock};
+    state_lock.lock();
+    state_at_ocp_solve = state;
+    state_lock.unlock();
+    get_state_timer.toc();
   
     convert_u_acc_timer.tic(); //this timestamp is also used to check whether admm should be terminated
     u_before_conversion_log.block(mpc_step_since_log,0,1,control_settings.nu) = u_acc_curr.transpose();
@@ -481,12 +489,9 @@ void HolohoverDmpcAdmmNode::publish_control()
 void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
 {
     // ignore motor dynamics, because they are much faster than the dmpc sampling interval
-    std::unique_lock state_lock{state_mutex, std::defer_lock};
-    state_lock.lock();
-
     //convert to signal
     Holohover::control_force_t<double> u_force_curr;
-    holohover.control_acceleration_to_force(state, u_acc_curr, u_force_curr);
+    holohover.control_acceleration_to_force(state_at_ocp_solve, u_acc_curr, u_force_curr);
     holohover.thrust_to_signal(u_force_curr, u_signal);
 
     // clip between 0 and 1
@@ -494,8 +499,8 @@ void HolohoverDmpcAdmmNode::convert_u_acc_to_u_signal()
     holohover.signal_to_thrust(u_signal, u_force_curr);
 
     //convert back to acceleration for OCP
-    holohover.control_force_to_acceleration(state, u_force_curr, u_acc_curr);
-    state_lock.unlock();
+    holohover.control_force_to_acceleration(state_at_ocp_solve, u_force_curr, u_acc_curr);
+    //state_lock.unlock();
 }
 
 void HolohoverDmpcAdmmNode::publish_trajectory( )
@@ -557,11 +562,7 @@ void HolohoverDmpcAdmmNode::get_u_acc_from_sol()
 
 void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
 
-    std::unique_lock state_lock{state_mutex, std::defer_lock};
-    state_lock.lock();
-    state_at_ocp_solve = state;
     p.segment(0,control_settings.nx) = state_at_ocp_solve;
-    state_lock.unlock();                           
     p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;
     std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
     state_ref_lock.lock();
@@ -574,8 +575,9 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
     }
 
     state_ref_at_ocp_solve = state_ref;
-    p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref_at_ocp_solve;
     state_ref_lock.unlock();
+
+    p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref_at_ocp_solve;
 
     if (!control_settings.file_name_ud_trajectory.empty() && ud_ref_idx < ud_ref.rows()){
         if (mpc_step == std::floor(ud_ref(ud_ref_idx,0))){
@@ -1002,10 +1004,8 @@ void HolohoverDmpcAdmmNode::init_coupling()
        v_in_msg_recv_queue[i].reserve(10); 
     }
     for(int i = 0; i < N_out_neighbors; i++){
-       v_out_msg_recv_queue[i].reserve(10); //= moodycamel::ReaderWriterQueue<holohover_msgs::msg::HolohoverADMMStamped>(control_settings.maxiter + 1); 
+       v_out_msg_recv_queue[i].reserve(10); 
     }
-    //v_in_mutex = std::make_unique<std::mutex[]>(N_in_neighbors);
-    //v_out_mutex = std::make_unique<std::mutex[]>(N_out_neighbors);
 
     return;
 }
@@ -1294,7 +1294,7 @@ void HolohoverDmpcAdmmNode::print_time_measurements(){
             log_file.open(file_name.str(),std::ios_base::app);
             if (log_file.is_open())
             {
-                log_file << logged_mpc_steps+k << "," << x_log(k,0) << "," << x_log(k,1) << "," << x_log(k,2) << "," << x_log(k,3) << "," << x_log(k,4) << "," << x_log(k,5) << "," << u_log(k,0) << "," << u_before_conversion_log(k,1) << "," << u_before_conversion_log(k,2) << "," << u_before_conversion_log(k,0) << "," << u_log(k,1) << "," << u_log(k,2) << "," << xd_log(k,0) << "," << xd_log(k,1) << "," << xd_log(k,2) << "," << xd_log(k,3) << "," << xd_log(k,4) << "," << xd_log(k,5) << "," << ud_log(k,0) << "," << ud_log(k,1) << "," << ud_log(k,2) << "," << convert_u_acc_timer.m_log[k] << "," << publish_signal_timer.m_log[k] << "," << update_setpoint_timer.m_log[k] << ","  << admm_timer.m_log[k] << "," << i << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "," << z_async(k,i) << "," << zbar_async(k,i) << "\n";        
+                log_file << logged_mpc_steps+k << "," << x_log(k,0) << "," << x_log(k,1) << "," << x_log(k,2) << "," << x_log(k,3) << "," << x_log(k,4) << "," << x_log(k,5) << "," << u_log(k,0) << "," << u_before_conversion_log(k,1) << "," << u_before_conversion_log(k,2) << "," << u_before_conversion_log(k,0) << "," << u_log(k,1) << "," << u_log(k,2) << "," << xd_log(k,0) << "," << xd_log(k,1) << "," << xd_log(k,2) << "," << xd_log(k,3) << "," << xd_log(k,4) << "," << xd_log(k,5) << "," << ud_log(k,0) << "," << ud_log(k,1) << "," << ud_log(k,2) << "," << get_state_timer.m_log[k] << "," << convert_u_acc_timer.m_log[k] << "," << publish_signal_timer.m_log[k] << "," << update_setpoint_timer.m_log[k] << ","  << admm_timer.m_log[k] << "," << i << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "," << z_async(k,i) << "," << zbar_async(k,i) << "\n";        
             }
             log_file.close();
 
@@ -1328,6 +1328,7 @@ void HolohoverDmpcAdmmNode::clear_time_measurements(){
     convert_u_acc_timer.clear();
     publish_signal_timer.clear();
     update_setpoint_timer.clear();
+    get_state_timer.clear();
     return;
 }
 
