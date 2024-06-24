@@ -82,33 +82,33 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     input_ref = Eigen::VectorXd::Zero(control_settings.nud);
     build_qp();
 
-    nz = sprob.H[my_id].rows();
-    ng = sprob.Aeq[my_id].rows();
-    nh = sprob.Aineq[my_id].rows();
+    nz = sprob.H[my_id].res[0].rows();
+    ng = sprob.Aeq[my_id].res[0].rows();
+    nh = sprob.Aineq[my_id].res[0].rows();
 
     RCLCPP_INFO(get_logger(), "nz = %d, ng = %d, nh = %d", nz, ng, nh);
 
     Ncons = sprob.A[my_id].rows();
 
     rho = control_settings.rho;
-    H_bar = sprob.H[my_id] + rho * MatrixXd::Identity(nz,nz);
-    g = sprob.g[my_id];
-    ub = sprob.ub[my_id];
-    lb = sprob.lb[my_id];
+    H_bar = sprob.H[my_id].res[0];
+    for (int i = 0; i < nz; i++) {
+        H_bar.coeffRef(i, i) += rho;
+    }
+    H_bar.makeCompressed();
 
     z       = VectorXd::Zero(nz);
     zbar   = VectorXd::Zero(nz);
     gam     = VectorXd::Zero(nz);
 
-    g_bar = g + gam - rho*zbar;
+    g_bar = sprob.g[my_id].res[0] + gam - rho*zbar;
 
     //PIQP    
     loc_prob.settings().verbose = false;
     loc_prob.settings().compute_timings = false;
-    loc_prob.setup(H_bar.sparseView(), g_bar, sprob.Aeq[my_id].sparseView() , sprob.beq[my_id] , sprob.Aineq[my_id].sparseView() , sprob.bineq[my_id], lb, ub); 
+    loc_prob.setup(H_bar, g_bar, sprob.Aeq[my_id].res[0], sprob.beq[my_id].res[0], sprob.Aineq[my_id].res[0], sprob.bineq[my_id].res[0], sprob.lb[my_id], sprob.ub[my_id]);
     loc_prob.solve();
-    
-    
+
     isOriginal.resize(nz);
     isOriginal.setConstant(false);
     isCopy.resize(nz);
@@ -564,49 +564,17 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
             ud_ref_idx = ud_ref_idx + 1;
         }
         p.segment(control_settings.nx+control_settings.nu+control_settings.nxd,control_settings.nud) = input_ref;
-    } 
+    }
 
+    ///g
+    sprob.g[my_id].set_arg(0, zbar.data(), zbar.size());
+    sprob.g[my_id].set_arg(1, p.data(), p.size());
+    sprob.g[my_id].eval();
 
-    std::string function_library = control_settings.folder_name_sprob + "/locFuns.so";
-
-    casadi::DM z_cas;
-    casadi::DM p_cas;
-
-    // Use CasADi's "external" to load the compiled function
-    casadi::Function f; // = casadi::external("gradFun1","sProb_chain/locFuns.so");
-    std::string str;
-
-    std::vector<casadi::DM> arg; // = {z};
-    std::vector<casadi::DM> res; // = f(arg);
-
-    int nz_ = g.size();
-
-
-    VectorXd z = Eigen::VectorXd::Zero(nz_);
-  
-    z_cas = Eigen2casadi(z);
-    p_cas = Eigen2casadi(p);
-
-    //g
-    str = "gradFun" + std::to_string(my_id+1); //convert to matlab index
-    f = casadi::external(str,function_library);
-    arg = {z_cas,p_cas};
-    res = f(arg);
-    sprob.g[my_id]= casadi2EigenVector(res[0]);
-    
     //beq
-    str = "eqfun" + std::to_string(my_id+1); //convert to matlab index
-    f = casadi::external(str,function_library);
-    // arg = {z_cas};
-    res = f(arg);
-    int ng_ = res[0].size1();
-    int cols_ = res[0].size2();
-    sprob.beq[my_id] = Eigen::VectorXd::Zero(ng_);        
-    std::memcpy(sprob.beq[my_id].data(), res.at(0).ptr(), sizeof(double)*ng_*cols_);
-    sprob.beq[my_id] = -sprob.beq[my_id];
-
-    g = sprob.g[my_id];
-   
+    sprob.beq[my_id].set_arg(0, zbar.data(), zbar.size());
+    sprob.beq[my_id].set_arg(1, p.data(), p.size());
+    sprob.beq[my_id].eval();
 }
 
 void HolohoverDmpcAdmmNode::init_dmpc(const std_msgs::msg::UInt64 &publish_control_msg)
@@ -648,158 +616,70 @@ void HolohoverDmpcAdmmNode::init_dmpc(const std_msgs::msg::UInt64 &publish_contr
     return;
 }
 
-
-
-// Dense to Dense
-Eigen::MatrixXd HolohoverDmpcAdmmNode::casadi2Eigen ( const casadi::DM& A ){
-    // This method is based on code by Petr Listov, see https://groups.google.com/g/casadi-users/c/npPcKItdLN8
-    
-    casadi::Sparsity SpA = A.get_sparsity();
-    std::vector<long long int> output_row, output_col;
-    SpA.get_triplet(output_row, output_col);
-    std::vector<double> values = A.get_nonzeros();
-    using T = Eigen::Triplet<double>;
-    std::vector<T> TripletList;
-    TripletList.resize(values.size());
-    for(unsigned int k = 0; k < values.size(); ++k){
-        if (values[k] == casadi::inf){
-            values[k] = DBL_MAX;
-        }
-        else if (values[k] == -casadi::inf){
-            values[k] = -DBL_MAX;
-        }
-        TripletList[k] = T(output_row[k], output_col[k], values[k]);
-    }
-    Eigen::SparseMatrix<double> SpMatrx(A.size1(), A.size2());
-    SpMatrx.setFromTriplets(TripletList.begin(), TripletList.end());
-
-    Eigen::MatrixXd DeMatrx = SpMatrx.toDense();
-    return DeMatrx;
-}
-
-// Dense to Dense
-Eigen::VectorXd HolohoverDmpcAdmmNode::casadi2EigenVector ( const casadi::DM& A ){
-    // This method is based on code by Petr Listov, see https://groups.google.com/g/casadi-users/c/npPcKItdLN8
-    
-    casadi::Sparsity SpA = A.get_sparsity();
-    std::vector<long long int> output_row, output_col;
-    SpA.get_triplet(output_row, output_col);
-    std::vector<double> values = A.get_nonzeros();
-    using T = Eigen::Triplet<double>;
-    std::vector<T> TripletList;
-    TripletList.resize(values.size());
-    for(unsigned int k = 0; k < values.size(); ++k){
-        if (values[k] == casadi::inf){
-            values[k] = DBL_MAX;
-        }
-        else if (values[k] == -casadi::inf){
-            values[k] = -DBL_MAX;
-        }
-        TripletList[k] = T(output_row[k], output_col[k], values[k]);
-    }
-    Eigen::VectorXd DeVec;
-    if (A.size2() == 1){ // column-vector
-        DeVec = Eigen::VectorXd::Zero(A.size1());
-        
-        for (unsigned int k = 0; k < values.size(); k++){
-            DeVec[output_row[k]] = values[k];
-        }
-    } else { //row-vector (will be transposed)
-        DeVec = Eigen::VectorXd::Zero(A.size2());
-        for (unsigned int k = 0; k < values.size(); k++){
-            DeVec[output_col[k]] = values[k];
-        }
-    }
-
-    for (unsigned int k = 0; k < DeVec.size(); k++){
-         if (DeVec[k] == casadi::inf){
-            DeVec[k] = DBL_MAX;
-        }
-    }
-
-    return DeVec;
-}
-
-casadi::DM HolohoverDmpcAdmmNode::Eigen2casadi( const Eigen::VectorXd& in){
-    int length = in.size();
-    casadi::DM out = casadi::DM::zeros(length,1);
-    std::memcpy(out.ptr(), in.data(), sizeof(double)*length*1);
-    return out;
-}
-
 void HolohoverDmpcAdmmNode::build_qp()
 {
-    sprob.read_AA(control_settings.folder_name_sprob,Nagents);
-    sprob.read_ublb(control_settings.folder_name_sprob,my_id);
+    //init sprob
     std::string functionLibrary = control_settings.folder_name_sprob + "/locFuns.so";
 
-    casadi::DM z_cas;
-    casadi::DM p_cas;
+    // H
+    std::string str = "HessFfun" + std::to_string(my_id + 1); //convert to matlab index
+    sprob.H[my_id].init(casadi::external(str, functionLibrary));
 
-    // Use CasADi's "external" to load the compiled function
-    casadi::Function f; // = casadi::external("gradFun1","sProb_chain/locFuns.so");
-    std::string str;
-
-    std::vector<casadi::DM> arg; // = {z};
-    std::vector<casadi::DM> res; // = f(arg);
-
-    int nz_ = sprob.A[my_id].cols();
-
-
-    VectorXd z_ = Eigen::VectorXd::Zero(nz_);
-  
-    z_cas = Eigen2casadi(z_);
-    p_cas = Eigen2casadi(p);
-
-    //H
-    str = "HessFfun" + std::to_string(my_id+1); //convert to matlab index
-    f = casadi::external(str,functionLibrary);
-    arg = {z_cas,p_cas};
-    res = f(arg);
-    casadi::DM H = res[0];
-    MatrixXd Heig = casadi2Eigen(H);
-    sprob.H[my_id] = Heig;
-
-    //g
-    str = "gradFun" + std::to_string(my_id+1); //convert to matlab index
-    f = casadi::external(str,functionLibrary);
-    res = f(arg);
-    sprob.g[my_id] = Eigen::VectorXd::Zero(nz_);
-    sprob.g[my_id] = casadi2EigenVector(res[0]);
+    // g
+    str = "gradFun" + std::to_string(my_id + 1); //convert to matlab index
+    sprob.g[my_id].init(casadi::external(str, functionLibrary));
 
     //Aeq
-    str = "JGfun" + std::to_string(my_id+1); //convert to matlab index
-    f = casadi::external(str,functionLibrary);
-    res = f(arg);
-    casadi::DM Aeq = res[0];
-    sprob.Aeq[my_id] = casadi2Eigen(Aeq);
+    str = "JGfun" + std::to_string(my_id + 1); //convert to matlab index
+    sprob.Aeq[my_id].init(casadi::external(str, functionLibrary));
 
     //Aineq
-    str = "JHfun" + std::to_string(my_id+1); //convert to matlab index
-    f = casadi::external(str,functionLibrary);
-    res = f(arg);
-    casadi::DM Aineq = res[0];
-    sprob.Aineq[my_id] = casadi2Eigen(Aineq);
+    str = "JHfun" + std::to_string(my_id + 1); //convert to matlab index
+    sprob.Aineq[my_id].init(casadi::external(str, functionLibrary));
 
     //beq
-    str = "eqfun" + std::to_string(my_id+1); //convert to matlab index
-    f = casadi::external(str,functionLibrary);
-    res = f(arg);
-    int ng_ = res[0].size1();
-    int cols_ = res[0].size2();
-    sprob.beq[my_id] = Eigen::VectorXd::Zero(ng_);        
-    std::memcpy(sprob.beq[my_id].data(), res.at(0).ptr(), sizeof(double)*ng_*cols_);
-    sprob.beq[my_id] = -sprob.beq[my_id];
+    str = "eqfun" + std::to_string(my_id + 1); //convert to matlab index
+    sprob.beq[my_id].init(casadi::external(str, functionLibrary));
 
     //bineq
-    str = "ineqfun" + std::to_string(my_id+1); //convert to matlab index
-    f = casadi::external(str,functionLibrary);
-    res = f(arg);
-    int nh_ = res[0].size1();
-    cols_ = res[0].size2();
-    sprob.bineq[my_id] = Eigen::VectorXd::Zero(nh_);        
-    std::memcpy(sprob.bineq[my_id].data(), res.at(0).ptr(), sizeof(double)*nh_*cols_);
-    sprob.bineq[my_id] = -sprob.bineq[my_id];
+    str = "ineqfun" + std::to_string(my_id + 1); //convert to matlab index
+    sprob.bineq[my_id].init(casadi::external(str, functionLibrary));
+
+    sprob.read_AA(control_settings.folder_name_sprob, Nagents);
+    sprob.read_ublb(control_settings.folder_name_sprob,my_id);
+
+    int nz_ = sprob.A[my_id].cols();
+    VectorXd z_ = Eigen::VectorXd::Zero(nz_);
+
+    //H
+    sprob.H[my_id].set_arg(0, z_.data(), z_.size());
+    sprob.H[my_id].set_arg(1, p.data(), p.size());
+    sprob.H[my_id].eval();
+
+    //g
+    sprob.g[my_id].set_arg(0, z_.data(), z_.size());
+    sprob.g[my_id].set_arg(1, p.data(), p.size());
+    sprob.g[my_id].eval();
+
+    //Aeq
+    sprob.Aeq[my_id].set_arg(0, z_.data(), z_.size());
+    sprob.Aeq[my_id].set_arg(1, p.data(), p.size());
+    sprob.Aeq[my_id].eval();
+
+    //Aineq
+    sprob.Aineq[my_id].set_arg(0, z_.data(), z_.size());
+    sprob.Aineq[my_id].set_arg(1, p.data(), p.size());
+    sprob.Aineq[my_id].eval();
+
+    //beq
+    sprob.beq[my_id].set_arg(0, z_.data(), z_.size());
+    sprob.beq[my_id].set_arg(1, p.data(), p.size());
+    sprob.beq[my_id].eval();
+
+    //bineq
+    sprob.bineq[my_id].set_arg(0, z_.data(), z_.size());
+    sprob.bineq[my_id].set_arg(1, p.data(), p.size());
+    sprob.bineq[my_id].eval();
 
     for (int k = 0; k < sprob.lb[my_id].size(); k++){
         if (sprob.lb[my_id][k] == -casadi::inf){
@@ -816,8 +696,6 @@ void HolohoverDmpcAdmmNode::build_qp()
             sprob.ub[my_id][k] = std::numeric_limits<double>::infinity(); //PIQP
         }
     }
-
-
 }
 
 void HolohoverDmpcAdmmNode::init_coupling()
@@ -1001,10 +879,10 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_, bool sync_admm)
 
         //Step 1: local z update
         loc_timer.tic();
-        g_bar = g + gam - rho*zbar;
+        g_bar = sprob.g[my_id].res[0] + gam - rho*zbar;
 
         //PIQP
-        loc_prob.update(piqp::nullopt, g_bar, piqp::nullopt , sprob.beq[my_id] , piqp::nullopt , piqp::nullopt, piqp::nullopt, piqp::nullopt,true);
+        loc_prob.update(piqp::nullopt, g_bar, piqp::nullopt , sprob.beq[my_id].res[0] , piqp::nullopt , piqp::nullopt, piqp::nullopt, piqp::nullopt,true);
         loc_prob.solve();
         z = loc_prob.result().x;
 

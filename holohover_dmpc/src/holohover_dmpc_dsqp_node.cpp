@@ -151,23 +151,18 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
         H_bar.coeffRef(i, i) += rho;
     }
     H_bar.makeCompressed();
-    g = sprob.g[my_id].res[0];
-    ub = sprob.ub[my_id];
-    lb = sprob.lb[my_id];
 
     z       = VectorXd::Zero(nz);
     gam     = VectorXd::Zero(nz);
 
-    g_bar = g + gam - rho*zbar;
-
-
+    g_bar = sprob.g[my_id].res[0] + gam - rho*zbar;
 
     //PIQP    
     loc_prob.settings().verbose = false;
     loc_prob.settings().compute_timings = false;
-    loc_prob.setup(H_bar, g_bar, sprob.Aeq[my_id].res[0], sprob.beq[my_id].res[0], sprob.Aineq[my_id].res[0], sprob.bineq[my_id].res[0], lb, ub);
+    loc_prob.setup(H_bar, g_bar, sprob.Aeq[my_id].res[0], sprob.beq[my_id].res[0], sprob.Aineq[my_id].res[0], sprob.bineq[my_id].res[0], sprob.lb[my_id], sprob.ub[my_id]);
     loc_prob.solve();
-        
+
     isOriginal.resize(nz);
     isOriginal.setConstant(false);
     isCopy.resize(nz);

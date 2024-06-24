@@ -124,9 +124,6 @@ private:
     int nh;
     int Ncons;
     sProb sprob;
-    Eigen::VectorXd g;
-    Eigen::VectorXd lb;
-    Eigen::VectorXd ub;
     
     //problem metadata
     Eigen::Vector<bool, Eigen::Dynamic> isOriginal;    //nz x 1

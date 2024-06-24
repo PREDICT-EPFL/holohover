@@ -117,9 +117,6 @@ private:
     int nh;
     int Ncons;
     sProb sprob;
-    Eigen::VectorXd g;
-    Eigen::VectorXd lb;
-    Eigen::VectorXd ub; 
     
     //problem metadata
     Eigen::Vector<bool, Eigen::Dynamic> isOriginal;    //nz x 1
@@ -130,7 +127,7 @@ private:
     std::map<int,int> idx_to_og_idx;            //local variable index -> original variable index
     
     //ADMM
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> H_bar;
+    Eigen::SparseMatrix<double> H_bar;
     Eigen::VectorXd g_bar;
 
     //ADMM iterates
@@ -250,13 +247,7 @@ private:
     Eigen::MatrixXd xd_ref;
     Eigen::MatrixXd ud_ref;
     unsigned xd_ref_idx; //current row in xd_ref for reading xd
-    unsigned ud_ref_idx; 
-
-    //helper
-    Eigen::MatrixXd casadi2Eigen ( const casadi::DM& A );
-    Eigen::VectorXd casadi2EigenVector ( const casadi::DM& A );
-    casadi::DM Eigen2casadi( const Eigen::VectorXd& in);
-    
+    unsigned ud_ref_idx;
 };
 
 
