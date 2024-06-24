@@ -25,7 +25,8 @@ SOFTWARE.*/
 #include <Eigen/LU>
 #include <string>
 
-using namespace Eigen;
+#include "sparse_casadi_function_buffer.hpp"
+#include "dense_casadi_function_buffer.hpp"
 
 /*
 QP definition:
@@ -40,28 +41,25 @@ s.t.
 
 class sProb
 {
-    public:
-        MatrixXd *H;
-        VectorXd *g;
-        MatrixXd *Aeq;
-        VectorXd *beq;
-        MatrixXd *Aineq;
-        VectorXd *bineq;
-        MatrixXd *A;
-        VectorXd *ub;
-        VectorXd *lb;
-        unsigned int Nagents;
+public:
+    unsigned int Nagents;
 
-        sProb();                            //default constructor
-        sProb(unsigned int Nagents);        //constructor
-        ~sProb();                           //destructor
-        sProb(const sProb& other);          //copy constructor
-        sProb& operator=(const sProb& other);      //operator=
+    std::vector<SparseCasadiFunctionBuffer> H;
+    std::vector<DenseCasadiFunctionBuffer> g;
+    std::vector<SparseCasadiFunctionBuffer> Aeq;
+    std::vector<DenseCasadiFunctionBuffer> beq;
+    std::vector<SparseCasadiFunctionBuffer> Aineq;
+    std::vector<DenseCasadiFunctionBuffer> bineq;
+    std::vector<Eigen::MatrixXd> A;
+    std::vector<Eigen::VectorXd> ub;
+    std::vector<Eigen::VectorXd> lb;
 
-        int csvRead(MatrixXd& outputMatrix, const std::string& fileName, const std::streamsize dPrec);
-        void read_sProb(const std::string& folderName, unsigned int Nagents);
-        void read_AA(const std::string& folderName, unsigned int Nagents);
-        void read_ublb(const std::string& folderName, unsigned int my_id_);
+    sProb();
+    explicit sProb(unsigned int );
+
+    int csvRead(Eigen::MatrixXd& outputMatrix, const std::string& fileName, const std::streamsize& dPrec);
+    void read_AA(const std::string& folderName, unsigned int Nagents);
+    void read_ublb(const std::string& folderName, unsigned int my_id_);
 };
 
 #endif

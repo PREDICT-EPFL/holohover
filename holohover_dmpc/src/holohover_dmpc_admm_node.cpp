@@ -18,6 +18,8 @@ SOFTWARE.*/
 
 #include "holohover_dmpc_admm_node.hpp"
 
+using namespace Eigen;
+
 HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         Node("dmpc_node"),
         holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
