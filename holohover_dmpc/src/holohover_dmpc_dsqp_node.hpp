@@ -109,6 +109,7 @@ private:
 
     //obstacles
     Eigen::VectorXd obs_pos; //obstacle positions
+    Eigen::VectorXd obs_pos_at_ocp_solve; //obstacle positions
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr> obs_subscriptions;
     std::vector<std::function<void(const holohover_msgs::msg::HolohoverStateStamped &obs_msg_)>> bound_obs_callback;
     void obs_callback(const holohover_msgs::msg::HolohoverStateStamped &obs_msg_, int obs_id_);
@@ -246,6 +247,7 @@ private:
     Eigen::MatrixXd ud_log;
     Eigen::MatrixXi z_async;
     Eigen::MatrixXi zbar_async;
+    Eigen::MatrixXd obs_pos_log;
     int mpc_step;
     int mpc_step_since_log;
     int log_buffer_size; //number of MPC steps to store before writing to log

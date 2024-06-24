@@ -80,8 +80,9 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     state_ref_at_ocp_solve = state_ref;
     input_ref = Eigen::VectorXd::Zero(control_settings.nud);
     obs_pos = 10*Eigen::VectorXd::Ones(2*control_settings.Nobs);
+    obs_pos_at_ocp_solve = obs_pos;
     if(control_settings.Nobs > 0){
-        p.tail(2*control_settings.Nobs) = obs_pos;
+        p.tail(2*control_settings.Nobs) = obs_pos_at_ocp_solve;
     } 
     
 
@@ -265,6 +266,7 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     ud_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
     z_async = -MatrixXi::Ones(log_buffer_size,control_settings.maxiter);
     zbar_async = -MatrixXi::Ones(log_buffer_size,control_settings.maxiter);
+    obs_pos_log = -MatrixXd::Ones(log_buffer_size,2*control_settings.Nobs);
     mpc_step = 0;
     mpc_step_since_log = 0;
     logged_mpc_steps = 0;
@@ -278,17 +280,17 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     file_name << ament_index_cpp::get_package_prefix("holohover_dmpc") << "/../../log/dmpc_time_measurement_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
     quill::Backend::start();
 
+    std::string print_str_ = "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, get_state_time_us_, convert_uacc_time_us_, publish_signal_time_us_, update_setpoint_time_us_, dsqp_time_us_, dsqp_iter_, dsqp_iter_time_us_, build_qp_time_us_, reg_qp_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_, z_is_async, zbar_is_async";
+
+    for(int i = 0; i < control_settings.Nobs; i++){
+        print_str_ += ", obs" + std::to_string(i) + "_1_, obs" + std::to_string(i) + "_2_";
+    } 
+    
     auto file_sink = quill::Frontend::create_or_get_sink<quill::FileSink>(file_name.str());
     quill_logger = quill::Frontend::create_or_get_logger("root", std::move(file_sink), "%(message)");
-    QUILL_LOG_INFO(quill_logger, "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, get_state_time_us_, convert_uacc_time_us_, publish_signal_time_us_, update_setpoint_time_us_, dsqp_time_us_, dsqp_iter_, dsqp_iter_time_us_, build_qp_time_us_, reg_qp_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_, z_is_async, zbar_is_async");
+    //QUILL_LOG_INFO(quill_logger, "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, get_state_time_us_, convert_uacc_time_us_, publish_signal_time_us_, update_setpoint_time_us_, dsqp_time_us_, dsqp_iter_, dsqp_iter_time_us_, build_qp_time_us_, reg_qp_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_, z_is_async, zbar_is_async");
+    QUILL_LOG_INFO(quill_logger, "{}",print_str_);
     
-    
-    /*log_file = std::ofstream(file_name.str());
-    if (log_file.is_open())
-    {
-        log_file << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, dsqp_time_us_, dsqp_iter_, dsqp_iter_time_us_, build_qp_time_us_, reg_qp_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_\n";
-        log_file.close();
-    }*/
 
     if (!control_settings.file_name_xd_trajectory.empty()){
         sprob.csvRead(xd_ref,control_settings.file_name_xd_trajectory,20);
@@ -497,6 +499,10 @@ void HolohoverDmpcDsqpNode::publish_control()
         ud_log.block(mpc_step_since_log,0,1,control_settings.nu) = input_ref.transpose().segment(0,control_settings.nu);
     }
 
+    if(control_settings.Nobs > 0){
+        obs_pos_log.block(mpc_step_since_log,0,1,2*control_settings.Nobs) = obs_pos_at_ocp_solve.transpose();
+    } 
+
     if (mpc_step_since_log == log_buffer_size - 1) {
         print_time_measurements();
         clear_time_measurements();
@@ -611,8 +617,10 @@ void HolohoverDmpcDsqpNode::update_setpoint_in_ocp(){
     if(control_settings.Nobs > 0){
         std::unique_lock obs_lock{obs_mutex, std::defer_lock};
         obs_lock.lock();
-        p.tail(2*control_settings.Nobs) = obs_pos;
+        obs_pos_at_ocp_solve = obs_pos;
         obs_lock.unlock();
+        p.tail(2*control_settings.Nobs) = obs_pos_at_ocp_solve;
+
     } 
 }
 
@@ -1353,20 +1361,38 @@ void HolohoverDmpcDsqpNode::print_time_measurements(){
     int k = 0; //MPC step
     int l = 0; //SQP step
     unsigned int row = 0;
+    //std::string print_str_ = "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}";
+    //for(int i = 0; i < control_settings.Nobs; i++){
+    //    print_str_ += ",{},{}";
+    //}
+    //if(control_settings.Nobs > 0){
+    //    print_str_ += ",{}";
+    //}  
+
+
     while (row < N_rows){
         for (unsigned int i = 0; i < control_settings.max_outer_iter; i++){   
-            for (unsigned int j = 0; j < control_settings.maxiter; j++){   
-                QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i)); 
+            for (unsigned int j = 0; j < control_settings.maxiter; j++){
+                //std::ostringstream print_line_;
+                //print_line_ << logged_mpc_steps+k << "," << x_log(k,0) << "," << x_log(k,1) << "," << x_log(k,2) << "," << x_log(k,3) << "," << x_log(k,4) << "," << x_log(k,5) << "," << u_log(k,0) << "," << u_before_conversion_log(k,1) << "," << u_before_conversion_log(k,2) << "," << u_before_conversion_log(k,0) << "," << u_log(k,1) << "," << u_log(k,2) << "," << xd_log(k,0) << "," << xd_log(k,1) << "," << xd_log(k,2) << "," << xd_log(k,3) << "," << xd_log(k,4) << "," << xd_log(k,5) << "," << ud_log(k,0) << "," << ud_log(k,1) << "," << ud_log(k,2) << "," << dsqp_timer.m_log[k] << "," << i << "," << dsqp_iter_timer.m_log[l] << "," << build_qp_timer.m_log[l] << "," << reg_timer.m_log[l] << "," <<  admm_timer.m_log[l] << "," << j << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";
+                //std::string print_line_;
+
+                if(control_settings.Nobs == 0){
+                    QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i)); 
+                } else {
+                     //QUILL_LOG_INFO(quill_logger, print_str_, logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i), obs_pos_log.row(k));                    
+                    std::string print_line_ = "";
+                    for (int i = 0; i < control_settings.Nobs; i++){
+                        if(i > 0){
+                            print_line_ += ",";
+                        } 
+                        print_line_ += std::to_string(obs_pos_log(k,2*i)) + "," + std::to_string(obs_pos_log(k,2*i+1));
+                    } 
+                    QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i), print_line_);
+                }   
                 
                 
-                
-                
-                /*log_file.open(file_name.str(),std::ios_base::app);
-                if (log_file.is_open())
-                {
-                    log_file << logged_mpc_steps+k << "," << x_log(k,0) << "," << x_log(k,1) << "," << x_log(k,2) << "," << x_log(k,3) << "," << x_log(k,4) << "," << x_log(k,5) << "," << u_log(k,0) << "," << u_before_conversion_log(k,1) << "," << u_before_conversion_log(k,2) << "," << u_before_conversion_log(k,0) << "," << u_log(k,1) << "," << u_log(k,2) << "," << xd_log(k,0) << "," << xd_log(k,1) << "," << xd_log(k,2) << "," << xd_log(k,3) << "," << xd_log(k,4) << "," << xd_log(k,5) << "," << ud_log(k,0) << "," << ud_log(k,1) << "," << ud_log(k,2) << "," << dsqp_timer.m_log[k] << "," << i << "," << dsqp_iter_timer.m_log[l] << "," << build_qp_timer.m_log[l] << "," << reg_timer.m_log[l] << "," <<  admm_timer.m_log[l] << "," << j << "," << iter_timer.m_log[row] << "," << loc_timer.m_log[row] << "," << z_comm_timer.m_log[row] << "," << zbar_comm_timer.m_log[row] << "," << send_vin_timer.m_log[row] << "," << receive_vout_timer.m_log[row] << "\n";        
-                }
-                log_file.close();*/
+
 
                 row++;
             }

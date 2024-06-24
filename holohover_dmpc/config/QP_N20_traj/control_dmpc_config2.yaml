@@ -17,4 +17,6 @@ h2/dmpc:
     Nagents: 4
     Nobs: 0
     my_id: 2
+    max_wait_time: 0.025
+    max_wait_fraction: 0.75
     folder_name_sprob: "sProb_chain_QP_N20_050_traj"
