@@ -124,9 +124,6 @@ private:
     int nh;
     int Ncons;
     sProb sprob;
-    Eigen::VectorXd g;
-    Eigen::VectorXd lb;
-    Eigen::VectorXd ub;
     
     //problem metadata
     Eigen::Vector<bool, Eigen::Dynamic> isOriginal;    //nz x 1
@@ -137,9 +134,8 @@ private:
     std::map<int,int> idx_to_og_idx;            //local variable index -> original variable index
     
     //ADMM
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> H_bar;
+    Eigen::SparseMatrix<double> H_bar;
     Eigen::VectorXd g_bar;
-    bool GN; //use Gauss-Newton Hessian
 
     //dSQP iterates
     Eigen::VectorXd z;                                 //nz x 1
@@ -174,7 +170,7 @@ private:
     void init_dmpc(const std_msgs::msg::UInt64 &publish_control_msg);
     void init_coupling();   //extract coupling metadata from coupling matrices 
     void init_comms();     
-    void build_qp(Eigen::VectorXd zbar, Eigen::VectorXd nu, Eigen::VectorXd mu, bool GN, bool eval_HessF); //construct the sProb
+    void build_qp(const Eigen::VectorXd& zbar, const Eigen::VectorXd& nu, const Eigen::VectorXd& mu, bool eval_HessF); //construct the sProb
   
 
     //callbacks
@@ -220,8 +216,8 @@ private:
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_in_subscriber;
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverADMMStamped>::SharedPtr> v_out_subscriber;
 
-    Eigen::Array<bool,Dynamic,1> received_vin;
-    Eigen::Array<bool,Dynamic,1> received_vout;
+    Eigen::Array<bool,Eigen::Dynamic,1> received_vin;
+    Eigen::Array<bool,Eigen::Dynamic,1> received_vout;
 
     void received_vin_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_in_msg_, int in_neighbor_id_); //
     void received_vout_callback(const holohover_msgs::msg::HolohoverADMMStamped &v_out_msg_, int out_neighbor_id_); //
@@ -268,13 +264,7 @@ private:
     Eigen::MatrixXd xd_ref;
     Eigen::MatrixXd ud_ref;
     unsigned xd_ref_idx; //current row in xd_ref for reading xd
-    unsigned ud_ref_idx;   
-
-    //helper
-    Eigen::MatrixXd casadi2Eigen ( const casadi::DM& A );
-    Eigen::VectorXd casadi2EigenVector ( const casadi::DM& A );
-    casadi::DM Eigen2casadi( const Eigen::VectorXd& in);
-    
+    unsigned ud_ref_idx;
 };
 
 
