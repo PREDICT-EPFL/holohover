@@ -139,6 +139,20 @@ def launch_setup(context):
             #prefix='nice -n -19'
         )
         launch_description.append(navigation_node)
+
+
+    print(f"Starting {len(obstacles)} obstacles EKF")
+    for i in range(len(obstacles)):
+        # - - - Nodes
+        navigation_node = Node(
+            package="holohover_navigation",
+            executable="navigation",
+            parameters=[navigation_config, {'holohover_props_file' : obstacle_params[i]}],
+            namespace= obstacle_names[i],
+            output='screen',
+            #prefix='nice -n -19'
+        )
+        launch_description.append(navigation_node)
     #################### HOVERCRAFT STARTING - END ####################
 
 
