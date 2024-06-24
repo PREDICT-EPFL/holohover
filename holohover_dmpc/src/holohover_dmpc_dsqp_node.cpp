@@ -708,6 +708,7 @@ void HolohoverDmpcDsqpNode::build_qp(const Eigen::VectorXd& z_, const Eigen::Vec
     sprob.g[my_id].set_arg(0, z_.data(), z_.size());
     sprob.g[my_id].set_arg(1, p.data(), p.size());
     sprob.g[my_id].eval();
+    sprob.g[my_id].res[0].noalias() -= sprob.H[my_id].res[0] * z_;
 
     //Aeq
     sprob.Aeq[my_id].set_arg(0, z_.data(), z_.size());
@@ -724,12 +725,14 @@ void HolohoverDmpcDsqpNode::build_qp(const Eigen::VectorXd& z_, const Eigen::Vec
     sprob.beq[my_id].set_arg(1, p.data(), p.size());
     sprob.beq[my_id].eval();
     sprob.beq[my_id].res[0] = -sprob.beq[my_id].res[0];
+    sprob.beq[my_id].res[0].noalias() += sprob.Aeq[my_id].res[0] * z_;
 
     //bineq
     sprob.bineq[my_id].set_arg(0, z_.data(), z_.size());
     sprob.bineq[my_id].set_arg(1, p.data(), p.size());
     sprob.bineq[my_id].eval();
-    sprob.bineq[my_id].res[0] = -sprob.bineq[my_id].res[0] + sprob.Aineq[my_id].res[0] * z_;
+    sprob.bineq[my_id].res[0] = -sprob.bineq[my_id].res[0];
+    sprob.bineq[my_id].res[0].noalias() += sprob.Aineq[my_id].res[0] * z_;
 }
 
 void HolohoverDmpcDsqpNode::init_coupling()
