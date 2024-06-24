@@ -629,6 +629,10 @@ void HolohoverDmpcDsqpNode::init_dmpc(const std_msgs::msg::UInt64 &publish_contr
     std::ignore = publish_control_msg;
     if(!dmpc_is_initialized){
         std::this_thread::sleep_for(std::chrono::seconds(1)); //wait until all subscribers are setup
+        std::unique_lock state_lock{state_mutex, std::defer_lock};
+        state_lock.lock();
+        state_at_ocp_solve = state;
+        state_lock.unlock();
         update_setpoint_in_ocp();
         RCLCPP_INFO(get_logger(), "Initializing comms");
         init_comms();
