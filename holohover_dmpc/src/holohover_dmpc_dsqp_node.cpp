@@ -160,6 +160,14 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     //PIQP    
     loc_prob.settings().verbose = false;
     loc_prob.settings().compute_timings = false;
+//    std::cout << "H_bar:" << std::endl << Eigen::MatrixXd(H_bar) << std::endl;
+//    std::cout << "g_bar:" << std::endl << g_bar.transpose() << std::endl;
+//    std::cout << "Aeq:" << std::endl << Eigen::MatrixXd(sprob.Aeq[my_id].res[0]) << std::endl;
+//    std::cout << "beq:" << std::endl << sprob.beq[my_id].res[0].transpose() << std::endl;
+//    std::cout << "Aineq:" << std::endl << Eigen::MatrixXd(sprob.Aineq[my_id].res[0]) << std::endl;
+//    std::cout << "bineq:" << std::endl << sprob.bineq[my_id].res[0].transpose() << std::endl;
+//    std::cout << "lb:" << std::endl << sprob.lb[my_id].transpose() << std::endl;
+//    std::cout << "ub:" << std::endl << sprob.ub[my_id].transpose() << std::endl;
     loc_prob.setup(H_bar, g_bar, sprob.Aeq[my_id].res[0], sprob.beq[my_id].res[0], sprob.Aineq[my_id].res[0], sprob.bineq[my_id].res[0], sprob.lb[my_id], sprob.ub[my_id]);
     loc_prob.solve();
 
@@ -723,11 +731,13 @@ void HolohoverDmpcDsqpNode::build_qp(const Eigen::VectorXd& z_, const Eigen::Vec
     sprob.beq[my_id].set_arg(0, z_.data(), z_.size());
     sprob.beq[my_id].set_arg(1, p.data(), p.size());
     sprob.beq[my_id].eval();
+    sprob.beq[my_id].res[0] = -sprob.beq[my_id].res[0];
 
     //bineq
     sprob.bineq[my_id].set_arg(0, z_.data(), z_.size());
     sprob.bineq[my_id].set_arg(1, p.data(), p.size());
     sprob.bineq[my_id].eval();
+    sprob.bineq[my_id].res[0] = -sprob.bineq[my_id].res[0] + sprob.Aineq[my_id].res[0] * z_;
 }
 
 void HolohoverDmpcDsqpNode::init_coupling()

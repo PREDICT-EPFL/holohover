@@ -35,7 +35,7 @@ endif()
 
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
-add_library(control_dmpc_lib src/sparse_casadi_function_buffer.cpp src/dense_casadi_function_buffer.cpp src/sProb.cpp
+add_library(control_dmpc_lib src/sparse_casadi_function_buffer.cpp src/vector_casadi_function_buffer.cpp src/sProb.cpp
                              src/doptTimer.cpp src/rcl_timer_helper.c)
 ament_target_dependencies(control_dmpc_lib rclcpp)
 target_link_libraries(control_dmpc_lib casadi yaml-cpp Eigen3::Eigen)

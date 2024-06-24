@@ -26,7 +26,7 @@ SOFTWARE.*/
 #include <string>
 
 #include "sparse_casadi_function_buffer.hpp"
-#include "dense_casadi_function_buffer.hpp"
+#include "vector_casadi_function_buffer.hpp"
 
 /*
 QP definition:
@@ -45,11 +45,11 @@ public:
     unsigned int Nagents;
 
     std::vector<SparseCasadiFunctionBuffer> H;
-    std::vector<DenseCasadiFunctionBuffer> g;
+    std::vector<VectorCasadiFunctionBuffer> g;
     std::vector<SparseCasadiFunctionBuffer> Aeq;
-    std::vector<DenseCasadiFunctionBuffer> beq;
+    std::vector<VectorCasadiFunctionBuffer> beq;
     std::vector<SparseCasadiFunctionBuffer> Aineq;
-    std::vector<DenseCasadiFunctionBuffer> bineq;
+    std::vector<VectorCasadiFunctionBuffer> bineq;
     std::vector<Eigen::MatrixXd> A;
     std::vector<Eigen::VectorXd> ub;
     std::vector<Eigen::VectorXd> lb;

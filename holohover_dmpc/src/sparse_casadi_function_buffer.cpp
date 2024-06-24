@@ -9,7 +9,9 @@ void SparseCasadiFunctionBuffer::init(const casadi::Function& fun)
     res.resize(n_res);
     for (casadi_int i = 0; i < n_res; i++) {
         const casadi::Sparsity& sparsity = function->sparsity_out(i);
+        casadi_int rows = sparsity.rows();
         casadi_int cols = sparsity.columns();
+        res[i].resize(rows, cols);
 
         // preallocate nnz
         Eigen::VectorXi col_nnz(cols);
@@ -27,14 +29,14 @@ void SparseCasadiFunctionBuffer::init(const casadi::Function& fun)
         }
         res[i].makeCompressed();
         // set buffer
-        function_buffer->set_res(i, res[i].valuePtr(), res[i].nonZeros());
+        function_buffer->set_res(i, res[i].valuePtr(), res[i].nonZeros() * sizeof(double));
     }
 }
 
 void SparseCasadiFunctionBuffer::set_arg(casadi_int i, const double *data, casadi_int size)
 {
     assert(function_buffer != nullptr);
-    function_buffer->set_arg(i, data, size);
+    function_buffer->set_arg(i, data, size * sizeof(double));
 }
 
 void SparseCasadiFunctionBuffer::eval()

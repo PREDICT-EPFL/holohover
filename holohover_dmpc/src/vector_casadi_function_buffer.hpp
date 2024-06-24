@@ -4,10 +4,10 @@
 #include <Eigen/Dense>
 #include "casadi/casadi.hpp"
 
-class DenseCasadiFunctionBuffer
+class VectorCasadiFunctionBuffer
 {
 public:
-    std::vector<Eigen::MatrixXd> res;
+    std::vector<Eigen::VectorXd> res;
 
     void init(const casadi::Function& function);
     void set_arg(casadi_int i, const double* data, casadi_int size);

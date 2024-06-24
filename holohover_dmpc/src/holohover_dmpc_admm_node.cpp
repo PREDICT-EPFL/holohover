@@ -98,7 +98,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     H_bar.makeCompressed();
 
     z       = VectorXd::Zero(nz);
-    zbar   = VectorXd::Zero(nz);
+    zbar    = VectorXd::Zero(nz);
     gam     = VectorXd::Zero(nz);
 
     g_bar = sprob.g[my_id].res[0] + gam - rho*zbar;
@@ -575,6 +575,7 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
     sprob.beq[my_id].set_arg(0, zbar.data(), zbar.size());
     sprob.beq[my_id].set_arg(1, p.data(), p.size());
     sprob.beq[my_id].eval();
+    sprob.beq[my_id].res[0] = -sprob.beq[my_id].res[0];
 }
 
 void HolohoverDmpcAdmmNode::init_dmpc(const std_msgs::msg::UInt64 &publish_control_msg)
@@ -675,11 +676,13 @@ void HolohoverDmpcAdmmNode::build_qp()
     sprob.beq[my_id].set_arg(0, z_.data(), z_.size());
     sprob.beq[my_id].set_arg(1, p.data(), p.size());
     sprob.beq[my_id].eval();
+    sprob.beq[my_id].res[0] = -sprob.beq[my_id].res[0];
 
     //bineq
     sprob.bineq[my_id].set_arg(0, z_.data(), z_.size());
     sprob.bineq[my_id].set_arg(1, p.data(), p.size());
     sprob.bineq[my_id].eval();
+    sprob.bineq[my_id].res[0] = -sprob.bineq[my_id].res[0];
 
     for (int k = 0; k < sprob.lb[my_id].size(); k++){
         if (sprob.lb[my_id][k] == -casadi::inf){
