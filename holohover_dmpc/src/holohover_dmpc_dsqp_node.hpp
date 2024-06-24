@@ -170,7 +170,7 @@ private:
     void init_dmpc(const std_msgs::msg::UInt64 &publish_control_msg);
     void init_coupling();   //extract coupling metadata from coupling matrices 
     void init_comms();     
-    void build_qp(const Eigen::VectorXd& z_, const Eigen::VectorXd& nu_, const Eigen::VectorXd& mu_, bool eval_HessF); //construct the sProb
+    void build_qp(const Eigen::VectorXd& zbar, const Eigen::VectorXd& nu, const Eigen::VectorXd& mu, bool eval_HessF); //construct the sProb
   
 
     //callbacks

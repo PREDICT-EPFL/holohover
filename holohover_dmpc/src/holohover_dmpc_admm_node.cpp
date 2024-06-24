@@ -566,13 +566,16 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
         p.segment(control_settings.nx+control_settings.nu+control_settings.nxd,control_settings.nud) = input_ref;
     }
 
+    int nz_ = sprob.g[my_id].res[0].size();
+    VectorXd z_ = Eigen::VectorXd::Zero(nz_);
+
     ///g
-    sprob.g[my_id].set_arg(0, zbar.data(), zbar.size());
+    sprob.g[my_id].set_arg(0, z_.data(), z_.size());
     sprob.g[my_id].set_arg(1, p.data(), p.size());
     sprob.g[my_id].eval();
 
     //beq
-    sprob.beq[my_id].set_arg(0, zbar.data(), zbar.size());
+    sprob.beq[my_id].set_arg(0, z_.data(), z_.size());
     sprob.beq[my_id].set_arg(1, p.data(), p.size());
     sprob.beq[my_id].eval();
     sprob.beq[my_id].res[0] = -sprob.beq[my_id].res[0];
