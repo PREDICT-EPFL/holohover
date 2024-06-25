@@ -36,13 +36,17 @@ add_executable(navigation src/navigation_node.cpp)
 ament_target_dependencies(navigation rclcpp tf2_ros geometry_msgs holohover_msgs holohover_common)
 target_link_libraries(navigation yaml-cpp)
 
+add_executable(navigation_disturbance src/navigation_disturbance_node.cpp)
+ament_target_dependencies(navigation_disturbance rclcpp tf2_ros geometry_msgs holohover_msgs holohover_common)
+target_link_libraries(navigation_disturbance yaml-cpp)
+
 #install(DIRECTORY
 #  config
 #  DESTINATION share/${PROJECT_NAME}
 #)
 
 install(TARGETS
-  navigation
+  navigation navigation_disturbance
   DESTINATION lib/${PROJECT_NAME}
 )
 

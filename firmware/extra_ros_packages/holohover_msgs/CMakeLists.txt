@@ -33,6 +33,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/HolohoverControlStamped.msg"
         "msg/HolohoverState.msg"
         "msg/HolohoverStateStamped.msg"
+        "msg/HolohoverStateDisturbance.msg"
+        "msg/HolohoverStateDisturbanceStamped.msg"
         "msg/HolohoverTrajectory.msg"
         "msg/HolohoverLaoptSpeedStamped.msg"
         "msg/HolohoverADMMStamped.msg"

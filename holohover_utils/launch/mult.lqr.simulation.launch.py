@@ -102,7 +102,8 @@ def launch_setup(context):
                       "initial_state_vx":      initial_states_simulated['vx'], 
                       "initial_state_vy":      initial_states_simulated['vy'], 
                       "initial_state_w":       initial_states_simulated['w'],
-                      "holohover_props_files": holohover_params_simulated                                          
+                      "holohover_props_files": holohover_params_simulated,
+                      "are_all_simulated": True
                     }],
         output='screen'
     )

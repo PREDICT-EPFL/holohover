@@ -132,7 +132,7 @@ def launch_setup(context):
         # - - - Nodes
         navigation_node = Node(
             package="holohover_navigation",
-            executable="navigation",
+            executable="navigation_disturbance",
             parameters=[navigation_config, {'holohover_props_file' : holohover_params[i]}],
             namespace= hovercraft_names[i],
             output='screen',

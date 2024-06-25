@@ -14,6 +14,9 @@ struct NavigationSettings
     double state_cov_x_dot_dot;
     double state_cov_y_dot_dot;
     double state_cov_yaw_dot_dot;
+    double state_cov_dist_x;
+    double state_cov_dist_y;
+    double state_cov_dist_yaw;
 
     double control_cov_a_x;
     double control_cov_a_y;
@@ -47,6 +50,9 @@ NavigationSettings load_navigation_settings(rclcpp::Node &node)
     settings.state_cov_x_dot_dot = node.declare_parameter<double>("state_cov_x_dot_dot");
     settings.state_cov_y_dot_dot = node.declare_parameter<double>("state_cov_y_dot_dot");
     settings.state_cov_yaw_dot_dot = node.declare_parameter<double>("state_cov_yaw_dot_dot");
+    settings.state_cov_dist_x = node.declare_parameter<double>("state_cov_dist_x");
+    settings.state_cov_dist_y = node.declare_parameter<double>("state_cov_dist_y");
+    settings.state_cov_dist_yaw = node.declare_parameter<double>("state_cov_dist_yaw");
 
     settings.control_cov_a_x = node.declare_parameter<double>("control_cov_a_x");
     settings.control_cov_a_y = node.declare_parameter<double>("control_cov_a_y");
