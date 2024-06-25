@@ -2,6 +2,11 @@
   ros__parameters:
     period: 0.005
 
+    initial_state: [0.0, 0.0, 0.0, # x, y, yaw
+                    0.0, 0.0, 0.0, # v_x, v_y, w_z
+                    0.0, 0.0, 0.0, # dist_x, dist_y, dist_yaw
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # motor velocities
+
     state_cov_x: 1e-6
     state_cov_y: 1e-6
     state_cov_yaw: 1e-6

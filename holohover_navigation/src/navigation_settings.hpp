@@ -5,6 +5,8 @@ struct NavigationSettings
 {
     double period;
 
+    std::vector<double> initial_state;
+
     double state_cov_x;
     double state_cov_y;
     double state_cov_yaw;
@@ -40,6 +42,8 @@ NavigationSettings load_navigation_settings(rclcpp::Node &node)
     NavigationSettings settings;
 
     settings.period = node.declare_parameter<double>("period");
+
+    settings.initial_state = node.declare_parameter<std::vector<double>>("initial_state");
 
     settings.state_cov_x = node.declare_parameter<double>("state_cov_x");
     settings.state_cov_y = node.declare_parameter<double>("state_cov_y");
