@@ -1,14 +1,14 @@
 
 experiment:
   name: experiment_QP_rectangle
-  description: "Rectangle point to point transition and dt = 0.1"
+  description: "Rectangle point to point transition and dt = 0.050"
   machine: master
-  rviz_props_file: "common/holohover_params.yaml"
+  rviz_props_file: "common/holohover_params_new.yaml"
   opt_alg: "admm"
   
   file_name_xd_trajectory: ""
   file_name_ud_trajectory: ""
-  dmpc_config_folder: "QP_N10"
+  dmpc_config_folder: "QP_N20"
    
 
 hovercraft:
@@ -17,29 +17,29 @@ hovercraft:
     initial_state: [0.9, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [0.0, 0.0, 1.0, 1.0]
-    simulate: False
-    machine: radxa_h0
+    simulate: false
+    machine: la016
 
   - name: h1
     id: 1
     initial_state: [0.6, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 0.0, 0.0, 1.0]
-    simulate: False
-    machine: radxa_h1
+    simulate: false
+    machine: la017
 
   - name: h2
     id: 2
     initial_state: [0.3, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [0.54, 0.0, 0.54, 1.0]
-    simulate: False
-    machine: radxa_h2
+    simulate: false
+    machine: la016
 
   - name: h3
     id: 3
     initial_state: [0, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 1.0, 0.0, 1.0] #yellow
-    simulate: False
-    machine: radxa_h3
+    simulate: false
+    machine: la017

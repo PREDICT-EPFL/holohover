@@ -13,9 +13,9 @@ system(str);
 
 
 d = dir;
-Nagents = 3;
+Nagents = 4;
 Ndsqp = 1; %dsqp iterations per MPC step
-Nadmm = 10; %admm iterations per sqp iteration
+Nadmm = 6; %admm iterations per sqp iteration
 dt = 0.100; %sampling time
 
 for i = 1:Nagents
