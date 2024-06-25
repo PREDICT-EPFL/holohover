@@ -6,9 +6,9 @@ experiment:
   rviz_props_file: "common/holohover_params.yaml"
   opt_alg: "dsqp"
   
-  file_name_xd_trajectory: "clover_50/clover_traj_xd_N20_50.csv"
-  file_name_ud_trajectory: "clover_50/clover_traj_ud_N20_50.csv"
-  dmpc_config_folder: "QCQP_N20_traj"
+  file_name_xd_trajectory: "clover/clover_traj_xd_N10_100_t8.csv"
+  file_name_ud_trajectory: "clover/clover_traj_ud_N10_100_t8.csv"
+  dmpc_config_folder: "QCQP_N10_traj"
    
 
 hovercraft:
@@ -17,7 +17,7 @@ hovercraft:
     initial_state: [0.9, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     color : [0.0, 0.0, 1.0, 1.0]
-    simulate: false
+    simulate: true
     machine: la016
 
   - name: h1
@@ -25,7 +25,7 @@ hovercraft:
     initial_state: [0.6, 0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 0.0, 0.0, 1.0]
-    simulate: false
+    simulate: true
     machine: la017
 
   - name: h2

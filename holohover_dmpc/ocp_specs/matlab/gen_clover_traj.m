@@ -7,11 +7,11 @@ import casadi.*
 
 % scenario
 Nrobot = 4;
-N = 10;           %horizon
-dt = 0.100;       %MPC sampling interval seconds
-h = 0.100;
+N = 20;           %horizon
+dt = 0.050;       %MPC sampling interval seconds
+h = 0.050;
 
-t_end = 4;
+t_end = 8;
 [tp,theta_ref,xref_planned,uref_planned] = three_leaved_clover_ocp(dt,t_end);
 
 xref_planned(1,:) = xref_planned(1,:) + 0.3; %start at x = 0.6
@@ -21,14 +21,14 @@ uref_planned_basic = uref_planned;
 
 xref_planned = []; uref_planned = [];
 
-for k = 1:10
+for k = 1:3
     xref_planned = [xref_planned, xref_planned_basic];
     uref_planned = [uref_planned, uref_planned_basic, zeros(3,1)];
 end
 
-write_clover_traj_to_csv(N,xref_planned,uref_planned,dt,10);
+write_clover_traj_to_csv(N,xref_planned,uref_planned,dt,10,t_end);
 
-function write_clover_traj_to_csv(N,xref,uref,dt,t0)
+function write_clover_traj_to_csv(N,xref,uref,dt,t0,t_end)
 
     time_steps = size(xref,2) - N;
     
@@ -73,8 +73,8 @@ function write_clover_traj_to_csv(N,xref,uref,dt,t0)
     X = [t.',x];
     U = [t.',u];
 
-    xdstr = sprintf("clover_traj_xd_N%i_%i.csv",N,dt*1000);
-    udstr = sprintf("clover_traj_ud_N%i_%i.csv",N,dt*1000);
+    xdstr = sprintf("clover_traj_xd_N%i_%i_t%i.csv",N,dt*1000,t_end);
+    udstr = sprintf("clover_traj_ud_N%i_%i_t%i.csv",N,dt*1000,t_end);
     
     writematrix(X,xdstr);
     writematrix(U,udstr);
