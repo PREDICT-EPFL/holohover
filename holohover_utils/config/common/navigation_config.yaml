@@ -14,8 +14,8 @@
     state_cov_y_dot_dot: 1e3
     state_cov_yaw_dot_dot: 4e3
 
-    state_cov_dist_x: 5e-5
-    state_cov_dist_y: 5e-5
+    state_cov_dist_x: 1e-3
+    state_cov_dist_y: 1e-3
     state_cov_dist_yaw: 1e-2
 
     control_cov_a_x: 1e3

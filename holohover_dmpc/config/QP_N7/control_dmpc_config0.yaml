@@ -19,4 +19,4 @@ h0/dmpc:
     my_id: 0
     max_wait_time: 0.025
     max_wait_fraction: 0.75
-    folder_name_sprob: "sProb_chain_QP_N7_2"
+    folder_name_sprob: "sProb_chain_QP_N7_2_dist"
