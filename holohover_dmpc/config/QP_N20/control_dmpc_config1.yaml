@@ -25,4 +25,4 @@ h1/dmpc:
     my_id: 1
     max_wait_time: 0.025
     max_wait_fraction: 0.75
-    folder_name_sprob: "sProb_chain_QP_N20_acc_050_damped"
+    folder_name_sprob: "sProb_chain_QP_N20_4"
