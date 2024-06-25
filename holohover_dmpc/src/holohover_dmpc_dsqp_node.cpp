@@ -306,12 +306,19 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
 
     for(int i = 0; i < control_settings.Nobs; i++){
         print_str_ += ", obs" + std::to_string(i) + "_1_, obs" + std::to_string(i) + "_2_";
-    } 
+    }
+
+    std::ostringstream file_name_sol;
+    file_name_sol << ament_index_cpp::get_package_prefix("holohover_dmpc") << "/../../log/dmpc_sol_log_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
+    auto file_sink_sol = quill::Frontend::create_or_get_sink<quill::FileSink>(file_name_sol.str());
+    file_sink_sol = quill::Frontend::create_or_get_sink<quill::FileSink>(file_name_sol.str());
+    sol_logger = quill::Frontend::create_or_get_logger("sol_logger", std::move(file_sink_sol), "%(message)");
     
     auto file_sink = quill::Frontend::create_or_get_sink<quill::FileSink>(file_name.str());
     quill_logger = quill::Frontend::create_or_get_logger("root", std::move(file_sink), "%(message)");
     //QUILL_LOG_INFO(quill_logger, "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, get_state_time_us_, convert_uacc_time_us_, publish_signal_time_us_, update_setpoint_time_us_, dsqp_time_us_, dsqp_iter_, dsqp_iter_time_us_, build_qp_time_us_, reg_qp_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_, z_is_async, zbar_is_async");
     QUILL_LOG_INFO(quill_logger, "{}",print_str_);
+
     
 
     if (!control_settings.file_name_xd_trajectory.empty()){
@@ -531,6 +538,14 @@ void HolohoverDmpcDsqpNode::publish_control()
         clear_time_measurements();
         mpc_step_since_log = -1; //gets increased to 0 below
     } 
+    std::string print_line_ = "";
+    for (int i = 0; i < zbar.size(); i++){
+        if(i > 0){
+            print_line_ += ",";
+        } 
+        print_line_ += std::to_string(zbar(i));
+    }
+    QUILL_LOG_INFO(sol_logger, "{},{}",mpc_step,print_line_);
 
     u_acc_curr = u_acc_next;
     mpc_step_since_log += 1;

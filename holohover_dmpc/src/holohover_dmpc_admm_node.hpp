@@ -244,7 +244,8 @@ private:
     doptTimer publish_signal_timer;
     doptTimer update_setpoint_timer;
 
-    quill::Logger* quill_logger; 
+    quill::Logger* quill_logger;
+    quill::Logger* sol_logger; 
 
     //reference trajectories
     Eigen::MatrixXd xd_ref;
