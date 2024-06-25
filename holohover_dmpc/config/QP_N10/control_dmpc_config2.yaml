@@ -2,7 +2,7 @@ h2/dmpc:
   ros__parameters:
     dmpc_period: 0.100
     rho: 2.0
-    maxiter: 6
+    maxiter: 20
     max_outer_iter: 1
     nx: 6
     nu: 3

@@ -1,14 +1,14 @@
 
 experiment:
   name: experiment_QP_rectangle
-  description: "Rectangle point to point transition and dt = 0.050"
+  description: "Rectangle point to point transition and dt = 0.100"
   machine: master
   rviz_props_file: "common/holohover_params_new.yaml"
   opt_alg: "admm"
   
   file_name_xd_trajectory: ""
   file_name_ud_trajectory: ""
-  dmpc_config_folder: "QP_N20"
+  dmpc_config_folder: "QP_N10"
    
 
 hovercraft:
