@@ -13,7 +13,9 @@ for subdir in */; do
   if [ -d "$subdir" ] && [ "$(basename "$subdir")" != "matlab" ]; then
     echo "Entering directory: $subdir"
     cd $subdir
-    gcc -fPIC -shared -O3 locFuns.c -o locFuns-$ARCH.so
+    if [ ! -f locFuns-$ARCH.so ]; then
+      gcc -fPIC -shared -O3 locFuns.c -o locFuns-$ARCH.so
+    fi
     cd -
   fi
 done
