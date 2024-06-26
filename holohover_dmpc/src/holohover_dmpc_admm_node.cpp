@@ -159,7 +159,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         v_out_pub_topic.append(std::to_string(neighbor_id));
         v_out_publisher[i] = this->create_publisher<holohover_msgs::msg::HolohoverADMMStamped>(
             v_out_pub_topic,
-            rclcpp::SensorDataQoS());
+            rclcpp::SystemDefaultsQoS());
     
         std::string v_out_sub_topic = "/dmpc/agent";
         v_out_sub_topic.append(std::to_string(neighbor_id));
@@ -168,7 +168,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         bound_received_vout_callback[i] = std::bind(&HolohoverDmpcAdmmNode::received_vout_callback, this, std::placeholders::_1, i);
 
         v_out_subscriber[i] = this->create_subscription<holohover_msgs::msg::HolohoverADMMStamped>(
-                            v_out_sub_topic, rclcpp::SensorDataQoS(),
+                            v_out_sub_topic, rclcpp::SystemDefaultsQoS(),
                             bound_received_vout_callback[i],receive_vout_options);
         // rclcpp::QoS(1)
     }
@@ -203,7 +203,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         v_in_pub_topic.append(std::to_string(neighbor_id));
         v_in_publisher[i] = this->create_publisher<holohover_msgs::msg::HolohoverADMMStamped>(
             v_in_pub_topic,
-            rclcpp::SensorDataQoS());
+            rclcpp::SystemDefaultsQoS());
 
         std::string v_in_sub_topic = "/dmpc/agent";
         v_in_sub_topic.append(std::to_string(neighbor_id));
@@ -211,7 +211,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         v_in_sub_topic.append(std::to_string(my_id));
         bound_received_vin_callback[i] = std::bind(&HolohoverDmpcAdmmNode::received_vin_callback, this, std::placeholders::_1, i);
         v_in_subscriber[i] = this->create_subscription<holohover_msgs::msg::HolohoverADMMStamped>(
-                            v_in_sub_topic, rclcpp::SensorDataQoS(),
+                            v_in_sub_topic, rclcpp::SystemDefaultsQoS(),
                             bound_received_vin_callback[i],receive_vin_options);
     }
        
