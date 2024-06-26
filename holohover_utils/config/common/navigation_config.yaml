@@ -1,6 +1,6 @@
 /**:
   ros__parameters:
-    period: 0.005
+    period: 0.01
 
     initial_state: [0.0, 0.0, 0.0, # x, y, yaw
                     0.0, 0.0, 0.0, # v_x, v_y, w_z
