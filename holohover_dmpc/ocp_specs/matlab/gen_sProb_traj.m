@@ -44,11 +44,12 @@ end
 
 % setup OCP
 % sProb = holohover_sProb_QP_traj(Nrobot,N,dt,h,xx0,uu0,xxd,uref,xinit);
-sProb = holohover_sProb_QCQP2_dist_traj(Nrobot,N,dt,h,xx0,uu0,xxd,uref,xinit,dist);
+sProb = holohover_sProb_QCQP_traj(Nrobot,N,dt,h,xx0,uu0,xxd,uref,xinit,dist);
 
 gen_c_sProb( sProb );
 
 %%
+nx = 6; nu = 3;
 for i = 1:Nrobot
     if i == 1 
         nxd(i) = nx*(N+1) + nx;
