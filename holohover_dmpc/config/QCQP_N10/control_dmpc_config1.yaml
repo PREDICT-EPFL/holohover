@@ -19,4 +19,4 @@ h1/dmpc:
     my_id: 1
     max_wait_time: 0.025
     max_wait_fraction: 0.75
-    folder_name_sprob: "sProb_chain_QCQP_N10_4"
+    folder_name_sprob: "QCQP_N10_2"
