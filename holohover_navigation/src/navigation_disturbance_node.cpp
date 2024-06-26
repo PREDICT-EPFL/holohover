@@ -84,7 +84,7 @@ void HolohoverNavigationDisturbanceNode::kalman_predict_step()
 {
     // don't publish if we have not received updates in the last 20ms
     rclcpp::Time current_time = this->now();
-    if ((current_time - last_update).seconds() > 20e-3) return;
+    if ((current_time - last_update).seconds() > navigation_settings.publish_time_threshold) return;
 
     const holohover::DisturbanceHolohoverEKF::State &state = ekf->predict_state((current_time - last_update).seconds());
 
@@ -131,7 +131,7 @@ void HolohoverNavigationDisturbanceNode::pose_callback(const geometry_msgs::msg:
     rclcpp::Time current_time = this->now();
     rclcpp::Time pose_time = measurement.header.stamp;
     // don't predict if update was too long ago otherwise we diverge
-    if (pose_time >= last_update && (current_time - last_update).seconds() < 25e-3)
+    if (pose_time >= last_update && (current_time - last_update).seconds() < navigation_settings.pose_update_time_threshold)
     {
         ekf->predict((pose_time - last_update).seconds());
     }

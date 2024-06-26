@@ -35,6 +35,10 @@ struct NavigationSettings
     double sensor_pose_cov_x;
     double sensor_pose_cov_y;
     double sensor_pose_cov_yaw;
+
+    double publish_time_threshold;
+    double pose_update_time_threshold;
+    
 };
 
 NavigationSettings load_navigation_settings(rclcpp::Node &node)
@@ -73,6 +77,9 @@ NavigationSettings load_navigation_settings(rclcpp::Node &node)
     settings.sensor_pose_cov_x = node.declare_parameter<double>("sensor_pose_cov_x");
     settings.sensor_pose_cov_y = node.declare_parameter<double>("sensor_pose_cov_y");
     settings.sensor_pose_cov_yaw = node.declare_parameter<double>("sensor_pose_cov_yaw");
+
+    settings.publish_time_threshold = node.declare_parameter<double>("publish_time_threshold", 30e-3);
+    settings.pose_update_time_threshold = node.declare_parameter<double>("pose_update_time_threshold", 45e-3);
 
     return settings;
 }
