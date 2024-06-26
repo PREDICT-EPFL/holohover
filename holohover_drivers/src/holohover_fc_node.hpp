@@ -31,6 +31,12 @@ private:
     bool motor_are_reset = false;
     rclcpp::Time last_control_msg_time;
 
+    double battery_warn_threshold;
+    double battery_critical_threshold;
+
+    bool battery_is_warn = false;
+    bool battery_is_critical = false;
+
     rclcpp::TimerBase::SharedPtr watchdog_timer;
     rclcpp::TimerBase::SharedPtr imu_timer;
     rclcpp::TimerBase::SharedPtr diagnostics_timer;

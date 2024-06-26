@@ -10,6 +10,10 @@ HolohoverFCNode::HolohoverFCNode() :
     double imu_period = this->declare_parameter<double>("imu_period", 0.01);
     double diagnostics_period = this->declare_parameter<double>("diagnostics_period", 1);
 
+    battery_warn_threshold = this->declare_parameter<double>("battery_warn_threshold", 7.5);
+    battery_critical_threshold = this->declare_parameter<double>("battery_critical_threshold", 7.4);
+    
+
     if (!msp.begin(device.c_str(), baud)) {
         throw std::runtime_error("Could not setup uart connection");
     }
@@ -49,6 +53,8 @@ void HolohoverFCNode::watchdog_callback()
 
 void HolohoverFCNode::control_callback(const holohover_msgs::msg::HolohoverControlStamped& msg)
 {
+    if(battery_is_critical) return;
+
     motors.motor[MOTOR_A_1] = 1000 + (int)(1000 * msg.motor_a_1);
     motors.motor[MOTOR_A_2] = 1000 + (int)(1000 * msg.motor_a_2);
     motors.motor[MOTOR_B_1] = 1000 + (int)(1000 * msg.motor_b_1);
@@ -92,6 +98,19 @@ void HolohoverFCNode::diagnostics_callback()
     if (msp_battery_state_result >= 0) {
         std_msgs::msg::Float32 msg;
         msg.data = (float) battery_state.voltage / 100;
+
+        if(msg.data < battery_warn_threshold && !battery_is_warn) {
+            battery_is_warn = true;
+            RCLCPP_WARN(this->get_logger(), "Battery warning level reached: %f", msg.data);
+        }
+
+        if(msg.data < battery_critical_threshold && !battery_is_critical) {
+            battery_is_critical = true;
+            RCLCPP_WARN(this->get_logger(), "Battery CRITICAL level reached: %f", msg.data);
+            RCLCPP_WARN(this->get_logger(), "Shutting off motors.");
+            reset_motors();
+        }
+
         voltage_publisher->publish(msg);
     } else {
         RCLCPP_WARN(this->get_logger(), "MSP battery state request failed.");
