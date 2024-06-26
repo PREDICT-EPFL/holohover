@@ -1,6 +1,6 @@
 function [t,theta,x,u] = three_leaved_clover_ocp(dt,t_end)
     
-N = t_end/dt - 1;
+N = ceil(t_end/dt) - 1;
 
 Ac = [0,0,1,0,0,0;
   0,0,0,1,0,0;

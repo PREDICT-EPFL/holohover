@@ -4,6 +4,12 @@
 % of this software and associated documentation files (the "Software"), to deal
 % in the Software without restriction, including without limitation the rights
 % to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% MIT License
+% Copyright (c) 2023 Goesta Stomberg, Henrik Ebel, Timm Faulwasser, Peter Eberhard
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 % copies of the Software, and to permit persons to whom the Software is
 % furnished to do so, subject to the following conditions:
 % The above copyright notice and this permission notice shall be included in all
@@ -16,7 +22,7 @@
 % OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 % SOFTWARE.
 
-function sProb = holohover_sProb_QCQP(Nrobot,N,dt,h,x0,u0,xd,xinit)
+function sProb = holohover_sProb_QCQP(Nrobot,N,dt,h,x0,u0,xd,xinit,dist)
 
 import casadi.*
 
@@ -25,8 +31,11 @@ nu = 3; %inputs per holohover (a_x,a_y,w_z_dot)
 
 xmin = -inf(nx,1);
 xmax = inf(nx,1);
-umin = -5*ones(nu,1); %m/s^2, m/s^2, rad/s^2
-umax = 5*ones(nu,1);  %m/s^2, m/s^2, rad/s^2
+umin = -[5;5;15]; %m/s^2, m/s^2, rad/s^2
+umax =  [5;5;15];  %m/s^2, m/s^2, rad/s^2
+
+ux =  [1;0.45]; %box constaints for position (soft constraints)
+lx = -[1;0.45];
 
 Ac = [0,0,1,0,0,0;
       0,0,0,1,0,0;
@@ -76,9 +85,9 @@ for i=1:Nrobot
     else
         XXd{i} = SX.sym(['xxd' num2str(i)], [nx 1]);
     end
-    if i > 1
-        slacks{i} = SX.sym(['s' num2str(i)], [1 1]); %slack for minimum-distance constraint
-    end
+    % disturbance
+    DD{i} = SX.sym(['dist' num2str(i)], [3 1]);
+    slacks{i} = SX.sym(['s' num2str(i)], [1 1]); %slack for minimum-distance constraint
 end
 
 
@@ -99,7 +108,7 @@ for i=1:Nrobot
     gg{i} = [gg{i}; UU{i}(:,1) - UU0{i}];
     % dynamics
     for j=1:N
-        gg{i}      = [ gg{i}; XX{i}(:,j+1) - ( Ad*XX{i}(:,j) + Bd*UU{i}(:,j) )];
+        gg{i}      = [ gg{i}; XX{i}(:,j+1) - ( Ad*XX{i}(:,j) + Bd*(UU{i}(:,j) + DD{i} ) )];
     end
     
     %terminal constraint
@@ -135,14 +144,21 @@ for i=1:Nrobot
         if i > 1
             hh{i} = [hh{i}; (-(XX{i}(1:2,j) - ZZZ{i}{i-1}(1:2,j)).' * (XX{i}(1:2,j) - ZZZ{i}{i-1}(1:2,j)) + dmin^2) - slacks{i}];            
         end
+        if i < Nrobot
+            hh{i} = [hh{i}; (-(XX{i}(1:2,j) - ZZZ{i}{i+1}(1:2,j)).' * (XX{i}(1:2,j) - ZZZ{i}{i+1}(1:2,j)) + dmin^2) - slacks{i}];
+        end
     end
-    if i > 1
-        JJ{i} = JJ{i} + 10^6* slacks{i}.'*slacks{i};
+    %box constraints on position
+    for j = 2:N+1
+        hh{i} = [hh{i}; XX{i}(1:2,j) - ux - slacks{i}];
+        hh{i} = [hh{i}; lx - XX{i}(1:2,j) - slacks{i}];
     end
+
+    JJ{i} = JJ{i} + 10^6* slacks{i}*slacks{i}.';
 end
 
-Q1 = diag([14,14,3,3,20,3]);
-Qij = diag([14,14,3,3,20,3]);
+Q1 = diag([14,14,9,9,20,9]);
+Qij = diag([14,14,9,9,20,9]);
 
 R = 0.1*eye(nu);
 % beta = 10;
@@ -234,16 +250,16 @@ for i = 1:Nrobot
         end        
     end
 
-    pp{i} = [XX0{i};UU0{i};vertcat(XXd{i}(:))];
+    pp{i} = [XX0{i};UU0{i};DD{i};vertcat(XXd{i}(:))];
 
 end
 
 %account for slack variables in AA
-for i = 2:Nrobot
+for i = 1:Nrobot
     XXU{i} = [XXU{i};vertcat(slacks{i}(:))];
     AA{i} = [AA{i},zeros(size(AA{i},1),1)];
-    llbxu{i} = [llbxu{i}; 0];
-    uubxu{i} = [uubxu{i}; inf];
+    llbxu{i} = [llbxu{i}; zeros(1,1)];
+    uubxu{i} = [uubxu{i}; inf(1,1)];
 end
 
 % regularization
@@ -272,7 +288,7 @@ for i=1:Nrobot
     
     sProb.llam0{i} = zeros(size(AA{i},1),1);
 
-    sProb.pp{i} = [x0{i};u0{i};vertcat(xd{i}(:))];    
+    sProb.pp{i} = [x0{i};u0{i};dist{i};vertcat(xd{i}(:))];    
 end
 
 end

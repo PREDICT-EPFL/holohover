@@ -7,11 +7,11 @@ import casadi.*
 
 % scenario
 Nrobot = 4;
-N = 20;           %horizon
-dt = 0.050;       %MPC sampling interval seconds
-h = 0.050;
+N = 7;           %horizon
+dt = 0.150;       %MPC sampling interval seconds
+h = 0.150;
 
-t_end = 8;
+t_end = 4.05;
 [tp,theta_ref,xref_planned,uref_planned] = three_leaved_clover_ocp(dt,t_end);
 
 xref_planned(1,:) = xref_planned(1,:) + 0.3; %start at x = 0.6

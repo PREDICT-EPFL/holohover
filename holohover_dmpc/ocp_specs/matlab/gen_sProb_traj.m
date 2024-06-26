@@ -22,7 +22,7 @@ x2d = [-0.3; 0.0; zeros(4,1)];  %desired setpoint for (x2-x1)
 x3d = [-0.3; 0.0; zeros(4,1)];  %desired setpoint for (x3-x2)
 x4d = [-0.3; 0.0; zeros(4,1)];  %desired setpoint for (x4-x3)
 
-t_end = 4;
+t_end = (N+1)*dt;
 [tp,theta_ref,xref_planned,uref_planned] = three_leaved_clover_ocp(dt,t_end);
 
 
@@ -38,8 +38,26 @@ xxd{4} = [x4d];
 
 xinit = []; %solver initialization
 
+for i = 1:Nrobot
+    dist{i} = zeros(3,1);
+end
+
 % setup OCP
 % sProb = holohover_sProb_QP_traj(Nrobot,N,dt,h,xx0,uu0,xxd,uref,xinit);
-sProb = holohover_sProb_QCQP_traj(Nrobot,N,dt,h,xx0,uu0,xxd,uref,xinit);
+sProb = holohover_sProb_QCQP2_dist_traj(Nrobot,N,dt,h,xx0,uu0,xxd,uref,xinit,dist);
 
 gen_c_sProb( sProb );
+
+%%
+for i = 1:Nrobot
+    if i == 1 
+        nxd(i) = nx*(N+1) + nx;
+    elseif i == Nrobot
+        nxd(i) = 6;
+    else
+        nxd(i) = 12;
+    end
+    nud(i) = N*nu;
+end
+nxd
+nud

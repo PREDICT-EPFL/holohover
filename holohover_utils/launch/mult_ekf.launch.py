@@ -146,7 +146,7 @@ def launch_setup(context):
         # - - - Nodes
         navigation_node = Node(
             package="holohover_navigation",
-            executable="navigation",
+            executable="navigation_disturbance",
             parameters=[navigation_config, {'holohover_props_file' : obstacle_params[i]}],
             namespace= obstacle_names[i],
             output='screen',

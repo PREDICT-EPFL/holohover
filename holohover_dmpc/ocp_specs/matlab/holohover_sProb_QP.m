@@ -16,7 +16,7 @@
 % OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 % SOFTWARE.
 
-function sProb = holohover_sProb_QCQP_obs(Nrobot,N,dt,h,x0,u0,xd,xxobs,xinit,dist)
+function sProb = holohover_sProb_QP(Nrobot,N,dt,h,x0,u0,xd,xinit,dist)
 
 import casadi.*
 
@@ -56,8 +56,6 @@ Bd = sysd.B;
 Adt = sysdt.A;
 Bdt = sysdt.B;
 
-Nobs = size(xxobs{1},2);
-
 % declare decision variables
 for i=1:Nrobot
     % states
@@ -84,13 +82,7 @@ for i=1:Nrobot
     % disturbance
     DD{i} = SX.sym(['dist' num2str(i)], [3 1]);
     slacks{i} = SX.sym(['s' num2str(i)], [1 1]); %slack for minimum-distance constraint
-    XXobs{i} = SX.sym(['xxobs' num2str(i)], [2 Nobs]);
-%     A1{i}    = SX.sym(['a1' num2str(i)], [Nobs N]);
-%     A2{i}    = SX.sym(['a2' num2str(i)], [Nobs N]);
-%     BB{i}    = SX.sym(['bb' num2str(i)], [Nobs N]);
-    slack_obs{i} = SX.sym(['slackobs' num2str(i)], [Nobs N]);
 end
-
 
 
 % setup individual OCPs        
@@ -110,7 +102,7 @@ for i=1:Nrobot
     gg{i} = [gg{i}; UU{i}(:,1) - UU0{i}];
     % dynamics
     for j=1:N
-        gg{i}      = [ gg{i}; XX{i}(:,j+1) - ( Ad*XX{i}(:,j) + Bd*( UU{i}(:,j) + DD{i}) )];
+        gg{i}      = [ gg{i}; XX{i}(:,j+1) - ( Ad*XX{i}(:,j) + Bd*(UU{i}(:,j) + DD{i} ) )];
     end
     
     %terminal constraint
@@ -140,40 +132,13 @@ for i=1:Nrobot
             uubu{i} = [ uubu{i}, umax];
         end
     end
-    %minimum distance constraint
-    dmin = 0.3; %meter
-    for j = 2:N+1
-        if i > 1
-            hh{i} = [hh{i}; (-(XX{i}(1:2,j) - ZZZ{i}{i-1}(1:2,j)).' * (XX{i}(1:2,j) - ZZZ{i}{i-1}(1:2,j)) + dmin^2) - slacks{i}];            
-        end
-    end
+
     %box constraints on position
     for j = 2:N+1
         hh{i} = [hh{i}; XX{i}(1:2,j) - ux - slacks{i}];
         hh{i} = [hh{i}; lx - XX{i}(1:2,j) - slacks{i}];
     end
-    %collision avoidance to obstacles
-    dmino = 0.3; %meter
-    for o = 1:Nobs
-        for j = 2:N+1
-            hh{i} = [hh{i}; (-(XX{i}(1:2,j) - XXobs{i}(:,o)).' * (XX{i}(1:2,j) - XXobs{i}(:,o)) + dmino^2) - slack_obs{i}(o,j-1)]; % 
-        end
-    end
-    %collision avoidance - separating hyperplane (vanParys 2017 (A.1))
-%    r = 0.15;
-%     for o = 1:Nobs
-%         for j = 2:N+1
-%             hh{i} = [hh{i}; 
-%                 +[A1{i}(o,j-1) A2{i}(o,j-1)]*XX{i}(1:2,j) - BB{i}(o,j-1) + r - slack_obs{i}(o,j-1);
-%                 -[A1{i}(o,j-1) A2{i}(o,j-1)]*XXobs{i}(:,o) + BB{i}(o,j-1) + r - slack_obs{i}(o,j-1);
-%                 [A1{i}(o,j-1) A2{i}(o,j-1)]*[A1{i}(o,j-1);A2{i}(o,j-1)] - 1];
-% %             gg{i} = [gg{i}; [A1{i}(o,j-1) A2{i}(o,j-1)]*[A1{i}(o,j-1);A2{i}(o,j-1)] - 1];
-%         end
-%     end
-    JJ{i} = JJ{i} + 10^6* slacks{i}.'*slacks{i};
-    for o = 1:Nobs
-        JJ{i} = JJ{i} + 10^6* slack_obs{i}(o,:)*slack_obs{i}(o,:).';
-    end
+    JJ{i} = JJ{i} + 10^6* slacks{i}*slacks{i}.';
 end
 
 Q1 = diag([14,14,9,9,20,9]);
@@ -269,7 +234,7 @@ for i = 1:Nrobot
         end        
     end
 
-    pp{i} = [XX0{i};UU0{i};DD{i};vertcat(XXd{i}(:));vertcat(XXobs{i}(:))];
+    pp{i} = [XX0{i};UU0{i};DD{i};vertcat(XXd{i}(:))];
 
 end
 
@@ -277,17 +242,8 @@ end
 for i = 1:Nrobot
     XXU{i} = [XXU{i};vertcat(slacks{i}(:))];
     AA{i} = [AA{i},zeros(size(AA{i},1),1)];
-    llbxu{i} = [llbxu{i}; 0];
-    uubxu{i} = [uubxu{i}; inf];
-end
-
-%account for separating hyperplane constraints in AA
-for i = 1:Nrobot
-%     XXU{i} = [XXU{i};vertcat(A1{i}(:));vertcat(A2{i}(:));vertcat(BB{i}(:));vertcat(slack_obs{i}(:))];
-    XXU{i} = [XXU{i};vertcat(slack_obs{i}(:))];
-    AA{i} = [AA{i},zeros(size(AA{i},1), 1*N*Nobs)];
-    llbxu{i} = [llbxu{i}; -inf(0*N*Nobs,1); zeros(N*Nobs,1)];
-    uubxu{i} = [uubxu{i}; inf(0*N*Nobs,1); inf(N*Nobs,1)];
+    llbxu{i} = [llbxu{i}; zeros(1,1)];
+    uubxu{i} = [uubxu{i}; inf(1,1)];
 end
 
 % regularization
@@ -316,7 +272,7 @@ for i=1:Nrobot
     
     sProb.llam0{i} = zeros(size(AA{i},1),1);
 
-    sProb.pp{i} = [x0{i};u0{i};dist{i};vertcat(xd{i}(:));vertcat(xxobs{i}(:))];    
+    sProb.pp{i} = [x0{i};u0{i};dist{i};vertcat(xd{i}(:))];    
 end
 
 end
