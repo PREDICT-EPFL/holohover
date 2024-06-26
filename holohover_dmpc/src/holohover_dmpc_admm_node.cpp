@@ -159,7 +159,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         v_out_pub_topic.append(std::to_string(neighbor_id));
         v_out_publisher[i] = this->create_publisher<holohover_msgs::msg::HolohoverADMMStamped>(
             v_out_pub_topic,
-            rclcpp::SystemDefaultsQoS());
+            rclcpp::SensorDataQoS());
     
         std::string v_out_sub_topic = "/dmpc/agent";
         v_out_sub_topic.append(std::to_string(neighbor_id));
@@ -168,7 +168,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         bound_received_vout_callback[i] = std::bind(&HolohoverDmpcAdmmNode::received_vout_callback, this, std::placeholders::_1, i);
 
         v_out_subscriber[i] = this->create_subscription<holohover_msgs::msg::HolohoverADMMStamped>(
-                            v_out_sub_topic, rclcpp::SystemDefaultsQoS(),
+                            v_out_sub_topic, rclcpp::SensorDataQoS(),
                             bound_received_vout_callback[i],receive_vout_options);
         // rclcpp::QoS(1)
     }
@@ -203,7 +203,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         v_in_pub_topic.append(std::to_string(neighbor_id));
         v_in_publisher[i] = this->create_publisher<holohover_msgs::msg::HolohoverADMMStamped>(
             v_in_pub_topic,
-            rclcpp::SystemDefaultsQoS());
+            rclcpp::SensorDataQoS());
 
         std::string v_in_sub_topic = "/dmpc/agent";
         v_in_sub_topic.append(std::to_string(neighbor_id));
@@ -211,7 +211,7 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         v_in_sub_topic.append(std::to_string(my_id));
         bound_received_vin_callback[i] = std::bind(&HolohoverDmpcAdmmNode::received_vin_callback, this, std::placeholders::_1, i);
         v_in_subscriber[i] = this->create_subscription<holohover_msgs::msg::HolohoverADMMStamped>(
-                            v_in_sub_topic, rclcpp::SystemDefaultsQoS(),
+                            v_in_sub_topic, rclcpp::SensorDataQoS(),
                             bound_received_vin_callback[i],receive_vin_options);
     }
        
@@ -320,8 +320,8 @@ void HolohoverDmpcAdmmNode::init_comms(){
         v_in_msg[i].seq_number += 1;
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
-        Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
-        Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
+        Eigen::VectorXf::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val.cast<float>();
+        Eigen::VectorXf::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam.cast<float>();
         v_in_publisher[i]->publish(v_in_msg[i]);
     }
 
@@ -995,8 +995,8 @@ bool HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
         v_in_msg[i].seq_number += 1;
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
-        Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
-        Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
+        Eigen::VectorXf::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val.cast<float>();
+        Eigen::VectorXf::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam.cast<float>();
         v_in_publisher[i]->publish(v_in_msg[i]); //ros
 
     }

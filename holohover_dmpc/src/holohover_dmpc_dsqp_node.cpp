@@ -387,8 +387,8 @@ void HolohoverDmpcDsqpNode::init_comms(){
         v_in_msg[i].seq_number += 1;
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
-        Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
-        Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
+        Eigen::VectorXf::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val.cast<float>();
+        Eigen::VectorXf::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam.cast<float>();
         v_in_publisher[i]->publish(v_in_msg[i]);
     }
 
@@ -1050,8 +1050,8 @@ bool HolohoverDmpcDsqpNode::send_vin_receive_vout(bool sync_admm){
         v_in_msg[i].seq_number += 1;
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
-        Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
-        Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
+        Eigen::VectorXf::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val.cast<float>();
+        Eigen::VectorXf::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam.cast<float>();
         v_in_publisher[i]->publish(v_in_msg[i]); //ros
     }
     send_vin_timer.toc();
