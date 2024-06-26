@@ -150,7 +150,7 @@ def launch_setup(context):
             parameters=[navigation_config, {'holohover_props_file' : obstacle_params[i]}],
             namespace= obstacle_names[i],
             output='screen',
-            #prefix='nice -n -19'
+            prefix='nice -n -19'
         )
         launch_description.append(navigation_node)
     #################### HOVERCRAFT STARTING - END ####################

@@ -40,7 +40,7 @@ def launch_setup(context):
     # - - - Nodes
     navigation_node = Node(
         package="holohover_navigation",
-        executable="navigation",
+        executable="navigation_disturbance",    
         parameters=[navigation_config, {'holohover_props_file' : params}],
         namespace= name,
         output='screen',
@@ -60,7 +60,7 @@ def launch_setup(context):
     )
     
     launch_description.append(controller_node)        
-    #launch_description.append(navigation_node)
+    launch_description.append(navigation_node)
     
     return launch_description
 

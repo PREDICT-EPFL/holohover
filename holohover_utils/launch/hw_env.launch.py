@@ -201,7 +201,7 @@ def launch_setup(context):
         #if len(hovercraft_ids_simulated) != 0:
         #    launch_description.append(simulator_node)
         launch_description.append(optitrack_node)
-        launch_description.append(ekf_launch)
+        #launch_description.append(ekf_launch)
         
         
     #################### COMMON NODES STARTING - END ####################
