@@ -16,7 +16,7 @@
 % OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 % SOFTWARE.
 
-function sProb = holohover_sProb_QP2_dist(Nrobot,N,dt,h,x0,u0,xd,xinit,dist)
+function sProb = holohover_sProb_QP_dist(Nrobot,N,dt,h,x0,u0,xd,xinit,dist)
 
 import casadi.*
 
@@ -141,8 +141,8 @@ for i=1:Nrobot
     JJ{i} = JJ{i} + 10^6* slacks{i}*slacks{i}.';
 end
 
-Q1 = diag([14,14,9,9,20,9]);
-Qij = diag([14,14,9,9,20,9]);
+Q1 = diag([14,14,3,3,20,3]);
+Qij = diag([14,14,3,3,20,3]);
 
 R = 0.1*eye(nu);
 % beta = 10;
