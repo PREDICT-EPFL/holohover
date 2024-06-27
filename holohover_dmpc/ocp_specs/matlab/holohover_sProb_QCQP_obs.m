@@ -28,8 +28,8 @@ xmax = inf(nx,1);
 umin = -[5;5;15]; %m/s^2, m/s^2, rad/s^2
 umax =  [5;5;15];  %m/s^2, m/s^2, rad/s^2
 
-ux =  [1;0.45]; %box constaints for position (soft constraints)
-lx = -[1;0.45];
+ux =  [0.96;0.42]; %box constaints for position (soft constraints)
+lx = -[0.96;0.42];
 
 Ac = [0,0,1,0,0,0;
       0,0,0,1,0,0;
@@ -141,7 +141,7 @@ for i=1:Nrobot
         end
     end
     %minimum distance constraint
-    dmin = 0.3; %meter
+    dmin = 0.25; %meter
     for j = 2:N+1
         if i > 1
             hh{i} = [hh{i}; (-(XX{i}(1:2,j) - ZZZ{i}{i-1}(1:2,j)).' * (XX{i}(1:2,j) - ZZZ{i}{i-1}(1:2,j)) + dmin^2) - slacks{i}];            
@@ -153,7 +153,7 @@ for i=1:Nrobot
         hh{i} = [hh{i}; lx - XX{i}(1:2,j) - slacks{i}];
     end
     %collision avoidance to obstacles
-    dmino = 0.3; %meter
+    dmino = 0.25; %meter
     for o = 1:Nobs
         for j = 2:N+1
             hh{i} = [hh{i}; (-(XX{i}(1:2,j) - XXobs{i}(:,o)).' * (XX{i}(1:2,j) - XXobs{i}(:,o)) + dmino^2) - slack_obs{i}(o,j-1)]; % 

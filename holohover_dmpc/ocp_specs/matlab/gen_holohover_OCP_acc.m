@@ -32,9 +32,9 @@ uu0 = {[0;0;0],[0;0;0],[0;0;0],[0;0;0]};
 
 %setpoints
 x1d = [0.3; 0.0; zeros(4,1)];  %desired setpoint for x1
-x2d = [-0.3; 0.0; zeros(4,1)];  %desired setpoint for (x2-x1)
-x3d = [-0.3; 0.0; zeros(4,1)];  %desired setpoint for (x3-x2)
-x4d = [-0.3; 0.0; zeros(4,1)];  %desired setpoint for (x4-x3)
+x2d = [-0.30; 0.0; zeros(4,1)];  %desired setpoint for (x2-x1)
+x3d = [-0.30; 0.0; zeros(4,1)];  %desired setpoint for (x3-x2)
+x4d = [-0.30; 0.0; zeros(4,1)];  %desired setpoint for (x4-x3)
 
 xxd{1} = [x1d, x2d];
 xxd{2} = [x2d, x3d];
