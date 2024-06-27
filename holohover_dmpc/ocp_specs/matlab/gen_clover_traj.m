@@ -11,7 +11,7 @@ N = 7;           %horizon
 dt = 0.150;       %MPC sampling interval seconds
 h = 0.150;
 
-t_end = 8.10;
+t_end = 8.1;
 [tp,theta_ref,xref_planned,uref_planned] = three_leaved_clover_ocp(dt,t_end);
 
 xref_planned(1,:) = xref_planned(1,:) + 0.3; %start at x = 0.6
@@ -36,7 +36,7 @@ stairs(t(1:end-1),uref_planned_basic(2,:));
 
 xref_planned = []; uref_planned = [];
 
-for k = 1:3
+for k = 1:5
     xref_planned = [xref_planned, xref_planned_basic];
     uref_planned = [uref_planned, uref_planned_basic, zeros(3,1)];
 end

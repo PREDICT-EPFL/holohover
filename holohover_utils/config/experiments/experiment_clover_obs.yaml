@@ -6,16 +6,16 @@ experiment:
   rviz_props_file: "common/holohover_params.yaml" 
   opt_alg: "dsqp"
 
-  # file_name_xd_trajectory: "clover/clover_traj_xd_N7_150_t8_1.csv"
-  # file_name_ud_trajectory: "clover/clover_traj_xd_N7_150_t8_1.csv"
-  file_name_xd_trajectory: "clover/clover_traj_xd_N20_50_t8.csv"
-  file_name_ud_trajectory: "clover/clover_traj_xd_N20_50_t8.csv"
-  dmpc_config_folder: "QCQP_N20_traj_obs"
+  file_name_xd_trajectory: "clover/clover_traj_xd_N7_150_t8_1.csv"
+  file_name_ud_trajectory: "clover/clover_traj_xd_N7_150_t8_1.csv"
+  # file_name_xd_trajectory: "clover/clover_traj_xd_N20_50_t8.csv"
+  # file_name_ud_trajectory: "clover/clover_traj_xd_N20_50_t8.csv"
+  dmpc_config_folder: "QCQP_N7_traj_obs"
 
 obstacles:
   - name: o4
     id: 4
-    initial_state: [0.1, 0.1, 0, 0, 0, 0]
+    initial_state: [0.9, 0.3, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 0.0, 1.0, 1.0]
     simulate: True
@@ -24,7 +24,7 @@ obstacles:
 hovercraft:
   - name: h0
     id: 0
-    initial_state: [-0.9, 0.45, 0, 0, 0, 0]
+    initial_state: [0.6, 0.0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     color : [0.0, 0.0, 1.0, 1.0]
     simulate: True
@@ -32,7 +32,7 @@ hovercraft:
 
   - name: h1
     id: 1
-    initial_state: [-0.9, 0.15, 0, 0, 0, 0]
+    initial_state: [0.3, 0.0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 0.0, 0.0, 1.0]
     simulate: True
@@ -40,7 +40,7 @@ hovercraft:
 
   - name: h2
     id: 2
-    initial_state: [-0.9, -0.15, 0, 0, 0, 0]
+    initial_state: [0.0, 0.0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     color : [0.54, 0.0, 0.54, 1.0]
     simulate: True
@@ -48,7 +48,7 @@ hovercraft:
 
   - name: h3
     id: 3
-    initial_state: [-0.9, -0.45, 0, 0, 0, 0]
+    initial_state: [-0.3, 0.0, 0, 0, 0, 0]
     holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 1.0, 0.0, 1.0] #yellow
     simulate: True
