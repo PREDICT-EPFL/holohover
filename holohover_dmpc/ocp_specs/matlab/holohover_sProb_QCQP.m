@@ -139,7 +139,7 @@ for i=1:Nrobot
         end
     end
     %minimum distance constraint
-    dmin = 0.25; %meter
+    dmin = 0.2; %meter
     for j = 2:N+1
         if i > 1
             hh{i} = [hh{i}; (-(XX{i}(1:2,j) - ZZZ{i}{i-1}(1:2,j)).' * (XX{i}(1:2,j) - ZZZ{i}{i-1}(1:2,j)) + dmin^2) - slacks{i}];            

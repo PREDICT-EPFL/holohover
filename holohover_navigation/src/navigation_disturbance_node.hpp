@@ -26,6 +26,7 @@ private:
 
     std::unique_ptr<holohover::DisturbanceHolohoverEKF> ekf;
     rclcpp::Time last_update;
+    bool filter_init = false;
 
     holohover_msgs::msg::HolohoverIMUStamped current_imu;
     bool received_imu = false;
@@ -44,6 +45,7 @@ private:
 
     void init_topics();
     void init_timer();
+    void init_filter(const holohover::DisturbanceHolohoverEKF::State& state);
     void watchdog_callback();
     void kalman_predict_step();
     void imu_callback(const holohover_msgs::msg::HolohoverIMUStamped &measurement);

@@ -48,8 +48,8 @@ for i = 1:Nrobot
 end
 
 % setup OCP
-%sProb = holohover_sProb_QP(Nrobot,N,dt,h,xx0,uu0,xxd,xinit,dist);
-sProb = holohover_sProb_QCQP(Nrobot,N,dt,h,xx0,uu0,xxd,xinit,dist);
+sProb = holohover_sProb_QP(Nrobot,N,dt,h,xx0,uu0,xxd,xinit,dist);
+%sProb = holohover_sProb_QCQP(Nrobot,N,dt,h,xx0,uu0,xxd,xinit,dist);
 
 %export C code
 gen_c_sProb(sProb);

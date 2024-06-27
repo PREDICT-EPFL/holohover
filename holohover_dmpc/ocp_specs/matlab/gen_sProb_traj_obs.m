@@ -8,9 +8,9 @@ import casadi.*
 
 % scenario
 Nrobot = 4;
-N = 7;          %horizon
-dt = 0.150;       %MPC sampling interval seconds
-h = 0.150;
+N = 20;          %horizon
+dt = 0.050;       %MPC sampling interval seconds
+h = 0.050;
 x10 = 0.6;
 xx0 = {[x10;0.0;zeros(4,1)],[x10-0.3;0.0;zeros(4,1)],[x10-2*0.3;0.0;zeros(4,1)],[x10-3*0.3;0.0;zeros(4,1)]};
 uu0 = {[0;0;0],[0;0;0],[0;0;0],[0;0;0]};

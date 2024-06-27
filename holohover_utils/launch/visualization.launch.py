@@ -196,11 +196,11 @@ def launch_setup(context):
     )
 
     if common_nodes_machine == machine or machine == "all":
-        # launch_description.append(rviz_interface_node)
-        # launch_description.append(rviz_launch)
+        launch_description.append(rviz_interface_node)
+        launch_description.append(rviz_launch)
         #if len(hovercraft_ids_simulated) != 0:
         #    launch_description.append(simulator_node)
-        launch_description.append(optitrack_node)
+        #launch_description.append(optitrack_node)
         #launch_description.append(ekf_launch)
         
         

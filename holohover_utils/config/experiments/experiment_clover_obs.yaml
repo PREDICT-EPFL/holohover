@@ -3,7 +3,7 @@ experiment:
   name: experiment_clover_obs
   description: "Clover trajectory and dynamic obstacle"
   machine: master
-  rviz_props_file: "common/holohover_params.yaml" 
+  rviz_props_file: "common/holohover_params_new.yaml" 
   opt_alg: "dsqp"
 
   file_name_xd_trajectory: "clover/clover_traj_xd_N7_150_t8_1.csv"
@@ -16,7 +16,7 @@ obstacles:
   - name: o4
     id: 4
     initial_state: [0.9, 0.3, 0, 0, 0, 0]
-    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 0.0, 1.0, 1.0]
     simulate: True
     machine: master
@@ -25,7 +25,7 @@ hovercraft:
   - name: h0
     id: 0
     initial_state: [0.6, 0.0, 0, 0, 0, 0]
-    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [0.0, 0.0, 1.0, 1.0]
     simulate: True
     machine: master
@@ -33,7 +33,7 @@ hovercraft:
   - name: h1
     id: 1
     initial_state: [0.3, 0.0, 0, 0, 0, 0]
-    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 0.0, 0.0, 1.0]
     simulate: True
     machine: master
@@ -41,7 +41,7 @@ hovercraft:
   - name: h2
     id: 2
     initial_state: [0.0, 0.0, 0, 0, 0, 0]
-    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [0.54, 0.0, 0.54, 1.0]
     simulate: True
     machine: master
@@ -49,7 +49,7 @@ hovercraft:
   - name: h3
     id: 3
     initial_state: [-0.3, 0.0, 0, 0, 0, 0]
-    holohover_props: "common/holohover_params.yaml" # path starting from holohover_utils/config directory
+    holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 1.0, 0.0, 1.0] #yellow
     simulate: True
     machine: master

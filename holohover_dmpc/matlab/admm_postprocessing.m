@@ -3,12 +3,12 @@
 
 %close all;
 clear all;
-clc;
+%clc;
 
 d = dir;
 Nagents = 4;
 Nadmm = 6; %admm iterations per MPC step
-dt = 0.100; %sampling time
+dt = 0.150; %sampling time
 
 for i = 1:Nagents
     str = sprintf("dmpc_time_measurement_agent%i*",i-1);

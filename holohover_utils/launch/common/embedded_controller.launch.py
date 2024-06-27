@@ -25,6 +25,7 @@ def launch_setup(context):
         package="holohover_drivers",
         executable="holohover_fc",
         namespace=name,
+        ros_arguments=['--disable-rosout-logs'],
         parameters=[drivers_config],
         output='both'
     )
@@ -34,6 +35,7 @@ def launch_setup(context):
         package="holohover_drivers",
         executable="holohover_mouse_sensor",
         namespace=name,
+        ros_arguments=['--disable-rosout-logs'],
         parameters=[drivers_config],
         output='both'
     )

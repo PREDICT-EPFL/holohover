@@ -17,24 +17,6 @@ HolohoverNavigationDisturbanceNode::HolohoverNavigationDisturbanceNode() :
     current_control.motor_c_1 = 0;
     current_control.motor_c_2 = 0;
 
-    holohover::DisturbanceHolohoverEKF::StateCovariance Q = holohover::DisturbanceHolohoverEKF::StateCovariance::Identity();
-    holohover::DisturbanceHolohoverEKF::MeasurementCovariance R = holohover::DisturbanceHolohoverEKF::MeasurementCovariance::Identity();
-
-    Q.diagonal() << navigation_settings.state_cov_x,
-                    navigation_settings.state_cov_y,
-                    navigation_settings.state_cov_yaw,
-                    navigation_settings.state_cov_x_dot,
-                    navigation_settings.state_cov_y_dot,
-                    navigation_settings.state_cov_yaw_dot,
-                    navigation_settings.state_cov_dist_x,
-                    navigation_settings.state_cov_dist_y,
-                    navigation_settings.state_cov_dist_yaw;
-    R.diagonal() << navigation_settings.sensor_pose_cov_x,
-                    navigation_settings.sensor_pose_cov_y,
-                    navigation_settings.sensor_pose_cov_yaw;
-    ekf = std::make_unique<holohover::DisturbanceHolohoverEKF>(Holohover(holohover_props), Q, R);
-    last_update = this->now();
-
     init_topics();
     init_timer();
 }
@@ -73,9 +55,33 @@ void HolohoverNavigationDisturbanceNode::init_timer()
             std::bind(&HolohoverNavigationDisturbanceNode::kalman_predict_step, this));
 }
 
+void HolohoverNavigationDisturbanceNode::init_filter(const holohover::DisturbanceHolohoverEKF::State& state)
+{
+    if (filter_init) return;
+
+    holohover::DisturbanceHolohoverEKF::StateCovariance Q = holohover::DisturbanceHolohoverEKF::StateCovariance::Identity();
+    holohover::DisturbanceHolohoverEKF::MeasurementCovariance R = holohover::DisturbanceHolohoverEKF::MeasurementCovariance::Identity();
+
+    Q.diagonal() << navigation_settings.state_cov_x,
+                    navigation_settings.state_cov_y,
+                    navigation_settings.state_cov_yaw,
+                    navigation_settings.state_cov_x_dot,
+                    navigation_settings.state_cov_y_dot,
+                    navigation_settings.state_cov_yaw_dot,
+                    navigation_settings.state_cov_dist_x,
+                    navigation_settings.state_cov_dist_y,
+                    navigation_settings.state_cov_dist_yaw;
+    R.diagonal() << navigation_settings.sensor_pose_cov_x,
+                    navigation_settings.sensor_pose_cov_y,
+                    navigation_settings.sensor_pose_cov_yaw;
+    ekf = std::make_unique<holohover::DisturbanceHolohoverEKF>(Holohover(holohover_props), Q, R, state);
+    last_update = this->now();
+    filter_init = true;
+}
+
 void HolohoverNavigationDisturbanceNode::watchdog_callback()
 {
-    if (received_control && this->now() > last_control_msg_time + std::chrono::seconds(1)) {
+    if (filter_init && received_control && this->now() > last_control_msg_time + std::chrono::seconds(1)) {
         ekf->update_signal(holohover::DisturbanceHolohoverEKF::Input::Zero());
     }
 }
@@ -84,7 +90,7 @@ void HolohoverNavigationDisturbanceNode::kalman_predict_step()
 {
     // don't publish if we have not received updates in the last 20ms
     rclcpp::Time current_time = this->now();
-    if ((current_time - last_update).seconds() > navigation_settings.publish_time_threshold) return;
+    if (!filter_init || (current_time - last_update).seconds() > navigation_settings.publish_time_threshold) return;
 
     const holohover::DisturbanceHolohoverEKF::State &state = ekf->predict_state((current_time - last_update).seconds());
 
@@ -128,38 +134,51 @@ void HolohoverNavigationDisturbanceNode::mouse_callback(const holohover_msgs::ms
 
 void HolohoverNavigationDisturbanceNode::pose_callback(const geometry_msgs::msg::PoseStamped &measurement)
 {
-    rclcpp::Time current_time = this->now();
-    rclcpp::Time pose_time = measurement.header.stamp;
-    // don't predict if update was too long ago otherwise we diverge
-    if (pose_time >= last_update && (current_time - last_update).seconds() < navigation_settings.pose_update_time_threshold)
-    {
-        ekf->predict((pose_time - last_update).seconds());
-    }
-    else
-    {
-        RCLCPP_INFO_STREAM(this->get_logger(), "EKF - NotPredicting");
-        if (pose_time < last_update) {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Received Message from the past: " << (pose_time - last_update).seconds() * 1e3 << " ms");
-        } 
-        if((current_time - last_update).seconds() >= 25e-3) {
-            RCLCPP_INFO_STREAM(this->get_logger(), "Not predicting because last update was too long ago " << (current_time - last_update).seconds() * 1e3 << " ms");
-        }
-    }
-
-
     tf2::Quaternion q(measurement.pose.orientation.x,
                       measurement.pose.orientation.y,
                       measurement.pose.orientation.z,
                       measurement.pose.orientation.w);
 
-    holohover::DisturbanceHolohoverEKF::Measurement pose_measurement;
-    pose_measurement << measurement.pose.position.x, measurement.pose.position.y, tf2::getYaw(q);
-    ekf->update_measurement(pose_measurement);
-    last_update = pose_time;
+    if (!filter_init)
+    {
+        holohover::DisturbanceHolohoverEKF::State state;
+        state.setZero();
+        state(0) = measurement.pose.position.x;
+        state(1) = measurement.pose.position.y;
+        state(2) = tf2::getYaw(q);
+        init_filter(state);
+    }
+    else
+    {
+        rclcpp::Time current_time = this->now();
+        rclcpp::Time pose_time = measurement.header.stamp;
+        // don't predict if update was too long ago otherwise we diverge
+        if (pose_time >= last_update && (current_time - last_update).seconds() < navigation_settings.pose_update_time_threshold)
+        {
+            ekf->predict((pose_time - last_update).seconds());
+        }
+        else
+        {
+            RCLCPP_INFO_STREAM(this->get_logger(), "EKF - NotPredicting");
+            if (pose_time < last_update) {
+                RCLCPP_INFO_STREAM(this->get_logger(), "Received Message from the past: " << (pose_time - last_update).seconds() * 1e3 << " ms");
+            } 
+            if((current_time - last_update).seconds() >= 25e-3) {
+                RCLCPP_INFO_STREAM(this->get_logger(), "Not predicting because last update was too long ago " << (current_time - last_update).seconds() * 1e3 << " ms");
+            }
+        }
+
+        holohover::DisturbanceHolohoverEKF::Measurement pose_measurement;
+        pose_measurement << measurement.pose.position.x, measurement.pose.position.y, tf2::getYaw(q);
+        ekf->update_measurement(pose_measurement);
+        last_update = pose_time;
+    }
 }
 
 void HolohoverNavigationDisturbanceNode::control_callback(const holohover_msgs::msg::HolohoverControlStamped &control)
 {
+    if (!filter_init) return;
+
     current_control = control;
     received_control = true;
     last_control_msg_time = this->now();

@@ -40,6 +40,7 @@ def launch_setup(context):
         executable="navigation_disturbance",
         parameters=[navigation_config, {'holohover_props_file' : params}],
         namespace= name,
+        ros_arguments=['--disable-rosout-logs'],
         output='screen',
         prefix='nice -n -19'
     )
@@ -51,6 +52,7 @@ def launch_setup(context):
         parameters=[control_lqr_config,
         {"holohover_props_file": params, "initial_x": initial_x, "initial_y": initial_y, "initial_yaw": initial_yaw}],
         namespace=name,
+        ros_arguments=['--disable-rosout-logs'],
         output='both',
         prefix='nice -n -19'
     )

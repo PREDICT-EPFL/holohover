@@ -47,6 +47,7 @@ def launch_setup(context):
         parameters=[navigation_config, {'holohover_props_file' : params}],
         namespace= name,
         output='screen',
+        ros_arguments=['--disable-rosout-logs'],
         prefix='nice -n -19'
     )
     
@@ -58,7 +59,7 @@ def launch_setup(context):
         {"holohover_props_file": params, 'file_name_xd_trajectory': file_name_xd_trajectory, 'file_name_ud_trajectory': file_name_ud_trajectory, 'obstacles': obstacles.split('---')}],
         namespace=name,
         output='screen',
-        #prefix='gdb -ex run --args',
+        ros_arguments=['--disable-rosout-logs'],
         prefix='nice -n -19',
     )
 
