@@ -64,12 +64,8 @@ def launch_setup(context):
             )
 
     launch_description.append(controller_node)        
-<<<<<<< HEAD
-    # launch_description.append(navigation_node)
-    launch_description.append(recorder_launch)
-=======
     launch_description.append(navigation_node)
->>>>>>> 8db2546 (added line crossing with static and dynamic obstacle scenario)
+    launch_description.append(recorder_launch)
 
     return launch_description
 
