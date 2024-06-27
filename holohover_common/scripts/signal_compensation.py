@@ -61,11 +61,12 @@ def traj_comp(props, holohover, dt, steps, initial_state, v):
     acc[0, :] = sig_to_acc(holohover, x[0, :], x[0, Holohover.NX:])
 
     for i in range(steps):
+        next_state = holohover.Ad @ x[i, :Holohover.NX] + holohover.Bd @ acc[i, :]
         sig_min = props.idle_signal
         sig_max = 1.0
         f_min = holohover.signal_to_thrust(holohover.Ad_motor * x[i, Holohover.NX:] + holohover.Bd_motor * sig_min)
         f_max = holohover.signal_to_thrust(holohover.Ad_motor * x[i, Holohover.NX:] + holohover.Bd_motor * sig_max)
-        u_thrust = holohover.control_acceleration_to_force(x[i, :Holohover.NX], v[i, :], f_min, f_max)
+        u_thrust = holohover.control_acceleration_to_force(next_state, v[i, :], f_min, f_max)
         signal[i, :] = holohover.thrust_to_signal(u_thrust)
         signal[i, :] = (signal[i, :] - holohover.Ad_motor * x[i, Holohover.NX:]) / holohover.Bd_motor
         x[i + 1, :] = integrate(props, holohover, dt, x[i, :], signal[i, :])
