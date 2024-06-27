@@ -153,22 +153,18 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         }
         v_out_msg[i].id_sender = my_id;
 
-        std::string v_out_pub_topic = "/dmpc/agent";
-        v_out_pub_topic.append(std::to_string(my_id));
-        v_out_pub_topic.append("ogforagent");
-        v_out_pub_topic.append(std::to_string(neighbor_id));
+        std::ostringstream v_out_pub_topic;
+        v_out_pub_topic << "dmpc/ogforagent" << neighbor_id;
         v_out_publisher[i] = this->create_publisher<holohover_msgs::msg::HolohoverADMMStamped>(
-            v_out_pub_topic,
+            v_out_pub_topic.str(),
             rclcpp::SystemDefaultsQoS());
     
-        std::string v_out_sub_topic = "/dmpc/agent";
-        v_out_sub_topic.append(std::to_string(neighbor_id));
-        v_out_sub_topic.append("copyofagent");
-        v_out_sub_topic.append(std::to_string(my_id));
+        std::ostringstream v_out_sub_topic;
+        v_out_sub_topic << "/h" << neighbor_id << "/dmpc/copyofagent" << my_id;
         bound_received_vout_callback[i] = std::bind(&HolohoverDmpcAdmmNode::received_vout_callback, this, std::placeholders::_1, i);
 
         v_out_subscriber[i] = this->create_subscription<holohover_msgs::msg::HolohoverADMMStamped>(
-                            v_out_sub_topic, rclcpp::SystemDefaultsQoS(),
+                            v_out_sub_topic.str(), rclcpp::SystemDefaultsQoS(),
                             bound_received_vout_callback[i],receive_vout_options);
         // rclcpp::QoS(1)
     }
@@ -197,21 +193,17 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
         }
         v_in_msg[i].id_sender = my_id;
 
-        std::string v_in_pub_topic = "/dmpc/agent";
-        v_in_pub_topic.append(std::to_string(my_id));
-        v_in_pub_topic.append("copyofagent");
-        v_in_pub_topic.append(std::to_string(neighbor_id));
+        std::ostringstream v_in_pub_topic;
+        v_in_pub_topic << "dmpc/copyofagent" << neighbor_id;
         v_in_publisher[i] = this->create_publisher<holohover_msgs::msg::HolohoverADMMStamped>(
-            v_in_pub_topic,
+            v_in_pub_topic.str(),
             rclcpp::SystemDefaultsQoS());
 
-        std::string v_in_sub_topic = "/dmpc/agent";
-        v_in_sub_topic.append(std::to_string(neighbor_id));
-        v_in_sub_topic.append("ogforagent");
-        v_in_sub_topic.append(std::to_string(my_id));
+        std::ostringstream v_in_sub_topic;
+        v_in_sub_topic << "/h" << neighbor_id << "/dmpc/ogforagent" << my_id;
         bound_received_vin_callback[i] = std::bind(&HolohoverDmpcAdmmNode::received_vin_callback, this, std::placeholders::_1, i);
         v_in_subscriber[i] = this->create_subscription<holohover_msgs::msg::HolohoverADMMStamped>(
-                            v_in_sub_topic, rclcpp::SystemDefaultsQoS(),
+                            v_in_sub_topic.str(), rclcpp::SystemDefaultsQoS(),
                             bound_received_vin_callback[i],receive_vin_options);
     }
        
