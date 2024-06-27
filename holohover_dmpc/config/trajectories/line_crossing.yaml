@@ -12,7 +12,7 @@ trajectory:
   - step:
       - id: 0
         x: -0.9
-        y:  0.375
+        y:  0.395
         yaw: 0.0
       - id: 1
         x: 0.0
@@ -29,7 +29,7 @@ trajectory:
   - step:
       - id: 0
         x: 0.9
-        y: 0.375
+        y: 0.395
         yaw: 0.0
       - id: 1
         x: 0.0
@@ -46,7 +46,7 @@ trajectory:
   - step:
       - id: 0
         x: -0.9
-        y:  0.375
+        y:  0.395
         yaw: 0.0
       - id: 1
         x: 0.0
