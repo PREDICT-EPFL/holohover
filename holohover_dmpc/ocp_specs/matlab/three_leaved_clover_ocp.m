@@ -36,7 +36,7 @@ x0 = [1;zeros(5,1)];
 u0 = zeros(nu,1);
 
 Q = 5;
-R = 15;
+R = 150;
 J = 0;
 for k = 1:N+1
     J = J + 0.5*Q*theta(k)^2;
