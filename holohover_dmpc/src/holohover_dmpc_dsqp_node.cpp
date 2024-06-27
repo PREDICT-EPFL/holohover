@@ -477,10 +477,10 @@ void HolohoverDmpcDsqpNode::init_comms(){
 
 void HolohoverDmpcDsqpNode::run_dmpc()
 {
-    std::unique_lock state_ref_lock{u_acc_curr_mutex, std::defer_lock};
-    u_acc_curr_mutex.lock();
+    std::unique_lock u_acc_curr_lock{u_acc_curr_mutex, std::defer_lock};
+    u_acc_curr_lock.lock();
     u_acc_curr = u_acc_next;
-    u_acc_curr_mutex.unlock();
+    u_acc_curr_lock.unlock();
 
     get_state_timer.tic();
     std::unique_lock state_lock{state_mutex, std::defer_lock};
@@ -746,7 +746,7 @@ void HolohoverDmpcDsqpNode::init_dmpc(const std_msgs::msg::UInt64 &publish_contr
 
         control_timer = this->create_wall_timer(
             std::chrono::duration<double>(control_settings.control_period),
-            std::bind(&HolohoverDmpcDsqpNode::publish_control, this), mpc_cb_group);
+            std::bind(&HolohoverDmpcDsqpNode::publish_control, this), control_cb_group);
 
         int64_t dt = (int64_t) (control_settings.dmpc_period * 1e9);
         int64_t time_since_epoch = get_last_call_time(mpc_timer->get_timer_handle().get());
