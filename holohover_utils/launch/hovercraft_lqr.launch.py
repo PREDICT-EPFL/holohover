@@ -3,6 +3,8 @@ from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 import os
 
 
@@ -53,8 +55,17 @@ def launch_setup(context):
         prefix='nice -n -19'
     )
     
+    this_dir = os.path.dirname(os.path.abspath(__file__))
+
+    recorder_launch = IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/recorder_specific.launch.py')),
+                launch_arguments=
+                    {'name': name}.items()
+            )
+
     launch_description.append(controller_node)        
     # launch_description.append(navigation_node)
+    launch_description.append(recorder_launch)
 
     return launch_description
 
