@@ -15,8 +15,8 @@
     drag_reference_area: 0.0021
     drag_coefficient: 1.5
 
-    table_tilt_x: 2.0 # in degree
-    table_tilt_y: 1.0 # in degree
+    table_tilt_x: 0.0 # in degree
+    table_tilt_y: 0.0 # in degree
 
     sensor_imu_period: 0.01 # 0 to disable sensor
     sensor_acc_noise_x: 3.5e-1
