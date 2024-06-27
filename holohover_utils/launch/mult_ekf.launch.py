@@ -132,7 +132,7 @@ def launch_setup(context):
         # - - - Nodes
         navigation_node = Node(
             package="holohover_navigation",
-            executable="navigation",
+            executable="navigation_disturbance",
             parameters=[navigation_config, {'holohover_props_file' : holohover_params[i]}],
             namespace= hovercraft_names[i],
             output='screen',
@@ -146,11 +146,11 @@ def launch_setup(context):
         # - - - Nodes
         navigation_node = Node(
             package="holohover_navigation",
-            executable="navigation",
+            executable="navigation_disturbance",
             parameters=[navigation_config, {'holohover_props_file' : obstacle_params[i]}],
             namespace= obstacle_names[i],
             output='screen',
-            #prefix='nice -n -19'
+            prefix='nice -n -19'
         )
         launch_description.append(navigation_node)
     #################### HOVERCRAFT STARTING - END ####################

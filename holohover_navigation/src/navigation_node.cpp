@@ -31,7 +31,14 @@ HolohoverNavigationNode::HolohoverNavigationNode() :
     R.diagonal() << navigation_settings.sensor_pose_cov_x,
                     navigation_settings.sensor_pose_cov_y,
                     navigation_settings.sensor_pose_cov_yaw;
-    ekf = std::make_unique<holohover::RigidBody2DEKF>(Q, R);
+
+    holohover::RigidBody2DEKF::State initial_state = holohover::RigidBody2DEKF::State::Zero();
+    if (navigation_settings.initial_state.size() != 15) {
+        RCLCPP_WARN(this->get_logger(), "initial_state has wrong dimension, using zero initialization");
+    } else {
+        initial_state = Eigen::Map<holohover::RigidBody2DEKF::State>(navigation_settings.initial_state.data());
+    }
+    ekf = std::make_unique<holohover::RigidBody2DEKF>(Q, R, initial_state);
     last_update = this->now();
 
     init_topics();

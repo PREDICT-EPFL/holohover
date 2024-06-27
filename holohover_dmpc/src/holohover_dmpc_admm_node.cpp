@@ -42,9 +42,11 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     u_acc_curr.setZero();
     u_acc_next.setZero();
     u_signal.setZero();
+    dist = Eigen::Vector3d::Zero();
+    dist_at_ocp_solve = dist;
 
 
-    p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+control_settings.nxd+control_settings.nud);
+    p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+3+control_settings.nxd+control_settings.nud);
 
     // Dummy QP parameters for checking that ADMM works
     //initial positions
@@ -61,23 +63,23 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
 
     if (my_id == 0){
         p[0] = x10[0]; p[1] = x10[1];
-        p[9] = x1d[0]; p[10] = x1d[1];
-        p[15] = x2d[0]; p[16] = x2d[1]; 
+        p[9+3] = x1d[0]; p[10+3] = x1d[1];
+        p[15+3] = x2d[0]; p[16+3] = x2d[1]; 
     } else if (my_id == 1){
         p[0] = x20[0]; p[1] = x20[1];
-        p[9] = x2d[0]; p[10] = x2d[1];
-        p[15] = x3d[0]; p[16] = x3d[1];     
+        p[9+3] = x2d[0]; p[10+3] = x2d[1];
+        p[15+3] = x3d[0]; p[16+3] = x3d[1];     
     } else if (my_id == 2){
         p[0] = x30[0]; p[1] = x30[1];
-        p[9] = x3d[0]; p[10] = x3d[1];
-        p[15] = x4d[0]; p[16] = x4d[1]; 
+        p[9+3] = x3d[0]; p[10+3] = x3d[1];
+        p[15+3] = x4d[0]; p[16+3] = x4d[1]; 
     } else if (my_id == 3){
         p[0] = x40[0]; p[1] = x40[1];
-        p[9] = x4d[0]; p[10] = x4d[1];
+        p[9+3] = x4d[0]; p[10+3] = x4d[1];
     }
     state(0) = p(0); state(1) = p(1); state(2) = p(2); state(3) = p(3); state(4) = p(4); state(5) = p(5);
     state_at_ocp_solve = state;
-    state_ref = p.segment(control_settings.nx+control_settings.nu,control_settings.nxd); //todo
+    state_ref = p.segment(control_settings.nx+control_settings.nu+3,control_settings.nxd); //todo
     state_ref_at_ocp_solve = state_ref;
     input_ref = Eigen::VectorXd::Zero(control_settings.nud);
     build_qp();
@@ -254,13 +256,19 @@ HolohoverDmpcAdmmNode::HolohoverDmpcAdmmNode() :
     quill_logger = quill::Frontend::create_or_get_logger("root", std::move(file_sink), "%(message)");
     QUILL_LOG_INFO(quill_logger, "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, get_state_time_us_, convert_uacc_time_us_, publish_signal_time_us_, update_setpoint_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_, z_is_async, zbar_is_async");
 
+    std::ostringstream file_name_sol;
+    file_name_sol << ament_index_cpp::get_package_prefix("holohover_dmpc") << "/../../log/dmpc_sol_log_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
+    auto file_sink_sol = quill::Frontend::create_or_get_sink<quill::FileSink>(file_name_sol.str());
+    file_sink_sol = quill::Frontend::create_or_get_sink<quill::FileSink>(file_name_sol.str());
+    sol_logger = quill::Frontend::create_or_get_logger("sol_logger", std::move(file_sink_sol), "%(message)");
+    
     if (!control_settings.file_name_xd_trajectory.empty()){
         sprob.csvRead(xd_ref,control_settings.file_name_xd_trajectory,20);
     }
 
     if (!control_settings.file_name_ud_trajectory.empty()){
         sprob.csvRead(ud_ref,control_settings.file_name_ud_trajectory,20);
-        p.segment(control_settings.nx+control_settings.nu+control_settings.nxd,control_settings.nud) = input_ref;
+        p.segment(control_settings.nx+control_settings.nu+3+control_settings.nxd,control_settings.nud) = input_ref;
     }  
     
 
@@ -284,8 +292,8 @@ void HolohoverDmpcAdmmNode::init_topics()
     state_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     state_options.callback_group = state_cb_group;        
 
-    state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
-            "state", 10,
+    state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateDisturbanceStamped>(
+            "state_disturbance", 10,
             std::bind(&HolohoverDmpcAdmmNode::state_callback, this, std::placeholders::_1),state_options);
 
     state_ref_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
@@ -312,8 +320,8 @@ void HolohoverDmpcAdmmNode::init_comms(){
         v_in_msg[i].seq_number += 1;
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
-        Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
-        Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
+        Eigen::VectorXf::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val.cast<float>();
+        Eigen::VectorXf::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam.cast<float>();
         v_in_publisher[i]->publish(v_in_msg[i]);
     }
 
@@ -412,6 +420,7 @@ void HolohoverDmpcAdmmNode::publish_control()
     std::unique_lock state_lock{state_mutex, std::defer_lock};
     state_lock.lock();
     state_at_ocp_solve = state;
+    dist_at_ocp_solve = dist;
     state_lock.unlock();
     get_state_timer.toc();
   
@@ -458,7 +467,16 @@ void HolohoverDmpcAdmmNode::publish_control()
         print_time_measurements();
         clear_time_measurements();
         mpc_step_since_log = -1; //gets increased to 0 below
-    } 
+    }
+
+    std::string print_line_ = "";
+    for (int i = 0; i < zbar.size(); i++){
+        if(i > 0){
+            print_line_ += ",";
+        } 
+        print_line_ += std::to_string(zbar(i));
+    }
+    QUILL_LOG_INFO(sol_logger, "{},{}",mpc_step,print_line_); 
 
     u_acc_curr = u_acc_next;
     mpc_step_since_log = mpc_step_since_log + 1;
@@ -505,7 +523,7 @@ void HolohoverDmpcAdmmNode::publish_trajectory( )
     HolohoverTrajectory_publisher->publish(msg);
 }
 
-void HolohoverDmpcAdmmNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state)
+void HolohoverDmpcAdmmNode::state_callback(const holohover_msgs::msg::HolohoverStateDisturbanceStamped &msg_state)
 {
     std::unique_lock state_lock{state_mutex, std::defer_lock};
     state_lock.lock(); 
@@ -515,7 +533,11 @@ void HolohoverDmpcAdmmNode::state_callback(const holohover_msgs::msg::HolohoverS
     state(3) = msg_state.state_msg.v_y;
     state(4) = msg_state.state_msg.yaw;
     state(5) = msg_state.state_msg.w_z;
+    dist(0) = msg_state.state_msg.dist_x;
+    dist(1) = msg_state.state_msg.dist_y;
+    dist(2) = msg_state.state_msg.dist_yaw;
     state_lock.unlock();
+
 }
 
 void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &ref)
@@ -543,6 +565,7 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
 
     p.segment(0,control_settings.nx) = state_at_ocp_solve;
     p.segment(control_settings.nx,control_settings.nu) = u_acc_curr;
+    p.segment(control_settings.nx+control_settings.nu,3) = dist_at_ocp_solve;
     std::unique_lock state_ref_lock{state_ref_mutex, std::defer_lock};
     state_ref_lock.lock();
     
@@ -556,14 +579,14 @@ void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
     state_ref_at_ocp_solve = state_ref;
     state_ref_lock.unlock();
 
-    p.segment(control_settings.nx+control_settings.nu,control_settings.nxd) = state_ref_at_ocp_solve;
+    p.segment(control_settings.nx+control_settings.nu+3,control_settings.nxd) = state_ref_at_ocp_solve;
 
     if (!control_settings.file_name_ud_trajectory.empty() && ud_ref_idx < ud_ref.rows()){
         if (mpc_step == std::floor(ud_ref(ud_ref_idx,0))){
             input_ref = (ud_ref.block(ud_ref_idx,1,1,control_settings.nud)).transpose();
             ud_ref_idx = ud_ref_idx + 1;
         }
-        p.segment(control_settings.nx+control_settings.nu+control_settings.nxd,control_settings.nud) = input_ref;
+        p.segment(control_settings.nx+control_settings.nu+3+control_settings.nxd,control_settings.nud) = input_ref;
     }
 
     int nz_ = sprob.g[my_id].res[0].size();
@@ -972,8 +995,8 @@ bool HolohoverDmpcAdmmNode::send_vin_receive_vout(bool sync_admm){
         v_in_msg[i].seq_number += 1;
         v_in_msg[i].header.frame_id = "body"; 
         v_in_msg[i].header.stamp = this->now(); 
-        Eigen::VectorXd::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val;
-        Eigen::VectorXd::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam;
+        Eigen::VectorXf::Map(&v_in_msg[i].value[0], v_in[i].val.size()) = v_in[i].val.cast<float>();
+        Eigen::VectorXf::Map(&v_in_msg[i].gamma[0], v_in[i].gam.size()) = v_in[i].gam.cast<float>();
         v_in_publisher[i]->publish(v_in_msg[i]); //ros
 
     }

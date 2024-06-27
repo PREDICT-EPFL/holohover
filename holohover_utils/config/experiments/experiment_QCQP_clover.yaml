@@ -1,14 +1,14 @@
 
 experiment:
   name: experiment_QCQP_clover
-  description: "Clover trajectory tacking with QCQP formulation and dt = 0.05"
+  description: "Clover trajectory tacking with QCQP formulation and dt = 0.150"
   machine: master
   rviz_props_file: "common/holohover_params.yaml"
   opt_alg: "dsqp"
   
-  file_name_xd_trajectory: "clover/clover_traj_xd_N10_100_t8.csv"
-  file_name_ud_trajectory: "clover/clover_traj_ud_N10_100_t8.csv"
-  dmpc_config_folder: "QCQP_N10_traj"
+  file_name_xd_trajectory: "clover/clover_traj_xd_N7_150_t8_1.csv"
+  file_name_ud_trajectory: "clover/clover_traj_ud_N7_150_t8_1.csv"
+  dmpc_config_folder: "QCQP_N7_traj"
    
 
 hovercraft:

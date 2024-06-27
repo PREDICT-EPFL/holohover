@@ -1,0 +1,22 @@
+h0/dmpc:
+  ros__parameters:
+    dmpc_period: 0.150
+    rho: 4.0
+    maxiter: 6
+    max_outer_iter: 1
+    nx: 6
+    nu: 3
+    nxd: 12
+    nud: 0
+    N: 7
+    idx_eqx0: 0
+    idx_equ0: 6
+    idx_u0: 96
+    idx_u1: 99
+    idx_x0: 0
+    Nagents: 4
+    Nobs: 1
+    my_id: 0
+    max_wait_time: 0.025
+    max_wait_fraction: 0.75
+    folder_name_sprob: "QCQP_obs_N7"

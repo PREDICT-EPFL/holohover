@@ -32,6 +32,7 @@ SOFTWARE.*/
 
 #include "holohover_common/models/holohover_model.hpp"
 #include "holohover_msgs/msg/holohover_state_stamped.hpp"
+#include "holohover_msgs/msg/holohover_state_disturbance_stamped.hpp"
 #include "holohover_msgs/msg/holohover_admm_stamped.hpp"
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "holohover_msgs/msg/holohover_dmpc_state_ref_stamped.hpp"
@@ -84,6 +85,8 @@ private:
     Holohover holohover;
     
     Holohover::state_t<double> state;
+    Eigen::Vector3d dist;
+    Eigen::Vector3d dist_at_ocp_solve;
     Holohover::state_t<double> state_at_ocp_solve;
     Eigen::VectorXd state_ref;   //GS: VectorXd, because different subsystems can have different state_ref dimension
     Eigen::VectorXd state_ref_at_ocp_solve;
@@ -91,7 +94,7 @@ private:
 
     rclcpp::Publisher<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr control_publisher;
     rclcpp::Publisher<holohover_msgs::msg::HolohoverTrajectory>::SharedPtr HolohoverTrajectory_publisher;
-    rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
+    rclcpp::Subscription<holohover_msgs::msg::HolohoverStateDisturbanceStamped>::SharedPtr state_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr reference_subscription;
     rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()
 
@@ -165,7 +168,7 @@ private:
   
 
     //callbacks
-    void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
+    void state_callback(const holohover_msgs::msg::HolohoverStateDisturbanceStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &state_ref);
     void publish_control();
     
@@ -241,7 +244,8 @@ private:
     doptTimer publish_signal_timer;
     doptTimer update_setpoint_timer;
 
-    quill::Logger* quill_logger; 
+    quill::Logger* quill_logger;
+    quill::Logger* sol_logger; 
 
     //reference trajectories
     Eigen::MatrixXd xd_ref;

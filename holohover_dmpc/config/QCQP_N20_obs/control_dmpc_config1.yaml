@@ -14,9 +14,9 @@ h1/dmpc:
     idx_u0: 378
     idx_u1: 381
     idx_x0: 126
-    Nagents: 3
+    Nagents: 4
     Nobs: 1
     my_id: 1
     max_wait_time: 0.025
     max_wait_fraction: 0.75
-    folder_name_sprob: "sProb_chain_QCQP_N20_obs"
+    folder_name_sprob: "QCQP_obs_N20"

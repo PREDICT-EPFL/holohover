@@ -8,6 +8,7 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
 {
     // init state
     state.setZero();
+    disturbance.setZero();
     motor_velocities.setZero();
     // last_control_acc.setZero();
     last_control_signal.setZero();
@@ -64,8 +65,8 @@ void HolohoverControlLQRNode::init_topics()
             "control",
             rclcpp::SensorDataQoS());
 
-    state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
-            "state", 10,
+    state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateDisturbanceStamped>(
+            "state_disturbance", 10,
             std::bind(&HolohoverControlLQRNode::state_callback, this, std::placeholders::_1));
             
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
@@ -99,7 +100,7 @@ void HolohoverControlLQRNode::publish_control()
 
     // calculate control for next step
     Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_curr;
-    Holohover::control_acc_t<double> u_acc_next = -K * (state_next - state_ref);
+    Holohover::control_acc_t<double> u_acc_next = -K * (state_next - state_ref) - disturbance;
 
     // calculate thrust bounds for next step
     Holohover::control_force_t<double> u_force_next_min, u_force_next_max;
@@ -155,7 +156,7 @@ void HolohoverControlLQRNode::publish_control()
 
 }
 
-void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverStateStamped &msg_state)
+void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverStateDisturbanceStamped &msg_state)
 {
     state(0) = msg_state.state_msg.x;
     state(1) = msg_state.state_msg.y;
@@ -163,6 +164,9 @@ void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::Holohove
     state(3) = msg_state.state_msg.v_y;
     state(4) = msg_state.state_msg.yaw;
     state(5) = msg_state.state_msg.w_z;
+    disturbance(0) = msg_state.state_msg.dist_x;
+    disturbance(1) = msg_state.state_msg.dist_y;
+    disturbance(2) = msg_state.state_msg.dist_yaw;
 }
 
 void HolohoverControlLQRNode::ref_callback(const holohover_msgs::msg::HolohoverState &pose)
