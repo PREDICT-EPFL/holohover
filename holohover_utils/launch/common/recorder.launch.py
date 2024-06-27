@@ -31,7 +31,7 @@ def generate_launch_description():
     print("ROSBAG logging in: ", filename)
 
     recorder = ExecuteProcess(
-        cmd=['ros2', 'bag', 'record', '-s', 'mcap', '-o', filename, '--regex', '(/h.|/visua|/roso|/trigger)'],
+        cmd=['ros2', 'bag', 'record', '-s', 'mcap', '-o', filename, '--regex', '^(?!/h\d/).*'],
         output='screen',
         condition=IfCondition(LaunchConfiguration('record'))
     )
