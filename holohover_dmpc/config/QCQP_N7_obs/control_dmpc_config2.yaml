@@ -19,4 +19,4 @@ h2/dmpc:
     my_id: 2
     max_wait_time: 0.025
     max_wait_fraction: 0.75
-    folder_name_sprob: "QCQP_obs_N7"
+    folder_name_sprob: "QCQP_N7_obs"
