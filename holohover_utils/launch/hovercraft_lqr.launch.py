@@ -35,14 +35,14 @@ def launch_setup(context):
     )
 
     # - - - Nodes
-    # navigation_node = Node(
-    #     package="holohover_navigation",
-    #     executable="navigation_disturbance",
-    #     parameters=[navigation_config, {'holohover_props_file' : params}],
-    #     namespace= name,
-    #     output='screen',
-    #     prefix='nice -n -19'
-    # )
+    navigation_node = Node(
+        package="holohover_navigation",
+        executable="navigation_disturbance",
+        parameters=[navigation_config, {'holohover_props_file' : params}],
+        namespace= name,
+        output='screen',
+        prefix='nice -n -19'
+    )
     
     controller_node = Node(
         name="lqr",
@@ -64,7 +64,7 @@ def launch_setup(context):
             )
 
     launch_description.append(controller_node)        
-    # launch_description.append(navigation_node)
+    launch_description.append(navigation_node)
     launch_description.append(recorder_launch)
 
     return launch_description

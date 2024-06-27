@@ -7,7 +7,7 @@ trajectory:
   - step:
       - id: 4
         x: 0.0
-        y: 0.0
+        y: 0.3
         yaw: 0.0
   
 

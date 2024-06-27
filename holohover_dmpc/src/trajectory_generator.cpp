@@ -34,6 +34,11 @@ TrajectoryGenerator::TrajectoryGenerator() :
                 std::cout << "Insert the name of the YAML file for DMPC hovercraft: ";
                 std::cin >> filename;
 
+                if(filename == "none") {
+                    RCLCPP_INFO(this->get_logger(), "No hovercraft trajectory file provided.");
+                    break;
+                }
+
                 std::string path = package_share_directory + "/config/trajectories/" + filename;
                 RCLCPP_INFO(this->get_logger(), "Opening trajectory file: %s", path.c_str());
                 config = YAML::LoadFile(path);
@@ -65,15 +70,15 @@ TrajectoryGenerator::TrajectoryGenerator() :
             }
         }
 
-        
-        std::thread dmpc(&TrajectoryGenerator::dmpcGenerator, this, std::ref(gc), std::ref(config));
+        std::thread dmpc;
+        if (filename != "none")
+            dmpc = std::thread(&TrajectoryGenerator::dmpcGenerator, this, std::ref(gc), std::ref(config));
         if (obst_filename != "none") {
-            //RCLCPP_INFO(this->get_logger(), "Running obstgenerator!");
-
             std::thread obst(&TrajectoryGenerator::obstGenerator, this, std::ref(obst_gc), std::ref(obst_config));
             obst.join();
         }
-        dmpc.join();
+        if(filename != "none")
+            dmpc.join();
     }
 }
 
