@@ -342,9 +342,9 @@ void HolohoverDmpcDsqpNode::init_topics()
             "control",
             rclcpp::SensorDataQoS());
 
-    HolohoverTrajectory_publisher = this->create_publisher<holohover_msgs::msg::HolohoverTrajectory>(
-            "control/HolohoverTrajectory",
-            rclcpp::SensorDataQoS());
+    // HolohoverTrajectory_publisher = this->create_publisher<holohover_msgs::msg::HolohoverTrajectory>(
+    //         "control/HolohoverTrajectory",
+    //         rclcpp::SensorDataQoS());
 
     state_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
     state_options.callback_group = state_cb_group;        
