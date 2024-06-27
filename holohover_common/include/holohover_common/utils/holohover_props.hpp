@@ -2,8 +2,6 @@
 #define HOLOHOVER_COMMON_HOLOHOVER_PROPS_HPP
 
 #include "vector"
-#include "rclcpp/rclcpp.hpp"
-
 #include "yaml-cpp/yaml.h"
 
 struct HolohoverProps
@@ -16,7 +14,7 @@ struct HolohoverProps
     double inertia;
     // minimum idle signal
     double idle_signal;
-    // first order time constant of motor
+    // first order time constant of motor
     double motor_tau;
     // configuration matrix
     bool use_configuration_matrix;

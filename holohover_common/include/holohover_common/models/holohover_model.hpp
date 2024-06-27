@@ -305,7 +305,7 @@ public:
         // angular acceleration around z-axis mapping
         uncorrected_map.template bottomLeftCorner<1, NU>() = force_to_angular_acceleration;
 
-        // correction matrix for linear accelerations due to CoM
+        // correction matrix for linear accelerations due to CoM
         Eigen::Matrix<T, NA, NA> CoM_correction;
         CoM_correction << 1.0, 0.0, props.CoM[1],
                           0.0, 1.0, -props.CoM[0],
@@ -343,8 +343,8 @@ public:
         // We solve a QP to find the minimum energy mapping satisfying max thrust constraints
         // Slacks are added to make sure the QP is always feasible
         //
-        // min   ||F_i||^2_2 + mu * (1 - alpha)^2 + mu * (1 - beta)^2
-        // s.t.  (alpha * a_x, alpha * a_y, beta * w_dot_z) = M @ (F_1,...,F_6) + g
+        // min   ||F_i||^2_2 + mu * (1 - alpha)^2 + mu * (1 - beta)^2
+        // s.t.  (alpha * a_x, alpha * a_y, beta * w_dot_z) = M @ (F_1,...,F_6) + g
         //       0 <= F_i <= F_max
         //
         // translated into standard form
@@ -409,8 +409,8 @@ public:
 
     template<typename T>
     inline void non_linear_state_dynamics_discrete(const state_t<T> &x,
-                                        const control_force_t<T> &u,
-                                        state_t<T> &x_next) const noexcept
+                                                   const control_force_t<T> &u,
+                                                   state_t<T> &x_next) const noexcept
     {
         // RK4
         Holohover::state_t<T> k1, k2, k3, k4;
@@ -455,7 +455,6 @@ public:
     template<typename T>
     inline void thrust_to_signal(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
     {
-        // 
         control_force_t<T> u_thrust_clipped = u_thrust;
         u_thrust_clipped = u_thrust_clipped.cwiseMin(max_thrust).cwiseMax(0.0);
         u_signal = 0.6 * u_thrust_clipped; // first linear guess

@@ -1,6 +1,7 @@
 h3/dmpc:
   ros__parameters:
     dmpc_period: 0.150
+    control_period: 0.01
     rho: 2.0
     maxiter: 6
     max_outer_iter: 1
@@ -19,4 +20,4 @@ h3/dmpc:
     my_id: 3
     max_wait_time: 0.025
     max_wait_fraction: 0.75
-    folder_name_sprob: "QP_N7_2"
+    folder_name_sprob: "QP_N7"

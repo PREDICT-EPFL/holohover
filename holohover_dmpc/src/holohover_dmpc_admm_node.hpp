@@ -98,18 +98,22 @@ private:
     rclcpp::Subscription<holohover_msgs::msg::HolohoverDmpcStateRefStamped>::SharedPtr reference_subscription;
     rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr dmpc_trigger_subscription; //triggers publish_control()
 
-    rclcpp::TimerBase::SharedPtr timer;
+    rclcpp::TimerBase::SharedPtr mpc_timer;
+    rclcpp::TimerBase::SharedPtr control_timer;
 
     rclcpp::SubscriptionOptions state_options;
     rclcpp::SubscriptionOptions state_ref_options;
-    rclcpp::SubscriptionOptions publish_control_options;
     rclcpp::CallbackGroup::SharedPtr state_cb_group;
     rclcpp::CallbackGroup::SharedPtr state_ref_cb_group;
-    rclcpp::CallbackGroup::SharedPtr publish_control_cb_group;    
+    rclcpp::CallbackGroup::SharedPtr mpc_cb_group;
+    rclcpp::CallbackGroup::SharedPtr control_cb_group;
     
     Holohover::control_acc_t<double> u_acc_curr;
     Holohover::control_acc_t<double> u_acc_next; //GS: m_u1
     Holohover::control_force_t<double> u_signal;
+
+    Holohover::control_force_t<double> motor_velocities;
+    Holohover::control_force_t<double> last_control_signal;
 
     //OCP
     Eigen::VectorXd p; //parameters for OCP ([x0; u0; xd])
@@ -158,7 +162,8 @@ private:
     bool dmpc_is_initialized;
 
     std::mutex state_mutex;
-    std::mutex state_ref_mutex;   
+    std::mutex state_ref_mutex;
+    std::mutex u_acc_curr_mutex;
     
     void init_topics();
     void init_dmpc(const std_msgs::msg::UInt64 &publish_control_msg);
@@ -170,6 +175,7 @@ private:
     //callbacks
     void state_callback(const holohover_msgs::msg::HolohoverStateDisturbanceStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverDmpcStateRefStamped &state_ref);
+    void run_dmpc();
     void publish_control();
     
     void publish_trajectory();

@@ -24,7 +24,7 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
         Node("dmpc_node"),
         holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
         control_settings(load_control_dmpc_settings(*this)),
-        holohover(holohover_props, control_settings.dmpc_period),
+        holohover(holohover_props, control_settings.control_period),
         sprob(control_settings.Nagents)
 {
     RCLCPP_INFO(get_logger(), "DMPC NODE: list of obstacles: ");
@@ -41,6 +41,8 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     u_acc_next.setZero();
     u_signal.setZero();
 
+    motor_velocities.setZero();
+    last_control_signal.setZero();
 
     p = Eigen::VectorXd::Zero(control_settings.nx+control_settings.nu+3+control_settings.nxd+control_settings.nud+2*control_settings.Nobs);
 
@@ -353,12 +355,12 @@ void HolohoverDmpcDsqpNode::init_topics()
             "dmpc_state_ref", 10,
             std::bind(&HolohoverDmpcDsqpNode::ref_callback, this, std::placeholders::_1),state_ref_options);
 
-    publish_control_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-    publish_control_options.callback_group = publish_control_cb_group;        
+    mpc_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    control_cb_group = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
     dmpc_trigger_subscription = this->create_subscription<std_msgs::msg::UInt64>(
             "/dmpc/trigger", 10,
-            std::bind(&HolohoverDmpcDsqpNode::init_dmpc, this, std::placeholders::_1),publish_control_options);
+            std::bind(&HolohoverDmpcDsqpNode::init_dmpc, this, std::placeholders::_1));
 
     obs_subscriptions.resize(control_settings.Nobs);
     bound_obs_callback.resize(control_settings.Nobs);
@@ -473,8 +475,12 @@ void HolohoverDmpcDsqpNode::init_comms(){
     return;
 }
 
-void HolohoverDmpcDsqpNode::publish_control()
+void HolohoverDmpcDsqpNode::run_dmpc()
 {
+    std::unique_lock state_ref_lock{u_acc_curr_mutex, std::defer_lock};
+    u_acc_curr_mutex.lock();
+    u_acc_curr = u_acc_next;
+    u_acc_curr_mutex.unlock();
 
     get_state_timer.tic();
     std::unique_lock state_lock{state_mutex, std::defer_lock};
@@ -491,16 +497,17 @@ void HolohoverDmpcDsqpNode::publish_control()
     convert_u_acc_timer.toc();
 
     publish_signal_timer.tic();
-    holohover_msgs::msg::HolohoverControlStamped control_msg;
-    control_msg.header.frame_id = "body";
-    control_msg.header.stamp = this->now();
-    control_msg.motor_a_1 = u_signal(0);
-    control_msg.motor_a_2 = u_signal(1);
-    control_msg.motor_b_1 = u_signal(2);
-    control_msg.motor_b_2 = u_signal(3);
-    control_msg.motor_c_1 = u_signal(4);
-    control_msg.motor_c_2 = u_signal(5);
-    control_publisher->publish(control_msg);
+    // is now handled by publish_control
+//    holohover_msgs::msg::HolohoverControlStamped control_msg;
+//    control_msg.header.frame_id = "body";
+//    control_msg.header.stamp = this->now();
+//    control_msg.motor_a_1 = u_signal(0);
+//    control_msg.motor_a_2 = u_signal(1);
+//    control_msg.motor_b_1 = u_signal(2);
+//    control_msg.motor_b_2 = u_signal(3);
+//    control_msg.motor_c_1 = u_signal(4);
+//    control_msg.motor_c_2 = u_signal(5);
+//    control_publisher->publish(control_msg);
     publish_signal_timer.toc();
    
     update_setpoint_timer.tic();
@@ -531,7 +538,7 @@ void HolohoverDmpcDsqpNode::publish_control()
         clear_time_measurements();
         mpc_step_since_log = -1; //gets increased to 0 below
     } 
-    std::string print_line_ = "";
+    std::string print_line_;
     for (int i = 0; i < zbar.size(); i++){
         if(i > 0){
             print_line_ += ",";
@@ -540,14 +547,68 @@ void HolohoverDmpcDsqpNode::publish_control()
     }
     QUILL_LOG_INFO(sol_logger, "{},{}",mpc_step,print_line_);
 
-    u_acc_curr = u_acc_next;
     mpc_step_since_log += 1;
     mpc_step += 1;
 }
 
+void HolohoverDmpcDsqpNode::publish_control()
+{
+    Holohover::control_acc_t<double> u_acc_set_point;
+    std::unique_lock u_acc_curr_lock{u_acc_curr_mutex, std::defer_lock};
+    u_acc_curr_lock.lock();
+    u_acc_set_point = u_acc_curr;
+    u_acc_curr_lock.unlock();
+
+    Holohover::state_t<double> current_state;
+    std::unique_lock state_lock{state_mutex, std::defer_lock};
+    state_lock.lock();
+    current_state = state;
+    state_lock.unlock();
+
+    motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
+
+    Holohover::control_force_t<double> u_force_at_publish;
+    Holohover::control_acc_t<double> u_acc_at_publish;
+    holohover.signal_to_thrust(motor_velocities, u_force_at_publish);
+    holohover.control_force_to_acceleration(state, u_force_at_publish, u_acc_at_publish);
+
+    // calculate control for next step
+    Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_at_publish;
+
+    // calculate thrust bounds for next step
+    Holohover::control_force_t<double> u_force_next_min, u_force_next_max;
+    holohover.signal_to_thrust<double>(holohover.Ad_motor * motor_velocities + Holohover::control_force_t<double>::Constant(holohover.Bd_motor * holohover_props.idle_signal), u_force_next_min);
+    holohover.signal_to_thrust<double>(holohover.Ad_motor * motor_velocities + Holohover::control_force_t<double>::Constant(holohover.Bd_motor * 1.0), u_force_next_max);
+
+    // calculate next thrust and motor velocities
+    Holohover::control_force_t<double> u_force_next;
+    holohover.control_acceleration_to_force(state_next, u_acc_set_point, u_force_next, u_force_next_min, u_force_next_max);
+    Holohover::control_force_t<double> motor_velocities_next;
+    holohover.thrust_to_signal(u_force_next, motor_velocities_next);
+
+    // calculate control from future motor velocities
+    Holohover::control_force_t<double> u_signal_publish = (motor_velocities_next - holohover.Ad_motor * motor_velocities) / holohover.Bd_motor;
+
+    // clip between 0 and 1
+    u_signal_publish = u_signal_publish.cwiseMax(holohover_props.idle_signal).cwiseMin(1);
+
+    holohover_msgs::msg::HolohoverControlStamped control_msg;
+    control_msg.header.frame_id = "body";
+    control_msg.header.stamp = this->now();
+    control_msg.motor_a_1 = u_signal_publish(0);
+    control_msg.motor_a_2 = u_signal_publish(1);
+    control_msg.motor_b_1 = u_signal_publish(2);
+    control_msg.motor_b_2 = u_signal_publish(3);
+    control_msg.motor_c_1 = u_signal_publish(4);
+    control_msg.motor_c_2 = u_signal_publish(5);
+    control_publisher->publish(control_msg);
+
+    // save control inputs for next iterations
+    last_control_signal = u_signal_publish;
+}
+
 void HolohoverDmpcDsqpNode::convert_u_acc_to_u_signal()
 {
-    // ignore motor dynamics, because they are much faster than the dmpc sampling interval
     //convert to signal
     Holohover::control_force_t<double> u_force_curr;
     holohover.control_acceleration_to_force(state_at_ocp_solve, u_acc_curr, u_force_curr);
@@ -559,7 +620,6 @@ void HolohoverDmpcDsqpNode::convert_u_acc_to_u_signal()
 
     //convert back to acceleration for OCP
     holohover.control_force_to_acceleration(state_at_ocp_solve, u_force_curr, u_acc_curr);
-    //state_lock.unlock();
 }
 
 void HolohoverDmpcDsqpNode::publish_trajectory( )
@@ -679,16 +739,20 @@ void HolohoverDmpcDsqpNode::init_dmpc(const std_msgs::msg::UInt64 &publish_contr
         solve(10,true); //initializes data structures in admm and warm start for first MPC step
         clear_time_measurements();
 
-        timer = rclcpp::create_timer(
+        mpc_timer = rclcpp::create_timer(
             this, std::make_shared<rclcpp::Clock>(RCL_SYSTEM_TIME),
             std::chrono::duration<double>(control_settings.dmpc_period),
-            std::bind(&HolohoverDmpcDsqpNode::publish_control, this), publish_control_cb_group);
+            std::bind(&HolohoverDmpcDsqpNode::run_dmpc, this), mpc_cb_group);
+
+        control_timer = this->create_wall_timer(
+            std::chrono::duration<double>(control_settings.control_period),
+            std::bind(&HolohoverDmpcDsqpNode::publish_control, this), mpc_cb_group);
 
         int64_t dt = (int64_t) (control_settings.dmpc_period * 1e9);
-        int64_t time_since_epoch = get_last_call_time(timer->get_timer_handle().get());
+        int64_t time_since_epoch = get_last_call_time(mpc_timer->get_timer_handle().get());
         int64_t offset = time_since_epoch / dt;
         int64_t t_wake = (offset + 3) * dt;
-        set_next_call_time(const_cast<rcl_timer_t*>(timer->get_timer_handle().get()), t_wake);
+        set_next_call_time(const_cast<rcl_timer_t*>(mpc_timer->get_timer_handle().get()), t_wake);
         RCLCPP_INFO(get_logger(), "First timer callback at %ld", t_wake);
 
         dmpc_is_initialized = true;

@@ -8,6 +8,7 @@
 struct ControlDMPCSettings
 {
     double dmpc_period; //seconds
+    double control_period;
     double rho;
     unsigned int maxiter;
     unsigned int max_outer_iter;
@@ -39,6 +40,7 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     ControlDMPCSettings settings;
     
     settings.dmpc_period = node.declare_parameter<double>("dmpc_period");
+    settings.control_period = node.declare_parameter<double>("control_period");
     settings.rho = node.declare_parameter<double>("rho");
     settings.maxiter = node.declare_parameter<int>("maxiter"); 
     settings.max_outer_iter = node.declare_parameter<int>("max_outer_iter");
