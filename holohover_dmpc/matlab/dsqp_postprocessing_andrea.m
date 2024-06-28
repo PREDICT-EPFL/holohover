@@ -14,9 +14,9 @@ system(str);
 
 d = dir;
 Nagents = 4;
-Ndsqp = 3; %dsqp iterations per MPC step
+Ndsqp = 1; %dsqp iterations per MPC step
 Nadmm = 30; %admm iterations per sqp iteration
-dt = 0.150; %sampling time
+dt = 0.050; %sampling time
 
 for i = 1:Nagents
     str = sprintf("tmp/dmpc_time_measurement_agent%i*",i-1);
