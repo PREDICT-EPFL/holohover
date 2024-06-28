@@ -286,6 +286,8 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     z_async = -MatrixXi::Ones(log_buffer_size,control_settings.maxiter);
     zbar_async = -MatrixXi::Ones(log_buffer_size,control_settings.maxiter);
     obs_pos_log = -MatrixXd::Ones(log_buffer_size,2*control_settings.Nobs);
+    dist_log = -MatrixXd::Ones(log_buffer_size,3);
+    motor_log = -MatrixXd::Ones(log_buffer_size,6);
     mpc_step = 0;
     mpc_step_since_log = 0;
     logged_mpc_steps = 0;
@@ -299,7 +301,7 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     file_name << ament_index_cpp::get_package_prefix("holohover_dmpc") << "/../../log/dmpc_time_measurement_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
     quill::Backend::start();
 
-    std::string print_str_ = "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, get_state_time_us_, convert_uacc_time_us_, publish_signal_time_us_, update_setpoint_time_us_, dsqp_time_us_, dsqp_iter_, dsqp_iter_time_us_, build_qp_time_us_, reg_qp_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_, z_is_async, zbar_is_async";
+    std::string print_str_ = "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, u0_1_, u0_2_, u0_3_, u0bc_1_, u0bc_2_, u0bc_3_, xd_1_, xd_2_, xd_3_, xd_4_, xd_5_, xd_6_, ud_1_, ud_2_, ud_3_, dist_1_, dist_2_, dist_3_, ms_1_, ms_2_, ms_3_, ms_4_, ms_5_, ms_6_, get_state_time_us_, convert_uacc_time_us_, publish_signal_time_us_, update_setpoint_time_us_, dsqp_time_us_, dsqp_iter_, dsqp_iter_time_us_, build_qp_time_us_, reg_qp_time_us_, admm_time_us_, admm_iter, admm_iter_time_us_, loc_qp_time_us_, zcomm_time_us_, zbarcomm_time_us_, sendvin_time_us_, receivevout_time_us_, z_is_async, zbar_is_async";
 
     for(int i = 0; i < control_settings.Nobs; i++){
         print_str_ += ", obs" + std::to_string(i) + "_1_, obs" + std::to_string(i) + "_2_";
@@ -534,7 +536,13 @@ void HolohoverDmpcDsqpNode::run_dmpc()
 
     if(control_settings.Nobs > 0){
         obs_pos_log.block(mpc_step_since_log,0,1,2*control_settings.Nobs) = obs_pos_at_ocp_solve.transpose();
-    } 
+    }
+
+    dist_log.block(mpc_step_since_log,0,1,3) = dist_at_ocp_solve.transpose();
+    for (int i = 0; i < 6; i++){
+        motor_log(mpc_step_since_log,i) = u_signal(i);
+    }
+      
 
     if (mpc_step_since_log == log_buffer_size - 1) {
         print_time_measurements();
@@ -1308,7 +1316,7 @@ void HolohoverDmpcDsqpNode::print_time_measurements(){
                 //std::string print_line_;
 
                 if(control_settings.Nobs == 0){
-                    QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i)); 
+                    QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), dist_log(k,0), dist_log(k,1), dist_log(k,2), motor_log(k,0), motor_log(k,1), motor_log(k,2), motor_log(k,3), motor_log(k,4), motor_log(k,5), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i)); 
                 } else {
                      //QUILL_LOG_INFO(quill_logger, print_str_, logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i), obs_pos_log.row(k));                    
                     std::string print_line_ = "";
@@ -1318,7 +1326,7 @@ void HolohoverDmpcDsqpNode::print_time_measurements(){
                         } 
                         print_line_ += std::to_string(obs_pos_log(k,2*i)) + "," + std::to_string(obs_pos_log(k,2*i+1));
                     } 
-                    QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i), print_line_);
+                    QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), dist_log(k,0), dist_log(k,1), dist_log(k,2), motor_log(k,0), motor_log(k,1), motor_log(k,2), motor_log(k,3), motor_log(k,4), motor_log(k,5), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i), print_line_);
                 }   
                 
                 

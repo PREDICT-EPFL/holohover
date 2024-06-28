@@ -14,9 +14,9 @@ system(str);
 
 d = dir;
 Nagents = 4;
-Ndsqp = 3; %dsqp iterations per MPC step
-Nadmm = 30; %admm iterations per sqp iteration
-dt = 0.050; %sampling time
+Ndsqp = 1; %dsqp iterations per MPC step
+Nadmm = 6; %admm iterations per sqp iteration
+dt = 0.150; %sampling time
 
 for i = 1:Nagents
     str = sprintf("tmp/dmpc_time_measurement_agent%i*",i-1);
@@ -35,15 +35,15 @@ rows = 1:rows_;
 for i = 1:Nagents
     t_admm{i} = t_admm{i}(rows,:);
     if Nadmm > 1
-        t_dsqp{i} = t_admm{i}(mod(rows,Nadmm)==1,1:32);
+        t_dsqp{i} = t_admm{i}(mod(rows,Nadmm)==1,1:41);
     else
-        t_dsqp{i} = t_admm{i}(:,1:32);
+        t_dsqp{i} = t_admm{i}(:,1:41);
     end
     rows_dsqp = 1:size(t_dsqp{i},1);
     if Ndsqp > 1
-        t_mpc{i} = t_dsqp{i}(mod(rows_dsqp,Ndsqp)==1,1:27);
+        t_mpc{i} = t_dsqp{i}(mod(rows_dsqp,Ndsqp)==1,1:36);
     else
-        t_mpc{i} = t_dsqp{i}(:,1:27);
+        t_mpc{i} = t_dsqp{i}(:,1:36);
     end
 end
 ADMM_iter = size(t_admm{1},1);

@@ -253,6 +253,8 @@ private:
     Eigen::MatrixXi z_async;
     Eigen::MatrixXi zbar_async;
     Eigen::MatrixXd obs_pos_log;
+    Eigen::MatrixXd dist_log;
+    Eigen::MatrixXd motor_log;
     int mpc_step;
     int mpc_step_since_log;
     int log_buffer_size; //number of MPC steps to store before writing to log
