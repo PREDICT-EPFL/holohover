@@ -3,8 +3,8 @@ h3/dmpc:
     dmpc_period: 0.150
     control_period: 0.0
     rho: 0.1
-    maxiter: 6
-    max_outer_iter: 1
+    maxiter: 30
+    max_outer_iter: 3
     nx: 6
     nu: 3
     nxd: 6
