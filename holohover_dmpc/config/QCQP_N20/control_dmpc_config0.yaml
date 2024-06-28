@@ -1,7 +1,7 @@
 h0/dmpc:
   ros__parameters:
     dmpc_period: 0.050
-    control_period: 0.01
+    control_period: 0.0
     rho: 4.0
     maxiter: 30
     max_outer_iter: 1
@@ -20,4 +20,4 @@ h0/dmpc:
     my_id: 0
     max_wait_time: 0.025
     max_wait_fraction: 0.75
-    folder_name_sprob: "sProb_chain_QCQP_N20_4"
+    folder_name_sprob: "QCQP_N20"
