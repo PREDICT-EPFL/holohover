@@ -24,7 +24,9 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
         Node("dmpc_node"),
         holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
         control_settings(load_control_dmpc_settings(*this)),
-        holohover(holohover_props, control_settings.control_period),
+        holohover(holohover_props, control_settings.control_period > 0
+                                   ? control_settings.control_period
+                                   : control_settings.dmpc_period),
         sprob(control_settings.Nagents)
 {
     RCLCPP_INFO(get_logger(), "DMPC NODE: list of obstacles: ");
@@ -497,17 +499,18 @@ void HolohoverDmpcDsqpNode::run_dmpc()
     convert_u_acc_timer.toc();
 
     publish_signal_timer.tic();
-    // is now handled by publish_control
-//    holohover_msgs::msg::HolohoverControlStamped control_msg;
-//    control_msg.header.frame_id = "body";
-//    control_msg.header.stamp = this->now();
-//    control_msg.motor_a_1 = u_signal(0);
-//    control_msg.motor_a_2 = u_signal(1);
-//    control_msg.motor_b_1 = u_signal(2);
-//    control_msg.motor_b_2 = u_signal(3);
-//    control_msg.motor_c_1 = u_signal(4);
-//    control_msg.motor_c_2 = u_signal(5);
-//    control_publisher->publish(control_msg);
+    if (control_settings.control_period == 0) {
+        holohover_msgs::msg::HolohoverControlStamped control_msg;
+        control_msg.header.frame_id = "body";
+        control_msg.header.stamp = this->now();
+        control_msg.motor_a_1 = u_signal(0);
+        control_msg.motor_a_2 = u_signal(1);
+        control_msg.motor_b_1 = u_signal(2);
+        control_msg.motor_b_2 = u_signal(3);
+        control_msg.motor_c_1 = u_signal(4);
+        control_msg.motor_c_2 = u_signal(5);
+        control_publisher->publish(control_msg);
+    }
     publish_signal_timer.toc();
    
     update_setpoint_timer.tic();
@@ -744,9 +747,11 @@ void HolohoverDmpcDsqpNode::init_dmpc(const std_msgs::msg::UInt64 &publish_contr
             std::chrono::duration<double>(control_settings.dmpc_period),
             std::bind(&HolohoverDmpcDsqpNode::run_dmpc, this), mpc_cb_group);
 
-        control_timer = this->create_wall_timer(
-            std::chrono::duration<double>(control_settings.control_period),
-            std::bind(&HolohoverDmpcDsqpNode::publish_control, this), control_cb_group);
+        if (control_settings.control_period > 0) {
+            control_timer = this->create_wall_timer(
+                    std::chrono::duration<double>(control_settings.control_period),
+                    std::bind(&HolohoverDmpcDsqpNode::publish_control, this), control_cb_group);
+        }
 
         int64_t dt = (int64_t) (control_settings.dmpc_period * 1e9);
         int64_t time_since_epoch = get_last_call_time(mpc_timer->get_timer_handle().get());
