@@ -5,6 +5,7 @@ h3/dmpc:
     rho: 2
     maxiter: 10
     max_outer_iter: 4
+    polish: false
     nx: 6
     nu: 3
     nxd: 6

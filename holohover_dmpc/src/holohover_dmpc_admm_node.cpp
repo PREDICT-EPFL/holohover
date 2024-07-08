@@ -614,8 +614,11 @@ void HolohoverDmpcAdmmNode::ref_callback(const holohover_msgs::msg::HolohoverDmp
 
 void HolohoverDmpcAdmmNode::get_u_acc_from_sol()
 {
-    //u_acc_curr = sol.block(control_settings.idx_u0,0,control_settings.nu,1); //updated in convert_u_acc_to_u_signal
-    u_acc_next = zbar.block(control_settings.idx_u1,0,control_settings.nu,1);
+    if (control_settings.polish) {
+        u_acc_next = z.block(control_settings.idx_u1,0,control_settings.nu,1);
+    } else {
+        u_acc_next = zbar.block(control_settings.idx_u1,0,control_settings.nu,1);
+    }
 }
 
 void HolohoverDmpcAdmmNode::update_setpoint_in_ocp(){
@@ -1016,6 +1019,13 @@ int HolohoverDmpcAdmmNode::solve(unsigned int maxiter_, bool sync_admm)
         gam = gam + rho*(z-zbar);  
         iter_timer.toc();
 
+        // polish
+        if (control_settings.polish && iter == (maxiter_- 1)) {
+            loc_prob.update(piqp::nullopt, g_bar, piqp::nullopt , sprob.beq[my_id].res[0] , piqp::nullopt , piqp::nullopt, piqp::nullopt, piqp::nullopt,true);
+            loc_prob.solve();
+
+            z = loc_prob.result().x;
+        }
     }     
     
     return 0;

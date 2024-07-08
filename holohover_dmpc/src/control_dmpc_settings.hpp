@@ -12,6 +12,7 @@ struct ControlDMPCSettings
     double rho;
     unsigned int maxiter;
     unsigned int max_outer_iter;
+    bool polish;
     unsigned int nx; //state dimension
     unsigned int nu; //input dimension
     unsigned int nxd; //dimension of setpoint
@@ -44,6 +45,7 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     settings.rho = node.declare_parameter<double>("rho");
     settings.maxiter = node.declare_parameter<int>("maxiter"); 
     settings.max_outer_iter = node.declare_parameter<int>("max_outer_iter");
+    settings.polish = node.declare_parameter<bool>("polish");
     settings.nx = node.declare_parameter<int>("nx");
     settings.nu = node.declare_parameter<int>("nu");
     settings.nxd = node.declare_parameter<int>("nxd");
