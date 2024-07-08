@@ -283,8 +283,8 @@ HolohoverDmpcDsqpNode::HolohoverDmpcDsqpNode() :
     u_before_conversion_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
     xd_log = -MatrixXd::Ones(log_buffer_size,control_settings.nx);
     ud_log = -MatrixXd::Ones(log_buffer_size,control_settings.nu);
-    z_async = -MatrixXi::Ones(log_buffer_size,control_settings.maxiter);
-    zbar_async = -MatrixXi::Ones(log_buffer_size,control_settings.maxiter);
+    z_async = -MatrixXi::Ones(log_buffer_size,control_settings.max_outer_iter*control_settings.maxiter);
+    zbar_async = -MatrixXi::Ones(log_buffer_size,control_settings.max_outer_iter*control_settings.maxiter);
     obs_pos_log = -MatrixXd::Ones(log_buffer_size,2*control_settings.Nobs);
     dist_log = -MatrixXd::Ones(log_buffer_size,3);
     motor_log = -MatrixXd::Ones(log_buffer_size,6);
@@ -1044,8 +1044,8 @@ int HolohoverDmpcDsqpNode::solve(unsigned int max_outer_iter_, bool sync_admm)
             update_v_in();
             bool z_async_ = send_vin_receive_vout(sync_admm);
             z_comm_timer.toc();
-            if(mpc_step_since_log < z_async.rows() && iter < z_async.cols()){
-                z_async(mpc_step_since_log,iter) = (int) z_async_;
+            if(mpc_step_since_log < z_async.rows() && iter*control_settings.maxiter + inner_iter < z_async.cols()){
+                z_async(mpc_step_since_log,iter*control_settings.maxiter + inner_iter) = (int) z_async_;
             }
 
             //Step 2: averaging
@@ -1061,8 +1061,8 @@ int HolohoverDmpcDsqpNode::solve(unsigned int max_outer_iter_, bool sync_admm)
             update_v_out();
             bool zbar_async_ = send_vout_receive_vin(sync_admm);
             zbar_comm_timer.toc();
-            if(mpc_step_since_log < zbar_async.rows() && iter < zbar_async.cols()){
-                zbar_async(mpc_step_since_log,iter) = (int) zbar_async_;
+            if(mpc_step_since_log < zbar_async.rows() && iter*control_settings.maxiter + inner_iter < zbar_async.cols()){
+                zbar_async(mpc_step_since_log,iter*control_settings.maxiter + inner_iter) = (int) zbar_async_;
             }
 
             // Step 3: dual update
@@ -1309,7 +1309,6 @@ void HolohoverDmpcDsqpNode::print_time_measurements(){
 
     unsigned int N_rows = iter_timer.m_log.size();
     int k = 0; //MPC step
-    int l = 0; //SQP step
     unsigned int row = 0;
     //std::string print_str_ = "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}";
     //for(int i = 0; i < control_settings.Nobs; i++){
@@ -1328,7 +1327,7 @@ void HolohoverDmpcDsqpNode::print_time_measurements(){
                 //std::string print_line_;
 
                 if(control_settings.Nobs == 0){
-                    QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), dist_log(k,0), dist_log(k,1), dist_log(k,2), motor_log(k,0), motor_log(k,1), motor_log(k,2), motor_log(k,3), motor_log(k,4), motor_log(k,5), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i)); 
+                    QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), dist_log(k,0), dist_log(k,1), dist_log(k,2), motor_log(k,0), motor_log(k,1), motor_log(k,2), motor_log(k,3), motor_log(k,4), motor_log(k,5), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[i], build_qp_timer.m_log[i], reg_timer.m_log[i], admm_timer.m_log[i], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i*control_settings.maxiter + j), zbar_async(k,i*control_settings.maxiter + j)); 
                 } else {
                      //QUILL_LOG_INFO(quill_logger, print_str_, logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i), obs_pos_log.row(k));                    
                     std::string print_line_ = "";
@@ -1338,7 +1337,7 @@ void HolohoverDmpcDsqpNode::print_time_measurements(){
                         } 
                         print_line_ += std::to_string(obs_pos_log(k,2*i)) + "," + std::to_string(obs_pos_log(k,2*i+1));
                     } 
-                    QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), dist_log(k,0), dist_log(k,1), dist_log(k,2), motor_log(k,0), motor_log(k,1), motor_log(k,2), motor_log(k,3), motor_log(k,4), motor_log(k,5), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[l], build_qp_timer.m_log[l], reg_timer.m_log[l], admm_timer.m_log[l], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i), zbar_async(k,i), print_line_);
+                    QUILL_LOG_INFO(quill_logger, "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", logged_mpc_steps+k, x_log(k,0), x_log(k,1), x_log(k,2), x_log(k,3), x_log(k,4), x_log(k,5), u_log(k,0), u_before_conversion_log(k,1), u_before_conversion_log(k,2), u_before_conversion_log(k,0), u_log(k,1), u_log(k,2), xd_log(k,0), xd_log(k,1), xd_log(k,2), xd_log(k,3), xd_log(k,4), xd_log(k,5), ud_log(k,0), ud_log(k,1), ud_log(k,2), dist_log(k,0), dist_log(k,1), dist_log(k,2), motor_log(k,0), motor_log(k,1), motor_log(k,2), motor_log(k,3), motor_log(k,4), motor_log(k,5), get_state_timer.m_log[k], convert_u_acc_timer.m_log[k], publish_signal_timer.m_log[k], update_setpoint_timer.m_log[k], dsqp_timer.m_log[k], i, dsqp_iter_timer.m_log[i], build_qp_timer.m_log[i], reg_timer.m_log[i], admm_timer.m_log[i], j, iter_timer.m_log[row], loc_timer.m_log[row], z_comm_timer.m_log[row], zbar_comm_timer.m_log[row], send_vin_timer.m_log[row], receive_vout_timer.m_log[row], z_async(k,i*control_settings.maxiter + j), zbar_async(k,i*control_settings.maxiter + j), print_line_);
                 }   
                 
                 
@@ -1346,7 +1345,6 @@ void HolohoverDmpcDsqpNode::print_time_measurements(){
 
                 row++;
             }
-            l++;
         } 
         k++;
     }
