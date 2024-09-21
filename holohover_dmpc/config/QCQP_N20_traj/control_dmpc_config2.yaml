@@ -1,0 +1,24 @@
+h2/dmpc:
+  ros__parameters:
+    dmpc_period: 0.050
+    control_period: 0.0
+    rho: 0.1
+    maxiter: 30
+    max_outer_iter: 1
+    polish: false
+    nx: 6
+    nu: 3
+    nxd: 12
+    nud: 60
+    N: 20
+    idx_eqx0: 0
+    idx_equ0: 6
+    idx_u0: 378
+    idx_u1: 381
+    idx_x0: 126
+    Nagents: 4
+    Nobs: 0
+    my_id: 2
+    max_wait_time: 0.025
+    max_wait_fraction: 0.75
+    folder_name_sprob: "QCQP_N20_traj"
