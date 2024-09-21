@@ -141,7 +141,8 @@ def launch_setup(context):
                       "initial_state_vx":      initial_states_simulated['vx'], 
                       "initial_state_vy":      initial_states_simulated['vy'], 
                       "initial_state_w":       initial_states_simulated['w'],
-                      "holohover_props_files": holohover_params_simulated
+                      "holohover_props_files": holohover_params_simulated,
+                      "are_all_simulated":     True
                     }],
         output='screen'
     )
@@ -205,14 +206,14 @@ def launch_setup(context):
 
     #################### HOVERCRAFT STARTING ####################
     # Now iterate on each hovercraft and launch the nodes for each one
-    # print(f"Starting {len(hovercraft)} hovercraft")
-    # for i in range(len(hovercraft)):
-    #     if hovercraft_machines[i] == machine or machine == "all":
-    #         hovercraft_launch = IncludeLaunchDescription(
-    #             PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_lqr.launch.py')),
-    #             launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i]}.items()
-    #         )
-    #         launch_description.append(hovercraft_launch)
+    print(f"Starting {len(hovercraft)} hovercraft")
+    for i in range(len(hovercraft)):
+        if hovercraft_machines[i] == machine or machine == "all":
+            hovercraft_launch = IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_lqr.launch.py')),
+                launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i]}.items()
+            )
+            launch_description.append(hovercraft_launch)
     #################### HOVERCRAFT STARTING - END ####################
    
 
