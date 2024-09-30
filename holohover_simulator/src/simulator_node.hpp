@@ -19,6 +19,80 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <box2d/box2d.h>
 #include <random>
+#include <std_msgs/msg/bool.hpp>
+
+// Update Sep 30: collision detector
+class ContactListener : public b2ContactListener {
+public:
+
+    ContactListener(rclcpp::Node* node) : node_(node) {
+        // Initialize publishers
+        wall_collided_pub_ = node_->create_publisher<std_msgs::msg::Bool>("wall_collided", 10);
+        hovercraft_collided_pub_ = node_->create_publisher<std_msgs::msg::Bool>("hovercraft_collided", 10);
+
+    }
+
+    void BeginContact(b2Contact* contact) override {
+        // std::cout << "Collision started!" << std::endl << std::flush;
+        // RCLCPP_INFO(logger, "Collision started!");
+        auto* bodyA = contact->GetFixtureA()->GetBody();
+        auto* bodyB = contact->GetFixtureB()->GetBody();
+
+        // Retrieve user data correctly as uintptr_t and cast to const char*
+        const char* dataA = reinterpret_cast<const char*>(bodyA->GetUserData().pointer);
+        const char* dataB = reinterpret_cast<const char*>(bodyB->GetUserData().pointer);
+
+        std_msgs::msg::Bool msg;
+        // Check for puck collisions
+        if ((dataA && std::string(dataA) == "puck") || (dataB && std::string(dataB) == "puck")) {
+            // Determine what the puck collided with
+            if ((dataA && std::string(dataA) == "hovercraft") || (dataB && std::string(dataB) == "hovercraft")) {
+                RCLCPP_INFO(node_->get_logger(), "Puck collided with hovercraft.");
+                msg.data = true;
+                hovercraft_collided_pub_->publish(msg);
+            } else if ((dataA && std::string(dataA) == "wall") || (dataB && std::string(dataB) == "wall")) {
+                RCLCPP_INFO(node_->get_logger(), "Puck collided with wall.");
+                msg.data = true;
+                wall_collided_pub_->publish(msg); 
+            } else {
+                RCLCPP_WARN(node_->get_logger(), "Puck collided with an unknown object.");
+            }
+        }
+    }
+
+    void EndContact(b2Contact* contact) override {
+        // std::cout << "Collision ended!" << std::endl << std::flush;
+        // RCLCPP_INFO(logger, "Collision ended!");
+        auto* bodyA = contact->GetFixtureA()->GetBody();
+        auto* bodyB = contact->GetFixtureB()->GetBody();
+
+        // Retrieve user data correctly as uintptr_t and cast to const char*
+        const char* dataA = reinterpret_cast<const char*>(bodyA->GetUserData().pointer);
+        const char* dataB = reinterpret_cast<const char*>(bodyB->GetUserData().pointer);
+
+        std_msgs::msg::Bool msg;
+        // Check for puck collisions
+        if ((dataA && std::string(dataA) == "puck") || (dataB && std::string(dataB) == "puck")) {
+            // Determine what the puck stopped colliding with
+            if ((dataA && std::string(dataA) == "hovercraft") || (dataB && std::string(dataB) == "hovercraft")) {
+                RCLCPP_INFO(node_->get_logger(), "Puck stopped colliding with hovercraft.");
+                msg.data = false;
+                hovercraft_collided_pub_->publish(msg);
+            } else if ((dataA && std::string(dataA) == "wall") || (dataB && std::string(dataB) == "wall")) {
+                RCLCPP_INFO(node_->get_logger(), "Puck stopped colliding with wall.");
+                msg.data = false;
+                wall_collided_pub_->publish(msg); 
+            } else {
+                RCLCPP_WARN(node_->get_logger(), "Puck stopped colliding with an unknown object.");
+            }
+        }
+    }
+private:
+    rclcpp::Node* node_;  // Use raw pointer
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr wall_collided_pub_;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr hovercraft_collided_pub_;
+};
+
 
 class BodyDeleter
 {
@@ -36,7 +110,8 @@ private:
 
 using body_ptr = std::unique_ptr<b2Body, BodyDeleter>;
 
-class SimulatorNode : public rclcpp::Node
+// Update Sep 30: collision detector
+class SimulatorNode : public rclcpp::Node, public std::enable_shared_from_this<SimulatorNode>
 {
 public:
     SimulatorNode();
@@ -89,7 +164,8 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr puck_pose_publisher;
     void init_puck();
 
-
+    // Update Sep 30: collision detector
+    std::shared_ptr<ContactListener> contact_listener_; // UPDATE SEP 10: collision detector
 
 };
 
