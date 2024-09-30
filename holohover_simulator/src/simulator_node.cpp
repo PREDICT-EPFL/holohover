@@ -11,6 +11,7 @@ SimulatorNode::SimulatorNode() :
     world(std::make_unique<b2World>(gravity))
 {
     init_box2d_world();
+    init_puck();    // Update Sep 30: puck simulation
 
     viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization/drone", 10);
     table_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/table_pose_raw", rclcpp::SensorDataQoS());
@@ -18,6 +19,45 @@ SimulatorNode::SimulatorNode() :
     init_hovercraft();
     init_timer();
 }
+
+// Update Sep 30: puck simulation
+void SimulatorNode::init_puck()
+{
+    // print 
+    RCLCPP_INFO(get_logger(), "Simulate a puck");
+
+    // Define the dynamic body (puck)
+    b2BodyDef puckBodyDef;
+    puckBodyDef.type = b2_dynamicBody; // Set the body as dynamic
+    puckBodyDef.position.Set(simulation_settings.puck_position[0], simulation_settings.puck_position[1]); // Initial position of the disk
+    // b2Body* puckBody = world.CreateBody(&puckBodyDef);
+    body_ptr puck(world->CreateBody(&puckBodyDef), world);
+
+    // Define the shape of the puck (circle shape)
+    b2CircleShape circleShape;
+    circleShape.m_radius = simulation_settings.puck_radius; // Radius of the puck
+
+    // Define the fixture with properties
+    b2FixtureDef fixtureDef;
+    fixtureDef.shape = &circleShape;
+    fixtureDef.density = 1.0f; // Density of the disk
+    fixtureDef.friction = 0.0f; // Friction
+    fixtureDef.restitution = 1.f; // Bounciness
+
+    // Attach the shape to the body
+    puck->CreateFixture(&fixtureDef);
+    // // puck->SetUserData((void*) "puck");  // UPDATE SEP 10: collision detector
+    // puck->GetUserData().pointer = reinterpret_cast<uintptr_t>("puck");  // UPDATE SEP 10: collision detector
+
+    // puck's state
+    body_to_state(state_puck, puck);
+    puck_bodies.push_back(std::move(puck));
+
+    // puck's pose publisher
+    puck_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/puck_pose_raw", rclcpp::SensorDataQoS());
+}
+
+
 
 void SimulatorNode::init_box2d_world()
 {
@@ -211,6 +251,23 @@ void SimulatorNode::simulation_step()
         
         pose_publishers[i]->publish(pose_measurement);
     }
+
+    // Update Sep 30: puck simulation
+    body_to_state(state_puck, puck_bodies[0]);
+    geometry_msgs::msg::PoseStamped puck_pose;
+    puck_pose.header.frame_id = "world";
+    puck_pose.header.stamp = this->now();
+    puck_pose.pose.position.x = simulation_settings.table_position[0] + state_puck(0);
+    puck_pose.pose.position.y = simulation_settings.table_position[1] + state_puck(1);
+    puck_pose.pose.position.z = 0;
+    tf2::Quaternion q;
+    q.setRPY(0, 0, simulation_settings.table_position[2]);
+    puck_pose.pose.orientation.w = q.w();
+    puck_pose.pose.orientation.x = q.x();
+    puck_pose.pose.orientation.y = q.y();
+    puck_pose.pose.orientation.z = q.z();
+    puck_pose_publisher->publish(puck_pose);
+
 }
 
 void SimulatorNode::control_callback(holohover_msgs::msg::HolohoverControlStamped::SharedPtr msg, long int hovercraft_id) {

@@ -78,11 +78,19 @@ private:
     void simulation_step();
     void table_publisher();
 
-
     void calculate_control_acc(Holohover::state_t<double> state, Holohover::control_force_t<double> motor_velocities, Holohover::control_acc_t<double> &current_control_acc, int i);
 
     void body_to_state(Holohover::state_t<double> &state, body_ptr &body);
     void apply_control_acc(body_ptr &body, Holohover::control_acc_t<double> control_acc, int i);
+
+    // Update Sep 30: puck simulation
+    Holohover::state_t<double>                                  state_puck;
+    std::vector<body_ptr>                                       puck_bodies;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr puck_pose_publisher;
+    void init_puck();
+
+
+
 };
 
 #endif //HOLOHOVER_UTILS_SIMULATOR_NODE_HPP

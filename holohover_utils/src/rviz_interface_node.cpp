@@ -88,6 +88,28 @@ void RvizInterfaceNode::publish_visualization()
             markers.markers.push_back(thrust_vector_marker);
         }
     }
+
+    // Update Sep 30: puck simulation
+    puck_marker.header.stamp = header_now;
+    puck_marker.pose.position.x = current_puck_pose(0);
+    puck_marker.pose.position.y = current_puck_pose(1);
+    puck_marker.color.r = 1.0;
+    puck_marker.color.g = 1.0;
+    puck_marker.color.b = 0.25;
+    // if (current_wall_collision_state) {
+    //     RCLCPP_INFO(this->get_logger(), "##########################Wall collision detected!");
+    //     puck_marker.color.r = 1.0;
+    //     puck_marker.color.g = 0.0;
+    //     puck_marker.color.b = 0.0;
+    // } 
+    // else if (current_hovercraft_collision_state) {
+    //     RCLCPP_INFO(this->get_logger(), "##########################Hovercraft collision detected!");
+    //     puck_marker.color.r = 0.0;
+    //     puck_marker.color.g = 0.0;
+    //     puck_marker.color.b = 1.0;
+    // }
+    markers.markers.push_back(puck_marker);
+
     viz_publisher->publish(markers);
 }
 
@@ -129,6 +151,11 @@ void RvizInterfaceNode::init_topics()
         control.setZero();
         current_controls.push_back(control);
     }
+
+    // Update Sep 30: puck simulation
+    puck_pose_subscription = this->create_subscription<geometry_msgs::msg::PoseStamped>("/puck/pose", rclcpp::SensorDataQoS(), 
+        std::bind(&RvizInterfaceNode::puck_pose_callback, this, std::placeholders::_1));
+    init_puck_marker(); // initialize puck marker
 }
 
 HolohoverMarkers RvizInterfaceNode::init_holohover_markers(std::string name, std::vector<double> colors)
@@ -245,6 +272,33 @@ void RvizInterfaceNode::init_props()
     motor_dir(0, 5) = holohover_props.learned_motor_vec_c_2[0];
     motor_dir(1, 5) = holohover_props.learned_motor_vec_c_2[1];
 }
+
+// Update Sep 30: puck simulation
+void RvizInterfaceNode::init_puck_marker()
+{
+    puck_marker.header.stamp = now();
+    puck_marker.header.frame_id = "world";
+    puck_marker.action = visualization_msgs::msg::Marker::ADD;
+    puck_marker.ns = "puck";
+    puck_marker.id = 5555;
+    puck_marker.color.r = 1.0;
+    puck_marker.color.g = 1.0;
+    puck_marker.color.b = 0.25;
+    puck_marker.color.a = 1.0;
+    // puck_marker.pose.position.x = simulation_settings.puck_position[0];
+    // puck_marker.pose.position.y = simulation_settings.puck_position[1];
+    puck_marker.pose.position.z = 0.0;
+    puck_marker.type = visualization_msgs::msg::Marker::CYLINDER;   // circle type
+    puck_marker.scale.x = simulation_settings.puck_radius*2;
+    puck_marker.scale.y = simulation_settings.puck_radius*2;
+    puck_marker.scale.z = 0.01;
+}
+void RvizInterfaceNode::puck_pose_callback(geometry_msgs::msg::PoseStamped::SharedPtr state_msg)
+{
+    current_puck_pose(0) = state_msg->pose.position.x;
+    current_puck_pose(1) = state_msg->pose.position.y;
+}
+
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);

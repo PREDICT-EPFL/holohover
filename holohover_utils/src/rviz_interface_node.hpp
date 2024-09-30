@@ -9,6 +9,8 @@
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "holohover_common/models/holohover_model.hpp"
 #include "holohover_common/utils/simulation_settings.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include <std_msgs/msg/bool.hpp>
 
 
 struct HolohoverMarkers
@@ -55,6 +57,14 @@ private:
     void state_callback(holohover_msgs::msg::HolohoverStateStamped::SharedPtr state_msg, long int hovercraft_id);
     HolohoverMarkers init_holohover_markers(std::string name, std::vector<double> colors);
     void init_props();
+
+    // Update Sep 30: puck simulation
+    Holohover::state_t<double> current_puck_pose;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr puck_pose_subscription;
+    void puck_pose_callback(geometry_msgs::msg::PoseStamped::SharedPtr state_msg);
+    visualization_msgs::msg::Marker puck_marker;
+    void init_puck_marker();
+
 
 };
 

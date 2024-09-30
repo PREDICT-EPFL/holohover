@@ -38,3 +38,7 @@
     # position of center of inertia
     Gx: -0.000453
     Gy: -0.007589
+
+    # Update Sep 30: puck simulation -> radius and position
+    puck_radius: 0.05
+    puck_position: [0.4, 0.0]
