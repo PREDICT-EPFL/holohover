@@ -4,7 +4,9 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
         Node("control_lqr"),
         holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
         control_settings(load_control_lqr_settings(*this)),
-        holohover(holohover_props, control_settings.period)
+        holohover(holohover_props, control_settings.period),
+        emergency_stop(false),   // Update Oct 1: controller emergency stop
+        hp_collided(false)
 {
     // init state
     state.setZero();
@@ -17,6 +19,8 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     ref.x = control_settings.initial_x;
     ref.y = control_settings.initial_y;
     ref.yaw = control_settings.initial_yaw;
+
+    std::cout << "Initial reference: " << control_settings.initial_x << std::endl;
 
     // calculate LQR gain
     Eigen::Matrix<double, Holohover::NX, Holohover::NX> &Ad = holohover.Ad;
@@ -72,6 +76,11 @@ void HolohoverControlLQRNode::init_topics()
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
             "state_ref", 10,
             std::bind(&HolohoverControlLQRNode::ref_callback, this, std::placeholders::_1));
+
+    // Update Oct 1: controller emergency stop
+    hp_collided_subscription = this->create_subscription<std_msgs::msg::Bool>(
+            "/hovercraft_collided", 10,
+            std::bind(&HolohoverControlLQRNode::hp_collided_callback, this, std::placeholders::_1));
 }
 
 void HolohoverControlLQRNode::init_timer()
@@ -82,8 +91,30 @@ void HolohoverControlLQRNode::init_timer()
 }
 
 void HolohoverControlLQRNode::publish_control()
-{
-    
+{   
+    // Update Oct 1: controller emergency stop
+    // std::cout << hp_collided << std::endl;
+    // std::cout << emergency_stop << std::endl;
+    // if (hp_collided) {
+    //     emergency_stop = true; 
+    // }
+    // if (emergency_stop)
+    // {
+    //     Holohover::control_force_t<double> u_signal;
+    //     u_signal.setZero();
+    //     holohover_msgs::msg::HolohoverControlStamped control_msg;
+    //     control_msg.header.frame_id = "body";
+    //     control_msg.header.stamp = this->now();
+    //     control_msg.motor_a_1 = u_signal(0);
+    //     control_msg.motor_a_2 = u_signal(1);
+    //     control_msg.motor_b_1 = u_signal(2);
+    //     control_msg.motor_b_2 = u_signal(3);
+    //     control_msg.motor_c_1 = u_signal(4);
+    //     control_msg.motor_c_2 = u_signal(5);
+    //     control_publisher->publish(control_msg);
+    //     return;
+    // }
+
     motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
     
     Holohover::control_force_t<double> u_force_curr;
@@ -172,6 +203,12 @@ void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::Holohove
 void HolohoverControlLQRNode::ref_callback(const holohover_msgs::msg::HolohoverState &pose)
 {
     ref = pose;
+}
+
+// Update Oct 1: controller emergency stop
+void HolohoverControlLQRNode::hp_collided_callback(const std_msgs::msg::Bool &msg)
+{
+    hp_collided = msg.data;
 }
 
 int main(int argc, char **argv) {

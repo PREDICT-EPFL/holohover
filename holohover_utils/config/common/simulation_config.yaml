@@ -41,4 +41,4 @@
 
     # Update Sep 30: puck simulation -> radius and position
     puck_radius: 0.05
-    puck_position: [0.4, 0.0]
+    puck_position: [0.4, 0.4]

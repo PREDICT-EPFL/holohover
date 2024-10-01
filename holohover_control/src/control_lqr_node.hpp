@@ -20,6 +20,7 @@
 #include <chrono>
 #include <ament_index_cpp/get_package_prefix.hpp>
 
+#include <std_msgs/msg/bool.hpp>
 
 class HolohoverControlLQRNode : public rclcpp::Node
 {
@@ -58,6 +59,12 @@ private:
     //LQR logging
     std::ostringstream file_name_lqr;
     std::ofstream log_file_lqr;
+
+    // Update Oct 1: controller emergency stop
+    bool emergency_stop;
+    bool hp_collided;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr hp_collided_subscription;   // hovercraft-puck collision
+    void hp_collided_callback(const std_msgs::msg::Bool &msg);
 };
 
 #endif //HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP

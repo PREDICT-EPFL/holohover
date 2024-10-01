@@ -2,7 +2,12 @@
 
 ## Updates
 * Sep 20: create a new branch for time-optimal motion planning
-
+* Oct 1: add puck simulation, collision detector, lqr emergency stop
+  TODO:
+    - check initialization (initial state, initial state ref, etc)
+    - check collision performance
+    - upgrade emergency stop (so far emergency stop NOT= stop since simulation environment, e.g., no friction)
+    
 ## ROS2 Setup
 
 * Install ROS2 Humble (Ubuntu 22.04) by following the guide [here](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html).
