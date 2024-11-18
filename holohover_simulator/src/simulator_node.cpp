@@ -12,7 +12,8 @@ SimulatorNode::SimulatorNode() :
 {
     init_box2d_world();
 
-    table_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/table_pose_raw", rclcpp::SensorDataQoS());
+    if(simulation_settings.are_all_simulated)
+        table_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/table_pose_raw", rclcpp::SensorDataQoS());
 
     init_hovercraft();
     init_timer();
