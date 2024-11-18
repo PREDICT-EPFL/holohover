@@ -12,7 +12,6 @@ SimulatorNode::SimulatorNode() :
 {
     init_box2d_world();
 
-    viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization/drone", 10);
     table_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/table_pose_raw", rclcpp::SensorDataQoS());
 
     init_hovercraft();

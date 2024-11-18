@@ -60,8 +60,6 @@ private:
 
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr table_pose_subscription;
     void table_callback(const geometry_msgs::msg::PoseStamped &raw_pose);
-    
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_publisher;
 
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr> control_subscriptions;
 
