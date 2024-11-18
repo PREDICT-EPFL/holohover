@@ -1,131 +1,61 @@
 # Holohover
 
-## ROS2 Setup
+This repository contains the ROS2 packages necessary to run the Holohover system.
 
-* Install ROS2 Humble (Ubuntu 22.04) by following the guide [here](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html).
+## Setup
 
-* Clone the content of the repo into `~/holohover_ws/src`
-  ```
-  cd ~/holohover_ws/src
-  git clone --recursive https://github.com/RSchwan/holohover.git
-  ```
+The ROS2 system is designed to run on Docker containers. Setup scripts and documentation can be found in the [Holohover Docker repository](https://github.com/grilloandrea6/holohover-docker/).
 
-* Source the ROS2 installation
-  ```
-  source /opt/ros/$ROS_DISTRO/setup.bash
-  ```
+## Starting the System
 
-* Update dependencies using rosdep
-  ```
-  sudo apt update && rosdep update
-  rosdep install --from-path src --ignore-src -y
-  ```
+The `holohover_utils` package includes the ROS launch files required to start the system. Refer to the [holohover_utils README](./holohover_utils/README.md) for detailed instructions.
 
-* Build the project and source it
-  ```
-  colcon build
-  source install/local_setup.bash
-  ```
+## Packages Overview
 
-## Firmware Setup
+Below is a summary of the packages in this repository. For detailed information, consult the README files within each package.
 
-Again, there are two options to build the firmware for the ESP: using Docker or installing the ESP-IDF directly on the host. In general, Docker is recommended because of ease of use, but flashing and monitoring are [not supported](https://docs.docker.com/desktop/faqs/general/#can-i-pass-through-a-usb-device-to-a-container) on macOS since devices (USB connection) can't be attached to Docker.
+- **`holohover_firmware`**: Firmware for the ESP32 used in the earlier version of the hovercraft.
+- **`holohover_common`**: Shared code and utilities for other packages.  
+  *ToDo*: Are the `signal_compensation/python_bindings` files still in use?
+- **`holohover_control`**: Nodes for controlling a single hovercraft, including control signal generation for System Identification.
+- **`holohover_dmpc`**: Implementation of the DMPC distributed controller.
+- **`holohover_drivers`**: Code for the Radxa SBCs to control motors and interface with sensors.
+- **`holohover_mpc`**: Code for the MPC controller of a single hovercraft.
+- **`holohover_msgs`**: Custom ROS2 message definitions.
+- **`holohover_navigation`**: Pose estimation using an Extended Kalman Filter (EKF).
+- **`holohover_simulator`**: Multibody physics simulator for experiments with multiple hovercraft.
+- **`holohover_utils`**: Interface nodes, RViz configurations, launch files, and other utilities.  
+  *ToDo*: Consolidate with `holohover_common`?
+- **`matlab_experiments_analysis`**: Scripts for analyzing experiments in MATLAB.  
+  *ToDo*: Confirm if this package is still required.
+- **`micro_ros`**: Submodules for Micro-ROS integration, including [Micro-ROS Agent](https://github.com/micro-ROS/micro-ROS-Agent) and [Micro-ROS Messages](https://github.com/micro-ROS/micro_ros_msgs).
+- **`mocap_optitrack`**: Submodule for Optitrack motion capture integration, sourced from [PREDICT-EPFL](https://github.com/PREDICT-EPFL/mocap_optitrack).
 
-### Using Docker to build ESP-IDF
+> **Note**: The `holohover_firmware` and `micro_ros` packages are relevant only for older hovercraft versions.
 
-Instead of installing the ESP-IDF it is also possible to build, flash, and monitor the ESP32 with docker. This has the advantage that both ROS2 and the ESP-IDF environment don't have to be installed. To build the project one just runs
-```
-docker run -it --rm --user espidf --volume="/etc/timezone:/etc/timezone:ro" -v  $(pwd):/micro_ros_espidf_component -v  /dev:/dev --privileged --workdir /micro_ros_espidf_component microros/esp-idf-microros:latest /bin/bash  -c "idf.py build"
-```
-Note that this command is just for building. To build, flash, and monitor just replace `idf.py build` with `idf.py build flash monitor`. Note that you still have to configure the WIFI Transport Layer before building.
+## Submodules
 
-### Install and set up ESP-IDF on Host
+This repository includes the following submodules:
 
-* Make sure you have installed all [prerequisites](https://docs.espressif.com/projects/esp-idf/en/release-v4.3/esp32/get-started/index.html#step-1-install-prerequisites).
+- **`LAOPT`**
+- **`mocap_optitrack`**
+- **`micro_ros`**:
+  - `micro_ros_msgs`
+  - `micro_ros_agent`
+  - `micro_ros_espidf_component`
 
-* Download ESP-IDF 4.3 (we assume here to install it in `~/esp/` but feel free to change the location):
-    ```
-    mkdir -p ~/esp
-    cd ~/esp
-    git clone -b release/v4.3 --recursive https://github.com/espressif/esp-idf.git
-    ```
+## Outstanding Tasks (ToDos)
 
-* Install ESP-IDF:
-    ```
-    ~/esp/esp-idf/install.sh
-    ```
+1. Clean `holohover_control/control_lqr_node` of DMPC logging.
+2. Merge `holohover_common` and `holohover_utils`?
+3. Verify if `holohover_navigation/holohover_ekf.hpp` is utilized. Is it necessary for onboard EKF using IMU and mouse sensors?
+4. Is `matlab_experiments_analysis` package useful?
+5. Is `holohover_control/control_signal_node` useful?
 
-* Set up the environment variables (note the space after the point):
-    ```
-    . ~/esp/esp-idf/export.sh
-    ```
+## Credits
 
-* The component needs `colcon` and other Python 3 packages inside the IDF virtual environment to build micro-ROS packages:
-    ```
-    pip3 install catkin_pkg lark-parser empy colcon-common-extensions importlib-resources
-    ```
+*ToDo*
 
-### Configuring WIFI Transport Layer
+## License
 
-* Cd into the firmware folder and set the target
-    ```
-    cd firmware
-    idf.py set-target esp32
-    ```
-
-* Open the micro-ROS configuration
-    ```
-    idf.py menuconfig
-    ```
-* Navigate to `micro-ROS Settings --->` and set the `micro-ROS Agent IP` and `micro-ROS Agent Port`.
-
-* Navigate to `micro-ROS Settings ---> WiFi Configuration --->` and set up your WiFi credentials.
-
-* Quit and save.
-
-#### Error Handing
-
-If you run into the error `FAILED: esp-idf/mbedtls/x509_crt_bundle`, run
-```
-idf.py menuconfig
-```
-navigate to `Component config  ---> mbedTLS  ---> Certificate Bundle  ---> Default certificate bundle options` and chose `Use only the most common certificates from the default bundles`.
-
-After fixing compilation errors it may be helpful to clean and rebuild the micro-ROS library:
-```
-idf.py clean-microros
-```
-
-### Building, flashing, and monitoring
-
-To build the project run:
-```
-idf.py build
-```
-
-To flash the compiled program onto the ESP32 run:
-```
-idf.py flash
-```
-
-You can monitor serial messages with:
-```
-idf.py monitor
-```
-
-### Connect the ESP32 to your ROS network with micro-ROS agent
-
-#### Running the micro-ROS agent
-
-To connect micro-ROS running on the ESP32 with the remaining ROS2 network we have to start the micro-ROS agent.
-
-To use the Bluetooth transport layer run:
-```
-ros2 run micro_ros_agent micro_ros_agent serial -D /dev/tty.ESP32-ESP32SPP
-```
-where `/dev/tty.ESP32-ESP32SPP` has to be changed to match the bluetooth input which can be found by running `ls /dev`.
-
-To use the WIFI transport layer run:
-```
-ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
-```
+*ToDo*
