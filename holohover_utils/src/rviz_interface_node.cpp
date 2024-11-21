@@ -10,10 +10,9 @@ RvizInterfaceNode::RvizInterfaceNode() :
 {
     RCLCPP_INFO(get_logger(), "Starting rviz interface node.");
 
-    
-
     init_props();
     init_topics();
+    init_wall_markers();
     init_timer();
 }
 
@@ -171,6 +170,10 @@ void RvizInterfaceNode::init_timer()
     timer = this->create_wall_timer(
             std::chrono::duration<double>(0.04),
             std::bind(&RvizInterfaceNode::publish_visualization, this));
+
+    wall_timer = this->create_wall_timer(
+        std::chrono::duration<double>(1),
+        std::bind(&RvizInterfaceNode::publish_walls, this));
 }
 
 visualization_msgs::msg::Marker RvizInterfaceNode::create_marker(const std::string &ns, float r, float g, float b, float a, const std::string &frame_id)
@@ -245,6 +248,65 @@ void RvizInterfaceNode::init_props()
     motor_dir(0, 5) = holohover_props.learned_motor_vec_c_2[0];
     motor_dir(1, 5) = holohover_props.learned_motor_vec_c_2[1];
 }
+
+void RvizInterfaceNode::init_wall_markers(){
+    // Publish marker for wall visualization
+    visualization_msgs::msg::Marker marker;
+    marker.header.stamp = now();
+
+    marker.header.frame_id = "world";
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.ns = "walls";
+    marker.id = 1234;
+    marker.color.r = 1.0;
+    marker.color.g = 0.5;
+    marker.color.b = 0.25;
+    marker.color.a = 1.0;
+    
+    marker.pose.position.x = 0.0;
+    marker.pose.position.y = 0.0;
+    marker.pose.position.z = 0.0;
+
+    marker.pose.orientation.x = 0;
+    marker.pose.orientation.y = 0;
+    marker.pose.orientation.z = 0;
+    marker.pose.orientation.w = 1.0;
+
+    marker.scale.x = .01;
+
+    marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+
+    geometry_msgs::msg::Point p1;
+    p1.z = 0.f;
+
+
+    p1.x = -simulation_settings.table_size[0] / 2.0f;
+    p1.y = -simulation_settings.table_size[1] / 2.0f;
+    marker.points.push_back(p1);
+
+    p1.x =  simulation_settings.table_size[0] / 2.0f;
+    p1.y = -simulation_settings.table_size[1] / 2.0f;
+    marker.points.push_back(p1);
+
+    p1.x = simulation_settings.table_size[0] / 2.0f;
+    p1.y = simulation_settings.table_size[1] / 2.0f;
+    marker.points.push_back(p1);
+
+    p1.x = -simulation_settings.table_size[0] / 2.0f;
+    p1.y =  simulation_settings.table_size[1] / 2.0f;
+    marker.points.push_back(p1);
+
+    p1.x = -simulation_settings.table_size[0] / 2.0f;
+    p1.y = -simulation_settings.table_size[1] / 2.0f;
+    marker.points.push_back(p1);
+
+    wall_markers.markers.push_back(marker);
+}
+
+void RvizInterfaceNode::publish_walls(){
+    viz_publisher->publish(wall_markers);
+}
+
 
 int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
