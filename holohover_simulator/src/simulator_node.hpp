@@ -69,6 +69,7 @@ private:
     std::vector<Holohover::state_t<double>>                     states_vec;
     std::vector<Holohover::control_force_t<double>>             motor_velocities_vec; 
     std::vector<Holohover::control_acc_t<double>>               control_acc_vec;
+    bool are_all_simulated;
 
     void init_hovercraft();
     void init_timer();
