@@ -22,7 +22,7 @@ HolohoverControlSignalNode::HolohoverControlSignalNode() :
 void HolohoverControlSignalNode::init_topics()
 {
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
-            "drone/control",
+            "control",
             rclcpp::SensorDataQoS());
 }
 

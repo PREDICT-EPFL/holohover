@@ -36,9 +36,9 @@ add_executable(control_lqr src/control_lqr_node.cpp)
 ament_target_dependencies(control_lqr rclcpp geometry_msgs holohover_msgs holohover_common)
 target_link_libraries(control_lqr yaml-cpp)
 
-add_executable(control_signal src/control_signal_node.cpp)
-ament_target_dependencies(control_signal rclcpp geometry_msgs holohover_msgs holohover_common)
-target_link_libraries(control_signal yaml-cpp)
+# add_executable(control_signal src/control_signal_node.cpp)
+# ament_target_dependencies(control_signal rclcpp geometry_msgs holohover_msgs holohover_common)
+# target_link_libraries(control_signal yaml-cpp)
 
 add_executable(control_exp src/control_exp_node.cpp)
 ament_target_dependencies(control_exp rclcpp geometry_msgs holohover_msgs holohover_common)
@@ -50,7 +50,7 @@ target_link_libraries(control_exp yaml-cpp)
 # )
 
 install(TARGETS
-  control_lqr control_signal control_exp
+  control_lqr control_exp # control_signal
   DESTINATION lib/${PROJECT_NAME}
 )
 
