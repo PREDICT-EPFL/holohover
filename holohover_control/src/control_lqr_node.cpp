@@ -10,7 +10,6 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     state.setZero();
     disturbance.setZero();
     motor_velocities.setZero();
-    // last_control_acc.setZero();
     last_control_signal.setZero();
 
     // init ref
@@ -36,24 +35,6 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     solve_riccati_iteration_discrete(Ad, Bd, Q, R, P);
 
     K = (R + Bd.transpose() * P * Bd).ldlt().solve(Bd.transpose() * P * Ad);
-
-    
-    //GS BEGIN
-    // u_acc_curr.setZero();
-    u_acc_bc_curr.setZero();
-    u_acc_lqr_curr.setZero();
-    std::time_t t = std::time(0);   // get time now
-    std::tm* now = std::localtime(&t);
-
-    int my_id = 0;
-    file_name_lqr << ament_index_cpp::get_package_prefix("holohover_dmpc") << "/../../log/dmpc_lqr_log_agent" << my_id << "_" << (now->tm_year + 1900) << '_' << (now->tm_mon + 1) << '_' <<  now->tm_mday << "_" << now->tm_hour << "_" << now->tm_min << "_" << now->tm_sec <<".csv";
-    log_file_lqr = std::ofstream(file_name_lqr.str());
-    if (log_file_lqr.is_open())
-    {
-        log_file_lqr << "mpc_step, x0_1_, x0_2_, x0_3_, x0_4_, x0_5_, x0_6_, xd_1_, xd_2_, xd_5_, u_1_dmpc_, u_2_dmpc_, u_3_dmpc_, u_1_lqr_, u_2_lqr_, u_3_lqr_, u_1_bc_, u_2_bc_, u_3_bc_, u_1_acc_, u_2_acc_, u_3_acc_\n";
-        log_file_lqr.close();
-    }
-    //GS END
 
     init_topics();
     init_timer();
@@ -83,14 +64,12 @@ void HolohoverControlLQRNode::init_timer()
 
 void HolohoverControlLQRNode::publish_control()
 {
-    
     motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
     
     Holohover::control_force_t<double> u_force_curr;
     Holohover::control_acc_t<double> u_acc_curr;
     holohover.signal_to_thrust(motor_velocities, u_force_curr);
     holohover.control_force_to_acceleration(state, u_force_curr, u_acc_curr);
-    
 
     Holohover::state_t<double> state_ref;
     state_ref.setZero();
@@ -130,30 +109,8 @@ void HolohoverControlLQRNode::publish_control()
     control_msg.motor_c_2 = u_signal(5);
     control_publisher->publish(control_msg);
 
-
-    // //GS
-    // Eigen::VectorXd state = state;
-    // Eigen::VectorXd u_acc_dmpc_curr_buff_log_ = Eigen::VectorXd::Zero(3);
-    // Eigen::VectorXd u_acc_lqr_curr = u_acc_lqr_curr;
-    // Eigen::VectorXd u_acc_bc_curr = u_acc_bc_curr;
-    // Eigen::VectorXd u_acc_curr = u_acc_curr;
-
-
-
-    // log current state and input
-    log_file_lqr.open(file_name_lqr.str(),std::ios_base::app);
-    if (log_file_lqr.is_open())
-    {
-        log_file_lqr << 0 << "," << state(0) << "," << state(1) << "," << state(2) << "," << state(3) << "," << state(4) << "," << state(5) << "," << state_ref(0) << "," << state_ref(1) << "," << state_ref(2) << "," << 0.0 << "," << 0.0 << "," << 0.0 << "," << u_acc_lqr_curr(0) << "," << u_acc_lqr_curr(1) << "," << u_acc_lqr_curr(2) << "," << u_acc_bc_curr(0) << "," << u_acc_bc_curr(1) << "," << u_acc_bc_curr(2) << "," << u_acc_curr(0) << "," << u_acc_curr(1) << "," << u_acc_curr(2) << "\n";        
-    }
-    log_file_lqr.close();
-
-    // save control inputs for next iterations   
+    // save control inputs for next iteration   
     last_control_signal = u_signal;
-    u_acc_bc_curr = u_acc_next;
-    u_acc_lqr_curr = u_acc_next;
-
-
 }
 
 void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::HolohoverStateDisturbanceStamped &msg_state)

@@ -14,12 +14,6 @@
 #include "holohover_common/utils/holohover_props.hpp"
 #include "control_lqr_settings.hpp"
 
-//GS
-#include <iostream>
-#include <fstream>
-#include <chrono>
-#include <ament_index_cpp/get_package_prefix.hpp>
-
 
 class HolohoverControlLQRNode : public rclcpp::Node
 {
@@ -34,7 +28,6 @@ private:
     Holohover::state_t<double> state;
     Eigen::Vector3d disturbance;
     Holohover::control_force_t<double> motor_velocities;
-    // Holohover::control_acc_t<double> last_control_acc;
     Holohover::control_force_t<double> last_control_signal;
     holohover_msgs::msg::HolohoverState ref;
     Eigen::Matrix<double, Holohover::NA, Holohover::NX> K;
@@ -49,15 +42,6 @@ private:
     void publish_control();
     void state_callback(const holohover_msgs::msg::HolohoverStateDisturbanceStamped &state_msg);
     void ref_callback(const  holohover_msgs::msg::HolohoverState &pose);
-
-    // //GS
-    // Holohover::control_acc_t<double> u_acc_curr; //sent to hovercraft
-    Holohover::control_acc_t<double> u_acc_bc_curr;
-    Holohover::control_acc_t<double> u_acc_lqr_curr;
-
-    //LQR logging
-    std::ostringstream file_name_lqr;
-    std::ofstream log_file_lqr;
 };
 
 #endif //HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP
