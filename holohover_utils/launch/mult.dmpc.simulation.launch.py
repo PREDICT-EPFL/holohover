@@ -53,17 +53,10 @@ def launch_setup(context):
     )
 
     ## DMPC Trigger
-    dmpc_trigger_config = os.path.join(
-        get_package_share_directory('holohover_dmpc'),
-        'config',
-        'dmpc_trigger_config.yaml'
-    )
-
     trigger_node = Node(
         name="holohover_dmpc_trigger",
         package="holohover_dmpc",
         executable="dmpc_trigger",
-        parameters=[dmpc_trigger_config],
         output='both'
     )
 
