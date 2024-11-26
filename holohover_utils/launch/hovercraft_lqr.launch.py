@@ -42,7 +42,6 @@ def launch_setup(context):
         namespace= name,
         ros_arguments=['--disable-rosout-logs'],
         output='screen',
-        prefix='nice -n -19'
     )
     
     controller_node = Node(
@@ -54,7 +53,6 @@ def launch_setup(context):
         namespace=name,
         ros_arguments=['--disable-rosout-logs'],
         output='both',
-        prefix='nice -n -19'
     )
     
     this_dir = os.path.dirname(os.path.abspath(__file__))
@@ -67,7 +65,7 @@ def launch_setup(context):
 
     launch_description.append(controller_node)        
     launch_description.append(navigation_node)
-    launch_description.append(recorder_launch)
+    # launch_description.append(recorder_launch)
 
     return launch_description
 
@@ -88,7 +86,7 @@ def generate_launch_description():
     ))
 
     ld.add_action(DeclareLaunchArgument(
-        'params', default_value='common/holohover_params.yaml',
+        'params', default_value='/root/ros2_ws/install/holohover_utils/share/holohover_utils/config/common/holohover_params.yaml',
         description='Holohover params config file path.'
     ))
 

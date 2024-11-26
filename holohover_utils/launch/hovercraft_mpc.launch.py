@@ -2,10 +2,9 @@ from launch import LaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch_ros.actions import Node
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
 from launch.actions import IncludeLaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 import os
 
 
@@ -15,23 +14,18 @@ def launch_setup(context):
     index  = LaunchConfiguration('index').perform(context)
     name   = LaunchConfiguration('name').perform(context)
     params = LaunchConfiguration('params').perform(context)
-    opt_alg = LaunchConfiguration('opt_alg').perform(context) #admm or dsqp
-    dmpc_config_folder = LaunchConfiguration('dmpc_config_folder').perform(context)
+    initial_x = float(LaunchConfiguration('initial_x').perform(context))    
+    initial_y = float(LaunchConfiguration('initial_y').perform(context))    
+    initial_yaw = float(LaunchConfiguration('initial_yaw').perform(context))    
     
-    file_name_xd_trajectory = LaunchConfiguration('file_name_xd_trajectory').perform(context) if index == "0" else ""
-    file_name_ud_trajectory = LaunchConfiguration('file_name_ud_trajectory').perform(context)
-
-    obstacles = LaunchConfiguration('obstacles').perform(context)
-
     print(f"\t- hovercraft\t\tID: {index} - Name: {name}")
-    print(f"\t - xd trajectory file: {file_name_xd_trajectory}")
     print(f"Configuration file: {params}")
-
-    control_dmpc_config = os.path.join(
-        get_package_share_directory('holohover_dmpc'),
+    
+    control_mpc_config = os.path.join(
+        get_package_share_directory('holohover_utils'),
         'config',
-        dmpc_config_folder,
-        'control_dmpc_config' + str(index) + '.yaml'
+        'common',
+        'control_mpc_config.yaml'
     )
 
     navigation_config = os.path.join(
@@ -43,37 +37,36 @@ def launch_setup(context):
     # - - - Nodes
     navigation_node = Node(
         package="holohover_navigation",
-        executable="navigation_disturbance",    
+        executable="navigation",
         parameters=[navigation_config, {'holohover_props_file' : params}],
         namespace= name,
-        output='screen',
         ros_arguments=['--disable-rosout-logs'],
+        output='screen',
     )
     
     controller_node = Node(
-        name="dmpc",
-        package="holohover_dmpc",
-        executable="control_dmpc_" + opt_alg,
-        parameters=[control_dmpc_config,
-        {"holohover_props_file": params, 'file_name_xd_trajectory': file_name_xd_trajectory, 'file_name_ud_trajectory': file_name_ud_trajectory, 'obstacles': obstacles.split('---')}],
+        name="mpc",
+        package="holohover_mpc",
+        executable="control_mpc",
+        parameters=[control_mpc_config,
+        {"holohover_props_file": params, "initial_x": initial_x, "initial_y": initial_y, "initial_yaw": initial_yaw}],
         namespace=name,
-        output='screen',
         ros_arguments=['--disable-rosout-logs'],
+        output='both',
     )
-
+    
     this_dir = os.path.dirname(os.path.abspath(__file__))
 
     recorder_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/recorder_specific.launch.py')),
-        launch_arguments=
-            {'name': name}.items()
-    )
+                PythonLaunchDescriptionSource(os.path.join(this_dir, 'common/recorder_specific.launch.py')),
+                launch_arguments=
+                    {'name': name}.items()
+            )
 
-    
     launch_description.append(controller_node)        
     launch_description.append(navigation_node)
-    launch_description.append(recorder_launch)
-    
+    # launch_description.append(recorder_launch)
+
     return launch_description
 
 
@@ -97,6 +90,20 @@ def generate_launch_description():
         description='Holohover params config file path.'
     ))
 
+    ld.add_action(DeclareLaunchArgument(
+        'initial_x', default_value='0.0',
+        description='Initial X position.'
+    ))
+
+    ld.add_action(DeclareLaunchArgument(
+        'initial_y', default_value='0.0',
+        description='Initial Y position.'
+    ))
+
+    ld.add_action(DeclareLaunchArgument(
+        'initial_yaw', default_value='0.0',
+        description='Initial Yaw angle.'
+    ))
 
     ld.add_action(opfunc)   
 
