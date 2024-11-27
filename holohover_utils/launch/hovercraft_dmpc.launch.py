@@ -30,8 +30,7 @@ def launch_setup(context):
     control_dmpc_config = os.path.join(
         get_package_share_directory('holohover_dmpc'),
         'config',
-        dmpc_config_folder,
-        'control_dmpc_config' + str(index) + '.yaml'
+        dmpc_config_folder + '.yaml',
     )
 
     navigation_config = os.path.join(
@@ -55,7 +54,7 @@ def launch_setup(context):
         package="holohover_dmpc",
         executable="control_dmpc_" + opt_alg,
         parameters=[control_dmpc_config,
-        {"holohover_props_file": params, 'file_name_xd_trajectory': file_name_xd_trajectory, 'file_name_ud_trajectory': file_name_ud_trajectory, 'obstacles': obstacles.split('---')}],
+        {"holohover_props_file": params, 'file_name_xd_trajectory': file_name_xd_trajectory, 'file_name_ud_trajectory': file_name_ud_trajectory, 'obstacles': obstacles.split('---'), 'my_id': int(index)}],
         namespace=name,
         output='screen',
         ros_arguments=['--disable-rosout-logs'],
