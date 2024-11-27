@@ -33,7 +33,7 @@ def launch_setup(context):
 
     #################### HOVERCRAFT STARTING ####################
     # Now iterate on each hovercraft and launch the nodes for each one
-    hovercraft_machines, hovercraft_names, hovercraft_params, _ = ecp.getHovercraft()
+    hovercraft_machines, hovercraft_names, hovercraft_params, hovercraft_initial_states = ecp.getHovercraft()
 
     print(f"Starting {len(hovercraft_names)} hovercraft")
     
@@ -41,7 +41,13 @@ def launch_setup(context):
         if hovercraft_machines[i] == machine or machine == "all":
             hovercraft_launch = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_lqr.launch.py')),
-                launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': hovercraft_params[i]}.items()
+                launch_arguments={
+                    'index': str(i), 
+                    'name': hovercraft_names[i], 
+                    'params': hovercraft_params[i],
+                    'initial_x': str(hovercraft_initial_states['x'][i]),
+                    'initial_y': str(hovercraft_initial_states['y'][i]),
+                    'initial_yaw': str(hovercraft_initial_states['theta'][i])}.items()
             )
 
             launch_description.append(hovercraft_launch)

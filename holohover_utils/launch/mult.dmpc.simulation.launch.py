@@ -107,7 +107,10 @@ def launch_setup(context):
                 launch_arguments={
                     'index': str(i + len(obstacle_names) - 1), 
                     'name': obstacle_names[i], 
-                    'params': obstacle_params[i]
+                    'params': obstacle_params[i],
+                    'initial_x': str(obstacle_initial_states['x'][i]),
+                    'initial_y': str(obstacle_initial_states['y'][i]),
+                    'initial_yaw': str(obstacle_initial_states['theta'][i])
                     }.items()
             )
 
