@@ -190,6 +190,12 @@ void SimulatorNode::simulation_step()
         current_control_signal(3) = control_msgs[i].motor_b_2;
         current_control_signal(4) = control_msgs[i].motor_c_1;
         current_control_signal(5) = control_msgs[i].motor_c_2;
+        
+        if(current_control_signal.array().isNaN().any()) {
+            RCLCPP_WARN(get_logger(), "Control signal for hovercraft %ld contains NaN values, setting it to zero.", i);
+            current_control_signal.setZero();
+        }
+
         motor_velocities_vec[i] = holohover_vec[i].Ad_motor * motor_velocities_vec[i] + holohover_vec[i].Bd_motor * current_control_signal;
         calculate_control_acc(states_vec[i], motor_velocities_vec[i], control_acc_vec[i], i);
         apply_control_acc(hovercraft_bodies[i], control_acc_vec[i], i);
@@ -234,6 +240,10 @@ void SimulatorNode::body_to_state(Holohover::state_t<double> &state, body_ptr &b
     state(3) = body->GetLinearVelocity().y;
     state(4) = body->GetAngle();
     state(5) = body->GetAngularVelocity();
+
+    if (state.array().isNaN().any()) {
+        RCLCPP_WARN(get_logger(), "State after simulator step contains NaN values.");
+    }
 }
 
 void SimulatorNode::apply_control_acc(body_ptr &body, Holohover::control_acc_t<double> control_acc, int i) {
