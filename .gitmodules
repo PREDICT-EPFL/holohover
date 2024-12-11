@@ -7,9 +7,9 @@
 [submodule "micro_ros/micro_ros_msgs"]
 	path = micro_ros/micro_ros_msgs
 	url = https://github.com/micro-ROS/micro_ros_msgs.git
-[submodule "holohover_mpc/external/laopt"]
-	path = holohover_mpc/external/laopt
-	url = git@github.com:PREDICT-EPFL/laopt.git
 [submodule "holohover_firmware/src/micro_ros_espidf_component"]
 	path = holohover_firmware/src/micro_ros_espidf_component
 	url = https://github.com/micro-ROS/micro_ros_espidf_component.git
+[submodule "holohover_mpc/external/laopt"]
+	path = holohover_mpc/external/laopt
+	url = git@github.com:PREDICT-EPFL/laopt.git
