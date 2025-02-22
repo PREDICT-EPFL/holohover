@@ -6,10 +6,8 @@ experiment:
   rviz_props_file: "common/holohover_params_new.yaml" 
   opt_alg: "dsqp"
 
-  # file_name_xd_trajectory: "clover/clover_traj_xd_N7_150_t8_1.csv"
-  # file_name_ud_trajectory: "clover/clover_traj_xd_N7_150_t8_1.csv"
   file_name_xd_trajectory: "clover/clover_traj_xd_N20_50_t8.csv"
-  file_name_ud_trajectory: "clover/clover_traj_xd_N20_50_t8.csv"
+  file_name_ud_trajectory: "clover/clover_traj_ud_N20_50_t8.csv"
   dmpc_config_folder: "QCQP_N20_traj_obs"
 
 obstacles:
