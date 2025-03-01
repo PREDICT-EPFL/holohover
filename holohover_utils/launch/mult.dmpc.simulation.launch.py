@@ -60,9 +60,15 @@ def launch_setup(context):
         output='both'
     )
 
+    ## Rosbag Recorder
+    recorder_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common', 'recorder.launch.py'))
+    )
+
     if ecp.getCommonNodesMachine() == machine or machine == "all":
         launch_description.append(trigger_node)
         launch_description.append(trajectory_generator_node)
+        launch_description.append(recorder_launch)
 
     #################### COMMON NODES STARTING - END ####################
    
