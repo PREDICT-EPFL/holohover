@@ -16,7 +16,7 @@ obstacles:
     initial_state: [0.9, 0.3, 0, 0, 0, 0]
     holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
     color : [1.0, 0.0, 1.0, 1.0]
-    simulate: false
+    simulate: false 
     machine: la016
 
 hovercraft:
