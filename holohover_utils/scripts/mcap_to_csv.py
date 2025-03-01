@@ -33,6 +33,7 @@ def euler_from_quaternion(x, y, z, w):
     
     return roll_x, pitch_y, yaw_z # in radians
 
+
 def read_mcap_file(path, topics=None):
     def get_attributes(obj):
         return filter(lambda a: not a.startswith('_'), dir(obj))
@@ -71,6 +72,49 @@ def read_mcap_file(path, topics=None):
 
     return topic_msgs
 
+
+def process_file(file_path, topic_mapping=None):
+    # Check if this is likely an MCAP file before trying to process it
+    _, ext = os.path.splitext(file_path)
+    if ext.lower() not in ['.mcap', '']:  # Include empty extension as some MCAP files may not have an extension
+        print(f"Skipping {file_path} (not an MCAP file)")
+        return
+    
+    try:
+        print(f"Processing file: {file_path}")
+        topic_msgs = read_mcap_file(file_path, topic_mapping.keys() if topic_mapping is not None else None)
+        
+        if topic_mapping is None:
+            class TopicToFile:
+                def __getitem__(self, topic):
+                    return topic.strip('/').replace('/', '_')
+            topic_mapping = TopicToFile()
+        
+        dir_path = os.path.dirname(file_path)
+        base_name = os.path.splitext(os.path.basename(file_path))[0]
+        
+        for topic, msgs in topic_msgs.items():
+            df = pd.DataFrame(msgs)
+            output_name = f'{base_name}_{topic_mapping[topic]}.csv'
+            output_path = os.path.join(dir_path, output_name)
+            df.to_csv(output_path, index=False)
+            print(f"  Created {output_path}")
+        
+        if not topic_msgs:
+            print(f"  No messages found in {file_path}")
+    
+    except Exception as e:
+        print(f"Error processing file {file_path}: {e}")
+
+
+def process_directory(dir_path, topic_mapping=None):
+    # Recursively process all files in the given directory and its subdirectories.
+    for root, dirs, files in os.walk(dir_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            process_file(file_path, topic_mapping)
+
+
 def main():
 
     # maps topic to csv file
@@ -80,19 +124,21 @@ def main():
     #     '/car/set/control': 'control',
     # }
 
-    topic_msgs = read_mcap_file(sys.argv[1], topic_mapping.keys() if topic_mapping is not None else None)
-
-    if topic_mapping is None:
-        class TopicToFile:
-            def __getitem__(self, topic):
-                return topic.strip('/').replace('/', '_')
-        topic_mapping = TopicToFile()
-
-    dir = os.path.dirname(sys.argv[1])
-
-    for topic, msgs in topic_msgs.items():
-        df = pd.DataFrame(msgs)
-        df.to_csv(os.path.join(dir, f'{topic_mapping[topic]}.csv'), index=False)
+    path = sys.argv[1]
+    
+    if len(sys.argv) < 2:
+        print("Usage: python script.py <file_or_directory_path>")
+        sys.exit(1)
+    
+    path = sys.argv[1]
+    
+    if os.path.isdir(path):
+        # Process directory recursively
+        print(f"Processing directory recursively: {path}")
+        process_directory(path, topic_mapping)
+    else:
+        # Process single file
+        process_file(path, topic_mapping)
 
 if __name__ == '__main__':
     main()
