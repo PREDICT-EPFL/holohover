@@ -48,23 +48,23 @@ HolohoverControlMPCNode::HolohoverControlMPCNode() :
 void HolohoverControlMPCNode::init_topics()
 {
     control_publisher = this->create_publisher<holohover_msgs::msg::HolohoverControlStamped>(
-            "drone/control",
+            "control",
             rclcpp::SensorDataQoS());
 
     laopt_frequency_publisher = this->create_publisher<holohover_msgs::msg::HolohoverLaoptSpeedStamped>(
-            "control/laopt_speed",
+            "laopt_speed",
             rclcpp::SensorDataQoS());
 
     HolohoverTrajectory_publisher = this->create_publisher<holohover_msgs::msg::HolohoverTrajectory>(
-            "control/HolohoverTrajectory",
+            "HolohoverTrajectory",
             rclcpp::SensorDataQoS());
 
     state_subscription = this->create_subscription<holohover_msgs::msg::HolohoverStateStamped>(
-            "navigation/state", 10,
+            "state", 10,
             std::bind(&HolohoverControlMPCNode::state_callback, this, std::placeholders::_1));
 
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
-            "control/state_ref", 10,
+            "state_ref", 10,
             std::bind(&HolohoverControlMPCNode::ref_callback, this, std::placeholders::_1));
 }
 

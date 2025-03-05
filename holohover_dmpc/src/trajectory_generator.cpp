@@ -31,7 +31,7 @@ TrajectoryGenerator::TrajectoryGenerator() :
     {
         while(true) {
             try {
-                std::cout << "Insert the name of the YAML file for DMPC hovercraft: ";
+                std::cout << "Insert the name of the YAML file for DMPC hovercraft (or none): ";
                 std::cin >> filename;
 
                 if(filename == "none") {

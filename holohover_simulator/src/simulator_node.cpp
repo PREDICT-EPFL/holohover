@@ -12,8 +12,11 @@ SimulatorNode::SimulatorNode() :
 {
     init_box2d_world();
 
-    viz_publisher = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization/drone", 10);
-    table_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/table_pose_raw", rclcpp::SensorDataQoS());
+    are_all_simulated = std::all_of(simulation_settings.simulated.begin(), simulation_settings.simulated.end(), [](bool value) { return value; });
+
+
+    if(are_all_simulated)
+        table_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/table_pose_raw", rclcpp::SensorDataQoS());
 
     init_hovercraft();
     init_timer();
@@ -56,7 +59,13 @@ void SimulatorNode::init_hovercraft()
     hovercraft_shape.m_radius = simulation_settings.hovercraft_radius;
     double density;
 
+    int j = -1;
     for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
+
+        if(!simulation_settings.simulated[i])
+            continue;
+        j++;
+
         RCLCPP_INFO(get_logger(), "Hovercraft id: %ld", simulation_settings.hovercraft_ids[i]);
         
         HolohoverProps hp = load_holohover_pros(simulation_settings.holohover_props_files[i]);
@@ -90,7 +99,7 @@ void SimulatorNode::init_hovercraft()
 
         // control acc
         Holohover::control_acc_t<double> current_control_acc;
-        calculate_control_acc(state, motor_velocities, current_control_acc, i);
+        calculate_control_acc(state, motor_velocities, current_control_acc, j);
         control_acc_vec.push_back(current_control_acc);
 
         // control messages
@@ -110,7 +119,7 @@ void SimulatorNode::init_hovercraft()
         auto topic_name = "/" + simulation_settings.hovercraft_names[i] + "/control";
 
         std::function<void(const holohover_msgs::msg::HolohoverControlStamped::SharedPtr)> callback = 
-                 std::bind(&SimulatorNode::control_callback, this, std::placeholders::_1, i);
+                 std::bind(&SimulatorNode::control_callback, this, std::placeholders::_1, j);
 
         auto sub = this->create_subscription<holohover_msgs::msg::HolohoverControlStamped>(topic_name, rclcpp::SensorDataQoS(), callback);
 
@@ -130,7 +139,7 @@ void SimulatorNode::init_timer()
             std::chrono::duration<double>(simulation_settings.period),
             std::bind(&SimulatorNode::simulation_step, this));
 
-    if(simulation_settings.are_all_simulated)
+    if(are_all_simulated)
     {
         table_timer = this->create_wall_timer(
                 std::chrono::duration<double>(simulation_settings.table_publish_period),
@@ -181,6 +190,12 @@ void SimulatorNode::simulation_step()
         current_control_signal(3) = control_msgs[i].motor_b_2;
         current_control_signal(4) = control_msgs[i].motor_c_1;
         current_control_signal(5) = control_msgs[i].motor_c_2;
+        
+        if(current_control_signal.array().isNaN().any()) {
+            RCLCPP_WARN(get_logger(), "Control signal for hovercraft %ld contains NaN values, setting it to zero.", i);
+            current_control_signal.setZero();
+        }
+
         motor_velocities_vec[i] = holohover_vec[i].Ad_motor * motor_velocities_vec[i] + holohover_vec[i].Bd_motor * current_control_signal;
         calculate_control_acc(states_vec[i], motor_velocities_vec[i], control_acc_vec[i], i);
         apply_control_acc(hovercraft_bodies[i], control_acc_vec[i], i);
@@ -225,6 +240,10 @@ void SimulatorNode::body_to_state(Holohover::state_t<double> &state, body_ptr &b
     state(3) = body->GetLinearVelocity().y;
     state(4) = body->GetAngle();
     state(5) = body->GetAngularVelocity();
+
+    if (state.array().isNaN().any()) {
+        RCLCPP_WARN(get_logger(), "State after simulator step contains NaN values.");
+    }
 }
 
 void SimulatorNode::apply_control_acc(body_ptr &body, Holohover::control_acc_t<double> control_acc, int i) {

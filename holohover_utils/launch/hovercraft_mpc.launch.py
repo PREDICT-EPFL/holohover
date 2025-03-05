@@ -21,11 +21,11 @@ def launch_setup(context):
     print(f"\t- hovercraft\t\tID: {index} - Name: {name}")
     print(f"Configuration file: {params}")
     
-    control_lqr_config = os.path.join(
+    control_mpc_config = os.path.join(
         get_package_share_directory('holohover_utils'),
         'config',
         'common',
-        'control_lqr_config.yaml'
+        'control_mpc_config.yaml'
     )
 
     navigation_config = os.path.join(
@@ -37,7 +37,7 @@ def launch_setup(context):
     # - - - Nodes
     navigation_node = Node(
         package="holohover_navigation",
-        executable="navigation_disturbance",
+        executable="navigation",
         parameters=[navigation_config, {'holohover_props_file' : params}],
         namespace= name,
         ros_arguments=['--disable-rosout-logs'],
@@ -45,10 +45,10 @@ def launch_setup(context):
     )
     
     controller_node = Node(
-        name="lqr",
-        package="holohover_control",
-        executable="control_lqr",
-        parameters=[control_lqr_config,
+        name="mpc",
+        package="holohover_mpc",
+        executable="control_mpc",
+        parameters=[control_mpc_config,
         {"holohover_props_file": params, "initial_x": initial_x, "initial_y": initial_y, "initial_yaw": initial_yaw}],
         namespace=name,
         ros_arguments=['--disable-rosout-logs'],

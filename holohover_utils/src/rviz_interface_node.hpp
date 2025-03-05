@@ -41,6 +41,9 @@ private:
 
     std::vector<HolohoverMarkers> holohover_markers;
 
+    visualization_msgs::msg::MarkerArray wall_markers;
+    rclcpp::TimerBase::SharedPtr wall_timer;
+
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_publisher;
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr> control_subscriptions;
@@ -55,6 +58,8 @@ private:
     void state_callback(holohover_msgs::msg::HolohoverStateStamped::SharedPtr state_msg, long int hovercraft_id);
     HolohoverMarkers init_holohover_markers(std::string name, std::vector<double> colors);
     void init_props();
+    void init_wall_markers();
+    void publish_walls();
 
 };
 

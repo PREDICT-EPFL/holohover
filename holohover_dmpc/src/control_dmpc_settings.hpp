@@ -40,6 +40,7 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
 {
     ControlDMPCSettings settings;
     
+    settings.my_id = node.declare_parameter<int>("my_id");
     settings.dmpc_period = node.declare_parameter<double>("dmpc_period");
     settings.control_period = node.declare_parameter<double>("control_period");
     settings.rho = node.declare_parameter<double>("rho");
@@ -48,20 +49,19 @@ ControlDMPCSettings load_control_dmpc_settings(rclcpp::Node &node)
     settings.polish = node.declare_parameter<bool>("polish");
     settings.nx = node.declare_parameter<int>("nx");
     settings.nu = node.declare_parameter<int>("nu");
-    settings.nxd = node.declare_parameter<int>("nxd");
-    settings.nud = node.declare_parameter<int>("nud");
+    settings.nxd = node.declare_parameter<std::vector<int>>("nxd")[settings.my_id];
+    settings.nud = node.declare_parameter<std::vector<int>>("nud")[settings.my_id];
     settings.N = node.declare_parameter<int>("N");
     settings.idx_eqx0 = node.declare_parameter<int>("idx_eqx0");
     settings.idx_equ0 = node.declare_parameter<int>("idx_equ0");
-    settings.idx_u0 = node.declare_parameter<int>("idx_u0");
-    settings.idx_u1 = node.declare_parameter<int>("idx_u1");
-    settings.idx_x0 = node.declare_parameter<int>("idx_x0");
+    settings.idx_u0 = node.declare_parameter<std::vector<int>>("idx_u0")[settings.my_id];
+    settings.idx_u1 = node.declare_parameter<std::vector<int>>("idx_u1")[settings.my_id];
+    settings.idx_x0 = node.declare_parameter<std::vector<int>>("idx_x0")[settings.my_id];
     settings.max_wait_time = node.declare_parameter<double>("max_wait_time");
     settings.max_wait_fraction = node.declare_parameter<double>("max_wait_fraction");
 
     settings.Nagents = node.declare_parameter<int>("Nagents");
     settings.Nobs = node.declare_parameter<int>("Nobs");
-    settings.my_id = node.declare_parameter<int>("my_id");
     settings.folder_name_sprob = ament_index_cpp::get_package_share_directory("holohover_dmpc") + "/ocp_specs/" + node.declare_parameter<std::string>("folder_name_sprob");
     
     

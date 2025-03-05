@@ -1,4 +1,4 @@
-control_mpc:
+/**:
   ros__parameters:
     period: 0.01
 

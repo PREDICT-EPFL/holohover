@@ -60,8 +60,6 @@ private:
 
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr table_pose_subscription;
     void table_callback(const geometry_msgs::msg::PoseStamped &raw_pose);
-    
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr viz_publisher;
 
     std::vector<rclcpp::Subscription<holohover_msgs::msg::HolohoverControlStamped>::SharedPtr> control_subscriptions;
 
@@ -71,6 +69,7 @@ private:
     std::vector<Holohover::state_t<double>>                     states_vec;
     std::vector<Holohover::control_force_t<double>>             motor_velocities_vec; 
     std::vector<Holohover::control_acc_t<double>>               control_acc_vec;
+    bool are_all_simulated;
 
     void init_hovercraft();
     void init_timer();

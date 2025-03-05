@@ -433,6 +433,14 @@ void HolohoverDmpcAdmmNode::run_dmpc()
     convert_u_acc_timer.toc();
 
     publish_signal_timer.tic();
+
+    if(u_signal.array().isNaN().any()) {
+        RCLCPP_WARN(this->get_logger(), " - run_dmpc function - Control signal message with NaN values!");
+        RCLCPP_WARN(this->get_logger(), "u_signal: [%f, %f, %f, %f, %f, %f]", u_signal(0), u_signal(1), u_signal(2), u_signal(3), u_signal(4), u_signal(5));
+        RCLCPP_WARN(this->get_logger(), "Setting it to zero before publishing.");
+        u_signal.setZero();
+    }
+
     if (control_settings.control_period == 0) {
         holohover_msgs::msg::HolohoverControlStamped control_msg;
         control_msg.header.frame_id = "body";
@@ -526,6 +534,13 @@ void HolohoverDmpcAdmmNode::publish_control()
 
     // clip between 0 and 1
     u_signal_publish = u_signal_publish.cwiseMax(holohover_props.idle_signal).cwiseMin(1);
+
+    if(u_signal_publish.array().isNaN().any()) {
+        RCLCPP_WARN(this->get_logger(), " - publish_control function - Control signal message with NaN values!");
+        RCLCPP_WARN(this->get_logger(), "u_signal: [%f, %f, %f, %f, %f, %f]", u_signal_publish(0), u_signal_publish(1), u_signal_publish(2), u_signal_publish(3), u_signal_publish(4), u_signal_publish(5));
+        RCLCPP_WARN(this->get_logger(), "Setting it to zero before publishing.");
+        u_signal_publish.setZero();
+    }
 
     holohover_msgs::msg::HolohoverControlStamped control_msg;
     control_msg.header.frame_id = "body";
