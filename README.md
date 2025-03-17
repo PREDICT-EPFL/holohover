@@ -1,5 +1,8 @@
 # Holohover
 
+
+[![DOI](https://img.shields.io/badge/DOI-10.48550/arXiv.2409.13334-green.svg)](https://doi.org/10.48550/arXiv.2409.13334) [![Preprint](https://img.shields.io/badge/Preprint-arXiv-blue.svg)](https://arxiv.org/abs/2409.13334) [![Funding](https://img.shields.io/badge/Grant-NCCR%20Automation%20(51NF40\_225155)-90e3dc.svg)](https://nccr-automation.ch/)
+
 This repository contains the ROS2 packages necessary to run the Holohover system.
 
 ## Setup
@@ -16,7 +19,6 @@ Below is a summary of the packages in this repository. For detailed information,
 
 - **`holohover_firmware`**: Firmware for the ESP32 used in the earlier version of the hovercraft.
 - **`holohover_common`**: Shared code and utilities for other packages.  
-  *ToDo*: Are the `signal_compensation/python_bindings` files still in use?
 - **`holohover_control`**: Nodes for controlling a single hovercraft, including control signal generation for System Identification.
 - **`holohover_dmpc`**: Implementation of the DMPC distributed controller.
 - **`holohover_drivers`**: Code for the Radxa SBCs to control motors and interface with sensors.
@@ -41,10 +43,17 @@ This repository includes the following submodules:
   - `micro_ros_agent`
   - `micro_ros_espidf_component`
 
-## Credits
+## Citing our Work
 
-*ToDo*
+To cite our work in other academic papers, please use the following BibTex entry:
+```
+@INPROCEEDINGS{stomberg2025,
+  author={Stomberg, Gösta and Schwan, Roland and Grillo, Andrea and Jones, Colin N. and Faulwasser, Timm},
+  booktitle={International Conference on Robotics and Automation (ICRA)}, 
+  title={Cooperative distributed model predictive control for embedded systems: Experiments with hovercraft formations}, 
+  year={2025}}
+```
 
 ## License
 
-*ToDo*
+BSD 2-Clause
