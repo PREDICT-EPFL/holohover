@@ -1,0 +1,35 @@
+#
+# Definition of all trackable objects
+# Identifier corresponds to Streaming ID set in Motive
+#
+mocap_node:
+  ros__parameters:
+    rigid_bodies:
+      '20':
+        pose: optitrack/table_pose_raw
+      # '21':
+      #   pose: optitrack/h0_pose_raw
+      # '22':
+      #   pose: optitrack/h1_pose_raw
+      # '23':
+      #   pose: optitrack/h2_pose_raw
+      # '24':
+      #   pose: optitrack/h3_pose_raw
+
+      '25':
+        pose: optitrack/h0_pose_raw
+      '26':
+        pose: optitrack/h1_pose_raw
+      '27':
+        pose: optitrack/h2_pose_raw
+      '28':
+        pose: optitrack/h3_pose_raw
+      '29':
+        pose: optitrack/o4_pose_raw
+    free_markers: true # set to true to publish marker positions for markers not in rigid bodies
+    optitrack_config:
+      # should match the Multicast Interface in Motive streaming panel
+      multicast_address: 239.255.42.120
+      command_port: 1510
+      data_port: 1511
+      enable_optitrack: true

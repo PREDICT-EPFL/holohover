@@ -31,7 +31,6 @@ public:
     HolohoverProps props;
     control_force_t<double> min_thrust;
     control_force_t<double> max_thrust;
-    Eigen::Map<Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> configuration_matrix;
 
     // continuous system dynamics for input u = (a_x, a_y, w_dot_z)
     Eigen::Matrix<double, NX, NX> A;
@@ -50,8 +49,9 @@ public:
     bool solver_initialized = false;
 
     explicit Holohover(HolohoverProps &_props, double _dt = 0.01)
-        : props(_props), configuration_matrix(props.configuration_matrix.data()), dt(_dt)
+        : props(_props), dt(_dt)
     {
+        std::cout << "Generating Hovercraft model with dt = " << dt << std::endl;
         control_force_t<double> min_signal = control_force_t<double>::Constant(props.idle_signal);
         control_force_t<double> max_signal = control_force_t<double>::Constant(1.0);
         signal_to_thrust(min_signal, min_thrust);
@@ -127,6 +127,7 @@ public:
 
         if (props.use_configuration_matrix)
         {
+            Eigen::Map<const Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> configuration_matrix(props.configuration_matrix.data());
             linear_acceleration_body = configuration_matrix.topLeftCorner<2, NU>() * u;
             angular_acceleration = configuration_matrix.bottomLeftCorner<1, NU>() * u;
         }
@@ -187,6 +188,7 @@ public:
 
         if (props.use_configuration_matrix)
         {
+            Eigen::Map<const Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> configuration_matrix(props.configuration_matrix.data());
             force_to_linear_acceleration_body = configuration_matrix.topLeftCorner<2, NU>();
             force_to_angular_acceleration = configuration_matrix.bottomLeftCorner<1, NU>();
         }
@@ -303,7 +305,7 @@ public:
         // angular acceleration around z-axis mapping
         uncorrected_map.template bottomLeftCorner<1, NU>() = force_to_angular_acceleration;
 
-        // correction matrix for linear accelerations due to CoM
+        // correction matrix for linear accelerations due to CoM
         Eigen::Matrix<T, NA, NA> CoM_correction;
         CoM_correction << 1.0, 0.0, props.CoM[1],
                           0.0, 1.0, -props.CoM[0],
@@ -341,8 +343,8 @@ public:
         // We solve a QP to find the minimum energy mapping satisfying max thrust constraints
         // Slacks are added to make sure the QP is always feasible
         //
-        // min   ||F_i||^2_2 + mu * (1 - alpha)^2 + mu * (1 - beta)^2
-        // s.t.  (alpha * a_x, alpha * a_y, beta * w_dot_z) = M @ (F_1,...,F_6) + g
+        // min   ||F_i||^2_2 + mu * (1 - alpha)^2 + mu * (1 - beta)^2
+        // s.t.  (alpha * a_x, alpha * a_y, beta * w_dot_z) = M @ (F_1,...,F_6) + g
         //       0 <= F_i <= F_max
         //
         // translated into standard form
@@ -407,8 +409,8 @@ public:
 
     template<typename T>
     inline void non_linear_state_dynamics_discrete(const state_t<T> &x,
-                                        const control_force_t<T> &u,
-                                        state_t<T> &x_next) const noexcept
+                                                   const control_force_t<T> &u,
+                                                   state_t<T> &x_next) const noexcept
     {
         // RK4
         Holohover::state_t<T> k1, k2, k3, k4;
@@ -453,7 +455,6 @@ public:
     template<typename T>
     inline void thrust_to_signal(const control_force_t<T> &u_thrust, control_force_t<T> &u_signal) const noexcept
     {
-        // 
         control_force_t<T> u_thrust_clipped = u_thrust;
         u_thrust_clipped = u_thrust_clipped.cwiseMin(max_thrust).cwiseMax(0.0);
         u_signal = 0.6 * u_thrust_clipped; // first linear guess

@@ -2,7 +2,7 @@
 #define HOLOHOVER_COMMON_HOLOHOVER_PROPS_HPP
 
 #include "vector"
-#include "rclcpp/rclcpp.hpp"
+#include "yaml-cpp/yaml.h"
 
 struct HolohoverProps
 {
@@ -14,7 +14,7 @@ struct HolohoverProps
     double inertia;
     // minimum idle signal
     double idle_signal;
-    // first order time constant of motor
+    // first order time constant of motor
     double motor_tau;
     // configuration matrix
     bool use_configuration_matrix;
@@ -42,39 +42,42 @@ struct HolohoverProps
     std::vector<double> learned_motor_vec_c_2;
 };
 
-HolohoverProps load_holohover_pros(rclcpp::Node &node)
+HolohoverProps load_holohover_pros(std::string filename)
 {
+    YAML::Node config = YAML::LoadFile(filename);
+
     HolohoverProps props;
 
-    props.mass = node.declare_parameter<double>("mass");
-    props.CoM = node.declare_parameter<std::vector<double>>("CoM");
-    props.inertia = node.declare_parameter<double>("inertia");
-    props.idle_signal = node.declare_parameter<double>("idle_signal");
-    props.motor_tau = node.declare_parameter<double>("motor_tau");
+    props.mass = config["mass"].as<double>();
+    
+    props.CoM = config["CoM"].as<std::vector<double>>();
+    props.inertia = config["inertia"].as<double>();
+    props.idle_signal = config["idle_signal"].as<double>();
+    props.motor_tau = config["motor_tau"].as<double>();
 
-    props.use_configuration_matrix = node.declare_parameter<bool>("use_configuration_matrix");
-    props.configuration_matrix = node.declare_parameter<std::vector<double>>("configuration_matrix");
+    props.use_configuration_matrix = config["use_configuration_matrix"].as<bool>();
+    props.configuration_matrix = config["configuration_matrix"].as<std::vector<double>>();
+    
+    props.signal_to_thrust_coeffs_motor_1 = config["signal_to_thrust_coeffs_motor_1"].as<std::vector<double>>();
+    props.signal_to_thrust_coeffs_motor_2 = config["signal_to_thrust_coeffs_motor_2"].as<std::vector<double>>();
+    props.signal_to_thrust_coeffs_motor_3 = config["signal_to_thrust_coeffs_motor_3"].as<std::vector<double>>();
+    props.signal_to_thrust_coeffs_motor_4 = config["signal_to_thrust_coeffs_motor_4"].as<std::vector<double>>();
+    props.signal_to_thrust_coeffs_motor_5 = config["signal_to_thrust_coeffs_motor_5"].as<std::vector<double>>();
+    props.signal_to_thrust_coeffs_motor_6 = config["signal_to_thrust_coeffs_motor_6"].as<std::vector<double>>();
 
-    props.signal_to_thrust_coeffs_motor_1 = node.declare_parameter<std::vector<double>>("signal_to_thrust_coeffs_motor_1");
-    props.signal_to_thrust_coeffs_motor_2 = node.declare_parameter<std::vector<double>>("signal_to_thrust_coeffs_motor_2");
-    props.signal_to_thrust_coeffs_motor_3 = node.declare_parameter<std::vector<double>>("signal_to_thrust_coeffs_motor_3");
-    props.signal_to_thrust_coeffs_motor_4 = node.declare_parameter<std::vector<double>>("signal_to_thrust_coeffs_motor_4");
-    props.signal_to_thrust_coeffs_motor_5 = node.declare_parameter<std::vector<double>>("signal_to_thrust_coeffs_motor_5");
-    props.signal_to_thrust_coeffs_motor_6 = node.declare_parameter<std::vector<double>>("signal_to_thrust_coeffs_motor_6");
+    props.motor_pos_a_1 = config["motor_pos_a_1"].as<std::vector<double>>();
+    props.motor_pos_a_2 = config["motor_pos_a_2"].as<std::vector<double>>();
+    props.motor_pos_b_1 = config["motor_pos_b_1"].as<std::vector<double>>();
+    props.motor_pos_b_2 = config["motor_pos_b_2"].as<std::vector<double>>();
+    props.motor_pos_c_1 = config["motor_pos_c_1"].as<std::vector<double>>();
+    props.motor_pos_c_2 = config["motor_pos_c_2"].as<std::vector<double>>();
 
-    props.motor_pos_a_1 = node.declare_parameter<std::vector<double>>("motor_pos_a_1");
-    props.motor_pos_a_2 = node.declare_parameter<std::vector<double>>("motor_pos_a_2");
-    props.motor_pos_b_1 = node.declare_parameter<std::vector<double>>("motor_pos_b_1");
-    props.motor_pos_b_2 = node.declare_parameter<std::vector<double>>("motor_pos_b_2");
-    props.motor_pos_c_1 = node.declare_parameter<std::vector<double>>("motor_pos_c_1");
-    props.motor_pos_c_2 = node.declare_parameter<std::vector<double>>("motor_pos_c_2");
-
-    props.learned_motor_vec_a_1 = node.declare_parameter<std::vector<double>>("learned_motor_vec_a_1");
-    props.learned_motor_vec_a_2 = node.declare_parameter<std::vector<double>>("learned_motor_vec_a_2");
-    props.learned_motor_vec_b_1 = node.declare_parameter<std::vector<double>>("learned_motor_vec_b_1");
-    props.learned_motor_vec_b_2 = node.declare_parameter<std::vector<double>>("learned_motor_vec_b_2");
-    props.learned_motor_vec_c_1 = node.declare_parameter<std::vector<double>>("learned_motor_vec_c_1");
-    props.learned_motor_vec_c_2 = node.declare_parameter<std::vector<double>>("learned_motor_vec_c_2");
+    props.learned_motor_vec_a_1 = config["learned_motor_vec_a_1"].as<std::vector<double>>();
+    props.learned_motor_vec_a_2 = config["learned_motor_vec_a_2"].as<std::vector<double>>();
+    props.learned_motor_vec_b_1 = config["learned_motor_vec_b_1"].as<std::vector<double>>();
+    props.learned_motor_vec_b_2 = config["learned_motor_vec_b_2"].as<std::vector<double>>();
+    props.learned_motor_vec_c_1 = config["learned_motor_vec_c_1"].as<std::vector<double>>();
+    props.learned_motor_vec_c_2 = config["learned_motor_vec_c_2"].as<std::vector<double>>();
 
     return props;
 }

@@ -1,0 +1,39 @@
+/**:
+  ros__parameters:
+    period: 0.01
+
+    initial_state: [0.0, 0.0, 0.0, # x, y, yaw
+                    0.0, 0.0, 0.0, # v_x, v_y, w_z
+                    0.0, 0.0, 0.0, # dist_x, dist_y, dist_yaw
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # motor velocities
+
+    state_cov_x: 1e-6
+    state_cov_y: 1e-6
+    state_cov_yaw: 1e-6
+
+    state_cov_x_dot: 1e1
+    state_cov_y_dot: 1e1
+    state_cov_yaw_dot: 1e1
+
+    state_cov_x_dot_dot: 1e3
+    state_cov_y_dot_dot: 1e3
+    state_cov_yaw_dot_dot: 4e3
+
+    state_cov_dist_x: 8e-1
+    state_cov_dist_y: 8e-1
+    state_cov_dist_yaw: 5e-1
+
+    control_cov_a_x: 1e3
+    control_cov_a_y: 1e3
+    control_cov_w_dot_z: 1e3
+
+    sensor_acc_cov_x: 1e6
+    sensor_acc_cov_y: 1e6
+    sensor_gyro_cov_z: 1e6
+
+    sensor_mouse_cov_x: 1e6
+    sensor_mouse_cov_y: 1e6
+
+    sensor_pose_cov_x: 1e-6
+    sensor_pose_cov_y: 1e-6
+    sensor_pose_cov_yaw: 1e-6

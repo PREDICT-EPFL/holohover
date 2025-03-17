@@ -16,9 +16,11 @@ find_package(ament_cmake_python REQUIRED)
 
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(yaml-cpp REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
@@ -27,9 +29,10 @@ find_package(holohover_common REQUIRED)
 
 add_executable(rviz_interface src/rviz_interface_node.cpp)
 ament_target_dependencies(rviz_interface rclcpp tf2 visualization_msgs holohover_msgs holohover_common)
+target_link_libraries(rviz_interface yaml-cpp)
 
 add_executable(optitrack_interface src/optitrack_interface_node.cpp)
-ament_target_dependencies(optitrack_interface rclcpp geometry_msgs tf2 tf2_geometry_msgs)
+ament_target_dependencies(optitrack_interface rclcpp geometry_msgs tf2 tf2_geometry_msgs holohover_common)
 
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})

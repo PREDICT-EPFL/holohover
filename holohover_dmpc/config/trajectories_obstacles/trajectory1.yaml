@@ -1,0 +1,58 @@
+time_step: 10 
+
+names: [o4, o5, o6]
+ids: [4, 5, 6]
+
+trajectory:
+  - step:
+      - id: 4
+        x: 0.0
+        y: 0.0
+        yaw: 0.0
+      - id: 5
+        x: 0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 6
+        x: 0.5
+        y: 0.0
+        yaw: 0.0
+  - step:
+      - id: 4
+        x: -0.5
+        y: 0.0
+        yaw: 0.0
+      - id: 5
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 6
+        x: 0.0
+        y: 0.0
+        yaw: 0.0
+  - step:
+      - id: 4
+        x: 0.0
+        y: 0.0
+        yaw: 0.0
+      - id: 5
+        x: 0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 6
+        x: 0.5
+        y: 0.0
+        yaw: 0.0
+  - step:
+      - id: 4
+        x: -0.5
+        y: 0.0
+        yaw: 0.0
+      - id: 5
+        x: -0.25
+        y: 0.0
+        yaw: 0.0
+      - id: 6
+        x: 0.0
+        y: 0.0
+        yaw: 0.0
