@@ -7,11 +7,7 @@ This repository contains the ROS2 packages necessary to run the Holohover system
 
 ## Setup
 
-The ROS2 system is designed to run on Docker containers. Setup scripts and documentation can be found in the [Holohover Docker repository](https://github.com/grilloandrea6/holohover-docker/).
-
-## Starting the System
-
-The `holohover_utils` package includes the ROS launch files required to start the system. Refer to the [holohover_utils README](./holohover_utils/README.md) for detailed instructions.
+The ROS2 system is designed to run on Docker containers. Setup scripts and documentation can be found in the [Holohover Docker repository](https://github.com/PREDICT-EPFL/holohover-docker).
 
 ## Packages Overview
 
