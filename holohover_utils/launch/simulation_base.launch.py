@@ -161,7 +161,8 @@ def launch_setup(context):
                       "initial_state_vy":      initial_states['vy'], 
                       "initial_state_w":       initial_states['w'],
                       "holohover_props_files": holohover_params,
-                      "color": colors,                                        
+                      "color": colors,    
+                      "simulated":  [True]                
                     }],
         output='screen'
     )
@@ -178,7 +179,8 @@ def launch_setup(context):
                       "initial_state_vx":      initial_states['vx'], 
                       "initial_state_vy":      initial_states['vy'], 
                       "initial_state_w":       initial_states['w'],
-                      "holohover_props_files": holohover_params                                          
+                      "holohover_props_files": holohover_params,
+                      "simulated": [True]                                        
                     }],
         output='screen'
     )
