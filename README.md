@@ -1,5 +1,14 @@
 # Holohover
 
+## Updates
+* Sep 20: create a new branch for time-optimal motion planning
+* Oct 1: add puck simulation, collision detector, lqr emergency stop
+  TODO:
+    - check initialization (initial state, initial state ref, etc)
+    - check collision performance
+    - upgrade emergency stop (so far emergency stop NOT= stop since simulation environment, e.g., no friction)
+    
+## ROS2 Setup
 
 [![DOI](https://img.shields.io/badge/DOI-10.48550/arXiv.2409.13334-green.svg)](https://doi.org/10.48550/arXiv.2409.13334) [![Preprint](https://img.shields.io/badge/Preprint-arXiv-blue.svg)](https://arxiv.org/abs/2409.13334) [![Funding](https://img.shields.io/badge/Grant-NCCR%20Automation%20(51NF40\_225155)-90e3dc.svg)](https://nccr-automation.ch/)
 

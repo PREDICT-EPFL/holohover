@@ -14,6 +14,13 @@
 #include "holohover_common/utils/holohover_props.hpp"
 #include "control_lqr_settings.hpp"
 
+//GS
+#include <iostream>
+#include <fstream>
+#include <chrono>
+#include <ament_index_cpp/get_package_prefix.hpp>
+
+#include <std_msgs/msg/bool.hpp>
 
 class HolohoverControlLQRNode : public rclcpp::Node
 {
@@ -42,6 +49,21 @@ private:
     void publish_control();
     void state_callback(const holohover_msgs::msg::HolohoverStateDisturbanceStamped &state_msg);
     void ref_callback(const  holohover_msgs::msg::HolohoverState &pose);
+
+    // //GS
+    // Holohover::control_acc_t<double> u_acc_curr; //sent to hovercraft
+    Holohover::control_acc_t<double> u_acc_bc_curr;
+    Holohover::control_acc_t<double> u_acc_lqr_curr;
+
+    //LQR logging
+    std::ostringstream file_name_lqr;
+    std::ofstream log_file_lqr;
+
+    // Update Oct 1: controller emergency stop
+    bool emergency_stop;
+    bool hp_collided;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr hp_collided_subscription;   // hovercraft-puck collision
+    void hp_collided_callback(const std_msgs::msg::Bool &msg);
 };
 
 #endif //HOLOHOVER_GNC_HOLOHOVER_CONTROL_LQR_NODE_HPP

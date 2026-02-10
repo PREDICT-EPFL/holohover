@@ -12,4 +12,4 @@
 	url = https://github.com/micro-ROS/micro_ros_espidf_component.git
 [submodule "holohover_mpc/external/laopt"]
 	path = holohover_mpc/external/laopt
-	url = git@github.com:PREDICT-EPFL/laopt.git
+	url = https://github.com/PREDICT-EPFL/laopt/tree/d36be8af6a34d43903ccc0c272803bba1c5363e6

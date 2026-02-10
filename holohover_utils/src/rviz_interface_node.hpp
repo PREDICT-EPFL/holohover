@@ -9,6 +9,8 @@
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "holohover_common/models/holohover_model.hpp"
 #include "holohover_common/utils/simulation_settings.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include <std_msgs/msg/bool.hpp>
 
 
 struct HolohoverMarkers
@@ -60,6 +62,21 @@ private:
     void init_props();
     void init_wall_markers();
     void publish_walls();
+
+    // Update Sep 30: puck simulation
+    Holohover::state_t<double> current_puck_pose;
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr puck_pose_subscription;
+    void puck_pose_callback(geometry_msgs::msg::PoseStamped::SharedPtr state_msg);
+    visualization_msgs::msg::Marker puck_marker;
+    void init_puck_marker();
+
+    // Update Sep 30: collision detector
+    bool current_wall_collision_state;  // Variables to store the current collision states
+    bool current_hovercraft_collision_state;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr wall_collided_subscription;    // Subscriptions for collision detection
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr hovercraft_collided_subscription;
+    void wall_collided_callback(std_msgs::msg::Bool::SharedPtr msg);    // Callback functions for collision events
+    void hovercraft_collided_callback(std_msgs::msg::Bool::SharedPtr msg);
 
 };
 

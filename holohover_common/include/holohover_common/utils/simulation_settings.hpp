@@ -50,6 +50,10 @@ struct SimulationSettings
 
     double Gx;
     double Gy;
+
+    // Update Sep 30: puck simulation
+    std::vector<double> puck_position;
+    double puck_radius;
 };
 
 SimulationSettings load_simulation_settings(rclcpp::Node &node)
@@ -104,6 +108,10 @@ SimulationSettings load_simulation_settings(rclcpp::Node &node)
 
     settings.Gx = node.declare_parameter<double>("Gx");
     settings.Gy = node.declare_parameter<double>("Gy");
+
+    // Sep 30: puck simulation
+    settings.puck_position = node.declare_parameter<std::vector<double>>("puck_position");
+    settings.puck_radius = node.declare_parameter<double>("puck_radius");
 
     return settings;
 }

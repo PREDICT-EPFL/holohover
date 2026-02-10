@@ -26,6 +26,11 @@ private:
     void init_topics();
     void table_raw_pose_callback(const geometry_msgs::msg::PoseStamped &raw_pose);
     void hovercraft_raw_pose_callback(std::shared_ptr<geometry_msgs::msg::PoseStamped> raw_pose, long int hovercraft_id);
+
+    // Update Sep 30: puck simulation
+    rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr puck_raw_pose_subscription;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr puck_pose_publisher;
+    void puck_raw_pose_callback(const geometry_msgs::msg::PoseStamped &raw_pose);
 };
 
 #endif //HOLOHOVER_UTILS_OPTITRACK_INTERFACE_NODE_HPP

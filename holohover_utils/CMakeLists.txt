@@ -28,7 +28,7 @@ find_package(holohover_msgs REQUIRED)
 find_package(holohover_common REQUIRED)
 
 add_executable(rviz_interface src/rviz_interface_node.cpp)
-ament_target_dependencies(rviz_interface rclcpp tf2 visualization_msgs holohover_msgs holohover_common)
+ament_target_dependencies(rviz_interface rclcpp tf2 visualization_msgs holohover_msgs holohover_common geometry_msgs)
 target_link_libraries(rviz_interface yaml-cpp)
 
 add_executable(optitrack_interface src/optitrack_interface_node.cpp)

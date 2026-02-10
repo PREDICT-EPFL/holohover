@@ -30,7 +30,46 @@ void OptitrackInterfaceNode::init_topics()
     table_raw_pose_subscription = this->create_subscription<geometry_msgs::msg::PoseStamped>(
         "/optitrack/table_pose_raw", rclcpp::SensorDataQoS(),
         std::bind(&OptitrackInterfaceNode::table_raw_pose_callback, this, std::placeholders::_1));
+
+    // Update Sep 30: puck simulation
+    puck_raw_pose_subscription = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+        "/optitrack/puck_pose_raw", rclcpp::SensorDataQoS(),
+        std::bind(&OptitrackInterfaceNode::puck_raw_pose_callback, this, std::placeholders::_1));
+    puck_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/puck/pose", 10);
 }
+
+// Update Sep 30: puck simulation
+void OptitrackInterfaceNode::puck_raw_pose_callback(const geometry_msgs::msg::PoseStamped &raw_pose)
+{
+    geometry_msgs::msg::PoseStamped pose;
+
+    pose.header = raw_pose.header;
+
+    pose.pose.position.x = raw_pose.pose.position.x - table_pose.pose.position.x;
+    pose.pose.position.y = raw_pose.pose.position.y - table_pose.pose.position.y;
+    pose.pose.position.z = 0;
+    
+    tf2::Quaternion q_raw, q_table, q_new;
+
+    tf2::convert(raw_pose.pose.orientation, q_raw);
+    tf2::convert(table_pose.pose.orientation, q_table);
+
+    double r,p,y_raw,y_table;
+    tf2::Matrix3x3 m_raw(q_raw);
+    m_raw.getRPY(r,p,y_raw);
+
+    tf2::Matrix3x3 m_table(q_table);
+    m_table.getRPY(r,p,y_table);
+
+    q_new.setRPY(0, 0, y_raw - y_table);
+    q_new.normalize();
+
+    tf2::convert(q_new, pose.pose.orientation);
+
+    puck_pose_publisher->publish(pose);
+}
+
+
 
 void OptitrackInterfaceNode::table_raw_pose_callback(const geometry_msgs::msg::PoseStamped &raw_pose)
 {
