@@ -213,12 +213,12 @@ def launch_setup(context):
     for i in range(len(hovercraft)):
         if hovercraft_machines[i] == machine or machine == "all":
             hovercraft_launch = IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_lqr.launch.py')),
+                PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_mpc.launch.py')),
                 launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i]}.items()
             )
             launch_description.append(hovercraft_launch)
     #################### HOVERCRAFT STARTING - END ####################
-   
+
 
     return launch_description
 

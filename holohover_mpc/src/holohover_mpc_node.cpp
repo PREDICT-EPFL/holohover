@@ -66,6 +66,11 @@ void HolohoverControlMPCNode::init_topics()
     reference_subscription = this->create_subscription<holohover_msgs::msg::HolohoverState>(
             "state_ref", 10,
             std::bind(&HolohoverControlMPCNode::ref_callback, this, std::placeholders::_1));
+
+    puck_subscription = this->create_subscription<geometry_msgs::msg::PoseStamped>(
+        "/puck/pose", 10,
+        std::bind(&HolohoverControlMPCNode::puck_pose_callback, this, std::placeholders::_1));
+    
 }
 
 void HolohoverControlMPCNode::init_timer()
@@ -112,7 +117,8 @@ void HolohoverControlMPCNode::publish_control()
     state_ref(5) = ref.w_z;
     //state_ref = ocp.x_ref;
     ocp.x_ref = state_ref;
-    //std::cout << "CURRENT STATE =" << state << std::endl;
+    std::cout << "CURRENT STATE =" << state << std::endl;
+    std::cout << "REF STATE =" << state_ref << std::endl;
 
     ocp.set_x0(state);
 
@@ -175,6 +181,16 @@ void HolohoverControlMPCNode::state_callback(const holohover_msgs::msg::Holohove
 void HolohoverControlMPCNode::ref_callback(const holohover_msgs::msg::HolohoverState &pose)
 {
     ref = pose;
+}
+
+void HolohoverControlMPCNode::puck_pose_callback(const geometry_msgs::msg::PoseStamped &puck_pose) 
+{
+    ref.x = puck_pose.pose.position.x;
+    ref.y = puck_pose.pose.position.y;
+    ref.yaw = 0;
+    ref.v_x = 0;
+    ref.v_y = 0;
+    ref.w_z = 0;
 }
 
 int main(int argc, char **argv) {
