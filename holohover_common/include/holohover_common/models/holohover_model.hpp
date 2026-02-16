@@ -7,7 +7,9 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include "piqp/piqp.hpp"
 #include "holohover_common/utils/holohover_props.hpp"
+#include "casadi/casadi.hpp"
 
+using namespace casadi;
 class Holohover
 {
 public:
@@ -127,9 +129,17 @@ public:
 
         if (props.use_configuration_matrix)
         {
-            Eigen::Map<const Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> configuration_matrix(props.configuration_matrix.data());
-            linear_acceleration_body = configuration_matrix.topLeftCorner<2, NU>() * u;
-            angular_acceleration = configuration_matrix.bottomLeftCorner<1, NU>() * u;
+            Eigen::Map<const Eigen::Matrix<double, NA, NU, Eigen::RowMajor>>
+                configuration_matrix_double(props.configuration_matrix.data());
+
+            Eigen::Matrix<T, NA, NU> configuration_matrix =
+                configuration_matrix_double.template cast<T>();
+
+            linear_acceleration_body =
+                configuration_matrix.template topLeftCorner<2, NU>() * u;
+
+            angular_acceleration =
+                configuration_matrix.template bottomLeftCorner<1, NU>() * u;
         }
         else
         {
@@ -359,7 +369,7 @@ public:
         control_force_to_acceleration_mapping(x, control_force_to_acceleration_map, mapping_constant);
 
         double mu = 1e6;
-        Eigen::Matrix<double, NU + 2, NU + 2> P;
+        Eigen::Matrix<double, NU + 2, NU + 2> P;  
         Eigen::Matrix<double, NU + 2, 1> c;
         Eigen::Matrix<double, NA, NU + 2> A;
         Eigen::Matrix<double, NA, 1> b;

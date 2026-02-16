@@ -17,6 +17,7 @@ find_package(rclcpp REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(piqp REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(casadi REQUIRED)
 
 # Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP in CMake 3.24:
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
