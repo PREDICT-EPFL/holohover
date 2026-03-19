@@ -41,10 +41,12 @@ public:
         // Retrieve user data correctly as uintptr_t and cast to const char*
         const char* dataA = reinterpret_cast<const char*>(bodyA->GetUserData().pointer);
         const char* dataB = reinterpret_cast<const char*>(bodyB->GetUserData().pointer);
-
+        bool puckA = dataA && std::string(dataA) == "puck";
+        bool puckB = dataB && std::string(dataB) == "puck";
         std_msgs::msg::Bool msg;
         // Check for puck collisions
-        if ((dataA && std::string(dataA) == "puck") || (dataB && std::string(dataB) == "puck")) {
+        if (puckA || puckB) {
+            b2Body* puck = puckA ? bodyA : bodyB;
             // Determine what the puck collided with
             if ((dataA && std::string(dataA) == "hovercraft") || (dataB && std::string(dataB) == "hovercraft")) {
                 RCLCPP_INFO(node_->get_logger(), "Puck collided with hovercraft.");
@@ -54,6 +56,24 @@ public:
                 RCLCPP_INFO(node_->get_logger(), "Puck collided with wall.");
                 msg.data = true;
                 wall_collided_pub_->publish(msg); 
+
+                b2WorldManifold manifold;
+                contact->GetWorldManifold(&manifold);
+                b2Vec2 normal = manifold.normal;
+                b2Vec2 v = puck->GetLinearVelocity();
+
+                float vn = b2Dot(v, normal);
+
+                // only reflect if moving into the wall
+                if (vn < 0)
+                {
+                    float restitution = 0.9f;   // realistic bounce
+
+                    b2Vec2 new_v = v - (1 + restitution) * vn * normal;
+
+                    puck->SetLinearVelocity(new_v);
+                    puck->ApplyForceToCenter(-0.2f * v, true);
+                }
             } else {
                 RCLCPP_WARN(node_->get_logger(), "Puck collided with an unknown object.");
             }

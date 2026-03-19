@@ -11,6 +11,8 @@ find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(holohover_msgs REQUIRED)
 find_package(holohover_common REQUIRED)
+find_package(visualization_msgs REQUIRED)
+
 
 find_package(piqp REQUIRED)
 find_package(casadi REQUIRED)
@@ -31,7 +33,7 @@ message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(control_mpc src/holohover_mpc_node.cpp)
 #target_include_directories(control_mpc PRIVATE external/laopt/include)
-ament_target_dependencies(control_mpc rclcpp geometry_msgs holohover_msgs holohover_common)
+ament_target_dependencies(control_mpc rclcpp geometry_msgs holohover_msgs holohover_common visualization_msgs) 
 target_compile_options(control_mpc PRIVATE "-Wno-unused-parameter")
 target_link_libraries(control_mpc yaml-cpp casadi)
 

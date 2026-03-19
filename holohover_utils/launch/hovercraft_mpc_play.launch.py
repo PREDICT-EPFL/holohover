@@ -25,7 +25,7 @@ def launch_setup(context):
         get_package_share_directory('holohover_utils'),
         'config',
         'common',
-        'control_mpc_config.yaml'
+        'control_mpc_play_config.yaml'
     )
 
     navigation_config = os.path.join(

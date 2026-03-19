@@ -17,6 +17,8 @@
 #include "control_mpc_settings.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "casadi/casadi.hpp"
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 using namespace casadi;
 
@@ -26,6 +28,7 @@ public:
     static constexpr int N = 20;
     static constexpr int nx = 6;
     static constexpr int nu = 6;
+    static constexpr int na = 3;
 
     HolohoverControlMPCNode();
      
@@ -38,11 +41,24 @@ private:
     MX x;
     MX u;
     MX x_ref;
+    MX z_all;
     MX x0;
     MX s;
+    MX puck_state;
     DM x_opt;
     DM u_opt;
+    std::vector<casadi::MX> strike_trajectory;
 
+    MX home_pos;
+    MX goal_pos;
+    MX vec_to_goal;
+
+    // Puck information
+    geometry_msgs::msg::Point last_position;
+    rclcpp::Time last_time;
+    bool first_callback = true;
+    bool state_ready = false;
+    bool puck_ready = false;
     Holohover::state_t<double> state;
     holohover_msgs::msg::HolohoverState ref;
     //holohover_msgs::msg::HolohoverLaoptSpeedStamped speed;
@@ -55,6 +71,8 @@ private:
     rclcpp::Subscription<holohover_msgs::msg::HolohoverStateStamped>::SharedPtr state_subscription;
     rclcpp::Subscription<holohover_msgs::msg::HolohoverState>::SharedPtr reference_subscription;
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr puck_subscription;
+    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr trajectory_pub_;
 
     void init_topics();
     void init_timer();
@@ -63,8 +81,11 @@ private:
     void state_callback(const holohover_msgs::msg::HolohoverStateStamped &state_msg);
     void ref_callback(const holohover_msgs::msg::HolohoverState &pose);
     void puck_pose_callback(const geometry_msgs::msg::PoseStamped &puck_pose);
+    void publish_strike_trajectory(const std::vector<casadi::DM>& trajectory);
+    void publish_dual_trajectories(const casadi::DM& x_lti, const casadi::DM& x_rk4);
 
-
+    void setup_ipopt(ControlMPCSettings control_settings);
+    void setup_hpipm(ControlMPCSettings control_settings);
 };
 
 

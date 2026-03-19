@@ -2,10 +2,12 @@
 #define HOLOHOVER_GNC_CONTROL_MPC_SETTINGS_HPP
 
 #include "rclcpp/rclcpp.hpp"
+#include <string>
 
 struct ControlMPCSettings
 {
     double period;
+    std::string solver;
 
     double weight_x;
     double weight_y;
@@ -22,7 +24,7 @@ ControlMPCSettings load_control_mpc_settings(rclcpp::Node &node)
     ControlMPCSettings settings;
     
     settings.period = node.declare_parameter<double>("period");
-
+    settings.solver = node.declare_parameter<std::string>("solver", "ipopts");
     settings.weight_x = node.declare_parameter<double>("weight_x");
     settings.weight_y = node.declare_parameter<double>("weight_y");
     settings.weight_v_x = node.declare_parameter<double>("weight_v_x");

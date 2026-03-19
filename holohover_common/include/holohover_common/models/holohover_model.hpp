@@ -61,11 +61,11 @@ public:
         // std::cout << "hovercraft min thrust: " << min_thrust.transpose() << std::endl;
         // std::cout << "hovercraft max thrust: " << max_thrust.transpose() << std::endl;
 
-        A << 0, 0, 1, 0, 0, 0,
-             0, 0, 0, 1, 0, 0,
+        A << 0, 0, 1, 0, 0, 0, // x_dot = v_x
+             0, 0, 0, 1, 0, 0, // y_dot = v_y
              0, 0, 0, 0, 0, 0,
              0, 0, 0, 0, 0, 0,
-             0, 0, 0, 0, 0, 1,
+             0, 0, 0, 0, 0, 1, // yaw_dot = w_z
              0, 0, 0, 0, 0, 0;
 
         B << 0, 0, 0,
@@ -158,7 +158,7 @@ public:
             T Fy6 = props.learned_motor_vec_c_2[1] * u(5);
 
             linear_acceleration_body(0) = (Fx1 + Fx2 + Fx3 + Fx4 + Fx5 + Fx6) / props.mass;
-            linear_acceleration_body(1) = (Fx1 + Fx2 + Fx3 + Fx4 + Fx5 + Fx6) / props.mass;
+            linear_acceleration_body(1) = (Fy1 + Fy2 + Fy3 + Fy4 + Fy5 + Fy6) / props.mass;
 
             T Mz1 = -(props.motor_pos_a_1[1] - props.CoM[1]) * Fx1 + (props.motor_pos_a_1[0] - props.CoM[0]) * Fy1;
             T Mz2 = -(props.motor_pos_a_2[1] - props.CoM[1]) * Fx2 + (props.motor_pos_a_2[0] - props.CoM[0]) * Fy2;
@@ -196,11 +196,25 @@ public:
         Eigen::Matrix<T, 2, NU> force_to_linear_acceleration_body;
         Eigen::Matrix<T, 1, NU> force_to_angular_acceleration;
 
+        // if (props.use_configuration_matrix)
+        // {
+        //     Eigen::Map<const Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> configuration_matrix(props.configuration_matrix.data());
+        //     force_to_linear_acceleration_body = configuration_matrix.topLeftCorner<2, NU>();
+        //     force_to_angular_acceleration = configuration_matrix.bottomLeftCorner<1, NU>();
+        // }
         if (props.use_configuration_matrix)
         {
-            Eigen::Map<const Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> configuration_matrix(props.configuration_matrix.data());
-            force_to_linear_acceleration_body = configuration_matrix.topLeftCorner<2, NU>();
-            force_to_angular_acceleration = configuration_matrix.bottomLeftCorner<1, NU>();
+            // 1. Map the double data from props
+            Eigen::Map<const Eigen::Matrix<double, NA, NU, Eigen::RowMajor>> 
+                config_map_double(props.configuration_matrix.data());
+
+            // 2. Cast the entire mapped matrix to type T (MX)
+            // We use .template cast<T>() because T is a template parameter.
+            Eigen::Matrix<T, NA, NU> configuration_matrix = config_map_double.template cast<T>();
+
+            // 3. Extract the blocks from the casted matrix
+            force_to_linear_acceleration_body = configuration_matrix.template topLeftCorner<2, NU>();
+            force_to_angular_acceleration = configuration_matrix.template bottomLeftCorner<1, NU>();
         }
         else
         {

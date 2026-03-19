@@ -35,6 +35,8 @@ void SimulatorNode::init_puck()
     // Define the dynamic body (puck)
     b2BodyDef puckBodyDef;
     puckBodyDef.type = b2_dynamicBody; // Set the body as dynamic
+    puckBodyDef.linearDamping = 0.4f;
+    puckBodyDef.angularDamping = 0.5f;
     puckBodyDef.position.Set(simulation_settings.puck_position[0], simulation_settings.puck_position[1]); // Initial position of the disk
     // b2Body* puckBody = world.CreateBody(&puckBodyDef);
     body_ptr puck(world->CreateBody(&puckBodyDef), world);
@@ -47,8 +49,8 @@ void SimulatorNode::init_puck()
     b2FixtureDef fixtureDef;
     fixtureDef.shape = &circleShape;
     fixtureDef.density = 1.0f; // Density of the disk
-    fixtureDef.friction = 0.0f; // Friction
-    fixtureDef.restitution = 1.f; // Bounciness
+    fixtureDef.friction = 0.02f; // Friction
+    fixtureDef.restitution = 0.8f; // Bounciness
 
     // Attach the shape to the body
     puck->CreateFixture(&fixtureDef);
@@ -69,33 +71,39 @@ void SimulatorNode::init_box2d_world()
     b2PolygonShape wallBox;
     b2BodyDef wallDef;
     b2Body *wall;
+
+    b2FixtureDef wallFixtureDef;
+    wallFixtureDef.shape = &wallBox;
+    wallFixtureDef.restitution = 0.0f; 
+    wallFixtureDef.friction = 0.05f;  
+    wallDef.type = b2_staticBody; 
     
     // Wall 1
-    wallBox.SetAsBox(simulation_settings.table_size[0], 0.001);
+    wallBox.SetAsBox(simulation_settings.table_size[0] / 2, 0.001 /2);
     wallDef.position.Set(0, -simulation_settings.table_size[1] / 2);
     wall = world->CreateBody(&wallDef);
-    wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
+    wall->CreateFixture(&wallFixtureDef); // 0 density for static body
     wall->GetUserData().pointer = reinterpret_cast<uintptr_t>("wall");  // Update Sep 30: collision detector
 
     // Wall 2
-    wallBox.SetAsBox(0.001, simulation_settings.table_size[1]);
+    wallBox.SetAsBox(0.001 / 2, simulation_settings.table_size[1] / 2);
     wallDef.position.Set(simulation_settings.table_size[0] / 2, 0);
     wall = world->CreateBody(&wallDef);
-    wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
+    wall->CreateFixture(&wallFixtureDef); // 0 density for static body
     wall->GetUserData().pointer = reinterpret_cast<uintptr_t>("wall");  // Update Sep 30: collision detector
 
     // Wall 3
-    wallBox.SetAsBox(simulation_settings.table_size[0], 0.001);
+    wallBox.SetAsBox(simulation_settings.table_size[0] / 2, 0.001 / 2);
     wallDef.position.Set(0, simulation_settings.table_size[1] / 2);
     wall = world->CreateBody(&wallDef);
-    wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
+    wall->CreateFixture(&wallFixtureDef); // 0 density for static body
     wall->GetUserData().pointer = reinterpret_cast<uintptr_t>("wall");  // Update Sep 30: collision detector
 
     // Wall 4
-    wallBox.SetAsBox(0.001, simulation_settings.table_size[1]);
+    wallBox.SetAsBox(0.001/ 2, simulation_settings.table_size[1] / 1);
     wallDef.position.Set(-simulation_settings.table_size[0] / 2, 0);
     wall = world->CreateBody(&wallDef);
-    wall->CreateFixture(&wallBox, 0.0f); // 0 density for static body
+    wall->CreateFixture(&wallFixtureDef); // 0 density for static body
     wall->GetUserData().pointer = reinterpret_cast<uintptr_t>("wall");  // Update Sep 30: collision detector
 
 }
@@ -245,6 +253,7 @@ void SimulatorNode::simulation_step()
         }
 
         motor_velocities_vec[i] = holohover_vec[i].Ad_motor * motor_velocities_vec[i] + holohover_vec[i].Bd_motor * current_control_signal;
+        //motor_velocities_vec[i] = current_control_signal;
         calculate_control_acc(states_vec[i], motor_velocities_vec[i], control_acc_vec[i], i);
         apply_control_acc(hovercraft_bodies[i], control_acc_vec[i], i);
         

@@ -8,7 +8,7 @@ inertia: 0.0002940507256425917
 #inertia: 0.5356e-3 # 0.5 * mass^2 * (propeller_pair_radial_distance + 12.5e-3)
 
 # Minimum idle signal
-idle_signal: 0.05
+idle_signal: 0.0
 
 # Minimum idle signal
 motor_tau: 0.03136588633060455

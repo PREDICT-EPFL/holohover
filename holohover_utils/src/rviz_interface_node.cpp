@@ -98,7 +98,7 @@ void RvizInterfaceNode::publish_visualization()
     puck_marker.color.g = 1.0;
     puck_marker.color.b = 0.25;
     if (current_wall_collision_state) {
-        RCLCPP_INFO(this->get_logger(), "##########################Wall collision detected!");
+        //RCLCPP_INFO(this->get_logger(), "##########################Wall collision detected!");
         puck_marker.color.r = 1.0;
         puck_marker.color.g = 0.0;
         puck_marker.color.b = 0.0;
