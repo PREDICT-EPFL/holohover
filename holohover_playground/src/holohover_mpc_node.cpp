@@ -16,12 +16,10 @@ HolohoverControlMPCNode::HolohoverControlMPCNode() :
         holohover_props(load_holohover_pros(declare_parameter<std::string>("holohover_props_file"))),
         control_settings(load_control_mpc_settings(*this)),
         holohover(holohover_props, 0.1),
-        home_pos(MX::vertcat({0.7, 0})),
+        home_pos(MX::vertcat({0.7, 0})), // need to make it more general
         goal_pos(MX::vertcat({-1.0, 0}))
 {
         init_topics();
-        std::cout << control_settings.solver << std::endl;
-        std::cout << control_settings.period << std::endl;
         control_settings.solver == "ipopt" ? setup_ipopt(control_settings) : setup_hpipm(control_settings);
         init_timer();
 }
@@ -37,16 +35,13 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
     x = opti.variable(nx, N+1);
     u = opti.variable(nu, N);
     MX slack = opti.variable(4, N+1); // [xmin, xmax, ymin, ymax]
-    opti.subject_to(vec(slack) >= 0); // Slacks must always be non-negative
+    opti.subject_to(vec(slack) >= 0); 
 
     // 2. Parameters
     x0 = opti.parameter(nx);
     puck_state = opti.parameter(nx, 1); // [px, py, pvx, pvy, ...]
 
-    // Initial Constraint: Robot starts where it actually is
-    opti.subject_to(x(Slice(), 0) == x0);
-
-    // Defensive logic
+    // 3. Switching logic for defensive play (if the puck is going away from the hovercraft or is sufficiently far, hovercraft comes home)
     MX puck_x = puck_state(0);
     MX puck_vx = puck_state(2);
     MX dir_sign = casadi::MX::sign(goal_pos(1) - home_pos(1));
@@ -55,25 +50,23 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
     MX dist_from_mid_to_puck = dir_sign * (midline_y - puck_x);
     MX velocity_toward_goal = dir_sign * puck_vx;
 
-    // Smooth switching using tanh
     MX is_on_our_side = 0.5 * (1 + casadi::MX::tanh(10 * dist_from_mid_to_puck));
     MX puck_is_retreating = 0.5 * (1 + casadi::MX::tanh(10 * velocity_toward_goal));
     MX is_away = casadi::MX::fmax(1 - is_on_our_side, puck_is_retreating);
+
     MX obj = 0;
-    // // 3. Robot Dynamics Loop
+
+    // 4. Robot Dynamics Loop
     for (int k = 0; k < N; ++k) {
-        obj += is_away * 50 * casadi::MX::sumsqr(x(Slice(0, 2), k) - home_pos);
+        obj += is_away * control_settings.weight_comehome * casadi::MX::sumsqr(x(Slice(0, 2), k) - home_pos);
         Holohover::state_t<MX> xk_mx;
         Holohover::control_force_t<MX> uk_mx;
         for (int i = 0; i < nx; ++i) xk_mx(i) = x(i, k);
         for (int i = 0; i < nu; ++i) uk_mx(i) = u(i, k);
 
-        // 2. Map motor signals to acceleration
-        // This still handles the geometry (rotation) but skips the RK4 integration
         Holohover::control_acc_t<MX> u_acc_mx;
         holohover.control_force_to_acceleration<MX>(xk_mx, uk_mx, u_acc_mx);
 
-        // 3. Use the LTI discrete matrices for the next state
         // x_next = Ad * x + Bd * u_acc
         Holohover::state_t<MX> x_next_mx;
         x_next_mx.setZero();
@@ -91,25 +84,31 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
                 x_next_mx(i) += holohover.Bd(i, j) * u_acc_mx(j);
             }
         }
-        // 4. Constraints (Dynamics must hold)
+
         for (int i = 0; i < nx; ++i) {
             opti.subject_to(x(i, k + 1) == x_next_mx(i));
         }
     }
-    // 4. Constraints
+    // 5. Other constraints
+    opti.subject_to(x(Slice(), 0) == x0);
+
+    // Hardcorded table boundaries ! (TODO: have to make it more general)
     double x_lim = 1.0;
     double y_lim = 0.5;
 
     for (int k = 0; k <= N; ++k) {
         // x_min - slack <= x <= x_max + slack
-        opti.subject_to(x(0, k) >= 0 - slack(0, k));
+        opti.subject_to(x(0, k) >= 0 - slack(0, k)); // should not go over the half way of the table 
         opti.subject_to(x(0, k) <= x_lim + slack(1, k));
         
         // y_min - slack <= y <= y_max + slack
         opti.subject_to(x(1, k) >= -y_lim - slack(2, k));
         opti.subject_to(x(1, k) <=  y_lim + slack(3, k));
     }
-    opti.subject_to(opti.bounded(0.0, u, 0.3));            // Motor thrust limits
+
+    opti.subject_to(opti.bounded(0.0, u, 0.3));// Motor thrust limits, otherwise hover goes crazy
+
+    // 6. Heuristics for striking a puck
     MX distance_rewards = 0;
     MX momentum_rewards = 0;
     MX p_pos_k = puck_state(Slice(0, 2));
@@ -117,9 +116,10 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
     double target_yaw = 0.0;
 
     for (int k = 0; k < N; ++k) {
+        // Predicting a puck trajectory
         p_pos_k += p_vel_k * control_settings.period;
         
-        // Wall reflections
+        // Predicting wall reflections of a puck
         MX is_outside_left = p_pos_k(1) < -0.5 + puck_radius;
         p_pos_k(1) = if_else(is_outside_left, 2 * puck_radius - p_pos_k(1), p_pos_k(1));
         p_vel_k(1) = if_else(is_outside_left, -p_vel_k(1) * 0.8, p_vel_k(1));
@@ -130,49 +130,29 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
 
         p_vel_k *= 0.993; // Friction
 
+        // Computing where to hit such that it would strike towards a goal at every time step
         vec_to_goal = goal_pos - p_pos_k;
         MX unit_dir = vec_to_goal / (norm_2(vec_to_goal) + 1e-6);
         MX strike_spot = p_pos_k - unit_dir * (puck_radius + hover_radius);
         strike_trajectory.push_back(strike_spot);
 
         MX dist_sq = sumsqr(x(Slice(0,2), k) - strike_spot);
-        distance_rewards += exp(-dist_sq / pow(0.4, 2)) * dist_sq;
+        distance_rewards += exp(-dist_sq / pow(control_settings.scale_distance, 2)) * dist_sq;
         
         MX v_m_proj = dot(x(Slice(2,4), k), unit_dir);
         MX v_p_proj = dot(p_vel_k, unit_dir);
-        momentum_rewards += exp(-dist_sq / pow(0.2, 2)) * (v_m_proj - v_p_proj);
-
+        momentum_rewards += exp(-dist_sq / pow(control_settings.scale_momentum, 2)) * (v_m_proj - v_p_proj);
+        
+        // Required such that hover does not spin around too much
         obj += control_settings.weight_yaw * casadi::MX::sumsqr(x(4, k) - target_yaw);
         obj += control_settings.weight_w_z * casadi::MX::sumsqr(x(5, k));
     }
+
     MX slack_penalty = 10000.0 * casadi::MX::sumsqr(slack);
-    obj += control_settings.weight_x * distance_rewards + sumsqr(u) + slack_penalty- control_settings.weight_v_x * momentum_rewards;
+    obj += control_settings.weight_distance * distance_rewards + control_settings.weight_motor *sumsqr(u) + slack_penalty - control_settings.weight_momentum * momentum_rewards;
     opti.minimize(obj);
-
-    // 5. Simple Tracking Objective
-    // MX tracking_cost = 0;
-    // MX target_x = puck_state(0);
-    // MX target_y = puck_state(1);
-    // double target_yaw = 0.0;
-
-    // for (int k = 1; k <= N; ++k) {
-    //     // Penalty for distance from robot (k) to current puck position
-    //     tracking_cost += casadi::MX::sumsqr(x(0, k) - target_x);
-    //     tracking_cost += casadi::MX::sumsqr(x(1, k) - target_y);
-    //     // Heading Tracking (New)
-    //     tracking_cost += control_settings.weight_yaw * casadi::MX::sumsqr(x(4, k) - target_yaw);
-        
-    //     // Angular Velocity Dampening (New - CRITICAL)
-    //     tracking_cost += control_settings.weight_w_z * casadi::MX::sumsqr(x(5, k));
-    // }
-
-    // // Total Objective: Tracking + Control Effort (to prevent jitter)
-    // MX slack_penalty = 1000.0 * casadi::MX::sumsqr(slack);
-
-    // MX obj = control_settings.weight_x * tracking_cost +  casadi::MX::sumsqr(u) + slack_penalty;
-    // opti.minimize(obj);
     
-    // 6. Solver Settings
+    // 7. Solve!
     Dict solver_opts;
     solver_opts["ipopt.print_level"] = 0;
     solver_opts["ipopt.max_iter"] = 100; 
@@ -181,6 +161,7 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
 
 void HolohoverControlMPCNode::setup_hpipm(ControlMPCSettings control_settings) 
 {        
+    // Current not working !
     opti = Opti(); 
 
     std::vector<MX> x_list;
@@ -437,6 +418,7 @@ void HolohoverControlMPCNode::publish_trajectory()
 }
 
 void HolohoverControlMPCNode::publish_dual_trajectories(const casadi::DM& x_lti, const casadi::DM& x_rk4) {
+    // Comparison for non-linear vs linear dynamics but I believe two arguments are swtched ^ (#TODO)
     auto create_marker = [this](const casadi::DM& traj, std::string ns, int id, float r, float g, float b) {
         visualization_msgs::msg::Marker marker;
         marker.header.frame_id = "world";
@@ -705,7 +687,6 @@ void HolohoverControlMPCNode::puck_pose_callback(const geometry_msgs::msg::PoseS
 
     double dt = (current_time - last_time).seconds();
     
-    // Guard against division by zero or simultaneous timestamps
     if (dt > 1e-6) {
         ref.v_x = (puck_pose.pose.position.x - last_position.x) / dt;
         ref.v_y = (puck_pose.pose.position.y - last_position.y) / dt;
@@ -713,11 +694,9 @@ void HolohoverControlMPCNode::puck_pose_callback(const geometry_msgs::msg::PoseS
         ref.y = puck_pose.pose.position.y;
         ref.yaw = 0;
         ref.w_z = 0;
-        // 2. Update the parameter in the Opti instance
-        // This makes the new data available to the solver on the next publish_control call
+
         if (!puck_ready) puck_ready = true;
     }
-    // Update trackers for next time
     last_position = puck_pose.pose.position;
     last_time = current_time;
 }

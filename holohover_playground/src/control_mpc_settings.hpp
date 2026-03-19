@@ -16,6 +16,11 @@ struct ControlMPCSettings
     double weight_yaw;
     double weight_w_z;
 
+    double weight_distance;
+    double weight_momentum;
+    double weight_comehome;
+    double scale_distance;
+    double scale_momentum;
     double weight_motor;
 };
 
@@ -24,7 +29,7 @@ ControlMPCSettings load_control_mpc_settings(rclcpp::Node &node)
     ControlMPCSettings settings;
     
     settings.period = node.declare_parameter<double>("period");
-    settings.solver = node.declare_parameter<std::string>("solver", "ipopts");
+    settings.solver = node.declare_parameter<std::string>("solver", "ipopt");
     settings.weight_x = node.declare_parameter<double>("weight_x");
     settings.weight_y = node.declare_parameter<double>("weight_y");
     settings.weight_v_x = node.declare_parameter<double>("weight_v_x");
@@ -33,6 +38,11 @@ ControlMPCSettings load_control_mpc_settings(rclcpp::Node &node)
     settings.weight_w_z = node.declare_parameter<double>("weight_w_z");
 
     settings.weight_motor = node.declare_parameter<double>("weight_motor");
+    settings.weight_momentum = node.declare_parameter<double>("weight_momentum");
+    settings.weight_comehome = node.declare_parameter<double>("weight_comehome");
+    settings.weight_distance = node.declare_parameter<double>("weight_distance");
+    settings.scale_distance = node.declare_parameter<double>("scale_distance");
+    settings.scale_momentum = node.declare_parameter<double>("scale_momentum");
 
     return settings;
 }
