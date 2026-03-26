@@ -142,7 +142,7 @@ def launch_setup(context):
                       "initial_state_vy":      initial_states_simulated['vy'], 
                       "initial_state_w":       initial_states_simulated['w'],
                       "holohover_props_files": holohover_params_simulated,
-                      "simulated":  [True],
+                      "simulated":  [True, True],
                       "are_all_simulated":     True
                     }],
         output='screen'
@@ -163,7 +163,7 @@ def launch_setup(context):
                       "initial_state_w":       initial_states['w'],
                       "holohover_props_files": holohover_params,
                       "color": colors,    
-                      "simulated":  [True]                
+                      "simulated":  [True, True]                
                     }],
         output='screen'
     )
@@ -181,7 +181,7 @@ def launch_setup(context):
                       "initial_state_vy":      initial_states['vy'], 
                       "initial_state_w":       initial_states['w'],
                       "holohover_props_files": holohover_params,
-                      "simulated": [True]                                        
+                      "simulated": [True, True]                                        
                     }],
         output='screen'
     )
@@ -212,9 +212,15 @@ def launch_setup(context):
     print(f"Starting {len(hovercraft)} hovercraft")
     for i in range(len(hovercraft)):
         if hovercraft_machines[i] == machine or machine == "all":
+            h_x = initial_states['x'][i]
+            h_y = initial_states['y'][i]
+            h_theta = initial_states['theta'][i]
             hovercraft_launch = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_mpc_play.launch.py')),
-                launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i]}.items()
+                launch_arguments={'index': str(i), 'name': hovercraft_names[i], 'params': holohover_params[i],
+                                  'initial_x': str(h_x),      # ADDED
+                                  'initial_y': str(h_y),      # ADDED
+                                  'initial_yaw': str(h_theta)}.items()
             )
             launch_description.append(hovercraft_launch)
     #################### HOVERCRAFT STARTING - END ####################

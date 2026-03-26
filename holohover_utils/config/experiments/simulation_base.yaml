@@ -20,10 +20,10 @@ hovercraft:
     # machine: radxa_h0
     machine: master
 
-  # - name: h1
-  #   id: 1
-  #   initial_state: [0.6, 0, 0, 0, 0, 0]
-  #   holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
-  #   color : [1.0, 0.0, 0.0, 1.0]
-  #   simulate: true
-  #   machine: radxa_h1
+  - name: h1
+    id: 1
+    initial_state: [-0.7, 0, 0, 0, 0, 0]
+    holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
+    color : [1.0, 0.0, 0.0, 1.0]
+    simulate: true
+    machine: master

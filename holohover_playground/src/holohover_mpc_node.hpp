@@ -4,7 +4,7 @@
 // End user (level 1)
 
 #include <Eigen/Dense>
-
+#include <tuple>
 #include "holohover_common/models/holohover_model.hpp"
 
 #include "rclcpp/rclcpp.hpp"
@@ -48,10 +48,12 @@ private:
     DM x_opt;
     DM u_opt;
     std::vector<casadi::MX> strike_trajectory;
+    std::vector<casadi::MX> strike_vec_trajectory;
 
-    MX home_pos;
-    MX goal_pos;
+    std::tuple<double, double> home_pos;
+    std::tuple<double, double> goal_pos;
     MX vec_to_goal;
+    MX is_away;
 
     // Puck information
     geometry_msgs::msg::Point last_position;

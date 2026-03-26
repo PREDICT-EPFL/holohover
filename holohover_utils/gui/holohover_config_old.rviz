@@ -57,7 +57,6 @@ Visualization Manager:
       Name: MarkerArray
       Namespaces:
         h0: true
-        h1: true
         puck: true
         walls: true
       Topic:
@@ -79,43 +78,6 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /h0/holohover_trajectory_marker
-      Value: true
-    - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
-      Name: MarkerArray
-      Namespaces:
-        strike_points: true
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /h1/mpc/strike_target
-      Value: true
-    - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
-      Name: MarkerArray
-      Namespaces:
-        strike_points: true
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /h0/mpc/strike_target
-      Value: true
-    - Class: rviz_default_plugins/Marker
-      Enabled: true
-      Name: Marker
-      Namespaces:
-        holohover_traj: true
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /h1/holohover_trajectory_marker
       Value: true
   Enabled: true
   Global Options:
@@ -161,10 +123,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.1847960948944092
+      Pitch: 1.0097962617874146
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 6.233604431152344
+      Yaw: 4.808600902557373
     Saved: ~
 Window Geometry:
   Displays:

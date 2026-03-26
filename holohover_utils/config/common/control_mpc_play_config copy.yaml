@@ -1,0 +1,51 @@
+# holohover_utils/config/common/control_mpc_play_config.yaml
+
+h0:
+  mpc: 
+    ros__parameters:
+      period: 0.1
+      solver: ipopt
+      weight_motor: 1.0
+      weight_momentum: 100.0
+      weight_distance: 60.0
+      weight_comehome: 1000.0
+      scale_distance: 0.1
+      scale_momentum: 0.3
+      weight_yaw: 1.0
+      weight_w_z: 1.0
+
+      # Not used
+      weight_x : 10.0 # for damping
+      weight_y: 0.0
+      weight_v_x : 0.0
+      weight_v_y : 0.0
+     
+      home_x: 0.9
+      home_y: 0.0
+      goal_x: -1.0
+      goal_y: 0.0
+
+h1:
+  mpc:
+    ros__parameters:
+      period: 0.1
+      solver: ipopt
+      weight_motor: 1.0
+      weight_momentum: 100.0
+      weight_distance: 60.0
+      weight_comehome: 1000.0
+      scale_distance: 0.1
+      scale_momentum: 0.3
+      weight_yaw: 1.0
+      weight_w_z: 1.0
+
+      # Not used
+      weight_x : 10.0 # for damping
+      weight_y: 0.0
+      weight_v_x : 0.0
+      weight_v_y : 0.0
+      
+      home_x: -0.9
+      home_y: 0.0
+      goal_x: 1.0
+      goal_y: 0.0

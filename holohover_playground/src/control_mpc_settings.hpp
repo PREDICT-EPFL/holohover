@@ -22,6 +22,13 @@ struct ControlMPCSettings
     double scale_distance;
     double scale_momentum;
     double weight_motor;
+
+    double home_x;
+    double home_y;
+    double goal_x;
+    double goal_y;
+
+    double control_limit;
 };
 
 ControlMPCSettings load_control_mpc_settings(rclcpp::Node &node)
@@ -44,6 +51,12 @@ ControlMPCSettings load_control_mpc_settings(rclcpp::Node &node)
     settings.scale_distance = node.declare_parameter<double>("scale_distance");
     settings.scale_momentum = node.declare_parameter<double>("scale_momentum");
 
+    settings.home_x = node.declare_parameter<double>("home_x");
+    settings.home_y = node.declare_parameter<double>("home_y");
+    settings.goal_x = node.declare_parameter<double>("goal_x");
+    settings.goal_y = node.declare_parameter<double>("goal_y");
+
+    settings.control_limit = node.declare_parameter<double>("control_limit");
     return settings;
 }
 
