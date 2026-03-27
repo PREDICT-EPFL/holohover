@@ -27,7 +27,7 @@ class HolohoverControlMPCNode : public rclcpp::Node
 public:
     static constexpr int N = 20;
     static constexpr int nx = 6;
-    static constexpr int nu = 6;
+    static constexpr int nu = 2;
     static constexpr int na = 3;
 
     HolohoverControlMPCNode();
@@ -52,7 +52,7 @@ private:
 
     std::tuple<double, double> home_pos;
     std::tuple<double, double> goal_pos;
-    MX vec_to_goal;
+    MX unit_dir_k;
     MX is_away;
 
     // Puck information

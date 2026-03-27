@@ -237,26 +237,42 @@ void SimulatorNode::table_publisher()
 }
 void SimulatorNode::simulation_step()
 {
-    for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
-        // integrate motor velocities
-        Holohover::control_force_t<double> current_control_signal;
-        current_control_signal(0) = control_msgs[i].motor_a_1;
-        current_control_signal(1) = control_msgs[i].motor_a_2;
-        current_control_signal(2) = control_msgs[i].motor_b_1;
-        current_control_signal(3) = control_msgs[i].motor_b_2;
-        current_control_signal(4) = control_msgs[i].motor_c_1;
-        current_control_signal(5) = control_msgs[i].motor_c_2;
+    // for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
+    //     // integrate motor velocities
+    //     Holohover::control_force_t<double> current_control_signal;
+    //     current_control_signal(0) = control_msgs[i].motor_a_1;
+    //     current_control_signal(1) = control_msgs[i].motor_a_2;
+    //     current_control_signal(2) = control_msgs[i].motor_b_1;
+    //     current_control_signal(3) = control_msgs[i].motor_b_2;
+    //     current_control_signal(4) = control_msgs[i].motor_c_1;
+    //     current_control_signal(5) = control_msgs[i].motor_c_2;
         
-        if(current_control_signal.array().isNaN().any()) {
-            RCLCPP_WARN(get_logger(), "Control signal for hovercraft %ld contains NaN values, setting it to zero.", i);
-            current_control_signal.setZero();
+    //     if(current_control_signal.array().isNaN().any()) {
+    //         RCLCPP_WARN(get_logger(), "Control signal for hovercraft %ld contains NaN values, setting it to zero.", i);
+    //         current_control_signal.setZero();
+    //     }
+
+    //     motor_velocities_vec[i] = holohover_vec[i].Ad_motor * motor_velocities_vec[i] + holohover_vec[i].Bd_motor * current_control_signal;
+    //     //motor_velocities_vec[i] = current_control_signal;
+    //     calculate_control_acc(states_vec[i], motor_velocities_vec[i], control_acc_vec[i], i);
+    //     apply_control_acc(hovercraft_bodies[i], control_acc_vec[i], i);
+        
+    // }
+    for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
+        Holohover::control_acc_t<double> direct_acc;
+        
+        // Map incoming "motor" signals directly to 3-DOF acceleration
+        // u(0)=x_acc, u(1)=y_acc, u(2)=angular_acc
+        direct_acc(0) = control_msgs[i].motor_a_1; 
+        direct_acc(1) = control_msgs[i].motor_a_2; 
+        direct_acc(2) = control_msgs[i].motor_b_1;
+
+        if(direct_acc.array().isNaN().any()) {
+            direct_acc.setZero();
         }
 
-        motor_velocities_vec[i] = holohover_vec[i].Ad_motor * motor_velocities_vec[i] + holohover_vec[i].Bd_motor * current_control_signal;
-        //motor_velocities_vec[i] = current_control_signal;
-        calculate_control_acc(states_vec[i], motor_velocities_vec[i], control_acc_vec[i], i);
-        apply_control_acc(hovercraft_bodies[i], control_acc_vec[i], i);
-        
+        // Apply Force = Mass * Acceleration directly to the Box2D body
+        apply_control_acc(hovercraft_bodies[i], direct_acc, i);
     }
 
     // - box2d step of the world

@@ -27,163 +27,138 @@ HolohoverControlMPCNode::HolohoverControlMPCNode() :
 
 void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
 {    
-    
     double puck_radius = 0.05;
     double hover_radius = 0.07;
+    // Boundary Slack Logic
+    double x_max = 1.0; double y_lim = 0.5;
 
     opti = Opti();
 
-    // 1. Decision Variables
-    x = opti.variable(nx, N+1);
-    u = opti.variable(nu, N);
-    MX slack = opti.variable(4, N+1); // [xmin, xmax, ymin, ymax]
+    // 1. Variables
+    x = opti.variable(nx, N+1); // [x, y, vx, vy, w, gamma]
+    u = opti.variable(nu, N); // [ax, ay]
+    MX slack = opti.variable(4, N+1); // [x_min, x_max, y_min, y_max] 
 
     // 2. Parameters
     x0 = opti.parameter(nx);
-    puck_state = opti.parameter(nx, 1); // [px, py, pvx, pvy, ...]
+    puck_state = opti.parameter(nx, 1); 
 
-    // 3. Basic Constraints 
-    opti.subject_to(vec(slack) >= 0); 
+    // 3. Constraints
     opti.subject_to(x(Slice(), 0) == x0);
+    opti.subject_to(opti.bounded(-control_settings.control_limit, u, control_settings.control_limit)); // to be handled by the low level later
+    opti.subject_to(vec(slack) >= 0);
 
-    // Motor thrust limits, otherwise hover goes crazy
-    opti.subject_to(opti.bounded(0.0, u, control_settings.control_limit));
-
-    // 4. Switching logic for defensive play (if the puck is going away from the hovercraft or is sufficiently far, hovercraft comes home)
+    // 4. Defensive vs Offensive Play Set up
     MX puck_x = puck_state(0); 
     MX puck_vx = puck_state(2);
-
-    double dir_sign = (std::get<0>(goal_pos) > std::get<0>(home_pos)) ? 1.0 : -1.0; // -1.0 for h0
-    double midline = (std::get<0>(home_pos) + std::get<0>(goal_pos)) / 2.0; // -0.1 default
-
-    MX dist_into_our_side = dir_sign * (midline - puck_x); // positive then on our side
-    MX velocity_toward_goal = dir_sign * puck_vx;
-
-    is_away = if_else(dist_into_our_side > 0.0, 0.0, 1.0); 
-    MX is_retreating = if_else(velocity_toward_goal > 0.1, 1.0, 0.0);
-    is_away = casadi::MX::fmax(is_away, is_retreating); // turned on either on ourside or retreating
-
-    // Hardcorded table boundaries ! (TODO: have to make it more general)
-    double x_max = 1.0;
-    double y_lim = 0.5;
-
     MX goal_pos_dx = casadi::MX::vertcat({std::get<0>(goal_pos), std::get<1>(goal_pos)});
     MX home_pos_dx = casadi::MX::vertcat({std::get<0>(home_pos), std::get<1>(home_pos)});
+    
+    double dir_sign = (std::get<0>(goal_pos) > std::get<0>(home_pos)) ? 1.0 : -1.0; 
+    double midline_x = (std::get<0>(home_pos) + std::get<0>(goal_pos)) / 2.0;
+    double x_min_limit = (dir_sign < 0) ? midline_x : -x_max;
+    double x_max_limit = (dir_sign < 0) ? x_max : midline_x;
+    
+    MX dist_from_mid = dir_sign * (midline_x - puck_x);
+    MX vel_toward_goal = dir_sign * puck_vx;
 
-    // ----- Start of the Cost function ------------
+    MX is_on_opposite_side = casadi::MX::if_else(dist_from_mid < 0.0, 1.0, 0.0);
+    MX is_retreating    = casadi::MX::if_else(vel_toward_goal > 0.2, 1.0, 0.0);
+    is_away = casadi::MX::if_else(is_on_opposite_side + is_retreating > 0.5, 1.0, 0.0);
+
+    // 5. Cost and Dynamics Loop
     MX obj = 0;
-
     MX momentum_rewards = 0;
     MX distance_rewards = 0;
+
     MX p_pos_k = puck_state(Slice(0, 2));
     MX p_vel_k = puck_state(Slice(2, 4));
+    double dt = control_settings.period;
     double target_yaw = 0.0;
 
     MX final_strike_spot;
-    MX final_unit_dir;
 
-    // 4. Big soup for constraints + objectives ...
     for (int k = 0; k < N; ++k) {
-        if (dir_sign < 0) { 
-                // Hover 0 (Top side): Must stay in positive X
-                opti.subject_to(x(0, k) <= x_max + slack(1, k));
-            } else { 
-                // Hover 1 (Bottom side): Must stay in negative X
-                opti.subject_to(x(0, k) >= -x_max - slack(0, k));
-        }
-        opti.subject_to(x(1, k) >= -y_lim - slack(2, k));
-        opti.subject_to(x(1, k) <=  y_lim + slack(3, k));
+        // --- Dynamics (Simple Double Integrator) ---
+        // x_next = x_curr + [v; a] * dt
+        MX vel_k = x(Slice(2, 4), k); // [vx, vy]
+        MX acc_k = u(Slice(0, 2), k); // [ax, ay]
 
-        obj += is_away * control_settings.weight_comehome * casadi::MX::sumsqr(x(Slice(0, 2), k) - home_pos_dx);
-        obj += is_away * (control_settings.weight_comehome) * casadi::MX::sumsqr(x(Slice(2, 4), k));
+        MX omega_k = x(5, k);
+        MX alpha_k = 0.0; 
+
+        MX f_k = casadi::MX::vertcat({vel_k, acc_k, omega_k, alpha_k});
+        opti.subject_to(x(Slice(), k+1) == x(Slice(), k) + f_k * dt);
         
-        Holohover::state_t<MX> xk_mx;
-        Holohover::control_force_t<MX> uk_signal_mx; 
-        for (int i = 0; i < nx; ++i) xk_mx(i) = x(i, k);
-        for (int i = 0; i < nu; ++i) uk_signal_mx(i) = u(i, k);
+        // Defense cost
+        obj += is_away * control_settings.weight_comehome * casadi::MX::sumsqr(x(Slice(0, 2), k) - home_pos_dx);
 
-        Holohover::control_force_t<MX> uk_thrust_newtons;
-        holohover.signal_to_thrust<MX>(uk_signal_mx, uk_thrust_newtons);
+        // --- Puck Trajectory Prediction ---
+        p_pos_k += p_vel_k * dt;
+        double y_min = -y_lim + puck_radius;
+        MX is_outside_left = p_pos_k(1) < y_min;
 
-        Holohover::control_acc_t<MX> u_acc_mx;
-        holohover.control_force_to_acceleration<MX>(xk_mx, uk_thrust_newtons, u_acc_mx);
+        p_pos_k(1) = if_else(is_outside_left, 2.0 * y_min - p_pos_k(1), p_pos_k(1));
+        p_vel_k(1) = if_else(is_outside_left, -p_vel_k(1) * 0.8, p_vel_k(1));
 
-        Holohover::state_t<MX> x_next_mx;
-        x_next_mx.setZero();
+        double y_max = y_lim - puck_radius;
+        MX is_outside_right = p_pos_k(1) > y_max;
 
-        // Ad * xk
-        for (int i = 0; i < nx; ++i) {
-            for (int j = 0; j < nx; ++j) {
-                x_next_mx(i) += holohover.Ad(i, j) * xk_mx(j);
-            }
-        }
-
-        // + Bd * u_acc
-        for (int i = 0; i < nx; ++i) {
-            for (int j = 0; j < na; ++j) {
-                x_next_mx(i) += holohover.Bd(i, j) * u_acc_mx(j);
-            }
-        }
-
-        for (int i = 0; i < nx; ++i) {
-            opti.subject_to(x(i, k + 1) == x_next_mx(i));
-        }
-
-        // Predicting a puck trajectory
-        p_pos_k += p_vel_k * control_settings.period;
-
-        // Reflect (y < -0.5)
-        MX is_outside_bottom = p_pos_k(1) < -y_lim + puck_radius;
-        p_pos_k(1) = if_else(is_outside_bottom, -2.0 * y_lim + 2.0 * puck_radius - p_pos_k(1), p_pos_k(1));
-        p_vel_k(1) = if_else(is_outside_bottom, -p_vel_k(1) * 0.8, p_vel_k(1));
-
-        // Reflect (y > 0.5)
-        MX is_outside_top = p_pos_k(1) > y_lim - puck_radius;
-        p_pos_k(1) = if_else(is_outside_top, 2.0 * y_lim - 2.0 * puck_radius - p_pos_k(1), p_pos_k(1));
-        p_vel_k(1) = if_else(is_outside_top, -p_vel_k(1) * 0.8, p_vel_k(1));
+        p_pos_k(1) = if_else(is_outside_right, 2.0 * y_max - p_pos_k(1), p_pos_k(1));
+        p_vel_k(1) = if_else(is_outside_right, -p_vel_k(1) * 0.8, p_vel_k(1));
 
         p_vel_k *= 0.993; // Friction
 
-        // Computing where to hit such that it would strike towards a goal at every time step
-        vec_to_goal = goal_pos_dx - p_pos_k;
-        MX unit_dir = vec_to_goal / (norm_2(vec_to_goal) + 1e-6);
-        MX strike_spot = p_pos_k - unit_dir * (puck_radius + hover_radius - 0.02);
-        strike_trajectory.push_back(strike_spot);
-        
-        MX dist_sq_k = sumsqr(x(Slice(0, 2), k) - strike_spot);
+        // --- Strike Geometry ---
+        MX vec_to_goal_k = goal_pos_dx - p_pos_k;
+        unit_dir_k = vec_to_goal_k / (casadi::MX::norm_2(vec_to_goal_k) + 1e-6);
+        MX strike_spot_k = p_pos_k - unit_dir_k * (puck_radius + hover_radius);
+        strike_trajectory.push_back(strike_spot_k);
+        MX dist_sq_k = casadi::MX::sumsqr(x(Slice(0, 2), k) - strike_spot_k);
         MX dist_lin = sqrt(dist_sq_k + 1e-6);
 
-        // approach_mode is 1.0 when far, strike_mode is 1.0 when close
-        // threshold is control_settings.scale_momentum 
-        MX approach_mode = 1.0 / (1.0 + exp(- control_settings.weight_y * (dist_lin - control_settings.scale_momentum)));
-        MX strike_mode = 1.0 - approach_mode;
+        double alpha = control_settings.weight_x; 
+        double delta = control_settings.scale_momentum; 
 
-        obj += (1.0 - is_away) * approach_mode * control_settings.weight_distance * dist_sq_k;
-        
-        // strike: Maximize velocity along the unit vector
-        MX v_m_proj = dot(x(Slice(2, 4), k), unit_dir);
-        momentum_rewards += (1.0 - is_away) * strike_mode * v_m_proj;
+        // Turn on strike mode if the puck is within some distance
+        MX strike_mode = 1 - 1.0 / (1.0 + exp(-alpha  * (dist_lin - delta)));
 
-        // Regularization to prevent the spinning too much
-        obj += control_settings.weight_yaw * sumsqr(x(4, k) - target_yaw);
-        obj += control_settings.weight_w_z * sumsqr(x(5, k));
+        // Momentum reward
+        MX v_m_proj = casadi::MX::dot(x(Slice(2, 4), k), unit_dir_k);
+        MX v_p_proj = casadi::MX::dot(p_vel_k, unit_dir_k);
+        momentum_rewards += strike_mode * (v_m_proj);
 
-        if (k == N - 1) final_strike_spot = strike_spot;
+        // Boundary logic
+        opti.subject_to(x(0, k+1) >= x_min_limit - slack(0, k+1));
+        opti.subject_to(x(0, k+1) <= x_max_limit + slack(1, k+1));
+        opti.subject_to(x(1, k) >= -y_lim - slack(2, k));
+        opti.subject_to(x(1, k) <=  y_lim + slack(3, k));
+        obj += control_settings.weight_yaw * casadi::MX::sumsqr(x(4, k) - target_yaw);
+        obj += control_settings.weight_w_z * casadi::MX::sumsqr(x(5, k));
+
+        if (k == N - 1) {
+                final_strike_spot = strike_spot_k;
+            }
     }
 
-    // Terminal constraint at final strike spot to smooth out striking motion
-    obj += (1.0 - is_away) * control_settings.weight_distance * sumsqr(x(Slice(0,2), N) - final_strike_spot);
+    for (int k = 0; k < N; ++k) {
+        // Incentivise to go to the final strike distance to be ready 
+        obj += control_settings.weight_distance * casadi::MX::sumsqr(x(Slice(0,2), k) - final_strike_spot);
+    }
+
+    MX slack_penalty = 1e5 * sumsqr(slack);
     
-    MX slack_penalty = 100000.0 * casadi::MX::sumsqr(slack);
-    obj += control_settings.weight_motor *sumsqr(u) + slack_penalty- control_settings.weight_momentum * momentum_rewards;
-    opti.minimize(obj);
+    // Final objective summing
+    MX control_effort = control_settings.weight_motor * casadi::MX::sumsqr(u);
+    obj += (- control_settings.weight_momentum * momentum_rewards + control_effort);
+    opti.minimize(obj + slack_penalty);
     
-    // Solve!
+    // Solver Settings
     Dict solver_opts;
     solver_opts["ipopt.print_level"] = 0;
     solver_opts["print_time"] = false;
-    solver_opts["ipopt.max_iter"] = 100;  // tolerance to small, jit 
-    solver_opts["ipopt.tol"] = 1e-6;
+    solver_opts["ipopt.max_iter"] = 50; 
+    solver_opts["ipopt.tol"] = 1e-4;
     opti.solver("ipopt", solver_opts);
 }
 
@@ -495,10 +470,11 @@ void HolohoverControlMPCNode::publish_control()
     opti.set_value(x0, x0_val);   
     opti.set_value(puck_state, puck_val);   
 
-    // Solve MPC
+    // Solve MPC + Use suboptimal solution
     auto t_start = std::chrono::steady_clock::now();
     try
-    {
+    {   
+        // use smith predictor to compensate for the timedelay
         auto sol = opti.solve();
 
         DM x_sol = sol.value(x);
@@ -522,24 +498,27 @@ void HolohoverControlMPCNode::publish_control()
                 }
 
         publish_strike_trajectory(st);
+        std::cout << static_cast<double>(sol.value(is_away)) << std::endl;
         
     }
     catch (std::exception &e)
     {
         RCLCPP_WARN(this->get_logger(), "MPC solve failed: %s", e.what());
-
+        auto u_suboptimal = opti.debug().value(u);
+        auto x_suboptimal = opti.debug().value(x);
+        publish_trajectory();
         // Publish control message
         holohover_msgs::msg::HolohoverControlStamped control_msg;
         control_msg.header.frame_id = "body";
         control_msg.header.stamp = this->now();
 
-        control_msg.motor_a_1 = static_cast<double>(holohover_props.idle_signal);
-        control_msg.motor_a_2 = static_cast<double>(holohover_props.idle_signal);
-        control_msg.motor_b_1 = static_cast<double>(holohover_props.idle_signal);
-        control_msg.motor_b_2 = static_cast<double>(holohover_props.idle_signal);
-        control_msg.motor_c_1 = static_cast<double>(holohover_props.idle_signal);
-        control_msg.motor_c_2 = static_cast<double>(holohover_props.idle_signal);
-
+        control_msg.motor_a_1 = static_cast<double>(u_suboptimal(0,0));
+        control_msg.motor_a_2 = static_cast<double>(u_suboptimal(1,0));
+        //control_msg.motor_b_1 = static_cast<double>(u_suboptimal(2,0));
+        for(int k = 0; k < N - 1; ++k) {
+            opti.set_initial(x(Slice(0, nx), k), x_suboptimal(Slice(0, nx), k + 1));
+            opti.set_initial(u(Slice(0, nu), k), u_suboptimal(Slice(0, nu), k + 1));
+        }
         //control_publisher->publish(control_msg);
 
         return;
@@ -564,10 +543,10 @@ void HolohoverControlMPCNode::publish_control()
 
     control_msg.motor_a_1 = static_cast<double>(u0(0));
     control_msg.motor_a_2 = static_cast<double>(u0(1));
-    control_msg.motor_b_1 = static_cast<double>(u0(2));
-    control_msg.motor_b_2 = static_cast<double>(u0(3));
-    control_msg.motor_c_1 = static_cast<double>(u0(4));
-    control_msg.motor_c_2 = static_cast<double>(u0(5));
+    // control_msg.motor_b_1 = static_cast<double>(u0(2));
+    // control_msg.motor_b_2 = static_cast<double>(u0(3));
+    // control_msg.motor_c_1 = static_cast<double>(u0(4));
+    // control_msg.motor_c_2 = static_cast<double>(u0(5));
 
     control_publisher->publish(control_msg);
 
