@@ -29,6 +29,7 @@ struct ControlMPCSettings
     double goal_y;
 
     double control_limit;
+    double controller_delay;
 };
 
 ControlMPCSettings load_control_mpc_settings(rclcpp::Node &node)
@@ -57,6 +58,7 @@ ControlMPCSettings load_control_mpc_settings(rclcpp::Node &node)
     settings.goal_y = node.declare_parameter<double>("goal_y");
 
     settings.control_limit = node.declare_parameter<double>("control_limit");
+    settings.controller_delay = node.declare_parameter<double>("controller_delay");
     return settings;
 }
 

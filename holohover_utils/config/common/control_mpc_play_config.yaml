@@ -3,11 +3,11 @@
 h0:
   mpc: 
     ros__parameters:
-      period: 0.1
+      period: 0.05
       solver: ipopt
-      weight_motor: 0.1
+      weight_motor: 0.05
       weight_momentum: 300.0
-      weight_distance: 5.0
+      weight_distance: 10.0
       weight_comehome: 1000.0
       scale_distance: 0.6
       scale_momentum: 0.01
@@ -16,8 +16,10 @@ h0:
 
       control_limit : 1.0
 
+      controller_delay : 0.05
+
       # Not used
-      weight_x : 40.0 # sharpness
+      weight_x : 20.0 # sharpness
       weight_y: 0.0 
       weight_v_x : 0.0
       weight_v_y : 0.0
@@ -30,21 +32,23 @@ h0:
 h1:
   mpc:
     ros__parameters:
-      period: 0.1
+      period: 0.05
       solver: ipopt
-      weight_motor: 1.0
-      weight_momentum: 50.0
-      weight_distance: 1.0
+      weight_motor: 0.05
+      weight_momentum: 300.0
+      weight_distance: 10.0
       weight_comehome: 1000.0
       scale_distance: 0.6
-      scale_momentum: 0.05
+      scale_momentum: 0.01
       weight_yaw: 1.0
       weight_w_z: 1.0
 
       control_limit : 1.0
 
+      controller_delay : 0.05
+
       # Not used
-      weight_x : 10.0
+      weight_x : 30.0
       weight_y: 0.0
       weight_v_x : 0.0
       weight_v_y : 0.0

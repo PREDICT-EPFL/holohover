@@ -55,6 +55,11 @@ private:
     MX unit_dir_k;
     MX is_away;
 
+    // Smith predictor
+    std::deque<DM> control_history;
+    double delay_seconds = control_settings.controller_delay;
+    int delay_steps = static_cast<int>(delay_seconds / control_settings.period);
+
     // Puck information
     geometry_msgs::msg::Point last_position;
     rclcpp::Time last_time;

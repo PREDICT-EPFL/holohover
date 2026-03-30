@@ -30,7 +30,7 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
     double puck_radius = 0.05;
     double hover_radius = 0.07;
     // Boundary Slack Logic
-    double x_max = 1.0; double y_lim = 0.5;
+    double x_max = 1.3; double y_lim = 0.5;
 
     opti = Opti();
 
@@ -136,7 +136,7 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
         obj += control_settings.weight_yaw * casadi::MX::sumsqr(x(4, k) - target_yaw);
         obj += control_settings.weight_w_z * casadi::MX::sumsqr(x(5, k));
 
-        if (k == N - 1) {
+        if (k == static_cast<int>(N/2)) {
                 final_strike_spot = strike_spot_k;
             }
     }
@@ -456,8 +456,9 @@ void HolohoverControlMPCNode::publish_control()
     casadi::DM puck_val = casadi::DM::zeros(nx);
     casadi::DM x0_val = casadi::DM::zeros(nx);
 
-    x_ref_vec(0) = ref.x;
-    x_ref_vec(1) = ref.y;
+    // puck state 
+    x_ref_vec(0) = ref.x + ref.v_x * delay_seconds;
+    x_ref_vec(1) = ref.y + ref.v_y * delay_seconds;
     x_ref_vec(2) = ref.v_x;
     x_ref_vec(3) = ref.v_y;
     x_ref_vec(4) = ref.yaw;
@@ -467,6 +468,19 @@ void HolohoverControlMPCNode::publish_control()
         x0_val(i) = state(i);
         puck_val(i) = x_ref_vec(i);
     }
+
+    double dt = control_settings.period;
+
+    for (const auto& past_u : control_history) {
+        // --- Position Update: p_next = p + v*dt + 0.5*a*dt^2 ---
+        x0_val(0) = x0_val(0) + x0_val(2) * dt + 0.5 * past_u(0) * dt * dt; // x
+        x0_val(1) = x0_val(1) + x0_val(3) * dt + 0.5 * past_u(1) * dt * dt; // y
+
+        // --- Velocity Update: v_next = v + a*dt ---
+        x0_val(2) = x0_val(2) + past_u(0) * dt; // v_x
+        x0_val(3) = x0_val(3) + past_u(1) * dt; // v_y
+    }
+
     opti.set_value(x0, x0_val);   
     opti.set_value(puck_state, puck_val);   
 
@@ -532,6 +546,11 @@ void HolohoverControlMPCNode::publish_control()
 
     // Extract first optimal control input
     DM u0 = u_opt(Slice(), 0);
+    control_history.push_back(u0);
+    if (control_history.size() > delay_steps) {
+        control_history.pop_front();
+    }
+    
 
     // Publish predicted trajectory
     publish_trajectory();
