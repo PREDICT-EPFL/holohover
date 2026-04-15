@@ -26,7 +26,7 @@ class HolohoverControlMPCNode : public rclcpp::Node
 {
 public:
     static constexpr int N = 20;
-    static constexpr int nx = 6;
+    static constexpr int nx = 4;
     static constexpr int nu = 2;
     static constexpr int na = 3;
 
@@ -50,10 +50,13 @@ private:
     std::vector<casadi::MX> strike_trajectory;
     std::vector<casadi::MX> strike_vec_trajectory;
 
+    double delta_t = 1.0 / N; // seconds
     std::tuple<double, double> home_pos;
     std::tuple<double, double> goal_pos;
     MX unit_dir_k;
     MX is_away;
+    MX momentum_rewards;
+    MX distance_cost;
 
     // Smith predictor
     std::deque<DM> control_history;
@@ -92,6 +95,7 @@ private:
     void publish_dual_trajectories(const casadi::DM& x_lti, const casadi::DM& x_rk4);
 
     void setup_ipopt(ControlMPCSettings control_settings);
+    void setup_ipopt_old(ControlMPCSettings control_settings);
     void setup_hpipm(ControlMPCSettings control_settings);
 };
 
