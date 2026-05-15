@@ -97,6 +97,7 @@ private:
     void setup_ipopt(ControlMPCSettings control_settings);
     void setup_ipopt_old(ControlMPCSettings control_settings);
     void setup_hpipm(ControlMPCSettings control_settings);
+    void setup_tracking(ControlMPCSettings control_settings);
 };
 
 

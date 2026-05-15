@@ -4,7 +4,7 @@ h0:
   mpc: 
     ros__parameters:
       period: 0.04
-      solver: ipopt
+      solver: ipopts
       weight_motor: 0.1
       weight_momentum: 100.0
       weight_distance: 5.0
@@ -14,7 +14,7 @@ h0:
       weight_yaw: 0.0
       weight_w_z: 1.0
 
-      control_limit : 1.0
+      control_limit : 0.3
 
       controller_delay : 0.04
 
