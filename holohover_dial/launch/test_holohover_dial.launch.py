@@ -20,46 +20,54 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    """
-    Generate launch description for holohover_dial nodes.
-    
-    This launch file:
-    1. Declares a launch argument for the parameter file
-    2. Starts the path planner node
-    3. Starts the control node
-    4. Both nodes share the same parameters
-    """
-    
-    # Get the package directory
     holohover_dial_dir = get_package_share_directory('holohover_dial')
     default_params_file = os.path.join(holohover_dial_dir, 'example_params.yaml')
     
-    # Declare launch argument for params file
     declare_params_arg = DeclareLaunchArgument(
         'params_file',
         default_value=default_params_file,
         description='Full path to parameter file to load'
     )
     
-    # Path Planner Node
-    # - Subscribes to /holohover/state
-    # - Publishes to /holohover/path_plan
-    path_planner_node = Node(
+    # Path Planner Node for Robot 1 (h1)
+    path_planner_h1 = Node(
         package='holohover_dial',
         executable='path_planner',
         name='path_planner',
+        namespace='h1',  # <-- Key: namespace for h1
         parameters=[LaunchConfiguration('params_file')],
-        output='screen',  # Show logs in terminal
-        emulate_tty=True,  # Colorize output
+        output='screen',
+        emulate_tty=True,
     )
     
-    # Control Node
-    # - Subscribes to /holohover/state and /holohover/path_plan
-    # - Publishes to /holohover/control
-    control_node = Node(
+    # Path Planner Node for Robot 2 (h2)
+    path_planner_h2 = Node(
+        package='holohover_dial',
+        executable='path_planner',
+        name='path_planner',
+        namespace='h2',  # <-- Key: namespace for h2
+        parameters=[LaunchConfiguration('params_file')],
+        output='screen',
+        emulate_tty=True,
+    )
+    
+    # Control Node for Robot 1 (h1)
+    control_node_h1 = Node(
         package='holohover_dial',
         executable='control',
         name='control_node',
+        namespace='h1',
+        parameters=[LaunchConfiguration('params_file')],
+        output='screen',
+        emulate_tty=True,
+    )
+    
+    # Control Node for Robot 2 (h2)
+    control_node_h2 = Node(
+        package='holohover_dial',
+        executable='control',
+        name='control_node',
+        namespace='h2',
         parameters=[LaunchConfiguration('params_file')],
         output='screen',
         emulate_tty=True,
@@ -67,6 +75,8 @@ def generate_launch_description():
     
     return LaunchDescription([
         declare_params_arg,
-        path_planner_node,
-        control_node,
+        path_planner_h1,
+        path_planner_h2,
+        control_node_h1,
+        control_node_h2,
     ])

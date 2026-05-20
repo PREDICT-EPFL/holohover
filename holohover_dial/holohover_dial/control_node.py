@@ -59,7 +59,7 @@ class ControlNode(Node):
         
         # Create a timer for periodic control updates
         period = 1.0 / self.config.update_rate  # Convert Hz to seconds
-        self.control_timer = self.create_timer(period, self._control_callback)
+        self.control_timer = self.create_timer(3, self._control_callback)
         self.get_logger().info(f"Control timer set to {self.config.update_rate} Hz")
 
     def _init_subscriptions(self):
@@ -67,30 +67,30 @@ class ControlNode(Node):
         # Subscribe to current state
         self.state_subscription = self.create_subscription(
             HolohoverStateStamped,
-            '/holohover/state',
+            'state',
             self._state_callback,
             10
         )
-        self.get_logger().info("Subscribed to /holohover/state")
+        self.get_logger().info("Subscribed to state")
         
         # Subscribe to desired trajectory
         self.trajectory_subscription = self.create_subscription(
             HolohoverTrajectory,
-            '/holohover/path_plan',
+            'path_plan',
             self._trajectory_callback,
             10
         )
-        self.get_logger().info("Subscribed to /holohover/path_plan")
+        self.get_logger().info("Subscribed to path_plan")
 
     def _init_publishers(self):
         """Initialize ROS2 publishers."""
         # Publish control commands
         self.control_publisher = self.create_publisher(
             HolohoverControlStamped,
-            '/holohover/control',
+            'control',
             10
         )
-        self.get_logger().info("Publishing to /holohover/control")
+        self.get_logger().info("Publishing to control")
 
     def _state_callback(self, msg: HolohoverStateStamped):
         """
@@ -120,7 +120,7 @@ class ControlNode(Node):
         """
         # Only proceed if we have both state and trajectory
         if self.current_state is None or self.current_trajectory is None:
-            # self.get_logger().warn("Waiting for state and/or trajectory")
+            self.get_logger().warn("Waiting for state and/or trajectory")
             return
         
         if len(self.current_trajectory.state_trajectory) == 0:

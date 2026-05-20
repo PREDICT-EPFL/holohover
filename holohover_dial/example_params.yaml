@@ -6,47 +6,49 @@
 
 # Path Planner Configuration
 path_planner:
+  ros__parameters:
   # Planning time horizon in seconds
   # How far into the future to plan trajectory
-  planning_horizon: 2.0
-  
-  # Goal position (target location)
-  goal_x: 0.5
-  goal_y: 0.0
-  
-  # Home position (defensive position)
-  home_x: -0.5
-  home_y: 0.0
-  
-  # Maximum velocity constraint (m/s)
-  max_velocity: 2.0
-  
-  # How often to update the path plan (Hz)
-  # Higher = more frequent replanning, but more CPU usage
-  update_rate: 30.0
+    planning_horizon: 2.0
+    
+    # Goal position (target location)
+    goal_x: 0.5
+    goal_y: 0.0
+    
+    # Home position (defensive position)
+    home_x: -0.5
+    home_y: 0.0
+    
+    # Maximum velocity constraint (m/s)
+    max_velocity: 2.0
+    
+    # How often to update the path plan (Hz)
+    # Higher = more frequent replanning, but more CPU usage
+    update_rate: 30.0
 
 # Control Configuration
 control:
-  # Weight for position tracking error
-  # Increase to make controller more aggressive about position tracking
-  position_weight: 1.0
-  
-  # Weight for velocity smoothness
-  # Increase to smooth out jerky motions
-  velocity_weight: 0.5
-  
-  # Maximum acceleration magnitude (m/s^2)
-  # Limits motor command output
-  control_limit: 1.0
-  
-  # How often to update control commands (Hz)
-  # Higher = more responsive but requires faster computation
-  update_rate: 50.0
-  
-  # PD Controller Gains
-  # Proportional gain: reacts to position error
-  kp: 1.0
-  
-  # Derivative gain: reacts to velocity error
-  # Increase for more damping
-  kd: 0.5
+  ros__parameters:
+    # Weight for position tracking error
+    # Increase to make controller more aggressive about position tracking
+    position_weight: 1.0
+    
+    # Weight for velocity smoothness
+    # Increase to smooth out jerky motions
+    velocity_weight: 0.5
+    
+    # Maximum acceleration magnitude (m/s^2)
+    # Limits motor command output
+    control_limit: 1.0
+    
+    # How often to update control commands (Hz)
+    # Higher = more responsive but requires faster computation
+    update_rate: 50.0
+    
+    # PD Controller Gains
+    # Proportional gain: reacts to position error
+    kp: 1.0
+    
+    # Derivative gain: reacts to velocity error
+    # Increase for more damping
+    kd: 0.5

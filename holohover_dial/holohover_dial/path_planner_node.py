@@ -37,6 +37,7 @@ class PathPlannerNode(Node):
         
         # Load configuration from ROS2 parameters
         self.config = PathPlannerConfig.from_ros_node(self)
+
         self.get_logger().info(f"Path Planner initialized with config: {self.config}")
         
         # State tracking
@@ -49,7 +50,7 @@ class PathPlannerNode(Node):
         
         # Create a timer for periodic planning updates
         period = 1.0 / self.config.update_rate  # Convert Hz to seconds
-        self.planning_timer = self.create_timer(period, self._planning_callback)
+        self.planning_timer = self.create_timer(10, self._planning_callback)
         self.get_logger().info(f"Planning timer set to {self.config.update_rate} Hz")
 
     def _init_subscriptions(self):
@@ -57,21 +58,21 @@ class PathPlannerNode(Node):
         # Subscribe to current state
         self.state_subscription = self.create_subscription(
             HolohoverStateStamped,
-            '/holohover/state',
+            'state',
             self._state_callback,
             10  # QoS history depth
         )
-        self.get_logger().info("Subscribed to /holohover/state")
+        self.get_logger().info("Subscribed to state")
 
     def _init_publishers(self):
         """Initialize ROS2 publishers."""
         # Publish planned trajectory
         self.path_plan_publisher = self.create_publisher(
             HolohoverTrajectory,
-            '/holohover/path_plan',
+            'path_plan',
             10
         )
-        self.get_logger().info("Publishing to /holohover/path_plan")
+        self.get_logger().info("Publishing to path_plan")
 
     def _state_callback(self, msg: HolohoverStateStamped):
         """
