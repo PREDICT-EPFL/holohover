@@ -8,7 +8,7 @@ The path planner is where high-level planning logic lives. For now, it implement
 a simple template that tracks toward a goal position.
 """
 
-import numpy as np
+import jax.numpy as jnp
 from typing import List
 import rclpy
 from rclpy.node import Node
@@ -19,6 +19,9 @@ from holohover_msgs.msg import HolohoverStateStamped, HolohoverTrajectory, Holoh
 
 # Local imports
 from holohover_dial.config import PathPlannerConfig
+
+from holohover_dial.path_planner.path_planner import build_dial_path_planner
+from holohover_dial.path_planner.controller import build_lqr_tracking_controller
 
 
 class PathPlannerNode(Node):
@@ -35,23 +38,26 @@ class PathPlannerNode(Node):
     def __init__(self):
         super().__init__('path_planner')
         
-        # Load configuration from ROS2 parameters
+
         self.config = PathPlannerConfig.from_ros_node(self)
 
         self.get_logger().info(f"Path Planner initialized with config: {self.config}")
-        
-        # State tracking
+        print("Testing JAX function:", function())  # Test that JAX is working
         self.current_state: HolohoverState = None
         self.path_plan: List[HolohoverState] = []
         
-        # Create subscriptions and publishers
         self._init_subscriptions()
         self._init_publishers()
         
-        # Create a timer for periodic planning updates
         period = 1.0 / self.config.update_rate  # Convert Hz to seconds
         self.planning_timer = self.create_timer(10, self._planning_callback)
         self.get_logger().info(f"Planning timer set to {self.config.update_rate} Hz")
+
+        self.def_controller = build_lqr_tracking_controller(robot_id=0, target_state=jnp.zeros(6))
+        self.imagined_enemy_controller = build_lqr_tracking_controller(robot_id=1, target_state=jnp.zeros(6))
+        self.planner = build_dial_path_planner(robot_id=0,
+                                               def_controller=self.def_controller,
+                                               imagined_enemy_controller=self.imagined_enemy_controller)
 
     def _init_subscriptions(self):
         """Initialize ROS2 subscriptions."""
@@ -113,48 +119,7 @@ class PathPlannerNode(Node):
         Returns:
             List of HolohoverState messages representing desired positions
         """
-        trajectory = []
         
-        # Get current position and velocity
-        current_pos = np.array([self.current_state.x, self.current_state.y])
-        current_vel = np.array([self.current_state.v_x, self.current_state.v_y])
-        goal_pos = np.array([self.config.goal_x, self.config.goal_y])
-        
-        # Simple planning: linearly move toward goal
-        # You can replace this with more sophisticated planning
-        
-        # Number of points in the trajectory
-        n_points = int(self.config.planning_horizon * self.config.update_rate)
-        n_points = max(n_points, 5)  # At least 5 points
-        
-        for i in range(n_points):
-            # Linear interpolation parameter (0 to 1)
-            alpha = (i + 1) / n_points
-            
-            # Interpolate position toward goal
-            desired_pos = current_pos + alpha * (goal_pos - current_pos)
-            
-            # Compute desired velocity as simple proportional control
-            # (reduce velocity as we get close to goal)
-            direction = goal_pos - current_pos
-            distance = np.linalg.norm(direction)
-            
-            if distance > 1e-3:
-                # Move toward goal with velocity proportional to distance
-                desired_vel = (direction / distance) * min(self.config.max_velocity, distance)
-            else:
-                desired_vel = np.array([0.0, 0.0])
-            
-            # Create HolohoverState message
-            state = HolohoverState()
-            state.x = float(desired_pos[0])
-            state.y = float(desired_pos[1])
-            state.v_x = float(desired_vel[0])
-            state.v_y = float(desired_vel[1])
-            state.yaw = self.current_state.yaw  # Keep current yaw (not planning orientation)
-            state.w_z = 0.0  # No angular velocity in this simple planner
-            
-            trajectory.append(state)
         
         return trajectory
 

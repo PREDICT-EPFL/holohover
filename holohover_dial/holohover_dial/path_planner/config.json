@@ -1,0 +1,59 @@
+{
+  "simulation": {
+    "hz": 100,
+    "path_planning_hz": 10,
+    "animation_hz": 50,
+    "duration": 5,
+    "H": 15, 
+    "H_mpc": 6,
+    "goal_check_horizon_s": 1.0,
+    "goal_check_hz": 25,
+    "u_limits": [0.35, 0.35, 0.005],
+    "n_debug_trajectories": 25,
+    "continuous_play": false,
+    "pvp": false
+  },
+  
+  "table": {
+    "width": 2.13,
+    "height": 1.06,
+    "goal_width": 0.34,
+    "friction": 0.0
+  },
+  
+  "robot": {
+    "radius": 0.07,
+    "mass": 0.116,
+    "robot1": {
+      "defensive_position_rel": 0.85,
+      "initial_position": [1.9, 0.85, 0.0],
+      "initial_velocity": [0.0, 0.0, 0]
+    },
+    "robot2": {
+      "defensive_position_rel": 0.15,
+      "initial_position": [0.1, 0.9, 0.0],
+      "initial_velocity": [0.0, 0, 0]
+    }
+  },
+
+  "puck": {
+    "radius": 0.035,
+    "mass": 0.023,
+    "initial_position": [1.4, 0.53, 0.0],
+    "initial_velocity": [-0.2, -0.6, 0.0]
+  },
+
+  "dial": {
+    "Nw": 2000,
+    "N": 8,
+    "n_knots": 5,
+    "update_temperature": 1e1,
+    "beta1": 0.25,
+    "beta2": 1,
+    "path_planning_scale": [0.01, 0.01, 0.5],
+    "tf_scale": 0.01,
+    "Q_diag": [10, 10, 10, 5, 5, 5],
+    "R_diag": [0.001, 0.01, 0.05]
+  }
+
+}
