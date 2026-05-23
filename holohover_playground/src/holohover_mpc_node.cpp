@@ -21,7 +21,7 @@ HolohoverControlMPCNode::HolohoverControlMPCNode() :
         goal_pos(std::make_tuple(control_settings.goal_x, control_settings.goal_y))
 {
         init_topics();
-        control_settings.solver == "ipopt" ? setup_ipopt(control_settings) : setup_ipopt_old(control_settings);
+        control_settings.solver == "ipopt" ? setup_ipopt(control_settings) : setup_tracking(control_settings);
         init_timer();
 }
 
@@ -49,8 +49,8 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
 
     // 3. Constraints
     opti.subject_to(x(Slice(), 0) == x0);
-    opti.subject_to(opti.bounded(-control_settings.control_limit, u, control_settings.control_limit)); // to be handled by the low level later
     opti.subject_to(vec(slack) >= 0);
+    opti.subject_to(opti.bounded(-control_settings.control_limit, u, control_settings.control_limit));
 
     // 4. Defensive vs Offensive Play Set up
     MX puck_x = puck_state(0); 
@@ -75,6 +75,7 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
     MX obj = 0;
     momentum_rewards = 0;
     distance_cost = 0;
+    MX heading_cost = 0;
 
     MX p_pos_k = puck_state(Slice(0, 2));
     MX p_vel_k = puck_state(Slice(2, 4));
@@ -146,6 +147,8 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
         MX v_m_proj = casadi::MX::dot(x(Slice(2, 4), k), unit_dir_k);
         MX v_p_proj = casadi::MX::dot(p_vel_k, unit_dir_k);
         momentum_rewards += strike_mode * velocity_gate * (v_m_proj - v_p_proj);
+        heading_cost += casadi::MX::sumsqr(x(Slice(4), k));
+
         // momentum_rewards += strike_mode * (v_m_proj - v_p_proj);
         // H. Boundary constraints
         opti.subject_to(x(1, k) >= -y_lim );
@@ -159,7 +162,8 @@ void HolohoverControlMPCNode::setup_ipopt(ControlMPCSettings control_settings)
     MX control_effort = control_settings.weight_motor * casadi::MX::sumsqr(u);
 
     obj += control_settings.weight_distance * distance_cost;
-    obj += control_settings.weight_yaw * casadi::MX::sumsqr(x(Slice(0, 2), N) - strike_imm); // terminal
+    //obj += control_settings.weight_yaw * casadi::MX::sumsqr(x(Slice(0, 2), N) - strike_imm); // terminal
+    obj += control_settings.weight_yaw * heading_cost; 
     obj += (-control_settings.weight_momentum * momentum_rewards);
     obj += control_effort;
     obj += slack_penalty;
@@ -313,61 +317,83 @@ void HolohoverControlMPCNode::setup_ipopt_old(ControlMPCSettings control_setting
 }
 
 void HolohoverControlMPCNode::setup_tracking(ControlMPCSettings control_settings) {
+    strike_trajectory.clear();
+    
     // 0. Physical Parameters
-    double puck_radius = 0.05;
-    double hover_radius = 0.07;
-
-    double max_vel = 2.0; // of hovercraft (just for solvers)
-    double x_lim = 0.9; double y_lim = 0.5; // table
+    double max_vel = 1.5; // Slightly reduced for safe hardware testing
+    double x_lim = 0.9; double y_lim = 0.5; // Table geometry
 
     opti = Opti();
 
     // 1. Variables
-    x = opti.variable(nx, N+1); // [x, y, vx, vy]
-    u = opti.variable(nu, N); // [ax, ay]
+    x = opti.variable(nx, N+1); // [x, y, vx, vy, yaw, wz]
+    u = opti.variable(nu, N);   // [ax, ay, wz]
+    puck_state = opti.parameter(nx, 1); // not used
     
     // 2. Solver Parameters
     x0 = opti.parameter(nx);
-    puck_state = opti.parameter(nx, 1); 
 
-    // 3. Constraints
+    // 3. Initial Condition Constraint
     opti.subject_to(x(Slice(), 0) == x0);
-    opti.subject_to(opti.bounded(-control_settings.control_limit, u, control_settings.control_limit));
 
-    // 4. Defensive vs Offensive Play Set up
-    MX puck_x = puck_state(0); 
-    MX puck_vx = puck_state(2);
-    MX goal_pos_dx = casadi::MX::vertcat({std::get<0>(goal_pos), std::get<1>(goal_pos)});
-    MX home_pos_dx = casadi::MX::vertcat({std::get<0>(home_pos), std::get<1>(home_pos)});
-    
-    // 5. Cost and Dynamics Loop
+    // 4. Cost Accumulators
     MX obj = 0;
     distance_cost = 0;
-
-    MX p_pos_k = puck_state(Slice(0, 2));
-
+    MX heading_cost = 0;
+    MX control_effort = 0;
     double dt = delta_t;
+    
     for (int k = 0; k < N; ++k) {
-        // A. Position update: [x,y]next = [x,y] + [vx,vy]*dt
-        opti.subject_to(x(Slice(0, 2), k+1) == x(Slice(0, 2), k) + x(Slice(2, 4), k) * dt);
 
-        // B. Velocity update: [vx,vy]next = [vx,vy] + [ax,ay]*dt
-        opti.subject_to(x(Slice(2, 4), k+1) == x(Slice(2, 4), k) + u(Slice(0, 2), k) * dt);
-        opti.subject_to(pow(x(2, k), 2) + pow(x(3, k), 2)<= max_vel*max_vel);
+        MX v_next = x(Slice(2, 4), k) + u(Slice(0, 2), k) * dt;
+        MX omega_next = x(5, k) + u(2, k) * dt; 
 
-        MX dist_sq_k = casadi::MX::sumsqr(x(Slice(0, 2), k) - p_pos_k);
+        opti.subject_to(x(Slice(2, 4), k+1) == v_next);
+        opti.subject_to(x(5, k+1) == omega_next);
+        opti.subject_to(x(Slice(0, 2), k+1) == x(Slice(0, 2), k) + v_next * dt);
+        opti.subject_to(x(4, k+1) == x(4, k) + omega_next * dt);
 
-        distance_cost += dist_sq_k;
+        // // position update: [x,y]next = [x,y] + [vx,vy]*dt
+        // opti.subject_to(x(Slice(0, 2), k+1) == x(Slice(0, 2), k) + x(Slice(2, 4), k) * dt);
+
+        // // velocity update: [vx,vy]next = [vx,vy] + [ax,ay]*dt
+        // opti.subject_to(x(Slice(2, 4), k+1) == x(Slice(2, 4), k) + u(Slice(0, 2), k) * dt);
+
+        // // angular position update 
+        // opti.subject_to(x(Slice(4), k+1) == x(Slice(4), k) + x(slice(5), k) * dt);
+
+        // // angular velocity update [omega]_next = omega + wz*dt
+        // opti.subject_to(x(Slice(5), k+1) == x(Slice(5), k) + u(slice(2), k) * dt);
+
+        // Path Constraints (State Bounding)
+        opti.subject_to(pow(x(2, k), 2) + pow(x(3, k), 2) <= max_vel * max_vel);
 
         opti.subject_to(x(1, k) >= -y_lim );
         opti.subject_to(x(1, k) <=  y_lim );
-        opti.subject_to(x(0, k) >=  -x_lim );
+        opti.subject_to(x(0, k) >= -x_lim );
         opti.subject_to(x(0, k) <=  x_lim );
+
+        distance_cost += casadi::MX::sumsqr(x(Slice(0, 2), k)); 
+        heading_cost += casadi::MX::sumsqr(x(Slice(4), k)); // cost for angular velocity  
+        control_effort += casadi::MX::sumsqr(u(Slice(), k));
     }    
 
-    MX control_effort = control_settings.weight_motor * casadi::MX::sumsqr(u);
+    // 5. Terminal Constraints/Bounds (For the N+1 state node)
+    opti.subject_to(x(1, N) >= -y_lim );
+    opti.subject_to(x(1, N) <=  y_lim );
+    opti.subject_to(x(0, N) >= -x_lim );
+    opti.subject_to(x(0, N) <=  x_lim );
+    opti.subject_to(pow(x(2, N), 2) + pow(x(3, N), 2) <= max_vel * max_vel);
+
+    // 6. Terminal Cost: Put a heavy penalty on the final state to force zero velocity and zero angular rotation
+    MX terminal_cost = 100 * casadi::MX::sumsqr(x(Slice(0, 4), N)) + 100 * casadi::MX::sumsqr(x(Slice(5), N));
+
+    // Construct Total Objective
     obj += control_settings.weight_distance * distance_cost;
-    obj += control_effort;
+    obj += control_settings.weight_yaw * heading_cost;
+    obj += control_settings.weight_motor * control_effort;
+    obj += terminal_cost;
+    
     opti.minimize(obj);
     
     // Solver Settings
@@ -641,53 +667,21 @@ void HolohoverControlMPCNode::publish_trajectory()
 
 }
 
-void HolohoverControlMPCNode::publish_dual_trajectories(const casadi::DM& x_lti, const casadi::DM& x_rk4) {
-    // Comparison for non-linear vs linear dynamics but I believe two arguments are swtched ^ (#TODO)
-    auto create_marker = [this](const casadi::DM& traj, std::string ns, int id, float r, float g, float b) {
-        visualization_msgs::msg::Marker marker;
-        marker.header.frame_id = "world";
-        marker.header.stamp = this->now();
-        marker.ns = ns;
-        marker.id = id;
-        marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
-        marker.scale.x = 0.02; // Thickness
-        marker.color.r = r; marker.color.g = g; marker.color.b = b; marker.color.a = 1.0;
-
-        for (int i = 0; i < traj.size2(); ++i) {
-            geometry_msgs::msg::Point p;
-            p.x = static_cast<double>(traj(0, i));
-            p.y = static_cast<double>(traj(1, i));
-            marker.points.push_back(p);
-        }
-        return marker;
-    };
-
-    marker_pub_->publish(create_marker(x_lti, "lti_prediction", 0, 1.0, 0.0, 0.0)); // RED
-    marker_pub_->publish(create_marker(x_rk4, "rk4_prediction", 1, 0.0, 1.0, 0.0)); // GREEN
-}
-
-// void HolohoverControlMPCNode::low_level_control() {
-//     Holohover::state_t<double> state_curr; // using state_t = Eigen::Matrix<T, NX, 1>;
-//     Holohover::control_acc_t<double> u_acc_curr; // using control_acc_t = Eigen::Matrix<T, NA, 1>; // u = (a_x, a_y, w_dot_z)
-//     Holohover::control_force_t<double> u_force_curr;
-
-//     holohover.control_acceleration_to_force(state_at_ocp_solve, u_acc_curr, u_force_curr);
-//     holohover.thrust_to_signal(u_force_curr, u_signal);
-
-//     // clip between 0 and 1
-//     u_signal = u_signal.cwiseMax(holohover_props.idle_signal).cwiseMin(1);    
-//     holohover.signal_to_thrust(u_signal, u_force_curr);
-
-//     //convert back to acceleration for OCP
-//     holohover.control_force_to_acceleration(state_at_ocp_solve, u_force_curr, u_acc_curr);
-// }
-
 void HolohoverControlMPCNode::publish_control()
 {
-    if (!state_ready || !puck_ready) {
-        RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Waiting for data...");
-        return;
+    // Ensure we have the necessary data before running MPC
+    if (control_settings.solver == "ipopt") {
+        if (!state_ready || !puck_ready) {
+            RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Waiting for data...");
+            return;
+        }
+    } else {
+        if (!state_ready) {
+            RCLCPP_INFO_THROTTLE(this->get_logger(), *this->get_clock(), 1000, "Waiting for data...");
+            return;
+        }
     }
+    
     // Build reference state vector
     casadi::DM x_ref_vec = casadi::DM::zeros(nx);
     casadi::DM puck_val = casadi::DM::zeros(nx);
@@ -746,7 +740,7 @@ void HolohoverControlMPCNode::publish_control()
         state_eigen << state(0), state(1), state(2), state(3), state(4), state(5);
         
         Holohover::control_acc_t<double> u_acc_mpc;
-        u_acc_mpc << static_cast<double>(u0(0)), static_cast<double>(u0(1)), 0.0;
+        u_acc_mpc << static_cast<double>(u0(0)), static_cast<double>(u0(1)), static_cast<double>(u0(2)); // angular acc?
 
         Holohover::control_force_t<double> u_force_curr;
 
@@ -761,25 +755,25 @@ void HolohoverControlMPCNode::publish_control()
                 }
 
         publish_strike_trajectory(st);
-        double dist_val = static_cast<double>(sol.value(distance_cost));
-        double mom_val  = static_cast<double>(sol.value(momentum_rewards));
-        double away_val = static_cast<double>(sol.value(is_away));
-        MX home_pos_dx = casadi::MX::vertcat({std::get<0>(home_pos), std::get<1>(home_pos)});
 
+        if (control_settings.solver == "ipopt") {
+            double dist_val = static_cast<double>(sol.value(distance_cost));
+            double mom_val  = static_cast<double>(sol.value(momentum_rewards));
+            double away_val = static_cast<double>(sol.value(is_away));
+            MX home_pos_dx = casadi::MX::vertcat({std::get<0>(home_pos), std::get<1>(home_pos)});
 
-        // Calculate the actual weighted contribution to the objective
-        double weighted_dist = control_settings.weight_distance * dist_val;
-        double weighted_mom  = control_settings.weight_momentum * mom_val;
-        double weighted_home = away_val * control_settings.weight_comehome * static_cast<double>(sol.value(casadi::MX::sumsqr(x(Slice(0, 2), 0) - home_pos_dx)));
-
-        RCLCPP_INFO(this->get_logger(), 
-            "--- MPC Balance ---\n"
-            "State: %s | Away Signal: %.2f\n"
-            "Weighted Dist Cost: %.4f\n"
-            "Weighted Mom Reward: %.4f\n"
-            "Weighted Home Cost: %.4f",
-            (away_val > 0.5 ? "DEFENSE" : "ATTACK"), 
-            away_val, weighted_dist, weighted_mom, weighted_home);
+            double weighted_dist = control_settings.weight_distance * dist_val;
+            double weighted_mom  = control_settings.weight_momentum * mom_val;
+            double weighted_home = away_val * control_settings.weight_comehome * static_cast<double>(sol.value(casadi::MX::sumsqr(x(Slice(0, 2), 0) - home_pos_dx)));
+            RCLCPP_INFO(this->get_logger(), 
+                "--- MPC Balance ---\n"
+                "State: %s | Away Signal: %.2f\n"
+                "Weighted Dist Cost: %.4f\n"
+                "Weighted Mom Reward: %.4f\n"
+                "Weighted Home Cost: %.4f",
+                (away_val > 0.5 ? "DEFENSE" : "ATTACK"), 
+                away_val, weighted_dist, weighted_mom, weighted_home);
+        } 
         
     }
     catch (std::exception &e)
@@ -818,7 +812,6 @@ void HolohoverControlMPCNode::publish_control()
         control_history.pop_front();
     }
     
-
     // Publish predicted trajectory
     publish_trajectory();
 
@@ -833,6 +826,12 @@ void HolohoverControlMPCNode::publish_control()
     control_msg.motor_b_2 = static_cast<double>(u_signal(3));
     control_msg.motor_c_1 = static_cast<double>(u_signal(4));
     control_msg.motor_c_2 = static_cast<double>(u_signal(5));
+
+    RCLCPP_INFO(this->get_logger(), 
+        "Motors -> A1: %.3f, A2: %.3f | B1: %.3f, B2: %.3f | C1: %.3f, C2: %.3f",
+        control_msg.motor_a_1, control_msg.motor_a_2,
+        control_msg.motor_b_1, control_msg.motor_b_2,
+        control_msg.motor_c_1, control_msg.motor_c_2);
 
     control_publisher->publish(control_msg);
 

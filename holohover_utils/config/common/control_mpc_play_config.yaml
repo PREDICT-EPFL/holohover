@@ -1,20 +1,19 @@
 # holohover_utils/config/common/control_mpc_play_config.yaml
-
 h0:
   mpc: 
     ros__parameters:
       period: 0.04
       solver: ipopts
-      weight_motor: 0.1
-      weight_momentum: 100.0
-      weight_distance: 5.0
-      weight_comehome: 500.0
+      weight_motor: 1.0
+      weight_momentum: 10.0
+      weight_distance: 10.0
+      weight_comehome: 100.0
       scale_distance: 0.5 # minimum 0.5
       scale_momentum: 0.3
-      weight_yaw: 0.0
+      weight_yaw: 10.0
       weight_w_z: 1.0
 
-      control_limit : 0.3
+      control_limit : 1.0
 
       controller_delay : 0.04
 

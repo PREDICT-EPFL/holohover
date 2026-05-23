@@ -20,14 +20,22 @@
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
+
+#define X 0
+#define Y 1
+#define VX 2
+#define VY 3
+#define YAW 4
+#define WZ 5
+
 using namespace casadi;
 
 class HolohoverControlMPCNode : public rclcpp::Node
 {
 public:
     static constexpr int N = 20;
-    static constexpr int nx = 4;
-    static constexpr int nu = 2;
+    static constexpr int nx = 6;
+    static constexpr int nu = 3;
     static constexpr int na = 3;
 
     HolohoverControlMPCNode();
