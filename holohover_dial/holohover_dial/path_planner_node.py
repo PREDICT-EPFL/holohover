@@ -2,7 +2,7 @@
 Path Planner Node for holohover_dial
 
 This node takes the current state of the holohover and generates a desired
-trajectory (sequence of positions) that the control node will try to follow.
+path_plan (sequence of positions) that the control node will try to follow.
 
 The path planner is where high-level planning logic lives. For now, it implements
 a simple template that tracks toward a goal position.
@@ -15,7 +15,7 @@ from rclpy.node import Node
 from rclpy.timer import Rate
 
 # Message types
-from holohover_msgs.msg import HolohoverStateStamped, HolohoverTrajectory, HolohoverState
+from holohover_msgs.msg import HolohoverStateStamped, HolohoverTrajectory, HolohoverPathPlan, HolohoverState
 
 # Local imports
 from holohover_dial.config import PathPlannerConfig
@@ -32,7 +32,7 @@ class PathPlannerNode(Node):
         - /holohover/state: Current state of the holohover
     
     Publications:
-        - /holohover/path_plan: Desired trajectory to follow
+        - /holohover/path_plan: Desired path plan to follow
     """
 
     def __init__(self):
@@ -44,7 +44,7 @@ class PathPlannerNode(Node):
         self.get_logger().info(f"Path Planner initialized with config: {self.config}")
         print("Testing JAX function:", function())  # Test that JAX is working
         self.current_state: HolohoverState = None
-        self.path_plan: List[HolohoverState] = []
+        self.path_plan: HolohoverPathPlan = None
         
         self._init_subscriptions()
         self._init_publishers()
@@ -74,7 +74,7 @@ class PathPlannerNode(Node):
         """Initialize ROS2 publishers."""
         # Publish planned trajectory
         self.path_plan_publisher = self.create_publisher(
-            HolohoverTrajectory,
+            HolohoverPathPlan,
             'path_plan',
             10
         )
@@ -101,16 +101,16 @@ class PathPlannerNode(Node):
             # self.get_logger().warn("No state received yet")
             return
 
-        # Generate a trajectory (this is the main planning logic)
-        trajectory = self._generate_trajectory()
+        # Generate a path plan (this is the main planning logic)
+        path_plan = self._generate_path_plan()
         
-        # Publish the trajectory
-        if trajectory:
-            self._publish_trajectory(trajectory)
+        # Publish the path plan
+        if path_plan:
+            self._publish_path_plan(path_plan)
 
-    def _generate_trajectory(self) -> List[HolohoverState]:
+    def _generate_path_plan(self) -> List[HolohoverState]:
         """
-        Generate a desired trajectory based on current state.
+        Generate a desired path plan based on current state.
         
         This is the core planning algorithm. Currently implements a simple
         linear interpolation toward the goal. Replace this with your planning
@@ -120,21 +120,22 @@ class PathPlannerNode(Node):
             List of HolohoverState messages representing desired positions
         """
         
-        
-        return trajectory
+        path_plan = HolohoverPathPlan()
+        path_plan.header.stamp = self.get_clock().now().to_msg()
+        return path_plan
 
-    def _publish_trajectory(self, trajectory: List[HolohoverState]):
+    def _publish_path_plan(self, path_plan: List[HolohoverState]):
         """
-        Publish the generated trajectory.
+        Publish the generated path plan.
         
         Args:
-            trajectory: List of desired HolohoverState messages
+            path_plan: List of desired HolohoverState messages
         """
-        # Create trajectory message
-        traj_msg = HolohoverTrajectory()
+        # Create path plan message
+        traj_msg = HolohoverPathPlan()
         traj_msg.header.stamp = self.get_clock().now().to_msg()
         traj_msg.header.frame_id = "world"  # Reference frame
-        traj_msg.state_trajectory = trajectory
+        traj_msg.state_path_plan = path_plan
         
         # Publish
         self.path_plan_publisher.publish(traj_msg)
