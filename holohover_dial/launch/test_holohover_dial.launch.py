@@ -21,7 +21,7 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
     holohover_dial_dir = get_package_share_directory('holohover_dial')
-    default_params_file = os.path.join(holohover_dial_dir, 'example_params.yaml')
+    default_params_file = os.path.join(holohover_dial_dir, 'config.yaml')
     
     declare_params_arg = DeclareLaunchArgument(
         'params_file',

@@ -8,11 +8,12 @@ The path planner is where high-level planning logic lives. For now, it implement
 a simple template that tracks toward a goal position.
 """
 
-import jax.numpy as jnp
 from typing import List
 import rclpy
 from rclpy.node import Node
 from rclpy.timer import Rate
+
+import jax.numpy as jnp
 
 # Message types
 from holohover_msgs.msg import HolohoverStateStamped, HolohoverTrajectory, HolohoverPathPlan, HolohoverState
@@ -20,6 +21,7 @@ from holohover_msgs.msg import HolohoverStateStamped, HolohoverTrajectory, Holoh
 # Local imports
 from holohover_dial.config import PathPlannerConfig
 
+# from holohover_dial.path_planner.verify import function  # Test import to verify JAX is working
 from holohover_dial.path_planner.path_planner import build_dial_path_planner
 from holohover_dial.path_planner.controller import build_lqr_tracking_controller
 
@@ -49,15 +51,19 @@ class PathPlannerNode(Node):
         self._init_subscriptions()
         self._init_publishers()
         
-        period = 1.0 / self.config.update_rate  # Convert Hz to seconds
-        self.planning_timer = self.create_timer(10, self._planning_callback)
-        self.get_logger().info(f"Planning timer set to {self.config.update_rate} Hz")
+        dt = 1.0 / self.config.dial.hz  # Convert Hz to seconds
+        self.planning_timer = self.create_timer(dt * 100, self._planning_callback)
+        self.get_logger().info(f"Planning timer set to {self.config.dial.hz} Hz")
 
-        self.def_controller = build_lqr_tracking_controller(robot_id=0, target_state=jnp.zeros(6))
-        self.imagined_enemy_controller = build_lqr_tracking_controller(robot_id=1, target_state=jnp.zeros(6))
-        self.planner = build_dial_path_planner(robot_id=0,
-                                               def_controller=self.def_controller,
-                                               imagined_enemy_controller=self.imagined_enemy_controller)
+        self.get_logger().info(f"My home is at {self.config.hovercraft.player.defensive_position_rel}")
+
+        # self.def_controller = build_lqr_tracking_controller(np.zeros(6), robot_id=0)
+        # self.imagined_enemy_controller = build_lqr_tracking_controller(np.zeros(6), robot_id=1)
+        # self.planner = build_dial_path_planner(
+        #     0,
+        #     self.def_controller,
+        #     self.imagined_enemy_controller,
+        # )
 
     def _init_subscriptions(self):
         """Initialize ROS2 subscriptions."""

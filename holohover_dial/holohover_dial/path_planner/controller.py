@@ -11,7 +11,7 @@ def build_interpolation_controller(config):
 
     def controller(x0, input_spline, tf, time_pp):
         t_normalized = jnp.clip(time_pp / (tf + 1e-8), 0.0, 1.0)
-        u0 = input_spline(t_normalized)
+        u0 = input_spline(t_normalized)y
         return u0
 
     return jax.jit(controller)

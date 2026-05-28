@@ -14,7 +14,7 @@
   <depend>holohover_msgs</depend>
   
   <!-- Python package dependencies -->
-  <depend>numpy</depend>
+  <!-- <depend>numpy</depend> -->
 
   <!-- Testing dependencies -->
   <test_depend>ament_copyright</test_depend>
