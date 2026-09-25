@@ -1,0 +1,81 @@
+{
+  "simulation": {
+    "hz": 100,
+    "path_planning_hz": 10,
+    "animation_hz": 50,
+    "duration": 3,
+    "H": 20,
+    "H_mpc": 10,
+    "u_limits": [0.685, 0.685, 1]
+  },
+  
+  "table": {
+    "width": 2.13,
+    "height": 1.06,
+    "friction": 0.0,
+    "defensive_position_rel": [0.85, 0.5]
+  },
+  
+  "robot": {
+    "radius": 0.07,
+    "mass": 0.137,
+    "initial_position": [1.2, 0.15, 0.0],
+    "initial_velocity": [0, 0, 0]
+  },
+
+  "puck": {
+    "radius": 0.035,
+    "mass": 0.025,
+    "initial_position": [1.8, 0.2, 0.0],
+    "initial_velocity": [-0.5, 0.0, 0.0]
+  },
+
+  "mppi": {
+    "Nw": 200,
+    "update_temperature": 2.0,
+    "beta": 30,
+    "control_scale": [15.0, 15.0, 3.0],
+    "path_planning_scale": [10.0, 10.0, 3.0],
+    "tf_scale": 0.02,
+    "Q_diag": [1e3, 1e3, 1e3, 5, 5, 5],
+    "R_diag": [1, 1, 0.05],
+    "target": [0.25, 0.25],
+    "u_limits": [20, 20, 3],
+    "input penalty": 0
+  },
+
+  "dial": {
+    "Nw": 5000,
+    "N": 25,
+    "update_temperature": 1e5,
+    "beta1": 200,
+    "beta2": 200,
+    "control_scale": [15.0, 15.0, 3.0],
+    "path_planning_scale": [15.0, 15.0, 3.0],
+    "tf_scale": 0.01,
+    "Q_diag": [10, 10, 10, 5, 5, 5],
+    "R_diag": [1, 1, 0.05],
+    "target": [0.25, 0.25],
+    "u_limits": [20, 20, 3],
+    "input penalty": 0
+  },
+
+  "dial_sweep": {
+    "Nw": 500,
+    "N": 20,
+    "update_temperature": 1e4,
+    "beta1": 200,
+    "beta2": 200,
+    "control_scale": [15.0, 15.0, 3.0],
+    "path_planning_scale": [15.0, 15.0, 3.0],
+    "tf_scale": 0.01,
+    "Q_diag": [10, 10, 10, 5, 5, 5],
+    "R_diag": [1, 1, 0.05],
+    "target": [0.25, 0.25],
+    "u_limits": [20, 20, 3],
+    "input penalty": 0,
+    "tf_limits": [0, 2],
+    "n_candidates": 7,
+    "n_refine": 2
+  }
+}
