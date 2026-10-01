@@ -106,9 +106,16 @@ PLANNING_SCHEMA = {
     "type": "object",
     "properties": {
         "header": {"$ref": "#/definitions/header"},
-        "mode": {"enum": ["standard", "dial"]},
+        "mode": {"type": "string", "enum": ["standard", "dial"]},
         "planned_states": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}},
-        "planned_forces": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}},
+        "planned_forces": {
+            "type": "object",
+            "properties": {
+                "fx": {"type": "array", "items": {"type": "number"}},
+                "fy": {"type": "array", "items": {"type": "number"}},
+                "tau": {"type": "array", "items": {"type": "number"}},
+            },
+        },
         "future_trajectory": {"type": "array", "items": {"type": "array", "items": {"type": "number"}}},
         "candidate_trajectories": {
             "type": "array",
@@ -139,7 +146,7 @@ def _header(stamp_ns, frame_id):
 
 
 def _pose(state, stamp_ns):
-    x, y, yaw = np.asarray(state)[[0, 1, 4]].tolist()
+    x, y, yaw = np.asarray(state)[[0, 1, 2]].tolist()
     half_yaw = yaw / 2.0
     return {
         "header": _header(stamp_ns, "world"),
@@ -151,7 +158,7 @@ def _pose(state, stamp_ns):
 
 
 def _state(state, stamp_ns):
-    x, y, v_x, v_y, yaw, w_z = np.asarray(state).tolist()
+    x, y, yaw, v_x, v_y, w_z = np.asarray(state).tolist()
     return {
         "header": _header(stamp_ns, "world"),
         "state_msg": {"x": x, "y": y, "v_x": v_x, "v_y": v_y, "yaw": yaw, "w_z": w_z},
@@ -179,11 +186,16 @@ def _force(values, stamp_ns):
 
 def _planning(mode, stamp_ns, planned_states, planned_forces, future_trajectory,
               candidate_trajectories=None, candidate_costs=None):
+    planned_forces = np.asarray(planned_forces)
     message = {
         "header": _header(stamp_ns, "world"),
         "mode": mode,
         "planned_states": np.asarray(planned_states).tolist(),
-        "planned_forces": np.asarray(planned_forces).tolist(),
+        "planned_forces": {
+            "fx": planned_forces[:, 0].tolist(),
+            "fy": planned_forces[:, 1].tolist(),
+            "tau": planned_forces[:, 2].tolist(),
+        },
         "future_trajectory": np.asarray(future_trajectory).tolist(),
     }
     if candidate_trajectories is not None:
