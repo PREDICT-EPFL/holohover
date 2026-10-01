@@ -1,0 +1,11 @@
+.venv/
+.pytest_cache/
+
+# CasADi JIT build artefacts (shot_mpc)
+jit_tmp*.c
+tmp_casadi_compiler_shell*
+*.o
+*.so
+
+# run_shot.py results
+simulation_data/shot_*

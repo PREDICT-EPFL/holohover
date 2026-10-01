@@ -26,6 +26,34 @@ wheels = [
 ]
 
 [[package]]
+name = "casadi"
+version = "3.8.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c5/7a/4d3c8edfbddaedc0a99b64f8154a7169b951ac2462e2f30474aac5c1ee2a/casadi-3.8.1.tar.gz", hash = "sha256:04141daf3ab7934f881a476294bf965173d1599412db0baf19f65341a612f217", size = 6471066, upload-time = "2026-09-16T07:14:25.974Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/21/a8/5a61763109d40c6fed835cdc906a2a4a9c11ce8977b9d311bec0424e5f2f/casadi-3.8.1-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:67bb7c3fd247cd840521d820aba9d7021d4d60d61732861d53ada20844a9410a", size = 52036464, upload-time = "2026-09-16T06:19:52.434Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/7b/312ac1a9eaeaca9dd92f4bfc5b703cb2449ca1c20557664e7524bb5a1542/casadi-3.8.1-cp311-abi3-macosx_11_0_x86_64.macosx_11_0_intel.whl", hash = "sha256:1d3a4f124b28cd4bd0e4218777ab6e8ee204c74a9a8db86cbd21d76703b9c96a", size = 53657225, upload-time = "2026-09-16T06:20:28.097Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/c0/07f34c91d1a9a7a278611f36c212462daaec5d3680731afbbc515b7f68dd/casadi-3.8.1-cp311-abi3-manylinux2014_aarch64.whl", hash = "sha256:dd7c359faa65c1ab77e3ddfe179fa725ff28f4c9f9b1c90a95e7a7bb3495be5d", size = 54202846, upload-time = "2026-09-16T06:21:02.986Z" },
+    { url = "https://files.pythonhosted.org/packages/63/95/e78db537ed7ec4bc637ee493050fa4b1bcaa5aa96093b2fbf3bb8cb83007/casadi-3.8.1-cp311-abi3-manylinux2014_i686.whl", hash = "sha256:110714f57e36e5f9b917de7af6d00cfd41e46ad16f9d265da9965c18a152206d", size = 83550406, upload-time = "2026-09-16T06:21:58.653Z" },
+    { url = "https://files.pythonhosted.org/packages/54/38/80f9d07c6ed55392524e786dc5391f1e068cb9d7a6a13343750c68141f1d/casadi-3.8.1-cp311-abi3-manylinux2014_x86_64.whl", hash = "sha256:c9d161e1427dc306a34ad33bccd25e70d8dd863bad2ee3b4194afb5f0d8d2c8d", size = 88536827, upload-time = "2026-09-16T06:22:55.477Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/b8/3847f0b2c67eb5c12aa0540d780f1dbda965e3376e31b6c1682f54be564c/casadi-3.8.1-cp311-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:61e53644a4a00965a45a5170b2b26e12489952a106aab0ef5118cbcfb772de65", size = 56740071, upload-time = "2026-09-16T06:23:32.389Z" },
+    { url = "https://files.pythonhosted.org/packages/63/88/79cdbd539a62e971b881dd5d598c2b65ab5c646e7d58fe5ba22f2cad5e13/casadi-3.8.1-cp311-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:99c32594513bec827ba51e6b24f6d84bb94abbf95f7fe9c2b924f62bec3e02ea", size = 89403549, upload-time = "2026-09-16T06:24:31.399Z" },
+    { url = "https://files.pythonhosted.org/packages/a7/5b/62721e8962acc2385829ac51a938ce0213e86981fda158ee03c6335d6040/casadi-3.8.1-cp311-abi3-win_amd64.whl", hash = "sha256:7376d81ef20b65e021cc74ff729fea6b37db0a5f6392876130d0cbbc99dc226c", size = 57655196, upload-time = "2026-09-16T06:25:09.021Z" },
+]
+
+[[package]]
+name = "colorama"
+version = "0.4.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44", size = 27697, upload-time = "2022-10-25T02:36:22.414Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335, upload-time = "2022-10-25T02:36:20.889Z" },
+]
+
+[[package]]
 name = "contourpy"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -227,6 +255,26 @@ wheels = [
 ]
 
 [[package]]
+name = "foxglove-sdk"
+version = "0.28.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/be/d5/5a2d28fc8b4bdcbf26c6cabf6f77aa8380997ef7698d138fb420b68546ac/foxglove_sdk-0.28.0.tar.gz", hash = "sha256:40e0d8bfd75a8634da827318be10730035b33b63397aa95c2f2548eea37d5321", size = 622092, upload-time = "2026-09-29T16:29:40.135Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/25/ba/c1de4afe0c6f58bb7bc5d895b1eb937e1d98cd357876bd8b4fb709fa27a8/foxglove_sdk-0.28.0-cp310-abi3-macosx_10_12_x86_64.whl", hash = "sha256:e2154f465296dea092e25e29ebdd6daaff1d6e0aed3841d9ddab0eafc0bbde84", size = 17147657, upload-time = "2026-09-29T16:29:17.09Z" },
+    { url = "https://files.pythonhosted.org/packages/88/57/f3eaefe2753925a3094d7779f855dfc7a0a2748e749cc6df53eb5d9e808d/foxglove_sdk-0.28.0-cp310-abi3-macosx_11_0_arm64.whl", hash = "sha256:77737a3ed69c1eb389e4fe205b2962ec8851676f56d5dfda9ac1cee051810322", size = 15738003, upload-time = "2026-09-29T16:29:20.21Z" },
+    { url = "https://files.pythonhosted.org/packages/e3/8d/ef1affb0d7f347b76f6f636a7133c59b56a9ee6118fe37afeb29392d940b/foxglove_sdk-0.28.0-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:438bb502a85a22bcfe11383754f14cf01d001db25c1fce10585e3883e8f55a85", size = 2307224, upload-time = "2026-09-29T16:29:22.199Z" },
+    { url = "https://files.pythonhosted.org/packages/56/59/98bd071bc003d426ada6e7587bdd7d23c93756c7cc7f4589eb5d20b9a224/foxglove_sdk-0.28.0-cp310-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:c5483e60807c3748e40ae03128c55f79ab0a894c03848325ec197c855d1e7183", size = 2227753, upload-time = "2026-09-29T16:29:23.426Z" },
+    { url = "https://files.pythonhosted.org/packages/13/f7/c962433c5d76e0e618dd8f2f25b5add237626acd984a494b368eeb834da7/foxglove_sdk-0.28.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b1fda6c6ea77db905b73296911fadebb3a76179df1079f8c22c2af07e6e8bd4e", size = 2215419, upload-time = "2026-09-29T16:29:25.173Z" },
+    { url = "https://files.pythonhosted.org/packages/0b/cc/5ff77ae37fa7a26e019e2f8f724cf09e0d49c1447c0cf3df61ef3c5f84c2/foxglove_sdk-0.28.0-cp310-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:ca0f0527abc82bcd25086f8e898f076b4a2b804ebd50295340bf313b1b4bf2e9", size = 18303374, upload-time = "2026-09-29T16:29:26.88Z" },
+    { url = "https://files.pythonhosted.org/packages/e5/f6/c19752da38250f85d3e25cc593b932321710b1c202dbf088f90cd6f149e5/foxglove_sdk-0.28.0-cp310-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:30be75b0bef21bbcbf97e9b6e8af12d6537464fa84e82231e1ff0938caf1a095", size = 18652727, upload-time = "2026-09-29T16:29:29.738Z" },
+    { url = "https://files.pythonhosted.org/packages/73/b0/d1ad7371f88d48899081a383b1997870e4ec133ee7315b473959edc501e4/foxglove_sdk-0.28.0-cp310-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:e8c6b8eaf5ce723319f14f0962f088238560b69f865ac6b43bf6afabe8152ada", size = 2494166, upload-time = "2026-09-29T16:29:31.566Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/bc/c3b2601bec70eb53fc49998dec4413d2e7de66dd6baebf86bc7c1cafc510/foxglove_sdk-0.28.0-cp310-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:8e37a534d526e8a3e3756dd4613be527c20acda3206cbd0ba500d6fecb5d9e08", size = 2507986, upload-time = "2026-09-29T16:29:33.276Z" },
+    { url = "https://files.pythonhosted.org/packages/47/c1/da7eef145dcec551da4e1c27793feebde79fdff60f38fc0739ded91283cc/foxglove_sdk-0.28.0-cp310-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:b4bac83efd82a61909aca88d48e03b91e3a8b52a0999ea88ac15f64bf00ec77e", size = 2526812, upload-time = "2026-09-29T16:29:35.118Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/e1/1bd1cf1f34401ac3cca471974eb822c5c838f51e0e2466b2b4c555c8af35/foxglove_sdk-0.28.0-cp310-abi3-win32.whl", hash = "sha256:6b71e52f6ed7b16581e66fe6527d14648a91991fb433eb6d7dd20075f12274c6", size = 1573880, upload-time = "2026-09-29T16:29:36.431Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/83/8116b2e5f54233cbdb6f6329cd627283c2cc6277335d8d5c6425c7fa207d/foxglove_sdk-0.28.0-cp310-abi3-win_amd64.whl", hash = "sha256:65833b711b84c41907a6fe396665e4721a2629f7706a732f0f8a854434d1ba3b", size = 16098258, upload-time = "2026-09-29T16:29:38.073Z" },
+]
+
+[[package]]
 name = "fsspec"
 version = "2026.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -240,7 +288,9 @@ name = "holohover-python-sim"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "casadi" },
     { name = "flax" },
+    { name = "foxglove-sdk" },
     { name = "interpax" },
     { name = "jax" },
     { name = "jaxopt" },
@@ -250,9 +300,16 @@ dependencies = [
     { name = "scipy" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
+    { name = "casadi", specifier = "==3.8.1" },
     { name = "flax", specifier = "==0.10.7" },
+    { name = "foxglove-sdk", specifier = "==0.28.0" },
     { name = "interpax", specifier = "==0.3.14" },
     { name = "jax", specifier = "==0.6.2" },
     { name = "jaxopt", specifier = "==0.8.5" },
@@ -262,6 +319,9 @@ requires-dist = [
     { name = "scipy", specifier = "==1.15.3" },
 ]
 
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = "==9.1.1" }]
+
 [[package]]
 name = "humanize"
 version = "4.16.0"
@@ -269,6 +329,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/0a/ea/13a1ef3c12d12662905801495283530251918b70d62d368f1d2e0272c70d/humanize-4.16.0.tar.gz", hash = "sha256:7dc2244a2f84a4bfb1d36c37bac80cd78e35cdc5c119206d87b018e1445f3a3f", size = 89515, upload-time = "2026-06-30T16:17:29.859Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b0/aa/0b7365d30fed43e7a3449aba1fe20a0a7174d9cf13e282af4e69ac825441/humanize-4.16.0-py3-none-any.whl", hash = "sha256:353eb2f34c09d098b2880eee8bef21832eae6d174f48c5762fff7e5fcb74d01d", size = 137209, upload-time = "2026-06-30T16:17:28.36Z" },
+]
+
+[[package]]
+name = "iniconfig"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503, upload-time = "2025-10-18T21:55:43.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z" },
 ]
 
 [[package]]
@@ -927,6 +996,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pluggy"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
+]
+
+[[package]]
 name = "prometheus-client"
 version = "0.26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -994,6 +1072,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/e4/11/b213bebff182584360cb8d17c72c1677fec5c5c228de439e63bcf8ab1c8f/pyparsing-3.3.3.tar.gz", hash = "sha256:928ae7e20211f3b6f3915a72f06a0cfd29ab9d24279dd6346b6b1a7146397d36", size = 1050487, upload-time = "2026-09-20T20:59:05.609Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/38/bb/d215ee7c73b61497b28a5503f9f53523f294fcc936762b7caf90e0c1c2b5/pyparsing-3.3.3-py3-none-any.whl", hash = "sha256:ece8c00a69cf01b45d0b1dedabb469c90d8caf996d4fda40f147627a122849a4", size = 126420, upload-time = "2026-09-20T20:59:04.025Z" },
+]
+
+[[package]]
+name = "pytest"
+version = "9.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "iniconfig" },
+    { name = "packaging" },
+    { name = "pluggy" },
+    { name = "pygments" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e4/47/b9efed96c114afcfa3c9d3fe98a76a1d14c74a9e266d397cf6eb64be5e01/pytest-9.1.1.tar.gz", hash = "sha256:1088fbde8f2b49d95a549a195707afa7a76a3ce9bcadc26b6d71f0ffda5fe313", size = 1636369, upload-time = "2026-06-19T10:58:32.857Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/24/25/1de2678b631f5a49215c6c96fff41ba892b0a34df68d6d80292b1b48aa7f/pytest-9.1.1-py3-none-any.whl", hash = "sha256:37a86b45efb9a47a61a36449063e8e18d0cab3161329fc099eb21783169c4f0c", size = 386536, upload-time = "2026-06-19T10:58:31.347Z" },
 ]
 
 [[package]]

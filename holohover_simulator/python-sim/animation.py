@@ -6,7 +6,10 @@ import time
 import os
 
 import matplotlib
-matplotlib.use("TkAgg")
+try:
+    matplotlib.use("TkAgg")
+except ImportError:
+    pass  # no tkinter: keep matplotlib's default backend (e.g. QtAgg, or Agg when headless)
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 from matplotlib.animation import PillowWriter, FFMpegWriter
@@ -31,8 +34,17 @@ class TrajecoryAnimation:
         diffusion_costs,
         physics,
         config,
+        candidates=None,
     ):
+        """
+        candidates (optional, from run_shot.py): every bounce sequence's latest plan,
+        drawn as semi-transparent lines. Dict with "labels" (n), "robot" (T, n, N+1, 2) and
+        "shot" (T, n, S, 2) world paths (NaN if absent), "score" (T, n),
+        "valid" (T, n) and "chosen" (T,) index or -1.
+        """
         self.dimension = (physics.table.width, physics.table.height)
+        self.candidates = candidates
+        self.cand_robot_lines, self.cand_shot_lines, self.cand_texts = [], [], []
         self.goal_width = physics.table.goal_width
 
         self.robot = physics.robot
@@ -238,6 +250,8 @@ class TrajecoryAnimation:
             fontweight="bold",
             animated=True,
         )
+
+        self._setup_candidate_overlay()
 
         # Display Robot1 position path plan
         init_pos_pp = self.r1_state_pp[0, :, :2]
@@ -530,10 +544,66 @@ class TrajecoryAnimation:
             self.fx_time_marker,
             self.fy_time_marker,
             self.info_text,
+            *self.cand_robot_lines,
+            *self.cand_shot_lines,
+            *self.cand_texts,
         ]
         for artist in artists:
             if artist is not None:
                 artist.set_animated(enabled)
+
+    # Colours of the bounce-sequence candidates; red (plan) and green (puck) stay free
+    CANDIDATE_COLORS = ["tab:blue", "tab:orange", "tab:purple", "tab:brown", "tab:pink",
+                        "tab:olive", "tab:cyan", "tab:gray"]
+
+    # Opacity and width of the candidate lines: faint alternatives, stronger chosen sequence
+    CANDIDATE_STYLE = {"other": (0.3, 1.5), "chosen": (0.85, 2.5)}
+
+    def _setup_candidate_overlay(self):
+        """Semi-transparent robot and shot paths of every bounce sequence plus a score row under the table."""
+        if self.candidates is None:
+            return
+        axis = self.ax["table"]
+        for j, name in enumerate(self.candidates["labels"]):
+            color = self.CANDIDATE_COLORS[j % len(self.CANDIDATE_COLORS)]
+            robot_line = plt.Line2D([], [], linewidth=1.5, color=color, alpha=0.3,
+                                    solid_joinstyle="miter", animated=True)
+            shot_line = plt.Line2D([], [], linewidth=1.5, color=color, alpha=0.3,
+                                   solid_joinstyle="miter", animated=True)
+            axis.add_line(robot_line)
+            axis.add_line(shot_line)
+            text = axis.text(0.18 * j, -0.03, name, transform=axis.transAxes, ha="left", va="top",
+                             fontsize=9, color=color, animated=True)
+            self.cand_robot_lines.append(robot_line)
+            self.cand_shot_lines.append(shot_line)
+            self.cand_texts.append(text)
+
+    def _draw_candidate_overlay(self, t_idx):
+        """Draw the candidates of step t_idx under the executed plan (more opaque when chosen)."""
+        if self.candidates is None:
+            return
+        c = self.candidates
+        axis = self.ax["table"]
+        chosen = int(c["chosen"][t_idx])
+        for j, name in enumerate(c["labels"]):
+            robot, shot = c["robot"][t_idx, j], c["shot"][t_idx, j]
+            alpha, width = self.CANDIDATE_STYLE["chosen" if j == chosen else "other"]
+            for line, xy in ((self.cand_robot_lines[j], robot), (self.cand_shot_lines[j], shot)):
+                line.set_data(xy[:, 0], xy[:, 1])
+                line.set_alpha(alpha)
+                line.set_linewidth(width)
+                axis.draw_artist(line)
+
+            score = c["score"][t_idx, j]
+            if np.isnan(score):
+                status = "–"
+            elif not c["valid"][t_idx, j]:
+                status = "✗"
+            else:
+                status = f"{score:.2f}"
+            self.cand_texts[j].set_text(f"{'▶' if j == chosen else ''}{name} {status}")
+            self.cand_texts[j].set_fontweight("bold" if j == chosen else "normal")
+            axis.draw_artist(self.cand_texts[j])
 
     def setup_dial_display(self, show=True):
         """Initialize a minimal keyboard-only display for DIAL trajectory debugging."""
@@ -766,6 +836,9 @@ class TrajecoryAnimation:
             f"tf = {tf_text}\nt = {current_step*self.dt:.2f}s\nmode: {mode_text}\n{score_text}\nF: {self.fx[real_time_idx]:.3f}, {self.fy[real_time_idx]:.3f}"
         )
         self.ax["table"].draw_artist(self.info_text)
+
+        # All bounce-sequence candidates, drawn first so the executed plan stays on top
+        self._draw_candidate_overlay(real_time_idx)
 
         # Update robot 1
         # Path Plan

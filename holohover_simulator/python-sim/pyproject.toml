@@ -3,7 +3,9 @@ name = "holohover-python-sim"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
+    "casadi==3.8.1",
     "flax==0.10.7",
+    "foxglove-sdk==0.28.0",
     "interpax==0.3.14",
     "jax==0.6.2",
     "jaxopt==0.8.5",
@@ -11,4 +13,9 @@ dependencies = [
     "matplotlib==3.10.1",
     "numpy==2.2.6",
     "scipy==1.15.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
 ]
