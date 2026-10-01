@@ -223,7 +223,7 @@ def _marker(stamp_ns, marker_id, marker_type, position, scale, color, namespace)
     }
 
 
-def _visualization_markers(states, stamp_ns, config, hovercraft_names):
+def _visualization_markers(states, stamp_ns, config, hovercraft_names, planned_states):
     table = config["table"]
     robot_radius = config["robot"]["radius"]
     puck_radius = config["puck"]["radius"]
@@ -252,6 +252,16 @@ def _visualization_markers(states, stamp_ns, config, hovercraft_names):
                 colors[index % len(colors)], name,
             )
         )
+    trajectory_marker = _marker(
+        stamp_ns, len(hovercraft_names) + 2, 4,
+        [0.0, 0.0, 0.0], [0.012, 0.0, 0.0], [0.1, 1.0, 0.45, 1.0],
+        "planned_trajectory",
+    )
+    trajectory_marker["points"] = [
+        {"x": float(state[0]), "y": float(state[1]), "z": 0.05}
+        for state in planned_states
+    ]
+    markers.append(trajectory_marker)
     return {"markers": markers}
 
 def write_mcap(simulation_data, output_path, dt=None, hovercraft_names=None):
@@ -332,7 +342,9 @@ def write_mcap(simulation_data, output_path, dt=None, hovercraft_names=None):
             )
             writer.add_message(channels["standard_plan"], stamp_ns, json.dumps(standard_message).encode(), stamp_ns)
             writer.add_message(channels["dial_plan"], stamp_ns, json.dumps(dial_message).encode(), stamp_ns)
-            marker_message = _visualization_markers(states[step], stamp_ns, config, hovercraft_names)
+            marker_message = _visualization_markers(
+                states[step], stamp_ns, config, hovercraft_names, planned_states
+            )
             writer.add_message(channels["markers"], stamp_ns, json.dumps(marker_message).encode(), stamp_ns)
             if step == 0 or np.isclose((step * dt) % table_period, 0.0, atol=dt / 2):
                 writer.add_message(channels["table_pose"], stamp_ns, json.dumps(_pose([0, 0, 0, 0, 0, 0], stamp_ns)).encode(), stamp_ns)
