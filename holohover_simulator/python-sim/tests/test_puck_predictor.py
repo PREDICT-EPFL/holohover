@@ -1,15 +1,16 @@
-"""Test 2: wall-hit events of the puck predictor against a simulator rollout."""
+"""Test 2: first wall hit of the puck predictor, and the drawn bounce path, against a simulator rollout."""
 
 import numpy as np
 
 from conftest import DT, R1_PARK, R2_PARK, rollout
 from shot_mpc.params import state_world_to_planner
-from shot_mpc.puck_predictor import predict_events
+from shot_mpc.puck_predictor import predict, bounce_path
 
 
-def _events_from_world(puck_world, P, t_max):
+def _planner(puck_world, P):
+    """Planner-frame puck position and velocity."""
     s = state_world_to_planner(np.asarray(puck_world, dtype=float), P)
-    return predict_events(s[0:2], s[3:5], P, t_max)
+    return s[0:2], s[3:5]
 
 
 def _flip_steps(v):
@@ -17,37 +18,54 @@ def _flip_steps(v):
     return [i for i in range(1, len(v)) if np.sign(v[i]) != np.sign(v[i - 1])]
 
 
-def test_side_wall_hits(physics, P):
+def test_first_side_wall_hit(physics, P):
     puck = [1.0, 0.3, 0.0, -0.5, 1.2, 0.0]
-    t_max = 2.0
-    states, *_ = rollout(physics, np.array(R1_PARK + R2_PARK + puck), int(t_max / DT))
-    ev = _events_from_world(puck, P, t_max)
+    states, *_ = rollout(physics, np.array(R1_PARK + R2_PARK + puck), 100)
+    flight = predict(*_planner(puck, P), P)
 
-    flips = _flip_steps(states[:, 16])  # world vy of the puck
-    side = [m for m, wall in enumerate(ev.walls) if wall in ("L", "R")]
-    assert len(side) == len(flips) >= 2
-    for m, i in zip(side, flips):
-        assert abs(ev.tau[m] - i * DT) <= DT + 1e-9
-        q_sim = state_world_to_planner(states[i, 12:18], P)[0:2]
-        assert np.linalg.norm(ev.q[m] - q_sim) <= np.linalg.norm(ev.v[m]) * DT + 2e-3
-    # First hit: world top wall, i.e. planner wall R
-    assert ev.walls[side[0]] == "R"
+    i = _flip_steps(states[:, 16])[0]  # world vy of the puck
+    assert flight.wall == "R"  # world top wall
+    assert abs(flight.tau1 - i * DT) <= DT + 1e-9
+    q_hit, v_hit = flight.state_at(flight.tau1)
+    assert abs(q_hit[1] + P.w) < 1e-9
+    q_sim = state_world_to_planner(states[i, 12:18], P)[0:2]
+    assert np.linalg.norm(q_hit - q_sim) <= np.linalg.norm(v_hit) * DT + 2e-3
 
 
 def test_end_wall_outside_mouth(physics, P):
     puck = [0.6, 0.2, 0.0, -1.0, 0.0, 0.0]
     states, scored, *_ = rollout(physics, np.array(R1_PARK + R2_PARK + puck), 100)
-    ev = _events_from_world(puck, P, 1.0)
+    flight = predict(*_planner(puck, P), P)
 
-    assert ev.walls[1] == "far" and not scored.any()
+    assert flight.wall == "far" and not scored.any()
     i = _flip_steps(states[:, 15])[0]  # world vx of the puck
-    assert abs(ev.tau[1] - i * DT) <= DT + 1e-9
+    assert abs(flight.tau1 - i * DT) <= DT + 1e-9
 
 
 def test_goal_crossing(physics, P):
     puck = [0.6, 0.53, 0.0, -1.0, 0.05, 0.0]
     _, scored, *_ = rollout(physics, np.array(R1_PARK + R2_PARK + puck), 100, stop_on_goal=True)
-    ev = _events_from_world(puck, P, 1.0)
+    q, v = _planner(puck, P)
+    flight = predict(q, v, P)
 
-    assert ev.end == "goal_for" and scored[-1] == 1
-    assert abs(ev.t_end - len(scored) * DT) <= DT + 1e-9
+    assert flight.wall == "far" and scored[-1] == 1
+    assert abs(flight.tau1 - len(scored) * DT) <= DT + 1e-9
+    points, hits = bounce_path(q, v, P, t_end=1.0)
+    assert hits == ["goal_for"]
+    assert np.allclose(points[-1], flight.state_at(flight.tau1)[0])
+
+
+def test_bounce_path_side_walls(physics, P):
+    """The drawn path has every side-wall hit of a 2 s rollout, alternating and in place."""
+    puck = [1.0, 0.3, 0.0, -0.5, 1.2, 0.0]
+    t_end = 2.0
+    states, *_ = rollout(physics, np.array(R1_PARK + R2_PARK + puck), int(t_end / DT))
+    q, v = _planner(puck, P)
+    points, hits = bounce_path(q, v, P, t_end)
+
+    flips = _flip_steps(states[:, 16])
+    assert len(hits) == len(flips) >= 2
+    assert hits == ["R", "L"] * (len(hits) // 2) + ["R"] * (len(hits) % 2)
+    for q_hit, i in zip(points[1:-1], flips):  # the last point is the position at t_end
+        q_sim = state_world_to_planner(states[i, 12:18], P)[0:2]
+        assert np.linalg.norm(q_hit - q_sim) <= np.linalg.norm(v) * DT + 2e-3

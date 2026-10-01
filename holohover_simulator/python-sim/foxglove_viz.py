@@ -7,6 +7,8 @@ simulation.run_sim or run_shot.py) to an MCAP file for the Foxglove web app.
 
 Open https://app.foxglove.dev, "Open local file..." with the .mcap, then import the
 layout foxglove/shot_mpc_layout.json (see foxglove/README.md).
+run_live.py streams the same topics to the app while the simulation runs (log_step and
+friends below).
 
 Frames: "world" is the simulator table frame (origin at the bottom-left corner, z up);
 "robot1", "robot2" and "puck" are its children. Each robot frame's x-axis points at the
@@ -52,8 +54,8 @@ BODIES = ("robot1", "robot2", "puck")  # the 6-dim blocks of the 18-dim state, i
 FRAME_YAW = {"robot1": math.pi, "robot2": 0.0, "puck": 0.0}
 TRAIL_LENGTH = 60  # samples, as in the animation
 
-# Heights (m). The table surface sits well below everything drawn on it: lines 3 mm above it were
-# hidden under it in the web app. Overlays are 5 mm apart, stacked like in the animation.
+# Heights (m). Overlays are 5 mm apart, stacked like in the animation, well above the table surface.
+# What keeps lines visible is the table being opaque (table_scene), not the gap.
 Z_TABLE, Z_MARKINGS = -0.02, -0.01  # table top; border, centre line and goals
 Z_TRAIL, Z_CANDIDATE, Z_PREDICTION, Z_PLAN = 0.0, 0.005, 0.01, 0.015
 Z_BODY, Z_TEXT = 0.03, 0.06  # disc height (from z = 0); labels
@@ -73,6 +75,13 @@ CANDIDATE_COLORS = ["tab:blue", "tab:orange", "tab:purple", "tab:brown", "tab:pi
 def _color(name, alpha=1.0):
     r, g, b, _ = to_rgba(name)
     return fm.Color(r=r, g=g, b=b, a=alpha)
+
+
+def _color_over_table(name, alpha):
+    """Opaque colour that looks like `name` at `alpha` over the table."""
+    top, base = np.array(to_rgba(name)[:3]), np.array(to_rgba(TABLE_COLOR)[:3])
+    r, g, b = alpha * top + (1.0 - alpha) * base
+    return fm.Color(r=r, g=g, b=b, a=1.0)
 
 
 
@@ -157,7 +166,7 @@ def _shot_schemas(labels):
     }
 
 
-def _json_channel(ctx, topic, schema_name, properties=None):
+def json_channel(ctx, topic, schema_name, properties=None):
     schema = {"type": "object", "properties": properties or JSON_SCHEMAS[schema_name]}
     return foxglove.Channel(
         topic, message_encoding="json", context=ctx,
@@ -175,20 +184,20 @@ def setup_channels(ctx, labels=(), robot2_control=False, solves=False):
         "puck_prediction": SceneUpdateChannel("/puck/prediction", context=ctx),
         "robot2_prediction": SceneUpdateChannel("/robot2/prediction", context=ctx),
         "trail": SceneUpdateChannel("/puck/trail", context=ctx),
-        "status": _json_channel(ctx, "/status", "holohover.Status"),
+        "status": json_channel(ctx, "/status", "holohover.Status"),
         "events": LogChannel("/events", context=ctx),
-        "robot1_control": _json_channel(ctx, "/robot1/control", "holohover.Control"),
+        "robot1_control": json_channel(ctx, "/robot1/control", "holohover.Control"),
     }
     for body in BODIES:
-        ch[f"{body}_state"] = _json_channel(ctx, f"/{body}/state", "holohover.BodyState")
+        ch[f"{body}_state"] = json_channel(ctx, f"/{body}/state", "holohover.BodyState")
     if robot2_control:
-        ch["robot2_control"] = _json_channel(ctx, "/robot2/control", "holohover.Control")
+        ch["robot2_control"] = json_channel(ctx, "/robot2/control", "holohover.Control")
     shot = _shot_schemas(labels)
     if len(labels):
-        ch["scores"] = _json_channel(ctx, "/shot_mpc/scores", "holohover.ShotScores", shot["holohover.ShotScores"])
+        ch["scores"] = json_channel(ctx, "/shot_mpc/scores", "holohover.ShotScores", shot["holohover.ShotScores"])
         ch["candidates"] = [SceneUpdateChannel(f"/shot_mpc/candidates/{name}", context=ctx) for name in labels]
     if solves:
-        ch["solves"] = _json_channel(ctx, "/shot_mpc/solves", "holohover.ShotSolve", shot["holohover.ShotSolve"])
+        ch["solves"] = json_channel(ctx, "/shot_mpc/solves", "holohover.ShotSolve", shot["holohover.ShotSolve"])
     return ch
 
 
@@ -196,14 +205,16 @@ def setup_channels(ctx, labels=(), robot2_control=False, solves=False):
 ### Static scene ###
 ####################
 def table_scene(config, stamp):
-    """Table surface, border, goals (left red, right blue) and dashed centre line, as in the animation."""
+    """Table surface, border, goals (left red, right blue) and dashed centre line, as in the animation.
+    Every cube is opaque: the app draws all cubes of an entity as transparent if one is, without
+    writing depth, and the table surface then covers whatever lines happen to be drawn before it."""
     width, height = config["table"]["width"], config["table"]["height"]
     goal_width = config["table"]["goal_width"]
     goal_depth = width / 30
     goals = [
         fm.CubePrimitive(pose=_pose(x, height / 2, Z_MARKINGS - 0.001),
                          size=fm.Vector3(x=goal_depth, y=goal_width, z=0.002),
-                         color=_color(color, 0.6))
+                         color=_color_over_table(color, 0.6))
         for x, color in ((goal_depth / 2, "red"), (width - goal_depth / 2, "blue"))
     ]
     surface = fm.CubePrimitive(pose=_pose(width / 2, height / 2, Z_TABLE - 0.01),
@@ -233,6 +244,13 @@ def bodies_scene(config, stamp):
                                 bottom_scale=1.0, top_scale=1.0, color=_color("green"))
     entities.append(fm.SceneEntity(timestamp=stamp, frame_id="puck", id="puck", frame_locked=True, cylinders=[puck]))
     return fm.SceneUpdate(entities=entities)
+
+
+def log_static(ch, config, ns):
+    """Table and body discs: logged once to a file; a live server repeats them for new subscribers."""
+    stamp = _timestamp(ns)
+    ch["table"].log(table_scene(config, stamp), log_time=ns)
+    ch["bodies"].log(bodies_scene(config, stamp), log_time=ns)
 
 
 ##############
@@ -266,7 +284,7 @@ def _events(data, log, dt):
     return events
 
 
-def _solve_message(update):
+def solve_message(update):
     return _json_ready({
         "t": update["t"], "outer": update["outer"], "chosen": update["chosen"],
         "t_total_ms": 1e3 * update["t_total"], "n_solves": len(update["results"]),
@@ -300,11 +318,8 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
         scores=np.asarray(data["scores"]),
         future=np.asarray(data["future_trajs"], dtype=float),
         cand=cand,
-        labels=list(cand["labels"]) if cand else [],
-        r_robot=config["robot"]["radius"],
-        r_puck=config["puck"]["radius"],
-        table_width=config["table"]["width"],
     )
+    geom = geometry(config, list(cand["labels"]) if cand else [])
     n = run.states.shape[0]
 
     # Timed extras (events, selector updates), logged in time order between the steps
@@ -318,15 +333,13 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
     ctx = foxglove.Context()  # one per file: several exports can run in one process
     writer = foxglove.open_mcap(str(path), allow_overwrite=True, context=ctx)
     try:
-        ch = setup_channels(ctx, run.labels, robot2_control=run.inputs.shape[1] >= 6, solves=log is not None)
+        ch = setup_channels(ctx, geom.labels, robot2_control=run.inputs.shape[1] >= 6, solves=log is not None)
         meta = {"source": "holohover python-sim", "dt": dt, "steps": n, **(metadata or {})}
         writer.write_metadata("holohover", {k: str(v) for k, v in meta.items()})
         writer.attach(log_time=start_ns, create_time=time.time_ns(), name="config.json",
                       media_type="application/json", data=json.dumps(config, indent=1, default=float).encode())
 
-        stamp0 = _timestamp(start_ns)
-        ch["table"].log(table_scene(config, stamp0), log_time=start_ns)
-        ch["bodies"].log(bodies_scene(config, stamp0), log_time=start_ns)
+        log_static(ch, config, start_ns)
 
         i_timed = 0
         for k in range(n):
@@ -334,7 +347,7 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
             while i_timed < len(timed) and timed[i_timed][0] <= t + 1e-9:
                 _log_timed(ch, timed[i_timed], start_ns)
                 i_timed += 1
-            _log_step(ch, run, k, t, start_ns + round(t * 1e9))
+            log_step(ch, geom, step_row(run, k), t, start_ns + round(t * 1e9))
         for item in timed[i_timed:]:
             _log_timed(ch, item, start_ns)
     finally:
@@ -346,20 +359,37 @@ def _log_timed(ch, item, start_ns):
     t, _, (kind, *payload) = item
     ns = start_ns + round(t * 1e9)
     if kind == "event":
-        level, text = payload
-        ch["events"].log(fm.Log(timestamp=_timestamp(ns), level=level, message=text, name="holohover"),
-                         log_time=ns)
+        log_event(ch, ns, *payload)
     else:
-        ch["solves"].log(_solve_message(payload[0]), log_time=ns)
+        ch["solves"].log(solve_message(payload[0]), log_time=ns)
 
 
-def _log_step(ch, run, k, t, ns):
-    """Everything shown at row k of the data: frames, states, inputs, status and overlays."""
+def log_event(ch, ns, level, text):
+    ch["events"].log(fm.Log(timestamp=_timestamp(ns), level=level, message=text, name="holohover"), log_time=ns)
+
+
+def geometry(config, labels=()):
+    """What log_step needs besides the step itself: sizes and the bounce-sequence labels."""
+    return SimpleNamespace(labels=list(labels), r_robot=config["robot"]["radius"], r_puck=config["puck"]["radius"],
+                           table_width=config["table"]["width"])
+
+
+def step_row(run, k):
+    """Row k of the data, as log_step takes it (run_live.py builds the same from run_shot.Episode.step)."""
+    cand = run.cand
+    return SimpleNamespace(
+        state=run.states[k], input=run.inputs[k], plan=run.plans[k], tf=run.tfs[k], mode=run.modes[k],
+        score=run.scores[k], future=run.future[k], trail=run.states[max(0, k - TRAIL_LENGTH + 1):k + 1, 12:14],
+        cand=None if cand is None else {key: cand[key][k] for key in ("robot", "shot", "score", "valid", "chosen")},
+    )
+
+
+def log_bodies(ch, state, t, ns):
+    """Frames and /<body>/state of the 18-dim state."""
     stamp = _timestamp(ns)
-
     transforms = []
     for j, body in enumerate(BODIES):
-        x, y, theta, vx, vy, omega = run.states[k, 6 * j:6 * j + 6]
+        x, y, theta, vx, vy, omega = state[6 * j:6 * j + 6]
         transforms.append(fm.FrameTransform(timestamp=stamp, parent_frame_id="world", child_frame_id=body,
                                             translation=fm.Vector3(x=x, y=y, z=0.0),
                                             rotation=_quat(theta + FRAME_YAW[body])))
@@ -367,51 +397,64 @@ def _log_step(ch, run, k, t, ns):
                                              "omega": omega}), log_time=ns)
     ch["tf"].log(fm.FrameTransforms(transforms=transforms), log_time=ns)
 
+
+def log_step(ch, geom, row, t, ns):
+    """Everything shown for one row (step_row): frames, states, inputs, status and overlays."""
+    stamp = _timestamp(ns)
+    log_bodies(ch, row.state, t, ns)
+
     for robot in (1, 2):
         if f"robot{robot}_control" in ch:
-            fx, fy, tau = run.inputs[k, 3 * (robot - 1):3 * robot]
+            fx, fy, tau = row.input[3 * (robot - 1):3 * robot]
             ch[f"robot{robot}_control"].log(_json_ready({"t": t, "fx": fx, "fy": fy, "tau": tau}), log_time=ns)
 
-    mode = int(run.modes[k])
+    mode = int(row.mode)
     ch["status"].log(_json_ready({
-        "t": t, "mode": mode, "mode_name": MODE_NAMES[mode], "time_to_impact": run.tfs[k] if mode == 1 else None,
-        "goals_robot1": run.scores[k, 0], "goals_robot2": run.scores[k, 1],
+        "t": t, "mode": mode, "mode_name": MODE_NAMES[mode], "time_to_impact": row.tf if mode == 1 else None,
+        "goals_robot1": row.score[0], "goals_robot2": row.score[1],
     }), log_time=ns)
 
     def scene(channel, entity_id, lines, texts=()):
         channel.log(fm.SceneUpdate(entities=[fm.SceneEntity(
             timestamp=stamp, frame_id="world", id=entity_id, lines=lines, texts=list(texts))]), log_time=ns)
 
-    scene(ch["plan"], "plan", [_line(run.plans[k, :, :2], Z_PLAN, _color("red", 0.9), LINE_PX["plan"])])
-    for key, cols, radius, color in (("puck_prediction", slice(12, 14), run.r_puck, "green"),
-                                     ("robot2_prediction", slice(6, 8), run.r_robot, "#1f77b4")):
-        xy = run.future[k, :, cols]
+    scene(ch["plan"], "plan", [_line(row.plan[:, :2], Z_PLAN, _color("red", 0.9), LINE_PX["plan"])])
+    for key, cols, radius, color in (("puck_prediction", slice(12, 14), geom.r_puck, "green"),
+                                     ("robot2_prediction", slice(6, 8), geom.r_robot, "#1f77b4")):
+        xy = row.future[:, cols]
         scene(ch[key], key, [_line(xy, Z_PREDICTION, _color(color, 0.7), LINE_PX["prediction"]),
                              _circle(xy[-1], radius, Z_PREDICTION, _color(color, 0.7), LINE_PX["prediction"])])
-    trail = run.states[max(0, k - TRAIL_LENGTH + 1):k + 1, 12:14]
-    scene(ch["trail"], "trail", [_line(trail, Z_TRAIL, _color("gray", 0.55), LINE_PX["trail"])])
+    scene(ch["trail"], "trail", [_line(row.trail, Z_TRAIL, _color("gray", 0.55), LINE_PX["trail"])])
 
-    if not run.labels:
+    if not geom.labels or row.cand is None:
         return
-    cand = run.cand
-    chosen = int(cand["chosen"][k])
-    for j, name in enumerate(run.labels):
+    cand = row.cand
+    chosen = int(cand["chosen"])
+    for j, name in enumerate(geom.labels):
         style = "chosen" if j == chosen else "other"
         base = CANDIDATE_COLORS[j % len(CANDIDATE_COLORS)]
         color = _color(base, CANDIDATE_ALPHA[style])
         px = LINE_PX["chosen" if j == chosen else "candidate"]
-        lines = [_line(xy, Z_CANDIDATE, color, px) for xy in (cand["robot"][k, j], cand["shot"][k, j])
+        lines = [_line(xy, Z_CANDIDATE, color, px) for xy in (cand["robot"][j], cand["shot"][j])
                  if np.isfinite(xy).all(axis=1).any()]
-        score = cand["score"][k, j]
-        status = "-" if not np.isfinite(score) else ("invalid" if not cand["valid"][k, j] else f"{score:.2f}")
+        score = cand["score"][j]
+        status = "-" if not np.isfinite(score) else ("invalid" if not cand["valid"][j] else f"{score:.2f}")
         # Score row under the table, as in the animation
-        label = _text(0.18 * j * run.table_width, -0.06, f"{'> ' if j == chosen else ''}{name} {status}",
+        label = _text(0.18 * j * geom.table_width, -0.06, f"{'> ' if j == chosen else ''}{name} {status}",
                       _color(base))
         scene(ch["candidates"][j], name, lines, [label])
     ch["scores"].log(_json_ready({
-        "t": t, "chosen": run.labels[chosen] if chosen >= 0 else None,
-        "scores": dict(zip(run.labels, cand["score"][k])), "valid": dict(zip(run.labels, cand["valid"][k])),
+        "t": t, "chosen": geom.labels[chosen] if chosen >= 0 else None,
+        "scores": dict(zip(geom.labels, cand["score"])), "valid": dict(zip(geom.labels, cand["valid"])),
     }), log_time=ns)
+
+
+def clear_overlays(ch, ns):
+    """Remove the plan, predictions, trail and candidates drawn so far (a new live episode)."""
+    deletion = fm.SceneUpdate(deletions=[fm.SceneEntityDeletion(timestamp=_timestamp(ns),
+                                                                 type=fm.SceneEntityDeletionType.All)])
+    for channel in [ch["plan"], ch["puck_prediction"], ch["robot2_prediction"], ch["trail"], *ch.get("candidates", [])]:
+        channel.log(deletion, log_time=ns)
 
 
 ############

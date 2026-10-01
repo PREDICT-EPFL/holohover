@@ -1,39 +1,61 @@
 """
-Inner problem P(B) for one fixed bounce sequence (Sections 3, 4, 5 and 8).
+Inner problem P(B) for one fixed bounce sequence (Sections 2 to 5).
 
 Built once with CasADi SX and solved with IPOPT; the sequence only enters
 through the parameter y_bar (virtual goal), so one solver serves all of B_K.
 
 Decision vector w = (X, U, t_f, phi, v+, zeta, s_box, s_av):
-- X (6 x N+1), U (3 x N): robot states and accelerations on the grid t_f / N
+- X (4 x N+1), U (2 x N): robot states (x, y, vx, vy) and accelerations (a_x, a_y)
+  on the grid t_f / N; the heading is left to the tracker
 - phi: angle of the contact normal n = (cos phi, sin phi), left unwrapped
 - v+: post-impact puck velocity, lifted with bound v+_x >= eps so every
   division by v+_x is safe at every IPOPT iterate
-- zeta = 1 - gamma (x_g - x_c) / v+_x, lifted with bounds [eta, 1]: this is the
-  reach margin, and T_B = -ln(zeta) / gamma is always defined
+- zeta = 1 - gamma (x_g - x_c) / v+_x, lifted with bounds [ZETA_MIN, 1]: this is the
+  reach constraint gamma (x_g - x_c) < v+_x, and T_B = -ln(zeta) / gamma is always defined
 - s_box, s_av: L1 slacks of the soft table/own-half and puck-avoidance constraints
 
-Parameters p = (x0_hat, u_prev, y_bar, theta_ref, node puck windows, impact window).
-A puck window is (qx, qy, vx, vy, tau_start); v1 uses window 0 everywhere, but
-the layout already allows pre-impact bounces (Section 7).
+Parameters p = (x0_hat, u_prev, y_bar, q0, v0), with (q0, v0) the puck state at the
+planning instant. The puck flies freely up to the impact, since t_f <= tau1 (Section 1).
 """
 
+import atexit
+import os
+import shutil
+import tempfile
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 
 import numpy as np
 import casadi as ca
 
-from .puck_predictor import GAMMA_EPS, flight_phi, flight_decay
+from .puck_predictor import GAMMA_EPS, flight_phi, flight_decay, free_flight
 from .impact import impact
 
-NX, NU, NWIN = 6, 3, 5 # state and input dimensions, number of puck window parameters
+NX, NU = 4, 2  # robot state (x, y, vx, vy) and input (a_x, a_y)
+ZETA_MIN = 1e-3  # floor of zeta for the strict reach inequality; T_B <= -ln(ZETA_MIN) / gamma
 OK_STATUS = ("Solve_Succeeded", "Solved_To_Acceptable_Level")
+
+
+@contextmanager
+def jit_build_dir():
+    """Run the JIT build in a private temp directory, removed at exit. CasADi writes
+    jit_tmp*.c and tmp_casadi_compiler_shell*.{o,so} to the cwd and deletes them only when
+    the solver is destroyed, so every killed run left them in python-sim/. Its
+    jit_options "directory" does not help: CasADi 3.8.1 still writes the source to the cwd."""
+    d = tempfile.mkdtemp(prefix="shot_nlp_jit_")
+    atexit.register(shutil.rmtree, d, ignore_errors=True)
+    cwd = os.getcwd()
+    os.chdir(d)
+    try:
+        yield
+    finally:
+        os.chdir(cwd)
 
 
 def zoh_coefficients(dt, gamma, dt_max=None):
     """
-    (e1, a, b) of the exact ZOH map p+ = p + a v + b u, v+ = e1 v + a u (Section 3).
+    (e1, a, b) of the exact ZOH map p+ = p + a v + b u, v+ = e1 v + a u (Section 2).
 
     a = (1 - e^{-x}) / gamma and b = (dt - a) / gamma with x = gamma dt. The closed
     form of b cancels catastrophically for small x, so a Taylor series is used when
@@ -56,12 +78,13 @@ def zoh_coefficients(dt, gamma, dt_max=None):
     return e1, a, b
 
 
-def discrete_matrices(dt, gamma):
-    """Numeric A_d, B_d of the robot double integrator with viscous friction."""
+def discrete_matrices(dt, gamma, axes=NU):
+    """Numeric A_d, B_d of the robot double integrator with viscous friction, state (p, v).
+    axes = 2 is the planner's (x, y); the tracker adds the heading (axes = 3)."""
     e1, a, b = zoh_coefficients(dt, gamma)
-    I3 = np.eye(3)
-    A = np.block([[I3, a * I3], [np.zeros((3, 3)), e1 * I3]])
-    B = np.vstack([b * I3, a * I3])
+    I = np.eye(axes)
+    A = np.block([[I, a * I], [np.zeros((axes, axes)), e1 * I]])
+    B = np.vstack([b * I, a * I])
     return A, B
 
 
@@ -100,7 +123,7 @@ class ShotNLP:
         tf = ca.SX.sym("tf")
         ph = ca.SX.sym("phi") # angle of the contact normal n = (cos phi, sin phi)
         vp = ca.SX.sym("vp", 2)
-        zeta = ca.SX.sym("zeta") # reach margin, lifted with bounds [eta, 1] so T_B = -ln(zeta) / gamma is always defined
+        zeta = ca.SX.sym("zeta") # reach margin, lifted with bounds [ZETA_MIN, 1] so T_B = -ln(zeta) / gamma is always defined
         s_box = ca.SX.sym("s_box", N) # L1 slacks of the soft table/own-half constraints
         s_av = ca.SX.sym("s_av", N - 1) # L1 slacks of the soft puck-avoidance constraints
 
@@ -119,15 +142,13 @@ class ShotNLP:
         x0 = ca.SX.sym("x0", NX)
         u_prev = ca.SX.sym("u_prev", NU)
         ybar = ca.SX.sym("ybar")
-        th_ref = ca.SX.sym("theta_ref")
-        win = ca.SX.sym("win", NWIN, N - 1) # puck window parameters for nodes 1..N-1
-        win_i = ca.SX.sym("win_i", NWIN) # puck window parameters for the impact node N
-        p = ca.vertcat(x0, u_prev, ybar, th_ref, ca.vec(win), win_i)
+        q0 = ca.SX.sym("q0", 2) # puck position at the planning instant
+        v0 = ca.SX.sym("v0", 2) # puck velocity at the planning instant
+        p = ca.vertcat(x0, u_prev, ybar, q0, v0)
         self.np_ = p.numel() # numel = nummber of elements
 
-        def puck_at(wv, t):
-            q, v, ts = wv[0:2], wv[2:4], wv[4]
-            return q + v * flight_phi(t - ts, gam), v * flight_decay(t - ts, gam)
+        def puck_at(t):
+            return free_flight(q0, v0, t, gam)
 
         ###################
         ### Constraints ###
@@ -145,17 +166,17 @@ class ShotNLP:
         # Robot dynamics (nodes 0..N-1)
         add(X[:, 0] - x0, 0.0, 0.0)
         for k in range(N):
-            pos, vel, u = X[0:3, k], X[3:6, k], U[:, k]
+            pos, vel, u = X[0:2, k], X[2:4, k], U[:, k]
             add(X[:, k + 1] - ca.vertcat(pos + a * vel + b * u, e1 * vel + a * u), 0.0, 0.0)
 
-        # Impact at t_f (Section 4)
-        p_c, v_minus = puck_at(win_i, tf)
+        # Impact at t_f (Section 3)
+        p_c, v_minus = puck_at(tf)
         n = ca.vertcat(ca.cos(ph), ca.sin(ph))
         add(X[0:2, N] - (p_c - (P.r_R + P.r_p) * n), 0.0, 0.0)
-        v_n, vp_expr, vR_plus = impact(X[3:5, N], v_minus, n, P.kappa, P.m_p / P.m_R)
+        v_n, vp_expr, vR_plus = impact(X[2:4, N], v_minus, n, P.kappa, P.m_p / P.m_R)
         add(vp - vp_expr, 0.0, 0.0)
 
-        # Coarse post-impact model (Section 5)
+        # Coarse post-impact model (Section 4)
         x_c, y_c = p_c[0], p_c[1]
         add(zeta * vp[0] - (vp[0] - gam * (P.x_g - x_c)), 0.0, 0.0)
         add(v_n, P.v_min, ca.inf)
@@ -187,7 +208,7 @@ class ShotNLP:
         av_viol = []
         for k in range(1, N):
             d_min = P.r_R + P.r_p + P.delta * (N - k) / N
-            pp, _ = puck_at(win[:, k - 1], k * dt)
+            pp, _ = puck_at(k * dt)
             row = (d_min**2 - ca.sumsqr(X[0:2, k] - pp)) / (2 * d_min)
             add(row - s_av[k - 1], -ca.inf, 0.0)
             av_viol.append(row)
@@ -199,29 +220,25 @@ class ShotNLP:
         ############
         ### Cost ###
         ############
-        umax = P.u_max
+        # Terms A-E of Section 5, inputs normalised componentwise by their limits
+        umax = P.u_max[:NU]
         ub_prev = u_prev / umax
-        J_u, J_th, J_du = 0, 0, 0
+        J_u, J_du = 0, 0
         for k in range(N):
             ub = U[:, k] / umax
-            J_u += sum(P.R[i] * ub[i] ** 2 for i in range(NU))
-            J_du += sum(P.R_delta[i] * (ub[i] - ub_prev[i]) ** 2 for i in range(NU))
-            J_th += P.w_theta * ((X[2, k] - th_ref) / P.theta_scale) ** 2
-            J_th += P.w_omega * (X[5, k] / P.omega_scale) ** 2
+            J_u += ca.sumsqr(ub)
+            J_du += ca.sumsqr(ub - ub_prev)
             ub_prev = ub
-        J_run = tf / N * (J_u + J_th)
 
         T_B = -ca.log(zeta) / gam if gam >= GAMMA_EPS else (P.x_g - x_c) / vp[0]
         e_aim = (y_c - ybar) + (P.x_g - x_c) * vp[1] / vp[0]
-        sin2 = (n[0] * vp[1] - n[1] * vp[0]) ** 2 / (vp[0] ** 2 + vp[1] ** 2)
 
         terms = {
-            "run": J_run,
-            "du": J_du,
+            "u": P.w_u * tf / N * J_u,
+            "du": P.w_du * J_du,
             "tf": P.w_t * tf / P.t_ref,
             "T": P.w_T * T_B / P.T_ref,
             "aim": P.w_a * (e_aim / P.h_eff) ** 2,
-            "angle": P.w_n * sin2,
             "slack": P.w_slack * (ca.sum1(s_box) + ca.sum1(s_av)),
         }
         J = sum(terms.values())
@@ -247,7 +264,7 @@ class ShotNLP:
         i_vp = self.off["vp"][0]
         self.lbx[i_vp] = P.eps
         i_z = self.off["zeta"][0]
-        self.lbx[i_z], self.ubx[i_z] = P.eta, 1.0
+        self.lbx[i_z], self.ubx[i_z] = ZETA_MIN, 1.0
         for name in ("s_box", "s_av"):
             o0, o1 = self.off[name]
             self.lbx[o0:o1] = 0.0
@@ -260,8 +277,9 @@ class ShotNLP:
         self.jit = False
         if jit:
             try:
-                self.solver_warm = ca.nlpsol("shot_warm", "ipopt", nlp, self._opts(P.max_iter_warm, True))
-                self.solver_cold = ca.nlpsol("shot_cold", "ipopt", nlp, self._opts(P.max_iter_cold, True))
+                with jit_build_dir():
+                    self.solver_warm = ca.nlpsol("shot_warm", "ipopt", nlp, self._opts(P.max_iter_warm, True))
+                    self.solver_cold = ca.nlpsol("shot_cold", "ipopt", nlp, self._opts(P.max_iter_cold, True))
                 self.jit = True
             except Exception as err:  # no compiler or compile error: interpreted fallback
                 print(f"[shot_nlp] JIT build failed ({err}); falling back to the SX interpreter")
@@ -287,10 +305,12 @@ class ShotNLP:
             },
         }
         if jit:
+            # No CasADi cleanup: its paths are relative to the build dir, which jit_build_dir removes
             opts.update({
                 "jit": True,
                 "compiler": "shell",
-                "jit_options": {"flags": list(P.jit_flags), "verbose": False},
+                "jit_cleanup": False,
+                "jit_options": {"flags": list(P.jit_flags), "verbose": False, "cleanup": False},
             })
         return opts
 
@@ -325,11 +345,11 @@ class ShotNLP:
             np.asarray(s_box, dtype=float).ravel(), np.asarray(s_av, dtype=float).ravel(),
         ])
 
-    def make_params(self, x0, u_prev, ybar, theta_ref, node_windows, impact_window):
-        """node_windows: (N-1, 5) window data for nodes 1..N-1; impact_window: (5,)."""
+    def make_params(self, x0, u_prev, ybar, q0, v0):
+        """x0: robot state (x, y, vx, vy); u_prev: last input (a_x, a_y); (q0, v0): puck state now."""
         return np.concatenate([
-            np.asarray(x0, dtype=float), np.asarray(u_prev, dtype=float), [ybar, theta_ref],
-            np.asarray(node_windows, dtype=float).ravel(), np.asarray(impact_window, dtype=float),
+            np.asarray(x0, dtype=float), np.asarray(u_prev, dtype=float), [ybar],
+            np.asarray(q0, dtype=float), np.asarray(v0, dtype=float),
         ])
 
     def init_slacks(self, w, p):

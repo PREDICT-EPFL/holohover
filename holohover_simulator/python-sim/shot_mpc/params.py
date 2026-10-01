@@ -7,6 +7,9 @@ y in [0, height]. Robot 1 plays on the right and attacks the left goal (x = 0).
 Planner frame: x points from our goal to the opponent goal, wall L at
 y = +W/2, wall R at y = -W/2. It is the world frame rotated by pi:
     x_p = X - x_w,  y_p = W/2 - y_w,  v_p = -v_w,  theta_p = theta_w + pi
+
+The shot planner only uses the translational axes, (x, y, vx, vy) and (a_x, a_y);
+the heading is the tracker's (Section 1).
 """
 
 import json
@@ -16,6 +19,9 @@ import numpy as np
 import jax.numpy as jnp
 
 from dynamics import Table, Entity, PhysicsParams
+
+# Translational part (x, y, vx, vy) of a body state (x, y, theta, vx, vy, omega)
+XY = [0, 1, 3, 4]
 
 
 def load_config(path="config/config_shot.json"):
@@ -59,33 +65,22 @@ class ShotParams:
     t_min: float
     t_max: float
     K: int
-    M: int
     e: float  # robot-puck restitution
     goal_margin: float
     v_min: float
     eps: float
-    eps_t: float
     delta: float
-    eta: float
     t_clear: float  # post-impact wall clearance time of the robot (0 disables)
     t_ref: float
     T_ref: float
-    theta_scale: float
-    omega_scale: float
-    # Weights
-    R: tuple
-    R_delta: tuple
-    w_theta: float
-    w_omega: float
+    # Weights of the cost terms A-E (Section 5) and of the soft-constraint slacks
+    w_u: float
+    w_du: float
     w_t: float
     w_T: float
     w_a: float
-    w_n: float
-    w_b: float
-    rho: float
     w_slack: float
     # Closed loop
-    theta_ref_world: float
     outer_hz: float
     inner_hz: float
     t_commit: float
@@ -123,31 +118,20 @@ class ShotParams:
             t_min=c["t_min"],
             t_max=c["t_max"],
             K=c["K"],
-            M=c["M"],
             e=c["restitution"],
             goal_margin=c["goal_margin"],
             v_min=c["v_min"],
             eps=c["eps"],
-            eps_t=c["eps_t"],
             delta=c["delta"],
-            eta=c["eta"],
             t_clear=c["t_clear"],
             t_ref=c["t_ref"],
             T_ref=c["T_ref"],
-            theta_scale=c["theta_scale"],
-            omega_scale=c["omega_scale"],
-            R=tuple(wts["R"]),
-            R_delta=tuple(wts["R_delta"]),
-            w_theta=wts["w_theta"],
-            w_omega=wts["w_omega"],
+            w_u=wts["w_u"],
+            w_du=wts["w_du"],
             w_t=wts["w_t"],
             w_T=wts["w_T"],
             w_a=wts["w_a"],
-            w_n=wts["w_n"],
-            w_b=wts["w_b"],
-            rho=wts["rho"],
             w_slack=wts["w_slack"],
-            theta_ref_world=c["theta_ref_world"],
             outer_hz=c["rates"]["outer_hz"],
             inner_hz=c["rates"]["inner_hz"],
             t_commit=c["t_commit"],
@@ -165,7 +149,7 @@ class ShotParams:
             jit_flags=tuple(c["jit_flags"]),
         )
 
-    # Effective geometry for the puck centre (Section 2)
+    # Effective geometry for the puck centre (Section 1)
     @property
     def w(self):
         return 0.5 * self.W - self.r_p
@@ -179,10 +163,6 @@ class ShotParams:
         return 0.5 * self.X
 
     @property
-    def y_g(self):
-        return 0.0
-
-    @property
     def h_eff(self):
         return self.h - self.r_p - self.goal_margin
 
@@ -192,11 +172,8 @@ class ShotParams:
 
     @property
     def u_max(self):
+        """Acceleration limits (a_x, a_y, a_theta); the planner uses the first two."""
         return np.array([self.F_max[0] / self.m_R, self.F_max[1] / self.m_R, self.F_max[2] / self.I_R])
-
-    @property
-    def theta_ref(self):
-        return self.theta_ref_world + np.pi
 
 
 ###########################

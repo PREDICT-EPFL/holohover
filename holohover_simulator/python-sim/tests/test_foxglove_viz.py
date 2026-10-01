@@ -181,6 +181,14 @@ def test_lines_well_above_table_and_candidates_drawn(shot_file):
     assert set(lines_per_topic["/shot_mpc/candidates/L"]) == {0}  # never valid
 
 
+def test_table_cubes_opaque(shot_file):
+    """One transparent cube makes the app draw the whole table without depth, over the lines on it."""
+    messages, _, _ = shot_file
+    schema, message = next((schema, message) for topic, schema, message in messages if topic == "/scene/table")
+    cubes = protobuf_class(schema).FromString(message.data).entities[0].cubes
+    assert len(cubes) == 3 and all(cube.color.a == 1.0 for cube in cubes)
+
+
 def test_metadata_and_config_attachment(shot_file):
     _, metadata, attachments = shot_file
     assert metadata["holohover"]["scenario"] == "test"

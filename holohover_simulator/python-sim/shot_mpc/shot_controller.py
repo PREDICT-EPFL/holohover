@@ -1,10 +1,11 @@
 """
-Closed-loop integration (Section 11, direct mode): P(B*) runs as the MPC itself.
+Closed-loop integration (Section 8, direct mode): P(B*) runs as the MPC itself.
 
 - Planning ticks at inner_hz re-solve P(B*); every 1/outer_hz all sequences are
   re-solved and B* is re-selected (unless committed near impact).
 - Between ticks the tracking QP follows the plan (shot_mpc.tracker) when
   shot_mpc.tracker.enabled; otherwise the plan's zero-order-hold input is applied.
+  The plan has no heading axis: only the tracker controls the heading.
 - DEF/ATT state machine as in Till's project: defend at home while no valid plan
   exists, attack once one does, return to defence after contact.
 """
@@ -15,10 +16,10 @@ import jax.numpy as jnp
 from controller import build_pd_controller
 
 from .params import (
-    ShotParams, state_world_to_planner, state_planner_to_world,
+    ShotParams, XY, state_world_to_planner, state_planner_to_world,
     accel_planner_to_force_world, force_world_to_accel_planner, pos_planner_to_world,
 )
-from .puck_predictor import predict_events
+from .puck_predictor import predict, bounce_path
 from .bounce_geometry import shot_polyline
 from .shot_nlp import ShotNLP
 from .shot_selector import ShotSelector
@@ -48,8 +49,8 @@ class ShotController:
 
         self.mode = DEF
         self.plan = None
-        self.events = None
-        self.u_prev = np.zeros(3)  # last applied input, planner accelerations
+        self.puck = None  # puck flight predicted at the last planning tick
+        self.u_prev = np.zeros(3)  # last applied input, planner accelerations (a_x, a_y, a_theta)
         self.attack_after = 0.0
         self.contact_times = []
         self.plan_history = []  # (t, label, tf) of every accepted plan
@@ -70,7 +71,7 @@ class ShotController:
         P = self.P
         t = i * self.dt
         state = np.asarray(state, dtype=float)
-        xR = state_world_to_planner(state[0:6], P)
+        xR = state_world_to_planner(state[0:6], P)  # (x, y, theta, vx, vy, omega); the planner uses xR[XY]
         puck = state_world_to_planner(state[12:18], P)
 
         # Drop a plan whose impact passed without contact
@@ -83,13 +84,13 @@ class ShotController:
         outer_tick = i % self.outer_every == 0
         # Without a plan (DEF) the sequences are searched at the outer rate only
         if t >= self.attack_after and i % self.inner_every == 0 and (self.plan is not None or outer_tick):
-            self.events = predict_events(puck[0:2], puck[3:5], P, t_max=P.t_max + 0.5)
+            self.puck = predict(puck[0:2], puck[3:5], P)
             remaining = self.plan.remaining(t) if self.plan is not None else np.inf
             if remaining > P.t_stop_replan:
                 committed = self.plan is not None and remaining < P.t_commit
                 outer = outer_tick or self.plan is None
                 new = self.selector.update(
-                    t, xR, self.u_prev, self.events, outer=outer,
+                    t, xR[XY], self.u_prev[0:2], self.puck, outer=outer,
                     commit_key=self.plan.key if committed else None,
                 )
                 if new is not None:
@@ -106,7 +107,7 @@ class ShotController:
             if self.tracker is not None and self.plan.remaining(t) > self.tracker.t_min:
                 u = self.tracker.solve(self.plan, t, xR)
             else:
-                u = self.plan.input_at(t)
+                u = np.append(self.plan.input_at(t), 0.0)  # a_theta = 0: the plan has no heading
             F = accel_planner_to_force_world(u, P)
         else:
             F = np.asarray(self.def_controller(jnp.asarray(state)), dtype=float)
@@ -119,21 +120,24 @@ class ShotController:
     ### Logging helpers  ###
     ########################
     def plan_world(self, state):
-        """Current plan as (N, 9) rows (x_{k+1} world, F_k world), the path_plans layout."""
+        """Current plan as (N, 9) rows (x_{k+1} world, F_k world), the path_plans layout.
+        The plan has no heading: its rows keep the current heading and rate, and zero torque."""
         P = self.P
         N = P.N
+        rows = np.zeros((N, 9))
+        rows[:, :6] = np.asarray(state[0:6], dtype=float)
         if self.mode != ATT or self.plan is None:
-            rows = np.zeros((N, 9))
-            rows[:, :6] = np.asarray(state[0:6], dtype=float)
             return rows
         sol = self.plan.sol
-        X_w = state_planner_to_world(sol.X[:, 1:].T, P)
-        F_w = accel_planner_to_force_world(sol.U.T, P)
-        return np.hstack([X_w, F_w])
+        X = np.tile(state_world_to_planner(rows[0, :6], P), (N, 1))
+        X[:, XY] = sol.X[:, 1:].T
+        U = np.zeros((N, 3))
+        U[:, 0:2] = sol.U.T
+        return np.hstack([state_planner_to_world(X, P), accel_planner_to_force_world(U, P)])
 
     def candidates_world(self, n_shot=8):
         """
-        Latest solution of every bounce sequence (pre-impact mode 0), selected or not:
+        Latest solution of every bounce sequence, selected or not:
         robot path (n, N+1, 2) and post-impact shot polyline (n, n_shot, 2) in world
         coordinates (NaN when not solved or infeasible), selection score, validity and
         the index of the executed sequence (-1 if none). Sequences not re-solved at an
@@ -147,7 +151,7 @@ class ShotController:
         valid = np.zeros(len(seqs), dtype=bool)
         chosen = -1
         for j, (s, k) in enumerate(seqs):
-            plan = self.selector.candidates.get((0, s, k))
+            plan = self.selector.candidates.get((s, k))
             if plan is None:
                 continue
             sol = plan.sol
@@ -172,14 +176,13 @@ class ShotController:
         """
         P = self.P
         puck = state_world_to_planner(np.asarray(state[12:18], dtype=float), P)
-        events = predict_events(puck[0:2], puck[3:5], P, t_max=horizon)
         remaining = self.plan.remaining(t) if self.plan is not None else -1.0
         if self.mode == ATT and remaining > 0:
             sol = self.plan.sol
             p_c = sol.X[0:2, -1] + (P.r_R + P.r_p) * np.array([np.cos(sol.phi), np.sin(sol.phi)])
-            path = np.vstack([events.polyline(remaining), shot_polyline(p_c, sol.vp, P)])
+            path = np.vstack([bounce_path(puck[0:2], puck[3:5], P, remaining)[0], shot_polyline(p_c, sol.vp, P)])
         else:
-            path = events.polyline(events.t_end)
+            path = bounce_path(puck[0:2], puck[3:5], P, horizon)[0]
         return pos_planner_to_world(_pad_rows(path, n_samples), P)
 
 

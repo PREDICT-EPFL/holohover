@@ -36,3 +36,40 @@ sequences one by one. Slowing the playback down (speed control in the bottom bar
 at impacts.
 
 If you change the layout in the app, export it over `shot_mpc_layout.json` so everyone gets the change.
+
+## Live view
+
+[`run_live.py`](../run_live.py) runs the same closed loop as `run_shot.py` and streams it to the app
+over a WebSocket while it runs, at a speed you choose:
+
+```bash
+uv run python run_live.py                                  # random starts, half real time
+uv run python run_live.py --scenario incoming --speed 0.25
+```
+
+1. Open the link it prints (or **Open connection…** > Foxglove WebSocket > `ws://localhost:8765`).
+   The simulation starts once the app subscribes.
+2. Import `foxglove/shot_mpc_live_layout.json`: the offline layout plus a control row above the table.
+
+Controls:
+
+- **Pause, Resume, Step 10 ms, Step 50 ms** (the `/pause` and `/step` services): a step pauses the
+  simulation if it is running, then advances one control step (10 ms) or one planning tick (50 ms).
+  While paused, the app keeps showing the last step, so you can look at it in every panel.
+- **Restart, Random, Stationary, Incoming, Around** (the `/reset` service): Restart repeats the current
+  start; the others switch to that start. From a Call Service panel you can also send
+  `{"scenario": "random", "seed": 3}`. Random draw k with seed s is episode k of
+  `run_shot.py --evaluate --seed s`.
+- **Live controls** (Parameters panel): `speed` as a fraction of real time, `paused` and
+  `auto_restart`. Type the new JSON value, then click the check mark to send it. With
+  `auto_restart`, an episode ends one second after the first goal or at its duration, and the next
+  one starts: the same scenario, or the next random draw. Without it, play goes on until you restart.
+- **Speed** plot: requested against achieved speed. The control-step compute time is in the
+  Compute time plot.
+
+The simulated time does not depend on the wall clock, so a live episode is the same as the offline
+one. A cold outer solve can take ~300 ms, longer than a 10 ms step at full speed. The view then waits
+for the solve to finish rather than fast-forwarding afterwards, so the achieved speed is below the
+requested one: 0.75 to 0.85 at speed 1, and close to 0.25 at speed 0.25.
+
+Inside the devcontainer, start it with `--host 0.0.0.0` and forward port 8765.

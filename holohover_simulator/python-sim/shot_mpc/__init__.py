@@ -1,4 +1,4 @@
-"""Bilevel gradient-based shot MPC (see docs/air-hockey-mpc-formulation.md).
+"""Bilevel gradient-based shot MPC (see air-hockey-mpc-formulation.typ).
 
 The outer loop enumerates wall-bounce sequences, the inner loop solves one
 smooth NLP per sequence with CasADi + IPOPT. All planning happens in the

@@ -1,5 +1,5 @@
 """
-Closed-loop test of the gradient-based shot MPC (docs/air-hockey-mpc-formulation.md)
+Closed-loop test of the gradient-based shot MPC (air-hockey-mpc-formulation.typ)
 in Till's simulator. Run from python-sim/:
 
     python run_shot.py --scenario stationary          # simulate + animate
@@ -18,6 +18,7 @@ import argparse
 import json
 import os
 import pickle
+import signal
 from datetime import datetime
 from functools import partial
 
@@ -106,77 +107,108 @@ def sample_initial_state(rng, config):
 ###############
 ### Episode ###
 ###############
-def run_episode(config, physics, P, nlp, init_state, duration, stop_on_goal=False,
-                verbose=True, record=True, tail=0.0):
-    """With stop_on_goal, the episode ends `tail` seconds after the first goal."""
-    ctrl = ShotController(config, physics, P, nlp, verbose=verbose)
-    hz = config["simulation"]["hz"]
-    dt = 1.0 / hz
-    n_sub = n_substeps(config)
-    h = dt / n_sub
-    steps = int(round(duration * hz))
-    stop_at = None
-    F_max = np.array(config["simulation"]["u_limits"])
+CANDIDATE_KEYS = ("cand_robot", "cand_shot", "cand_score", "cand_valid", "cand_chosen")
+RECORD_KEYS = ("states", "inputs", "plans", "tfs", "modes", "scores", "future") + CANDIDATE_KEYS
 
-    r2_ctrl = None
-    if config["shot_mpc"]["opponent"] == "static":
-        rel = config["robot"]["robot2"]["defensive_position_rel"]
-        home = jnp.array([rel * physics.table.width, 0.5 * physics.table.height, 0.0, 0.0, 0.0, 0.0])
-        r2_ctrl = build_pd_controller(home, robot_id=2)
 
-    state = np.asarray(init_state, dtype=float)
-    score = np.zeros(2, dtype=int)
-    rec = {k: [] for k in ("states", "inputs", "plans", "tfs", "modes", "scores", "future",
-                           "cand_robot", "cand_shot", "cand_score", "cand_valid", "cand_chosen")}
-    outcome, t_goal, contacts_at_goal, attacked = None, None, None, False
+class Episode:
+    """One closed-loop run, advanced one control step at a time (run_episode here, run_live.py)."""
 
-    for i in range(steps):
-        t = i * dt
+    def __init__(self, config, physics, P, nlp, init_state, verbose=True):
+        self.ctrl = ShotController(config, physics, P, nlp, verbose=verbose)
+        self.physics = physics
+        self.hz = config["simulation"]["hz"]
+        self.dt = 1.0 / self.hz
+        self.n_sub = n_substeps(config)
+        self.h = self.dt / self.n_sub
+        self.F_max = np.array(config["simulation"]["u_limits"])
+
+        self.r2_ctrl = None
+        if config["shot_mpc"]["opponent"] == "static":
+            rel = config["robot"]["robot2"]["defensive_position_rel"]
+            home = jnp.array([rel * physics.table.width, 0.5 * physics.table.height, 0.0, 0.0, 0.0, 0.0])
+            self.r2_ctrl = build_pd_controller(home, robot_id=2)
+
+        self.state = np.asarray(init_state, dtype=float)
+        self.score = np.zeros(2, dtype=int)
+        self.i = 0  # control steps taken; the simulation time is i * dt
+        self.outcome, self.t_goal, self.i_goal, self.contacts_at_goal = None, None, None, None  # first goal
+        self.attacked = False
+
+    def step(self, record=True):
+        """One control step, then simulation.physics_hz / hz physics substeps under the held input.
+        With record, returns the step's row: one value per RECORD_KEYS key."""
+        ctrl, state, i = self.ctrl, self.state, self.i
+        t = i * self.dt
         F1 = ctrl.step(i, state)
-        F2 = np.clip(np.asarray(r2_ctrl(jnp.asarray(state)), dtype=float), -F_max, F_max) if r2_ctrl else np.zeros(3)
-        attacked |= ctrl.mode == ATT
+        F2 = (np.clip(np.asarray(self.r2_ctrl(jnp.asarray(state)), dtype=float), -self.F_max, self.F_max)
+              if self.r2_ctrl else np.zeros(3))
+        self.attacked |= ctrl.mode == ATT
 
+        row = None
         if record:
-            rec["inputs"].append(F1)
-            rec["plans"].append(ctrl.plan_world(state))
-            rec["tfs"].append(max(ctrl.plan.remaining(t), 0.0) if ctrl.mode == ATT and ctrl.plan else 0.0)
-            rec["modes"].append(ctrl.mode)
+            row = {
+                "inputs": F1,
+                "plans": ctrl.plan_world(state),
+                "tfs": max(ctrl.plan.remaining(t), 0.0) if ctrl.mode == ATT and ctrl.plan else 0.0,
+                "modes": ctrl.mode,
+            }
             fut = np.zeros((N_FUTURE, 18))
             fut[:, 6:9] = state[6:9]
             fut[:, 12:14] = ctrl.predicted_puck_world(state, t, N_FUTURE)
-            rec["future"].append(fut)
-            for key, value in zip(("cand_robot", "cand_shot", "cand_score", "cand_valid", "cand_chosen"),
-                                  ctrl.candidates_world()):
-                rec[key].append(value)
+            row["future"] = fut
+            row.update(zip(CANDIDATE_KEYS, ctrl.candidates_world()))
 
         u = jnp.asarray(np.concatenate([F1, F2]), dtype=jnp.float32)
-        new_state, r1_cols, scored = physics_substeps(jnp.asarray(state, dtype=jnp.float32), u, physics, h, n_sub)
-        state = np.asarray(new_state, dtype=float)
+        new_state, r1_cols, scored = physics_substeps(jnp.asarray(state, dtype=jnp.float32), u, self.physics,
+                                                      self.h, self.n_sub)
+        self.state = np.asarray(new_state, dtype=float)
         r1_cols, scored = np.asarray(r1_cols), np.asarray(scored)
         if r1_cols.any():
-            ctrl.notify_contact(t + (np.argmax(r1_cols) + 1) * h)
+            ctrl.notify_contact(t + (np.argmax(r1_cols) + 1) * self.h)
         j_goal = np.flatnonzero(scored)
         has_scored = int(scored[j_goal[0]]) if len(j_goal) else 0
         if has_scored:
-            score[has_scored - 1] += 1
-            if outcome is None:
-                outcome = "goal" if has_scored == 1 else "own_goal"
-                t_goal, contacts_at_goal = t + (j_goal[0] + 1) * h, len(ctrl.contact_times)
-                stop_at = i + int(round(tail * hz))
+            self.score[has_scored - 1] += 1
+            if self.outcome is None:
+                self.outcome = "goal" if has_scored == 1 else "own_goal"
+                self.t_goal, self.i_goal = t + (j_goal[0] + 1) * self.h, i
+                self.contacts_at_goal = len(ctrl.contact_times)
+        self.i += 1
+
         if record:
-            rec["states"].append(state.copy())
-            rec["scores"].append(score.copy())
-        if stop_on_goal and stop_at is not None and i >= stop_at:
+            row["states"] = self.state.copy()
+            row["scores"] = self.score.copy()
+        return row
+
+    def final_outcome(self):
+        """The first goal's outcome, or why there was none."""
+        if self.outcome is not None:
+            return self.outcome
+        return "miss" if self.ctrl.contact_times else ("no_contact" if self.attacked else "no_attack")
+
+
+def run_episode(config, physics, P, nlp, init_state, duration, stop_on_goal=False,
+                verbose=True, record=True, tail=0.0):
+    """With stop_on_goal, the episode ends `tail` seconds after the first goal."""
+    ep = Episode(config, physics, P, nlp, init_state, verbose=verbose)
+    tail_steps = int(round(tail * ep.hz))
+    rec = {k: [] for k in RECORD_KEYS}
+
+    for _ in range(int(round(duration * ep.hz))):
+        row = ep.step(record)
+        if record:
+            for key, value in row.items():
+                rec[key].append(value)
+        if stop_on_goal and ep.i_goal is not None and ep.i - 1 >= ep.i_goal + tail_steps:
             break
 
-    if outcome is None:
-        outcome = "miss" if ctrl.contact_times else ("no_contact" if attacked else "no_attack")
-
+    ctrl = ep.ctrl
     result = {
-        "outcome": outcome,
-        "t_goal": t_goal,
+        "outcome": ep.final_outcome(),
+        "t_goal": ep.t_goal,
         "contacts": list(ctrl.contact_times),
-        "contacts_at_goal": contacts_at_goal,
+        "contacts_at_goal": ep.contacts_at_goal,
         "plan_history": ctrl.plan_history,
         "selector_logs": ctrl.selector.logs,
         "tracker_times": ctrl.tracker.times if ctrl.tracker else [],
@@ -250,13 +282,16 @@ def timing_summary(selector_logs, tracker_times=()):
     return "\n".join(lines)
 
 
+def update_json(log):
+    """One selector update (ShotSelector.logs entry) as plain data."""
+    return {"t": log.t, "outer": log.outer, "chosen": log.chosen, "t_total": log.t_total,
+            "results": {k: {"valid": v[0], "cost": v[1], "score": v[2], "tf": v[3],
+                            "t_wall": v[4], "iters": v[5], "cold": v[6]} for k, v in log.results.items()}}
+
+
 def shot_log_json(result):
-    logs = [{"t": log.t, "outer": log.outer, "chosen": log.chosen, "t_total": log.t_total,
-             "results": {k: {"valid": v[0], "cost": v[1], "score": v[2], "tf": v[3],
-                             "t_wall": v[4], "iters": v[5], "cold": v[6]} for k, v in log.results.items()}}
-            for log in result["selector_logs"]]
     return {"outcome": result["outcome"], "t_goal": result["t_goal"], "contacts": result["contacts"],
-            "plan_history": result["plan_history"], "updates": logs}
+            "plan_history": result["plan_history"], "updates": [update_json(log) for log in result["selector_logs"]]}
 
 
 ############
@@ -293,13 +328,36 @@ def simulate(config, physics, P, nlp, scenario, export=None, animate=True, save=
     if export:
         export_gif(data, gif_name(export))
     elif animate:
-        # Qt's default xcb plugin aborts on this GNOME/Wayland machine (see SP_hockey/README.md)
-        if os.environ.get("XDG_SESSION_TYPE") == "wayland":
-            os.environ.setdefault("QT_QPA_PLATFORM", "wayland")
-        from animation import TrajecoryAnimation
-
-        TrajecoryAnimation(**data).play(mode="standard")
+        play_animation(data)
     return result
+
+
+def play_animation(data):
+    """Interactive window; Ctrl+C closes it like its close button. A KeyboardInterrupt would
+    mostly land in a Tk redraw callback, where tkinter prints it and the animation carries on,
+    so the handler queues the close on the GUI event loop, which play() pumps every frame."""
+    # Qt's default xcb plugin aborts on this GNOME/Wayland machine (see SP_hockey/README.md)
+    if os.environ.get("XDG_SESSION_TYPE") == "wayland":
+        os.environ.setdefault("QT_QPA_PLATFORM", "wayland")
+    import matplotlib.pyplot as plt
+    from animation import TrajecoryAnimation
+
+    timers = []  # a backend timer garbage-collected before it fires never fires
+
+    def close_on_sigint(signum, frame):
+        if not plt.get_fignums():
+            raise KeyboardInterrupt
+        timer = plt.figure(plt.get_fignums()[0]).canvas.new_timer(interval=0)
+        timer.single_shot = True
+        timer.add_callback(plt.close, "all")
+        timer.start()
+        timers.append(timer)
+
+    previous = signal.signal(signal.SIGINT, close_on_sigint)
+    try:
+        TrajecoryAnimation(**data).play(mode="standard")
+    finally:
+        signal.signal(signal.SIGINT, previous)
 
 
 def gif_name(export):

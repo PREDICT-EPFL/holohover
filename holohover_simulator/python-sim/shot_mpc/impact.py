@@ -1,5 +1,5 @@
 """
-Frictionless impulsive robot-puck impact along the contact normal n (Section 4).
+Frictionless impulsive robot-puck impact along the contact normal n (Section 3).
 
     v_n  = (v_R - v_p) . n
     v_p+ = v_p + kappa v_n n

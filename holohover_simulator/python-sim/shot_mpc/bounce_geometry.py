@@ -1,14 +1,14 @@
 """
-Coarse post-impact model: bounce sequences and the virtual goal (Section 5).
+Coarse post-impact model: bounce sequences and the virtual goal (Section 4).
 
 A sequence with first wall s (+1 = L, -1 = R) and k alternating side-wall
 bounces scores iff the unfolded straight shot hits the mirrored goal at
-y_bar = 2 s k w + (-1)^k y_g.
+y_bar = 2 s k w.
 
 Side-wall bounces never change v_x, so the time to the goal line only depends
 on the x motion: T = -ln(1 - gamma (x_g - x_c) / v_x) / gamma. This equals the
-L_B / |v| form of the formulation, and the reach margin becomes
-gamma (x_g - x_c) <= (1 - eta) v_x.
+L_B / |v| form of the formulation, and the reach constraint becomes
+gamma (x_g - x_c) < v_x.
 """
 
 import numpy as np
@@ -34,9 +34,9 @@ def label(s, k):
     return "".join("L" if s * (-1) ** j > 0 else "R" for j in range(k))
 
 
-def virtual_goal_y(s, k, w, y_g=0.0):
-    """return +2w=W if s=+1 (so L) and k=1 and u_g=0"""
-    return 2 * s * k * w + (-1) ** k * y_g
+def virtual_goal_y(s, k, w):
+    """y of the goal image after k bounces starting on wall s, e.g. +2w for L (s = +1, k = 1)."""
+    return 2 * s * k * w
 
 
 def y_hit(p_c, v, x_g):
