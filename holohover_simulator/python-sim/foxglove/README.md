@@ -45,6 +45,7 @@ over a WebSocket while it runs, at a speed you choose:
 ```bash
 uv run python run_live.py                                  # random starts, half real time
 uv run python run_live.py --scenario incoming --speed 0.25
+uv run python run_live.py --auto-restart                   # next episode after each goal
 ```
 
 1. Open the link it prints (or **Open connection…** > Foxglove WebSocket > `ws://localhost:8765`).
@@ -56,14 +57,21 @@ Controls:
 - **Pause, Resume, Step 10 ms, Step 50 ms** (the `/pause` and `/step` services): a step pauses the
   simulation if it is running, then advances one control step (10 ms) or one planning tick (50 ms).
   While paused, the app keeps showing the last step, so you can look at it in every panel.
+- **Save** (the `/save` service): writes the current episode, from its start to now, to
+  `simulation_data/live_<start>_<date>_<time>.mcap`. Open it with **Open local file…** to seek and
+  step through the shots, with either layout (on a file, the live layout's buttons do nothing). Every
+  episode is recorded to a temporary file while it runs, deleted when the next one starts or when
+  `run_live.py` stops, so only what you save is kept. Saving again later in the same episode gives a
+  new, longer file. The path is printed in the terminal and in the event log.
 - **Restart, Random, Stationary, Incoming, Around** (the `/reset` service): Restart repeats the current
   start; the others switch to that start. From a Call Service panel you can also send
   `{"scenario": "random", "seed": 3}`. Random draw k with seed s is episode k of
   `run_shot.py --evaluate --seed s`.
 - **Live controls** (Parameters panel): `speed` as a fraction of real time, `paused` and
-  `auto_restart`. Type the new JSON value, then click the check mark to send it. With
-  `auto_restart`, an episode ends one second after the first goal or at its duration, and the next
-  one starts: the same scenario, or the next random draw. Without it, play goes on until you restart.
+  `auto_restart`. Type the new JSON value, then click the check mark to send it. By default an
+  episode goes on until you press Restart or another start, through goals and past its duration.
+  With `auto_restart` (or `--auto-restart`), an episode ends one second after the first goal or at
+  its duration, and the next one starts: the same scenario, or the next random draw.
 - **Speed** plot: requested against achieved speed. The control-step compute time is in the
   Compute time plot.
 

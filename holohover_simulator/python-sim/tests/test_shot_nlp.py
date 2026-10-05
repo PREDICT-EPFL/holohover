@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from shot_mpc.params import XY, state_world_to_planner
-from shot_mpc.puck_predictor import predict
+from shot_mpc.model import predict
 from shot_mpc.shot_selector import ShotSelector
 
 
@@ -19,11 +19,10 @@ def _planner_setup(config, P, scenario):
 def test_derivatives_against_finite_differences(config, P, nlp):
     rng = np.random.default_rng(1)
     xR, puck = _planner_setup(config, P, "incoming")
-    sel = ShotSelector(P, nlp)
     for (s, k) in [(0, 0), (1, 2)]:
         ybar = 2 * s * k * P.w
-        w0 = sel._cold_guess(xR, puck, ybar, 0.6)
-        p = sel._params(xR, np.zeros(2), ybar, puck)
+        w0 = nlp.cold_guess(xR, puck, ybar, 0.6)
+        p = nlp.make_params(xR, np.zeros(2), ybar, puck.q, puck.v)
         w0 = w0 + 0.01 * rng.normal(size=w0.size)
         grad = np.array(nlp.grad_f_fun(w0, p)).ravel()
         jac = np.array(nlp.jac_g_fun(w0, p))

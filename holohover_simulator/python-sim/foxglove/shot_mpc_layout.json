@@ -19,7 +19,7 @@
       "scene": {
         "transforms": { "showLabel": false, "axisScale": 0.5 }
       },
-      "transforms": {},
+      "transforms": { "frame:world": { "visible": false } },
       "topics": {
         "/scene/table": { "visible": true },
         "/scene/bodies": { "visible": true },

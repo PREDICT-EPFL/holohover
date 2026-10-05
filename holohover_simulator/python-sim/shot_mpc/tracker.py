@@ -3,8 +3,9 @@ Tracking QP (Section 8): follows the selected plan at the control rate.
 
 H nodes span the time left to the planned impact, so the grid rem / H shrinks
 with it. The reference is the plan itself, propagated exactly with its ZOH
-inputs onto the tracker nodes. The plan only has the translational axes; the
-tracker also controls the heading and holds it at theta_ref (Section 1).
+inputs onto the tracker nodes (Plan.state_at). The plan only has the
+translational axes; the tracker also controls the heading and holds it at
+theta_ref (Section 1).
 The terminal constraint x_H = x_ref(t_f) is softened into a heavy terminal
 cost, so the QP (input bounds only) is always feasible. The states are
 condensed out: the only decision variables are U.
@@ -16,29 +17,9 @@ import numpy as np
 import casadi as ca                                                     # symbolic QP and the DAQP interface
 
 from .params import XY                                                  # (x, y, vx, vy) rows of the tracker state
-from .shot_nlp import zoh_coefficients                                  # exact ZOH map
+from .model import zoh_coefficients                                     # exact ZOH map
 
 NX, NU = 6, 3  # tracker state (x, y, theta, vx, vy, omega) and input (a_x, a_y, a_theta)
-
-
-def plan_reference(plan, times, gamma):
-    """Plan states (x, y, vx, vy) at absolute times, propagated from the preceding node with its ZOH input."""
-    sol = plan.sol                                                      # plan solution
-    N = sol.U.shape[1]                                                  # number of plan intervals (N + 1 nodes)
-    s = np.asarray(times, dtype=float) - plan.t0                        # time since plan start
-    k = np.clip(np.floor(s / plan.dt).astype(int), 0, N - 1)            # index of preceding plan node
-    e1, a, b = zoh_coefficients(s - k * plan.dt, gamma, dt_max=plan.dt) # ZOH coefficients for each time
-    X, U = sol.X[:, k], sol.U[:, k]                                     # plan states and inputs at preceding nodes
-    # Exact ZOH step from node k: position p + a v + b u, velocity e1 v + a u
-    return np.vstack([X[0:2] + a * X[2:4] + b * U, e1 * X[2:4] + a * U])
-
-
-def plan_inputs(plan, times):
-    """Plan ZOH inputs (a_x, a_y) at absolute times."""
-    N = plan.sol.U.shape[1]                                             # number of plan intervals
-    # Plan interval containing each time; times at or after t_f get the last interval
-    k = np.clip(np.floor((np.asarray(times) - plan.t0) / plan.dt).astype(int), 0, N - 1)
-    return plan.sol.U[:, k]                                             # input held on that interval
 
 
 class Tracker:
@@ -94,11 +75,11 @@ class Tracker:
         dt = plan.remaining(t) / self.H                         # tracker step: the horizon ends at the impact
         nodes = t + dt * np.arange(self.H + 1)                  # absolute times of nodes 0..H
         Xr = np.zeros((NX, self.H + 1))                         # reference states on the tracker nodes:
-        Xr[XY] = plan_reference(plan, nodes, self.P.gamma)      # the plan on the translational axes,
+        Xr[XY] = plan.state_at(nodes, self.P.gamma)             # the plan on the translational axes,
         Xr[2] = self.theta_ref                                  # the heading held at theta_ref (omega = 0)
         Ur = np.zeros((NU, self.H))                             # reference inputs, a_theta = 0
         # Plan input active at the middle of each tracker interval (the grids do not align)
-        Ur[0:2] = plan_inputs(plan, nodes[:-1] + 0.5 * dt)
+        Ur[0:2] = plan.input_at(nodes[:-1] + 0.5 * dt)
         # Parameters in the order of __init__; .T.ravel() is column-major, like ca.vec
         p = np.concatenate([x0, Xr.T.ravel(), Ur.T.ravel(), [dt]])
 

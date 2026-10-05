@@ -19,8 +19,7 @@ from .params import (
     ShotParams, XY, state_world_to_planner, state_planner_to_world,
     accel_planner_to_force_world, force_world_to_accel_planner, pos_planner_to_world,
 )
-from .puck_predictor import predict, bounce_path
-from .bounce_geometry import shot_polyline
+from .model import predict, bounce_path, shot_polyline
 from .shot_nlp import ShotNLP
 from .shot_selector import ShotSelector
 from .tracker import Tracker
@@ -159,9 +158,7 @@ class ShotController:
             if not sol.valid:
                 continue
             robot[j] = pos_planner_to_world(sol.X[0:2].T, P)
-            # Puck centre at impact, exact by the contact equality
-            p_c = sol.X[0:2, -1] + (P.r_R + P.r_p) * np.array([np.cos(sol.phi), np.sin(sol.phi)])
-            shot[j] = pos_planner_to_world(_pad_rows(shot_polyline(p_c, sol.vp, P), n_shot), P)
+            shot[j] = pos_planner_to_world(_pad_rows(shot_polyline(sol.p_c, sol.vp, P), n_shot), P)
             if self.mode == ATT and self.plan is not None and plan.key == self.plan.key:
                 chosen = j
         return robot, shot, score, valid, chosen
@@ -179,8 +176,7 @@ class ShotController:
         remaining = self.plan.remaining(t) if self.plan is not None else -1.0
         if self.mode == ATT and remaining > 0:
             sol = self.plan.sol
-            p_c = sol.X[0:2, -1] + (P.r_R + P.r_p) * np.array([np.cos(sol.phi), np.sin(sol.phi)])
-            path = np.vstack([bounce_path(puck[0:2], puck[3:5], P, remaining)[0], shot_polyline(p_c, sol.vp, P)])
+            path = np.vstack([bounce_path(puck[0:2], puck[3:5], P, remaining)[0], shot_polyline(sol.p_c, sol.vp, P)])
         else:
             path = bounce_path(puck[0:2], puck[3:5], P, horizon)[0]
         return pos_planner_to_world(_pad_rows(path, n_samples), P)

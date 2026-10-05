@@ -58,7 +58,7 @@ TRAIL_LENGTH = 60  # samples, as in the animation
 # What keeps lines visible is the table being opaque (table_scene), not the gap.
 Z_TABLE, Z_MARKINGS = -0.02, -0.01  # table top; border, centre line and goals
 Z_TRAIL, Z_CANDIDATE, Z_PREDICTION, Z_PLAN = 0.0, 0.005, 0.01, 0.015
-Z_BODY, Z_TEXT = 0.03, 0.06  # disc height (from z = 0); labels
+Z_BODY = 0.03  # disc height (from z = 0)
 
 # Line widths in pixels; the candidates are faint except the executed one
 LINE_PX = {"plan": 3.0, "prediction": 2.0, "trail": 2.0, "candidate": 2.0, "chosen": 4.0}
@@ -113,11 +113,6 @@ def _circle(center, radius, z, color, px, n=32):
     a = np.linspace(0.0, 2.0 * np.pi, n, endpoint=False)
     xy = np.asarray(center, dtype=float)[:2] + radius * np.column_stack([np.cos(a), np.sin(a)])
     return _line(xy, z, color, px, fm.LinePrimitiveLineType.LineLoop)
-
-
-def _text(x, y, text, color, size=14.0):
-    return fm.TextPrimitive(pose=_pose(x, y, Z_TEXT), billboard=True, font_size=size,
-                            scale_invariant=True, color=color, text=text)
 
 
 def _json_ready(value):
@@ -370,8 +365,7 @@ def log_event(ch, ns, level, text):
 
 def geometry(config, labels=()):
     """What log_step needs besides the step itself: sizes and the bounce-sequence labels."""
-    return SimpleNamespace(labels=list(labels), r_robot=config["robot"]["radius"], r_puck=config["puck"]["radius"],
-                           table_width=config["table"]["width"])
+    return SimpleNamespace(labels=list(labels), r_robot=config["robot"]["radius"], r_puck=config["puck"]["radius"])
 
 
 def step_row(run, k):
@@ -414,9 +408,9 @@ def log_step(ch, geom, row, t, ns):
         "goals_robot1": row.score[0], "goals_robot2": row.score[1],
     }), log_time=ns)
 
-    def scene(channel, entity_id, lines, texts=()):
+    def scene(channel, entity_id, lines):
         channel.log(fm.SceneUpdate(entities=[fm.SceneEntity(
-            timestamp=stamp, frame_id="world", id=entity_id, lines=lines, texts=list(texts))]), log_time=ns)
+            timestamp=stamp, frame_id="world", id=entity_id, lines=lines)]), log_time=ns)
 
     scene(ch["plan"], "plan", [_line(row.plan[:, :2], Z_PLAN, _color("red", 0.9), LINE_PX["plan"])])
     for key, cols, radius, color in (("puck_prediction", slice(12, 14), geom.r_puck, "green"),
@@ -437,12 +431,8 @@ def log_step(ch, geom, row, t, ns):
         px = LINE_PX["chosen" if j == chosen else "candidate"]
         lines = [_line(xy, Z_CANDIDATE, color, px) for xy in (cand["robot"][j], cand["shot"][j])
                  if np.isfinite(xy).all(axis=1).any()]
-        score = cand["score"][j]
-        status = "-" if not np.isfinite(score) else ("invalid" if not cand["valid"][j] else f"{score:.2f}")
-        # Score row under the table, as in the animation
-        label = _text(0.18 * j * geom.table_width, -0.06, f"{'> ' if j == chosen else ''}{name} {status}",
-                      _color(base))
-        scene(ch["candidates"][j], name, lines, [label])
+        # The scores are plotted from /shot_mpc/scores rather than written on the table
+        scene(ch["candidates"][j], name, lines)
     ch["scores"].log(_json_ready({
         "t": t, "chosen": geom.labels[chosen] if chosen >= 0 else None,
         "scores": dict(zip(geom.labels, cand["score"])), "valid": dict(zip(geom.labels, cand["valid"])),

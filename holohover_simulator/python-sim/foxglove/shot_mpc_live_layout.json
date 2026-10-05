@@ -19,7 +19,7 @@
       "scene": {
         "transforms": { "showLabel": false, "axisScale": 0.5 }
       },
-      "transforms": {},
+      "transforms": { "frame:world": { "visible": false } },
       "topics": {
         "/scene/table": { "visible": true },
         "/scene/bodies": { "visible": true },
@@ -187,6 +187,17 @@
       "editingMode": false,
       "timeoutSeconds": 5
     },
+    "CallService!save": {
+      "foxglovePanelTitle": "Save",
+      "serviceName": "/save",
+      "requestPayload": "{}",
+      "layout": "vertical",
+      "buttonText": "Save",
+      "buttonTooltip": "Save this episode so far to simulation_data/live_*.mcap, to open as a file",
+      "buttonColor": "#2e7d32",
+      "editingMode": false,
+      "timeoutSeconds": 60
+    },
     "CallService!restart": {
       "foxglovePanelTitle": "Restart",
       "serviceName": "/reset",
@@ -274,17 +285,22 @@
             "splitPercentage": 50,
             "first": {
               "direction": "row",
-              "splitPercentage": 25.0,
+              "splitPercentage": 20.0,
               "first": "CallService!pause",
               "second": {
                 "direction": "row",
-                "splitPercentage": 33.33,
+                "splitPercentage": 25.0,
                 "first": "CallService!resume",
                 "second": {
                   "direction": "row",
-                  "splitPercentage": 50.0,
+                  "splitPercentage": 33.33,
                   "first": "CallService!step1",
-                  "second": "CallService!step5"
+                  "second": {
+                    "direction": "row",
+                    "splitPercentage": 50.0,
+                    "first": "CallService!step5",
+                    "second": "CallService!save"
+                  }
                 }
               }
             },

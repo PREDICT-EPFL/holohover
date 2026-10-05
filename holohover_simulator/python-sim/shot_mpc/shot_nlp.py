@@ -16,6 +16,9 @@ Decision vector w = (X, U, t_f, phi, v+, zeta, s_box, s_av):
 
 Parameters p = (x0_hat, u_prev, y_bar, q0, v0), with (q0, v0) the puck state at the
 planning instant. The puck flies freely up to the impact, since t_f <= tau1 (Section 1).
+
+Initial guesses w0 (Section 7): the previous solution shifted to now (warm), or a
+closed-form guess from the virtual-goal aim and the inverted impact (cold).
 """
 
 import atexit
@@ -29,8 +32,7 @@ from dataclasses import dataclass
 import numpy as np
 import casadi as ca
 
-from .puck_predictor import GAMMA_EPS, flight_phi, flight_decay, free_flight
-from .impact import impact
+from .model import GAMMA_EPS, flight_phi, free_flight, impact, invert, zoh_coefficients, zoh_interval
 
 NX, NU = 4, 2  # robot state (x, y, vx, vy) and input (a_x, a_y)
 ZETA_MIN = 1e-3  # floor of zeta for the strict reach inequality; T_B <= -ln(ZETA_MIN) / gamma
@@ -53,41 +55,6 @@ def jit_build_dir():
         os.chdir(cwd)
 
 
-def zoh_coefficients(dt, gamma, dt_max=None):
-    """
-    (e1, a, b) of the exact ZOH map p+ = p + a v + b u, v+ = e1 v + a u (Section 2).
-
-    a = (1 - e^{-x}) / gamma and b = (dt - a) / gamma with x = gamma dt. The closed
-    form of b cancels catastrophically for small x, so a Taylor series is used when
-    gamma * dt_max < 0.1 (truncation error < 1e-14). dt_max bounds a symbolic dt.
-    """
-    if gamma < GAMMA_EPS:
-        return 1 + 0 * dt, dt, 0.5 * dt**2
-    e1 = flight_decay(dt, gamma)
-    x_max = gamma * (dt if dt_max is None else dt_max)
-    if x_max < 0.1:
-        x = gamma * dt
-        fact = [1.0]
-        for j in range(1, 11):
-            fact.append(fact[-1] * j)
-        phi1 = sum((-1) ** j / fact[j + 1] * x**j for j in range(8))  # (1 - e^-x) / x
-        phi2 = sum((-1) ** j / fact[j + 2] * x**j for j in range(8))  # (x - 1 + e^-x) / x^2
-        return e1, dt * phi1, dt**2 * phi2
-    a = (1 - e1) / gamma
-    b = (dt - a) / gamma
-    return e1, a, b
-
-
-def discrete_matrices(dt, gamma, axes=NU):
-    """Numeric A_d, B_d of the robot double integrator with viscous friction, state (p, v).
-    axes = 2 is the planner's (x, y); the tracker adds the heading (axes = 3)."""
-    e1, a, b = zoh_coefficients(dt, gamma)
-    I = np.eye(axes)
-    A = np.block([[I, a * I], [np.zeros((axes, axes)), e1 * I]])
-    B = np.vstack([b * I, a * I])
-    return A, B
-
-
 @dataclass
 class Solution:
     w: np.ndarray
@@ -95,6 +62,7 @@ class Solution:
     U: np.ndarray
     tf: float
     phi: float
+    p_c: np.ndarray  # puck centre at impact, exact by the contact equality
     vp: np.ndarray
     zeta: float
     cost: float
@@ -278,18 +246,21 @@ class ShotNLP:
         if jit:
             try:
                 with jit_build_dir():
-                    self.solver_warm = ca.nlpsol("shot_warm", "ipopt", nlp, self._opts(P.max_iter_warm, True))
-                    self.solver_cold = ca.nlpsol("shot_cold", "ipopt", nlp, self._opts(P.max_iter_cold, True))
+                    self._build_solvers(nlp, jit=True)
                 self.jit = True
             except Exception as err:  # no compiler or compile error: interpreted fallback
                 print(f"[shot_nlp] JIT build failed ({err}); falling back to the SX interpreter")
         if not self.jit:
-            self.solver_warm = ca.nlpsol("shot_warm", "ipopt", nlp, self._opts(P.max_iter_warm, False))
-            self.solver_cold = ca.nlpsol("shot_cold", "ipopt", nlp, self._opts(P.max_iter_cold, False))
+            self._build_solvers(nlp, jit=False)
         self.t_build = time.perf_counter() - t_build
         if verbose:
             print(f"[shot_nlp] {self.nw} variables, {g.numel()} constraints, jit={self.jit}, "
                   f"build {self.t_build:.2f} s")
+
+    def _build_solvers(self, nlp, jit):
+        """One IPOPT solver per start type; they differ only in the iteration cap."""
+        self.solver_warm = ca.nlpsol("shot_warm", "ipopt", nlp, self._opts(self.P.max_iter_warm, jit))
+        self.solver_cold = ca.nlpsol("shot_cold", "ipopt", nlp, self._opts(self.P.max_iter_cold, jit))
 
     def _opts(self, max_iter, jit):
         P = self.P
@@ -362,6 +333,57 @@ class ShotNLP:
         w[o0:o1] = np.maximum(np.array(av).ravel(), 0.0)
         return w
 
+    ########################
+    ### Initial guesses  ###
+    ########################
+    def warm_guess(self, sol, elapsed, xR, t_lo, t_hi):
+        """A previous solution shifted by `elapsed` and interpolated onto the new grid (Section 7)."""
+        N = self.P.N
+        tf_new = float(np.clip(sol.tf - elapsed, t_lo, t_hi))
+        t_old = np.linspace(0.0, sol.tf, N + 1)
+        t_new = elapsed + np.linspace(0.0, tf_new, N + 1)
+        X = np.array([np.interp(t_new, t_old, sol.X[i]) for i in range(NX)])
+        X[:, 0] = xR
+        mids = elapsed + (np.arange(N) + 0.5) * tf_new / N
+        U = sol.U[:, zoh_interval(mids, sol.tf / N, N)]
+        return self.pack(X, U, tf_new, sol.phi, sol.vp, sol.zeta)
+
+    def cold_guess(self, xR, puck, ybar, tf):
+        """Closed-form guess: virtual-goal aim, inverted impact and a Hermite cubic (Section 7)."""
+        P = self.P
+        N = P.N
+        p_c, v_minus = puck.state_at(tf)
+        goal = np.array([P.x_g, ybar])
+        d = (goal - p_c) / np.linalg.norm(goal - p_c)
+        n, v_n, phi = invert(P.sigma_init, d, v_minus, P.kappa)
+        p_f = p_c - (P.r_R + P.r_p) * n
+        v_f = (v_minus @ n + v_n) * n
+
+        s = np.linspace(0.0, 1.0, N + 1)[None, :]
+        p0, v0 = xR[0:2, None], xR[2:4, None]
+        pf, vf = p_f[:, None], v_f[:, None]
+
+        def hermite(s):
+            pos = ((2 * s**3 - 3 * s**2 + 1) * p0 + (s**3 - 2 * s**2 + s) * tf * v0
+                   + (3 * s**2 - 2 * s**3) * pf + (s**3 - s**2) * tf * vf)
+            vel = ((6 * s**2 - 6 * s) * p0 + (3 * s**2 - 4 * s + 1) * tf * v0
+                   + (6 * s - 6 * s**2) * pf + (3 * s**2 - 2 * s) * tf * vf) / tf
+            acc = ((12 * s - 6) * p0 + (6 * s - 4) * tf * v0
+                   + (6 - 12 * s) * pf + (6 * s - 2) * tf * vf) / tf**2
+            return pos, vel, acc
+
+        pos, vel, _ = hermite(s)
+        X = np.vstack([pos, vel])
+        X[:, 0] = xR
+        _, vel_m, acc_m = hermite((np.arange(N)[None, :] + 0.5) / N)
+        umax = P.u_max[:NU, None]
+        U = np.clip(acc_m + P.gamma * vel_m, -umax, umax)
+
+        _, vp, _ = impact(v_f, v_minus, n, P.kappa, P.m_p / P.m_R)
+        vp = np.array([max(vp[0], P.eps), vp[1]])
+        zeta = float(np.clip(1.0 - P.gamma * (P.x_g - p_c[0]) / vp[0], ZETA_MIN, 1.0))
+        return self.pack(X, U, tf, phi, vp, zeta)
+
     #############
     ### Solve ###
     #############
@@ -388,8 +410,10 @@ class ShotNLP:
         valid = bool(converged and np.isfinite(cost) and viol <= P.valid_tol and slack <= P.valid_tol)
 
         terms = dict(zip(self.term_names, np.array(self.terms_fun(w, p)).ravel()))
+        X, phi = parts["X"], parts["phi"]
+        p_c = X[0:2, -1] + (P.r_R + P.r_p) * np.array([np.cos(phi), np.sin(phi)])
         return Solution(
-            w=w, X=parts["X"], U=parts["U"], tf=parts["tf"], phi=parts["phi"], vp=parts["vp"],
+            w=w, X=X, U=parts["U"], tf=parts["tf"], phi=phi, p_c=p_c, vp=parts["vp"],
             zeta=parts["zeta"], cost=cost, status=status, iters=int(stats["iter_count"]),
             t_wall=t_wall, valid=valid, viol=viol, slack=slack, cold=cold, terms=terms,
         )

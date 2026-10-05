@@ -1,19 +1,21 @@
 """Test 3: impact map, its inversion, and one simulator collision."""
 
+from dataclasses import replace
+
 import numpy as np
 import jax.numpy as jnp
 
 from conftest import DT, R2_PARK
 from dynamics import physics_step
-from shot_mpc.impact import kappa, impact, invert
+from shot_mpc.model import impact, invert
 
 
-def test_kappa_sanity():
-    assert abs(kappa(0.140, 0.010, 1.0) - 1.8667) < 1e-4
+def test_kappa_sanity(P):
+    assert abs(replace(P, m_R=0.140, m_p=0.010, e=1.0).kappa - 1.8667) < 1e-4
 
 
-def test_inversion_round_trip():
-    kap, ratio = kappa(0.116, 0.010), 0.010 / 0.116
+def test_inversion_round_trip(P):
+    kap, ratio = P.kappa, P.m_p / P.m_R
     v_minus = np.array([-0.4, 0.3])
     d = np.array([0.8, -0.6])
     n, v_n, phi = invert(1.5, d, v_minus, kap)

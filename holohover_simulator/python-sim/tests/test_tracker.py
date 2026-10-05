@@ -6,9 +6,9 @@ import numpy as np
 import pytest
 
 from shot_mpc.params import XY
-from shot_mpc.shot_nlp import discrete_matrices
+from shot_mpc.model import discrete_matrices
 from shot_mpc.shot_selector import Plan
-from shot_mpc.tracker import Tracker, plan_reference
+from shot_mpc.tracker import Tracker
 
 T0, TF = 1.0, 0.5
 
@@ -35,8 +35,8 @@ def tracker_state(x_plan, theta):
 
 
 def test_reference_hits_plan_nodes(P, plan):
-    nodes = plan.node_times()
-    assert np.allclose(plan_reference(plan, nodes, P.gamma), plan.sol.X, atol=1e-12)
+    nodes = T0 + np.linspace(0.0, TF, P.N + 1)
+    assert np.allclose(plan.state_at(nodes, P.gamma), plan.sol.X, atol=1e-12)
 
 
 def test_consistent_plan_is_reproduced(config, P, plan):

@@ -30,7 +30,7 @@ from dynamics import physics_step
 from controller import build_pd_controller
 from foxglove_viz import write_mcap
 from shot_mpc.params import load_config, physics_from_config, ShotParams
-from shot_mpc.bounce_geometry import sequences, label
+from shot_mpc.shot_selector import sequences, label
 from shot_mpc.shot_nlp import ShotNLP
 from shot_mpc.shot_controller import ShotController, ATT
 

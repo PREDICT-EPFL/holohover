@@ -7,7 +7,7 @@ from shot_mpc.params import (
     XY, state_world_to_planner, state_planner_to_world, pos_world_to_planner,
     accel_planner_to_force_world, force_world_to_accel_planner,
 )
-from shot_mpc.shot_nlp import discrete_matrices
+from shot_mpc.model import discrete_matrices
 
 
 def test_zoh_matches_simulator(physics, P):

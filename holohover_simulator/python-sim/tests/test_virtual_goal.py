@@ -5,8 +5,8 @@ import pytest
 
 from conftest import DT, R1_PARK, R2_PARK, rollout
 from shot_mpc.params import state_planner_to_world
-from shot_mpc.bounce_geometry import sequences, label, virtual_goal_y, time_to_goal, shot_polyline
-from shot_mpc.puck_predictor import bounce_path
+from shot_mpc.model import hit_time, bounce_path, shot_polyline
+from shot_mpc.shot_selector import sequences, label, virtual_goal_y
 
 # wall_bounces indices of dynamics.wall_collision: 1 = top (planner wall R), 4 = bottom (planner wall L)
 WALL_OF_INDEX = {1: "R", 4: "L"}
@@ -26,7 +26,7 @@ def test_virtual_goal_scores(physics, P, s, k):
     seq = "".join(WALL_OF_INDEX[j] for b in bounces for j in np.flatnonzero(b))
     assert scored[-1] == 1
     assert seq == ("" if k == 0 else label(s, k))
-    T_B = time_to_goal(p_c[0], v[0], P.x_g, P.gamma)
+    T_B = hit_time(P.x_g, p_c[0], v[0], P.gamma)  # side-wall bounces never change v_x
     assert abs(len(scored) * DT - T_B) <= 2 * DT
 
     points, hits = bounce_path(p_c, v, P, t_end=3.0)

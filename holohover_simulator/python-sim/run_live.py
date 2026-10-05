@@ -4,7 +4,7 @@ WebSocket and paced to wall-clock time, at full speed or slowed down. Run from p
 
     python run_live.py                                   # random starts, half speed
     python run_live.py --scenario incoming --speed 0.25
-    python run_live.py --speed 1 --no-auto-restart
+    python run_live.py --speed 1 --auto-restart
 
 Open the printed app.foxglove.dev link (or "Open connection..." > Foxglove WebSocket >
 ws://localhost:8765) and import the layout foxglove/shot_mpc_live_layout.json (foxglove/README.md).
@@ -16,13 +16,17 @@ Controls in the app (the layout has a button for each service):
     /reset service     {"scenario": "random" | a config scenario, "seed": <int>}, both optional:
                        restart the current start, or switch to another one. Random draw k with
                        seed s is episode k of run_shot.py --evaluate --seed s.
+    /save service      {}: save the current episode, from its start to now, to
+                       simulation_data/live_<start>_<date>_<time>.mcap, to open in the app as a file
+                       (seek, step through the shots). Saving again later gives a longer file.
     Parameters panel   speed (fraction of real time), paused, auto_restart (type the JSON value,
                        then click the check mark to send it)
 
-With auto_restart, an episode ends one second after the first goal, or at its duration
-(simulation.duration for a scenario, shot_mpc.evaluation.duration for a random start), and the
-next one starts: the same scenario again, or the next random draw. Without it, play goes on
-until the next /reset.
+By default an episode goes on until the next /reset (a button in the layout), through goals and
+past its duration. With auto_restart (off unless --auto-restart or set from the app), an episode
+ends one second after the first goal, or at its duration (simulation.duration for a scenario,
+shot_mpc.evaluation.duration for a random start), and the next one starts: the same scenario
+again, or the next random draw.
 
 Simulated time is decoupled from wall time: every step is run_shot.Episode.step, as offline, so a
 live episode is the same as the offline one. A step whose computation outlasts its wall-clock slot
@@ -30,20 +34,33 @@ live episode is the same as the offline one. A step whose computation outlasts i
 not fast-forward afterwards to catch up. /live/stats shows the speed reached and the compute time
 of each step.
 
+Each episode is recorded to a temporary MCAP while it runs (the same messages as the app gets),
+deleted when the next episode starts, and the folder at exit: only what /save copies is kept.
+
 Topics: those of foxglove_viz.py, logged as the steps run, plus /live/stats. Log times follow the
 simulated time of the whole session (a new episode continues the clock rather than restarting it);
 the t field of each message is the time within its episode.
 """
 
 import argparse
+import io
 import json
 import queue
+import shutil
+import tempfile
 import threading
 import time
 from collections import deque
+from concurrent.futures import Future
+from datetime import datetime
+from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+from mcap import records as mr
+from mcap.exceptions import EndOfFile
+from mcap.stream_reader import StreamReader
+from mcap.writer import Writer
 
 import foxglove
 from foxglove import Capability, MessageSchema, Parameter, ParameterType, Schema, Service, ServiceSchema
@@ -52,7 +69,7 @@ from foxglove import messages as fm
 from foxglove_viz import (MODE_NAMES, NUMBER, TRAIL_LENGTH, clear_overlays, geometry, json_channel,
                           log_bodies, log_event, log_static, log_step, setup_channels, solve_message)
 from run_shot import Episode, initial_state, sample_initial_state, update_json
-from shot_mpc.bounce_geometry import label, sequences
+from shot_mpc.shot_selector import label, sequences
 from shot_mpc.params import load_config, physics_from_config, ShotParams
 from shot_mpc.shot_nlp import ShotNLP
 
@@ -63,6 +80,8 @@ PAUSE_POLL = 0.02  # s
 SUBSCRIBE_GRACE = 1.0  # s after the first subscription: the app subscribes panel by panel
 STATIC_TOPICS = ("/scene/table", "/scene/bodies")
 STATS_SCHEMA = {"t": NUMBER, "speed": NUMBER, "achieved_speed": NUMBER, "step_ms": NUMBER}
+SAVE_DIR = Path("simulation_data")
+SAVE_TIMEOUT = 60.0  # s: the /save response waits until the file is written
 
 
 ################
@@ -81,6 +100,7 @@ class Controls(foxglove.ServerListener):
         self._steps = 0  # control steps requested by /step, run while paused
         self.scenarios = scenarios
         self.resets = queue.SimpleQueue()  # (scenario or None, seed or None)
+        self.saves = queue.SimpleQueue()  # a Future per /save call, resolved with the saved file
         self.resend_static = threading.Event()
         self.subscribed = threading.Event()  # a client has subscribed to a topic
         self.params_changed = threading.Event()  # set by a service: the sim loop republishes the parameters
@@ -165,6 +185,12 @@ class Controls(foxglove.ServerListener):
         self.resets.put((scenario, seed))
         return OK
 
+    def save(self, request):
+        _request(request)
+        future = Future()
+        self.saves.put(future)
+        return json.dumps(future.result(timeout=SAVE_TIMEOUT)).encode()
+
 
 def _request(request):
     args = json.loads(request.payload) if request.payload.strip() else {}
@@ -174,20 +200,88 @@ def _request(request):
 
 
 def services(controls):
-    """/pause, /step and /reset, all JSON."""
+    """/pause, /step, /reset and /save, all JSON."""
     def json_schema(name, properties):
         data = json.dumps({"type": "object", "properties": properties}).encode()
         return MessageSchema(encoding="json", schema=Schema(name=name, encoding="jsonschema", data=data))
 
-    response = json_schema("holohover.LiveResponse", {"ok": {"type": "boolean"}})
+    ok = {"ok": {"type": "boolean"}}
+    saved = {**ok, "path": {"type": "string"}, "t": {"type": "number"}}
     requests = {
-        "/pause": ("holohover.Pause", {"paused": {"type": "boolean"}}, controls.pause),
-        "/step": ("holohover.Step", {"steps": {"type": "integer"}}, controls.step),
-        "/reset": ("holohover.Reset", {"scenario": {"type": "string"}, "seed": {"type": "integer"}}, controls.reset),
+        "/pause": ("holohover.Pause", {"paused": {"type": "boolean"}}, ok, controls.pause),
+        "/step": ("holohover.Step", {"steps": {"type": "integer"}}, ok, controls.step),
+        "/reset": ("holohover.Reset", {"scenario": {"type": "string"}, "seed": {"type": "integer"}}, ok,
+                   controls.reset),
+        "/save": ("holohover.Save", {}, saved, controls.save),
     }
-    return [Service(name, schema=ServiceSchema(name=type_name, request=json_schema(type_name + "Request", properties),
-                                               response=response), handler=handler)
-            for name, (type_name, properties, handler) in requests.items()]
+    return [Service(name, schema=ServiceSchema(name=type_name, request=json_schema(type_name + "Request", request),
+                                               response=json_schema(type_name + "Response", response)),
+                    handler=handler)
+            for name, (type_name, request, response, handler) in requests.items()]
+
+
+#################
+### Recording ###
+#################
+class Recorder:
+    """Records each episode to a temporary MCAP, through an SDK sink on the context: whatever is
+    logged reaches both the app and the file. The file goes when the next episode starts, the
+    folder at close()."""
+
+    def __init__(self, ctx):
+        self.ctx = ctx
+        self.dir = Path(tempfile.mkdtemp(prefix="holohover_live_"))
+        self.writer, self.path = None, None
+
+    def start(self, name):
+        """Record into a new file from now on, dropping the previous one."""
+        self._drop()
+        self.path = self.dir / f"{name}.mcap"
+        self.writer = foxglove.open_mcap(self.path, context=self.ctx)
+
+    def snapshot(self):
+        """The bytes recorded so far: whole records, without the summary and footer of a closed file."""
+        self.writer.flush()
+        return self.path.read_bytes()
+
+    def _drop(self):
+        if self.writer is not None:
+            self.writer.close()
+            self.path.unlink()
+            self.writer, self.path = None, None
+
+    def close(self):
+        self._drop()
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+
+def write_indexed(snapshot, output, metadata, attachments=()):
+    """Write the records of an open recording (Recorder.snapshot) to the binary file `output` as a
+    finished, indexed MCAP, plus a "holohover" metadata record and (name, media type, bytes,
+    log time) attachments. Returns the number of messages."""
+    out = Writer(output)
+    schemas, channels = {0: 0}, {}  # id in the recording -> id in the output (schema 0: none)
+    n = 0
+    try:
+        for rec in StreamReader(io.BytesIO(snapshot)).records:
+            if isinstance(rec, mr.Header):
+                out.start(profile=rec.profile, library=rec.library)
+            elif isinstance(rec, mr.Schema):
+                schemas[rec.id] = out.register_schema(rec.name, rec.encoding, rec.data)
+            elif isinstance(rec, mr.Channel):
+                channels[rec.id] = out.register_channel(rec.topic, rec.message_encoding, schemas[rec.schema_id],
+                                                        rec.metadata)
+            elif isinstance(rec, mr.Message):
+                out.add_message(channels[rec.channel_id], rec.log_time, rec.data, rec.publish_time, rec.sequence)
+                n += 1
+    except EndOfFile:
+        pass  # the recording is still open: the snapshot ends after its last chunk
+    out.add_metadata("holohover", {k: str(v) for k, v in metadata.items()})
+    for name, media_type, data, log_time in attachments:
+        out.add_attachment(create_time=time.time_ns(), log_time=log_time, name=name, media_type=media_type,
+                           data=data)
+    out.finish()
+    return n
 
 
 ################
@@ -201,6 +295,7 @@ class LiveSim:
         self.geom = geometry(config, labels)
         self.ch = setup_channels(ctx, labels, solves=True)
         self.ch["stats"] = json_channel(ctx, "/live/stats", "holohover.LiveStats", STATS_SCHEMA)
+        self.recorder = Recorder(ctx)
 
         self.t0_ns = time.time_ns()
         self.clock = 0.0  # simulated time of the session, which sets the log times
@@ -232,12 +327,12 @@ class LiveSim:
             self.seed, self.rng, self.draw = seed, np.random.default_rng(seed), 0
         if self.start == "random":
             init = sample_initial_state(self.rng, self.config)
-            what = f"random draw {self.draw} (seed {self.seed})"
+            self.what, self.name = f"random draw {self.draw} (seed {self.seed})", f"random_s{self.seed}_d{self.draw}"
             self.draw += 1
             self.duration = self.config["shot_mpc"]["evaluation"]["duration"]
         else:
             init = initial_state(self.config, self.start)
-            what = f"scenario {self.start}"
+            self.what, self.name = f"scenario {self.start}", self.start
             self.duration = self.config["simulation"]["duration"]
 
         self.ep = Episode(self.config, self.physics, self.P, self.nlp, init, verbose=False)
@@ -248,9 +343,11 @@ class LiveSim:
         self.prev_plan = (-np.inf, None)  # (t, label) of the last accepted plan
 
         ns = self.ns()
+        self.recorder.start(f"episode{self.n_episodes}")
+        log_static(self.ch, self.config, ns)  # into the new recording
         clear_overlays(self.ch, ns)
         log_bodies(self.ch, init, 0.0, ns)
-        self.event(ns, f"episode {self.n_episodes}: {what}")
+        self.event(ns, f"episode {self.n_episodes}: {self.what}")
         self.server.broadcast_time(ns)
         self.n_episodes += 1
 
@@ -267,6 +364,44 @@ class LiveSim:
         cut = f" (reset at t={ep.i * self.dt:.2f}s)" if reset else ""
         self.event(self.ns(), f"outcome: {outcome}{goal}{cut}",
                    fm.LogLevel.Info if outcome == "goal" else fm.LogLevel.Warning)
+
+    def save(self, future):
+        """/save: write the episode recorded so far to SAVE_DIR, in a thread so that the live view
+        goes on. `future` gets {"ok", "path", "t"} once the file is written."""
+        try:
+            t = self.ep.i * self.dt
+            snapshot = self.recorder.snapshot()
+            SAVE_DIR.mkdir(parents=True, exist_ok=True)
+            stem, k = f"live_{self.name}_{datetime.now():%Y%m%d_%H%M%S}", 0
+            while True:  # exclusive creation: two saves in the same second get different names
+                path = SAVE_DIR / (stem + (f"_{k}" if k else "") + ".mcap")
+                try:
+                    f = open(path, "xb")
+                    break
+                except FileExistsError:
+                    k += 1
+        except Exception as e:
+            future.set_exception(e)
+            return
+        start_ns = self.ns(self.t_start)
+        metadata = {"source": "holohover python-sim live", "dt": self.dt, "start": self.what,
+                    "episode": self.n_episodes - 1, "t_end": round(t, 6), "outcome": self.ep.final_outcome(),
+                    "score": f"{self.ep.score[0]}:{self.ep.score[1]}"}
+        config = json.dumps(self.config, indent=1, default=float).encode()
+
+        def write():
+            try:
+                with f:
+                    n = write_indexed(snapshot, f, metadata, [("config.json", "application/json", config, start_ns)])
+            except Exception as e:
+                print(f"Saving {path} failed: {e!r}", flush=True)
+                future.set_exception(e)
+            else:
+                print(f"Saved {path}: t = 0 to {t:.2f} s, {n} messages", flush=True)
+                future.set_result({"ok": True, "path": str(path), "t": t})
+
+        threading.Thread(target=write, name="save").start()
+        self.event(self.ns(), f"saving t = 0 to {t:.2f} s to {path}")
 
     ### Steps ###
     def step(self, speed):
@@ -335,7 +470,6 @@ class LiveSim:
             pass
         time.sleep(SUBSCRIBE_GRACE)
         self.new_episode()
-        log_static(self.ch, self.config, self.ns())
         anchor = None  # (wall time, clock, speed) that the schedule counts from
         while True:
             if controls.resend_static.is_set():
@@ -344,6 +478,8 @@ class LiveSim:
             if controls.params_changed.is_set():
                 controls.params_changed.clear()
                 self.server.publish_parameter_values(controls.parameters())
+            while not controls.saves.empty():  # before the resets: a save asked first is of this episode
+                self.save(controls.saves.get())
             while not controls.resets.empty():
                 self.new_episode(*controls.resets.get(), reset=True)
             v = controls.values()
@@ -380,7 +516,8 @@ def main():
     parser.add_argument("--scenario", default="random", help="random (default) | stationary | incoming | around")
     parser.add_argument("--seed", type=int, default=0, help="seed of the random starts")
     parser.add_argument("--speed", type=float, default=0.5, help="fraction of real time (default 0.5)")
-    parser.add_argument("--no-auto-restart", action="store_true", help="keep playing after a goal")
+    parser.add_argument("--auto-restart", action="store_true",
+                        help="start the next episode after a goal or the duration (default: wait for /reset)")
     parser.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to reach it from outside a container")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--no-jit", action="store_true")
@@ -405,7 +542,7 @@ def main():
     Episode(config, physics, P, nlp, initial_state(config), verbose=False).step()
 
     ctx = foxglove.Context()
-    controls = Controls(float(np.clip(args.speed, *SPEED_RANGE)), not args.no_auto_restart, scenarios)
+    controls = Controls(float(np.clip(args.speed, *SPEED_RANGE)), args.auto_restart, scenarios)
     server = foxglove.start_server(
         name="holohover python-sim", host=args.host, port=args.port, context=ctx,
         capabilities=[Capability.Parameters, Capability.Services, Capability.Time],
@@ -420,6 +557,7 @@ def main():
         pass
     finally:
         server.stop()
+        sim.recorder.close()
 
 
 if __name__ == "__main__":
