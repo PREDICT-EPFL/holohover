@@ -111,7 +111,7 @@
     "Plot!solve_time": {
       "foxglovePanelTitle": "Selector update time [ms]",
       "paths": [
-        { "value": "/shot_mpc/solves.t_total_ms", "enabled": true, "timestampMethod": "receiveTime", "label": "update" }
+        { "value": "/shot_mpc/solves.t_wall_ms", "enabled": true, "timestampMethod": "receiveTime", "label": "update" }
       ],
       "showXAxisLabels": true,
       "showYAxisLabels": true,

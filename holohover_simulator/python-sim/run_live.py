@@ -29,10 +29,11 @@ shot_mpc.evaluation.duration for a random start), and the next one starts: the s
 again, or the next random draw.
 
 Simulated time is decoupled from wall time: every step is run_shot.Episode.step, as offline, so a
-live episode is the same as the offline one. A step whose computation outlasts its wall-clock slot
-(a cold outer solve takes up to ~300 ms) holds the view until it is done, and the simulation does
-not fast-forward afterwards to catch up. /live/stats shows the speed reached and the compute time
-of each step.
+live episode is the same as the offline one. An outer update solves the bounce sequences in
+parallel, one worker process each (shot_mpc.n_workers; --workers 0 for serial solves): the first
+step of an episode takes ~30 ms, at most ~0.1 s. A step that falls more than MAX_LAG behind its
+wall-clock slot holds the view until it is done, and the simulation does not fast-forward
+afterwards to catch up. /live/stats shows the speed reached and the compute time of each step.
 
 Each episode is recorded to a temporary MCAP while it runs (the same messages as the app gets),
 deleted when the next episode starts, and the folder at exit: only what /save copies is kept.
@@ -68,7 +69,8 @@ from foxglove import messages as fm
 
 from foxglove_viz import (MODE_NAMES, NUMBER, TRAIL_LENGTH, clear_overlays, geometry, json_channel,
                           log_bodies, log_event, log_static, log_step, setup_channels, solve_message)
-from run_shot import Episode, initial_state, sample_initial_state, update_json
+from run_shot import WORKERS_HELP, Episode, initial_state, sample_initial_state, start_workers, update_json
+from shot_mpc.shot_controller import make_tracker
 from shot_mpc.shot_selector import label, sequences
 from shot_mpc.params import load_config, physics_from_config, ShotParams
 from shot_mpc.shot_nlp import ShotNLP
@@ -288,8 +290,9 @@ def write_indexed(snapshot, output, metadata, attachments=()):
 ### Live sim ###
 ################
 class LiveSim:
-    def __init__(self, config, physics, P, nlp, server, ctx, start="random", seed=0):
+    def __init__(self, config, physics, P, nlp, server, ctx, start="random", seed=0, tracker=None):
         self.config, self.physics, self.P, self.nlp, self.server = config, physics, P, nlp, server
+        self.tracker = tracker  # shared by every episode, like nlp
         self.dt = 1.0 / config["simulation"]["hz"]
         labels = [label(s, k) for s, k in sequences(config["shot_mpc"]["K"])]
         self.geom = geometry(config, labels)
@@ -335,7 +338,7 @@ class LiveSim:
             self.what, self.name = f"scenario {self.start}", self.start
             self.duration = self.config["simulation"]["duration"]
 
-        self.ep = Episode(self.config, self.physics, self.P, self.nlp, init, verbose=False)
+        self.ep = Episode(self.config, self.physics, self.P, self.nlp, init, verbose=False, tracker=self.tracker)
         self.t_start = self.clock
         self.trail = deque([init[12:14]], maxlen=TRAIL_LENGTH)
         self.mode, self.score = None, np.zeros(2, dtype=int)
@@ -515,7 +518,7 @@ def main():
     parser.add_argument("--config", default="config/config_shot.json")
     parser.add_argument("--scenario", default="random", help="random (default) | stationary | incoming | around")
     parser.add_argument("--seed", type=int, default=0, help="seed of the random starts")
-    parser.add_argument("--speed", type=float, default=0.5, help="fraction of real time (default 0.5)")
+    parser.add_argument("--speed", type=float, default=1.0, help="fraction of real time (default 1.0)")
     parser.add_argument("--auto-restart", action="store_true",
                         help="start the next episode after a goal or the duration (default: wait for /reset)")
     parser.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to reach it from outside a container")
@@ -523,6 +526,7 @@ def main():
     parser.add_argument("--no-jit", action="store_true")
     parser.add_argument("--no-tracker", action="store_true", help="apply the plan's inputs open loop")
     parser.add_argument("--opponent", choices=["none", "static"], default=None)
+    parser.add_argument("--workers", type=int, default=None, help=WORKERS_HELP)
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -535,11 +539,15 @@ def main():
         config["shot_mpc"]["tracker"]["enabled"] = False
     if args.opponent:
         config["shot_mpc"]["opponent"] = args.opponent
-    physics = physics_from_config(config)
     P = ShotParams.from_config(config)
     nlp = ShotNLP(P)
-    # Compile the jitted physics now rather than in the first live step
-    Episode(config, physics, P, nlp, initial_state(config), verbose=False).step()
+    start_workers(config, nlp, args.workers)  # before JAX starts its threads
+    physics = physics_from_config(config)
+    tracker = make_tracker(config, P)
+    # Compile the jitted physics and defence controller now rather than in the first live steps
+    warm_up = Episode(config, physics, P, nlp, initial_state(config), verbose=False, tracker=tracker)
+    warm_up.step()
+    warm_up.ctrl.def_controller(warm_up.state)
 
     ctx = foxglove.Context()
     controls = Controls(float(np.clip(args.speed, *SPEED_RANGE)), args.auto_restart, scenarios)
@@ -550,7 +558,7 @@ def main():
     )
     print(f"Foxglove WebSocket on ws://{args.host}:{server.port}; open {server.app_url()}\n"
           f"and import foxglove/shot_mpc_live_layout.json. Ctrl-C to stop.", flush=True)
-    sim = LiveSim(config, physics, P, nlp, server, ctx, start=args.scenario, seed=args.seed)
+    sim = LiveSim(config, physics, P, nlp, server, ctx, start=args.scenario, seed=args.seed, tracker=tracker)
     try:
         sim.run(controls)
     except KeyboardInterrupt:
@@ -558,6 +566,8 @@ def main():
     finally:
         server.stop()
         sim.recorder.close()
+        if nlp.pool is not None:
+            nlp.pool.close()
 
 
 if __name__ == "__main__":

@@ -111,7 +111,7 @@
     "Plot!solve_time": {
       "foxglovePanelTitle": "Compute time [ms]",
       "paths": [
-        { "value": "/shot_mpc/solves.t_total_ms", "enabled": true, "timestampMethod": "receiveTime", "label": "update" },
+        { "value": "/shot_mpc/solves.t_wall_ms", "enabled": true, "timestampMethod": "receiveTime", "label": "update" },
         { "value": "/live/stats.step_ms", "enabled": true, "timestampMethod": "receiveTime", "label": "control step" }
       ],
       "showXAxisLabels": true,

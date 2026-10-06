@@ -69,27 +69,18 @@ def hit_time(c, q, v, gamma):
 #################
 ### ZOH map   ###
 #################
-def zoh_coefficients(dt, gamma, dt_max=None):
+def zoh_coefficients(dt, gamma):
     """
     (e1, a, b) of the exact ZOH map p+ = p + a v + b u, v+ = e1 v + a u (Section 2).
 
-    a = (1 - e^{-x}) / gamma and b = (dt - a) / gamma with x = gamma dt. The closed
-    form of b cancels catastrophically for small x, so a Taylor series is used when
-    gamma * dt_max < 0.1 (truncation error < 1e-14). dt_max bounds a symbolic dt.
+    a = (1 - e^{-x}) / gamma and b = (dt - a) / gamma with x = gamma dt. The closed form of
+    b cancels for small x: its absolute error is about 1e-16 / gamma^2, negligible for
+    gamma >= 1e-3 (below that, use gamma = 0).
     """
     if gamma < GAMMA_EPS:
         return 1 + 0 * dt, dt, 0.5 * dt**2
-    e1 = flight_decay(dt, gamma)
-    x_max = gamma * (dt if dt_max is None else dt_max)
-    if x_max < 0.1:
-        x = gamma * dt
-        fact = [1.0]
-        for j in range(1, 11):
-            fact.append(fact[-1] * j)
-        phi1 = sum((-1) ** j / fact[j + 1] * x**j for j in range(8))  # (1 - e^-x) / x
-        phi2 = sum((-1) ** j / fact[j + 2] * x**j for j in range(8))  # (x - 1 + e^-x) / x^2
-        return e1, dt * phi1, dt**2 * phi2
-    a = (1 - e1) / gamma
+    e1 = flight_decay(dt, gamma) # exp(-gamma * t)
+    a = (1 - e1) / gamma # called beta(s) in the explanation document.
     b = (dt - a) / gamma
     return e1, a, b
 
@@ -101,9 +92,21 @@ def zoh_interval(s, dt, N):
 
 
 def discrete_matrices(dt, gamma, axes=2):
-    """Numeric A_d, B_d of the robot double integrator with viscous friction, state (p, v).
-    axes = 2 is the planner's (x, y); the tracker adds the heading (axes = 3)."""
+    """
+    A_d, B_d of the robot double integrator with viscous friction, state (p, v):
+        x+ = A_d x + B_d u,   A_d = [[I, a I], [0, e1 I]],   B_d = [[b I], [a I]]
+    axes = 2 is the planner's (x, y); the tracker adds the heading (axes = 3).
+
+    Numpy for a numeric dt, CasADi SX for a symbolic one. The SX zero blocks are
+    structural, so A_d x + B_d u builds the same expressions as writing its rows out
+    with the coefficients.
+    """
     e1, a, b = zoh_coefficients(dt, gamma)
+    if _symbolic(dt):
+        I = ca.SX.eye(axes)
+        A = ca.blockcat([[I, a * I], [ca.SX(axes, axes), e1 * I]])
+        B = ca.vertcat(b * I, a * I)
+        return A, B
     I = np.eye(axes)
     A = np.block([[I, a * I], [np.zeros((axes, axes)), e1 * I]])
     B = np.vstack([b * I, a * I])
@@ -173,7 +176,7 @@ def predict(q0, v0, P):
         (hit_time(P.w, q[1], v[1], P.gamma), "L"),
         (hit_time(-P.w, q[1], v[1], P.gamma), "R"),
         (hit_time(P.x_g, q[0], v[0], P.gamma), "far"),
-        (hit_time(P.r_p, q[0], v[0], P.gamma), "near"),
+        (hit_time(P.r_p, q[0], v[0], P.gamma), "near"), # r_p is the effective wall for the puck centre, not the real wall at x = 0
     ]
     tau1, wall = min(hits, key=lambda hit: hit[0])
     return PuckFlight(q=q, v=v, tau1=tau1, wall=wall if np.isfinite(tau1) else None, gamma=P.gamma)
@@ -209,37 +212,3 @@ def bounce_path(q0, v0, P, t_end, max_hits=30):
         flight = predict(q, v, P)
     points.append(flight.state_at(t_end)[0])
     return np.array(points), hits
-
-
-def fold_y(y_unfolded, w):
-    """Map an unfolded y coordinate back onto the real table (triangle wave, period 4w)."""
-    return w - np.abs(np.mod(y_unfolded + w, 4 * w) - 2 * w)
-
-
-def shot_polyline(p_c, v, P):
-    """
-    Exact vertices of the post-impact puck path: impact point, every side-wall bounce,
-    and the end on the goal line (or where drag stops the puck first). Side-wall bounces
-    never change v_x and drag only slows the puck, so the path is the straight unfolded
-    line folded back onto the table; sampling it in time instead would cut the corners
-    at the walls.
-    """
-    x_c, y_c = p_c
-    if v[0] <= 0:
-        return np.array([p_c], dtype=float)
-    x_end = P.x_g
-    if P.gamma >= GAMMA_EPS:
-        x_end = min(x_end, x_c + v[0] / P.gamma)  # total x distance before the puck stops
-    y_end = y_c + (x_end - x_c) * v[1] / v[0]  # unfolded
-
-    # The unfolded line crosses a wall image wherever y is an odd multiple of w
-    lo, hi = sorted((y_c, y_end))
-    m = np.arange(np.ceil((lo / P.w - 1) / 2), np.floor((hi / P.w - 1) / 2) + 1)
-    y_cross = (2 * m + 1) * P.w
-    y_cross = y_cross[(y_cross > lo) & (y_cross < hi)]
-    y_cross = y_cross[np.argsort(np.abs(y_cross - y_c))]
-    x_cross = x_c + (y_cross - y_c) / (y_end - y_c) * (x_end - x_c) if len(y_cross) else y_cross
-
-    xs = np.concatenate([[x_c], x_cross, [x_end]])
-    ys = fold_y(np.concatenate([[y_c], y_cross, [y_end]]), P.w)
-    return np.stack([xs, ys], axis=-1)

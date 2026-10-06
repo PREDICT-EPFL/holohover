@@ -7,11 +7,15 @@ in Till's simulator. Run from python-sim/:
     python run_shot.py --evaluate --episodes 50 --seed 0 [--no-jit] [--no-tracker]
     python run_shot.py --evaluate --episodes 50 --export eval [--export-outcomes miss]
     python run_shot.py --scenario incoming --mcap --no-animate   # Foxglove file, see foxglove_viz.py
+    python run_shot.py --evaluate --workers 0         # outer updates solved serially
 
 The simulation loop is a plain Python loop (IPOPT cannot be traced by JAX) at the
 control rate simulation.hz; each control step runs simulation.physics_hz / hz jitted
 dynamics.physics_step substeps under the held input. Results are pickled with the
 same keys as simulation.run_sim, so animation.TrajecoryAnimation and main.animate work.
+
+The bounce sequences of an outer update are solved in shot_mpc.n_workers forked processes,
+one per sequence (shot_mpc/solve_pool.py), started before JAX: see start_workers.
 """
 
 import argparse
@@ -27,12 +31,11 @@ import jax
 import jax.numpy as jnp
 
 from dynamics import physics_step
-from controller import build_pd_controller
 from foxglove_viz import write_mcap
 from shot_mpc.params import load_config, physics_from_config, ShotParams
 from shot_mpc.shot_selector import sequences, label
 from shot_mpc.shot_nlp import ShotNLP
-from shot_mpc.shot_controller import ShotController, ATT
+from shot_mpc.shot_controller import ShotController, ATT, defence_controller, make_tracker
 
 N_FUTURE = 60
 
@@ -114,8 +117,9 @@ RECORD_KEYS = ("states", "inputs", "plans", "tfs", "modes", "scores", "future") 
 class Episode:
     """One closed-loop run, advanced one control step at a time (run_episode here, run_live.py)."""
 
-    def __init__(self, config, physics, P, nlp, init_state, verbose=True):
-        self.ctrl = ShotController(config, physics, P, nlp, verbose=verbose)
+    def __init__(self, config, physics, P, nlp, init_state, verbose=True, tracker=None):
+        """tracker: shared by every episode when given (make_tracker), built here otherwise."""
+        self.ctrl = ShotController(config, physics, P, nlp, tracker=tracker, verbose=verbose)
         self.physics = physics
         self.hz = config["simulation"]["hz"]
         self.dt = 1.0 / self.hz
@@ -125,9 +129,7 @@ class Episode:
 
         self.r2_ctrl = None
         if config["shot_mpc"]["opponent"] == "static":
-            rel = config["robot"]["robot2"]["defensive_position_rel"]
-            home = jnp.array([rel * physics.table.width, 0.5 * physics.table.height, 0.0, 0.0, 0.0, 0.0])
-            self.r2_ctrl = build_pd_controller(home, robot_id=2)
+            self.r2_ctrl = defence_controller(config, physics, robot_id=2)
 
         self.state = np.asarray(init_state, dtype=float)
         self.score = np.zeros(2, dtype=int)
@@ -189,9 +191,9 @@ class Episode:
 
 
 def run_episode(config, physics, P, nlp, init_state, duration, stop_on_goal=False,
-                verbose=True, record=True, tail=0.0):
+                verbose=True, record=True, tail=0.0, tracker=None):
     """With stop_on_goal, the episode ends `tail` seconds after the first goal."""
-    ep = Episode(config, physics, P, nlp, init_state, verbose=verbose)
+    ep = Episode(config, physics, P, nlp, init_state, verbose=verbose, tracker=tracker)
     tail_steps = int(round(tail * ep.hz))
     rec = {k: [] for k in RECORD_KEYS}
 
@@ -211,7 +213,7 @@ def run_episode(config, physics, P, nlp, init_state, duration, stop_on_goal=Fals
         "contacts_at_goal": ep.contacts_at_goal,
         "plan_history": ctrl.plan_history,
         "selector_logs": ctrl.selector.logs,
-        "tracker_times": ctrl.tracker.times if ctrl.tracker else [],
+        "tracker_times": ctrl.tracker_times,
     }
     if record:
         result["data"] = _animation_data(config, physics, init_state, rec, P.N)
@@ -263,8 +265,8 @@ def timing_summary(selector_logs, tracker_times=()):
     solves = [r for log in selector_logs for r in log.results.values()]
     warm = np.array([r[4] for r in solves if not r[6]]) * 1e3
     cold = np.array([r[4] for r in solves if r[6]]) * 1e3
-    outer = np.array([log.t_total for log in selector_logs if log.outer]) * 1e3
-    inner = np.array([log.t_total for log in selector_logs if not log.outer]) * 1e3
+    outer = np.array([log.t_wall for log in selector_logs if log.outer]) * 1e3
+    inner = np.array([log.t_wall for log in selector_logs if not log.outer]) * 1e3
     iters_warm = np.array([r[5] for r in solves if not r[6]])
     tracker = np.array(tracker_times) * 1e3
 
@@ -276,7 +278,7 @@ def timing_summary(selector_logs, tracker_times=()):
 
     lines = ["Solve times:", row("one B, warm start", warm), row("one B, cold (all seeds)", cold),
              row("outer update (all B)", outer), row("inner update (B*)", inner),
-             row("tracker QP", tracker)]
+             row("tracker (ref + QP)", tracker)]
     if len(iters_warm):
         lines.append(f"  warm IPOPT iterations: mean {iters_warm.mean():.1f}, max {iters_warm.max()}")
     return "\n".join(lines)
@@ -284,7 +286,7 @@ def timing_summary(selector_logs, tracker_times=()):
 
 def update_json(log):
     """One selector update (ShotSelector.logs entry) as plain data."""
-    return {"t": log.t, "outer": log.outer, "chosen": log.chosen, "t_total": log.t_total,
+    return {"t": log.t, "outer": log.outer, "chosen": log.chosen, "t_total": log.t_total, "t_wall": log.t_wall,
             "results": {k: {"valid": v[0], "cost": v[1], "score": v[2], "tf": v[3],
                             "t_wall": v[4], "iters": v[5], "cold": v[6]} for k, v in log.results.items()}}
 
@@ -297,6 +299,20 @@ def shot_log_json(result):
 ############
 ### Main ###
 ############
+WORKERS_HELP = "worker processes of the outer updates (default shot_mpc.n_workers, one per bounce sequence); 0: serial"
+
+
+def start_workers(config, nlp, workers=None):
+    """Start the worker processes of the outer updates: `workers`, or shot_mpc.n_workers.
+    Call it before physics_from_config, which starts JAX's threads: forking a multithreaded
+    process can deadlock the child."""
+    n = config["shot_mpc"]["n_workers"] if workers is None else workers
+    pool = nlp.start_pool(n)
+    if pool is not None:
+        print(f"[solve_pool] {pool.n_workers} worker processes for the outer updates")
+    return pool
+
+
 def simulate(config, physics, P, nlp, scenario, export=None, animate=True, save=True, mcap=False):
     init = initial_state(config, scenario)
     result = run_episode(config, physics, P, nlp, init, config["simulation"]["duration"])
@@ -384,13 +400,14 @@ def evaluate(config, physics, P, nlp, episodes, seed, export=None, export_outcom
     simulation_data/shot_eval_<stamp>_ep<index>_<outcome>.mcap."""
     rng = np.random.default_rng(seed)
     duration = config["shot_mpc"]["evaluation"]["duration"]
+    tracker = make_tracker(config, P)
     counts, logs, tracker_times, first_shot = {}, [], [], 0
     record = export is not None or mcap
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     for e in range(episodes):
         init = sample_initial_state(rng, config)
         res = run_episode(config, physics, P, nlp, init, duration, stop_on_goal=True, verbose=False,
-                          record=record, tail=0.5 if record else 0.0)
+                          record=record, tail=0.5 if record else 0.0, tracker=tracker)
         counts[res["outcome"]] = counts.get(res["outcome"], 0) + 1
         first_shot += res["outcome"] == "goal" and res["contacts_at_goal"] == 1
         logs.extend(res["selector_logs"])
@@ -407,7 +424,8 @@ def evaluate(config, physics, P, nlp, episodes, seed, export=None, export_outcom
     goals = counts.get("goal", 0)
     print(f"\nConversion: {goals}/{episodes} = {100 * goals / episodes:.0f}% "
           f"(first-shot goals: {first_shot}) | outcomes: {counts}")
-    print(f"JIT: {nlp.jit} | tracker: {config['shot_mpc']['tracker']['enabled']}")
+    print(f"JIT: {nlp.jit} | tracker: {config['shot_mpc']['tracker']['enabled']} | "
+          f"workers: {nlp.pool.n_workers if nlp.pool else 0}")
     print(timing_summary(logs, tracker_times))
 
 
@@ -431,6 +449,7 @@ def main():
     parser.add_argument("--no-jit", action="store_true")
     parser.add_argument("--no-tracker", action="store_true", help="apply the plan's inputs open loop")
     parser.add_argument("--opponent", choices=["none", "static"], default=None)
+    parser.add_argument("--workers", type=int, default=None, help=WORKERS_HELP)
     args = parser.parse_args()
 
     config = load_config(args.config)
@@ -440,9 +459,10 @@ def main():
         config["shot_mpc"]["tracker"]["enabled"] = False
     if args.opponent:
         config["shot_mpc"]["opponent"] = args.opponent
-    physics = physics_from_config(config)
     P = ShotParams.from_config(config)
     nlp = ShotNLP(P)
+    start_workers(config, nlp, args.workers)
+    physics = physics_from_config(config)
 
     if args.evaluate:
         evaluate(config, physics, P, nlp, args.episodes, args.seed,

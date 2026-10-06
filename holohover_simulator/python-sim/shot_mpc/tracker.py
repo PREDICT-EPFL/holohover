@@ -9,27 +9,41 @@ theta_ref (Section 1).
 The terminal constraint x_H = x_ref(t_f) is softened into a heavy terminal
 cost, so the QP (input bounds only) is always feasible. The states are
 condensed out: the only decision variables are U.
+solve() returns the whole input sequence (TrackerInputs): ShotController applies its
+first input, and replays it open loop once the impact time has passed.
+It keeps no episode state, so one instance serves every episode (ShotController times the solves).
 """
 
-import time                                                             # wall time of each solve
+from dataclasses import dataclass
 
 import numpy as np
 import casadi as ca                                                     # symbolic QP and the DAQP interface
 
 from .params import XY                                                  # (x, y, vx, vy) rows of the tracker state
-from .model import zoh_coefficients                                     # exact ZOH map
+from .model import discrete_matrices, zoh_interval                      # exact ZOH map A_d, B_d
 
 NX, NU = 6, 3  # tracker state (x, y, theta, vx, vy, omega) and input (a_x, a_y, a_theta)
+
+
+@dataclass
+class TrackerInputs:
+    """Input sequence of one tracker solve, ZOH on the nodes t0 + k dt."""
+    t0: float       # absolute time of node 0 (the solve time)
+    dt: float       # tracker step, time to impact / H
+    U: np.ndarray   # (NU, H) inputs (a_x, a_y, a_theta), planner frame
+
+    def input_at(self, t):
+        """ZOH input at absolute time t (last input after the impact)."""
+        return self.U[:, zoh_interval(np.asarray(t, dtype=float) - self.t0, self.dt, self.U.shape[1])]
 
 
 class Tracker:
     """Linear tracking MPC on the selected plan: one QP per control step, only its first input is applied."""
 
     def __init__(self, P, cfg):
-        """P: ShotParams. cfg: the shot_mpc.tracker block of the configuration (H, t_min, theta_ref_world, Q, Q_f, R)."""
+        """P: ShotParams. cfg: the shot_mpc.tracker block of the configuration (H, theta_ref_world, Q, Q_f, R)."""
         self.P = P                                     # physics and limits (gamma, u_max, t_max)
         self.H = H = cfg["H"]                          # number of tracker intervals up to the impact
-        self.t_min = cfg["t_min"]                      # below this time to impact, the plan input is used
         self.theta_ref = cfg["theta_ref_world"] + np.pi  # heading reference, planner frame (params.py)
         # Diagonal weights: Q on nodes 1..H-1, Q_f on node H (the impact), R on the inputs
         Q, Q_f, R = (np.array(cfg[key], dtype=float) for key in ("Q", "Q_f", "R"))
@@ -43,9 +57,8 @@ class Tracker:
         Xr = ca.SX.sym("Xr", NX, H + 1)                # parameter: reference states at nodes 0..H
         Ur = ca.SX.sym("Ur", NU, H)                    # parameter: reference inputs of the intervals
         dt = ca.SX.sym("dt")                           # parameter: step length, time to impact / H
-        # ZOH coefficients as expressions of dt. dt_max = t_max / H bounds dt and picks the
-        # formula (the cancellation-free series when gamma * dt_max is small)
-        e1, a, b = zoh_coefficients(dt, P.gamma, dt_max=P.t_max / H)
+        # Exact ZOH map as expressions of dt, on (x, y, theta)
+        A, B = discrete_matrices(dt, P.gamma, axes=3)
 
         ############
         ### Cost ###
@@ -55,7 +68,7 @@ class Tracker:
             # Input deviation from the plan, normalised by the limits
             J += ca.sum1(R * ((U[:, k] - Ur[:, k]) / umax) ** 2)
             # Exact ZOH step: x becomes an expression of U, so the states are condensed out
-            x = ca.vertcat(x[0:3] + a * x[3:6] + b * U[:, k], e1 * x[3:6] + a * U[:, k])
+            x = A @ x + B @ U[:, k]
             # State error at node k + 1; the heavy Q_f at node H softens the terminal equality
             J += ca.sum1((Q_f if k == H - 1 else Q) * (x - Xr[:, k + 1]) ** 2)
 
@@ -68,10 +81,9 @@ class Tracker:
         self.solver = ca.qpsol("tracker", "daqp", qp, {"error_on_fail": False})
         self.lbx = np.tile(-umax, H)                   # input bounds in the order of vec(U): u_0, u_1, ...
         self.ubx = np.tile(umax, H)
-        self.times = []                                # wall time of every solve
 
     def solve(self, plan, t, x0):
-        """First input (planner accelerations) of the tracking QP at absolute time t from robot state x0."""
+        """Input sequence (planner accelerations) of the tracking QP at absolute time t from robot state x0."""
         dt = plan.remaining(t) / self.H                         # tracker step: the horizon ends at the impact
         nodes = t + dt * np.arange(self.H + 1)                  # absolute times of nodes 0..H
         Xr = np.zeros((NX, self.H + 1))                         # reference states on the tracker nodes:
@@ -83,10 +95,9 @@ class Tracker:
         # Parameters in the order of __init__; .T.ravel() is column-major, like ca.vec
         p = np.concatenate([x0, Xr.T.ravel(), Ur.T.ravel(), [dt]])
 
-        t_start = time.perf_counter()                           # start timing
         # Initial guess: the plan inputs (CasADi's x0 is the guess, not the robot state)
         res = self.solver(x0=Ur.T.ravel(), p=p, lbx=self.lbx, ubx=self.ubx)
-        self.times.append(time.perf_counter() - t_start)        # log the solve time
         if not self.solver.stats()["success"]:                  # QP failed:
-            return Ur[:, 0]                                     # fall back to the plan input
-        return np.array(res["x"]).ravel()[0:NU]                 # receding horizon: apply the first input only
+            return TrackerInputs(t, dt, Ur)                     # fall back to the plan inputs
+        # vec(U) is column-major: reshape row by row into (H, NU), then transpose
+        return TrackerInputs(t, dt, np.array(res["x"]).reshape(self.H, NU).T)

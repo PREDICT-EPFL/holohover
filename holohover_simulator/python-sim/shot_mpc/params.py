@@ -71,6 +71,7 @@ class ShotParams:
     eps: float
     delta: float
     t_clear: float  # post-impact wall clearance time of the robot (0 disables)
+    t_react: float  # post-impact delay before the robot brakes, for the midline stop row
     t_ref: float
     T_ref: float
     # Weights of the cost terms A-E (Section 5) and of the soft-constraint slacks
@@ -90,8 +91,7 @@ class ShotParams:
     sigma_init: float
     n_tf_seeds: int
     # Solver
-    max_iter_warm: int
-    max_iter_cold: int
+    max_iter: int
     tol: float
     acceptable_tol: float
     valid_tol: float
@@ -124,6 +124,7 @@ class ShotParams:
             eps=c["eps"],
             delta=c["delta"],
             t_clear=c["t_clear"],
+            t_react=c["t_react"],
             t_ref=c["t_ref"],
             T_ref=c["T_ref"],
             w_u=wts["w_u"],
@@ -140,8 +141,7 @@ class ShotParams:
             contact_cooldown=c["contact_cooldown"],
             sigma_init=c["sigma_init"],
             n_tf_seeds=c["n_tf_seeds"],
-            max_iter_warm=ip["max_iter_warm"],
-            max_iter_cold=ip["max_iter_cold"],
+            max_iter=ip["max_iter"],
             tol=ip["tol"],
             acceptable_tol=ip["acceptable_tol"],
             valid_tol=ip["valid_tol"],

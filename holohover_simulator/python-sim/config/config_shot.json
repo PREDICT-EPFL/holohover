@@ -49,6 +49,7 @@
     "eps": 0.05,
     "delta": 0.01,
     "t_clear": 0.015,
+    "t_react": 0.01,
     "t_ref": 0.5,
     "T_ref": 1.0,
 
@@ -67,12 +68,11 @@
     "plan_expiry": 0.1,
     "contact_cooldown": 0.5,
     "sigma_init": 1.0,
-    "n_tf_seeds": 3,
+    "n_tf_seeds": 1,
 
     "tracker": {
       "enabled": true,
       "H": 10,
-      "t_min": 0.02,
       "theta_ref_world": 0.0,
       "Q": [1e4, 1e4, 1e2, 1e2, 1e2, 1.0],
       "Q_f": [1e6, 1e6, 1e2, 1e4, 1e4, 1.0],
@@ -80,14 +80,14 @@
     },
 
     "ipopt": {
-      "max_iter_warm": 40,
-      "max_iter_cold": 80,
+      "max_iter": 40,
       "tol": 1e-4,
       "acceptable_tol": 1e-3,
       "valid_tol": 1e-3
     },
     "jit": true,
     "jit_flags": ["-O2"],
+    "n_workers": 5,
 
     "opponent": "none",
     "opponent_park": [0.08, 0.08],

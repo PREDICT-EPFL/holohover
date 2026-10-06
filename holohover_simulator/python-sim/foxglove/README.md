@@ -76,8 +76,11 @@ Controls:
   Compute time plot.
 
 The simulated time does not depend on the wall clock, so a live episode is the same as the offline
-one. A cold outer solve can take ~300 ms, longer than a 10 ms step at full speed. The view then waits
-for the solve to finish rather than fast-forwarding afterwards, so the achieved speed is below the
-requested one: 0.75 to 0.85 at speed 1, and close to 0.25 at speed 0.25.
+one. An outer update solves the five bounce sequences in parallel, one worker process each
+(`shot_mpc.n_workers` in the config, `--workers N` on the command line, `--workers 0` to solve them
+serially). The first step of an episode then takes about 30 ms (at most ~0.1 s), and the pacing makes
+up for it: at speed 1 the achieved speed stays about 1.0. A step more than 0.1 s behind schedule makes
+the view wait for it rather than fast-forward afterwards, so the achieved speed drops below the
+requested one.
 
 Inside the devcontainer, start it with `--host 0.0.0.0` and forward port 8765.

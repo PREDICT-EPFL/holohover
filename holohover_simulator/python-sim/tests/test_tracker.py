@@ -40,10 +40,12 @@ def test_reference_hits_plan_nodes(P, plan):
 
 
 def test_consistent_plan_is_reproduced(config, P, plan):
-    # Tracker grid = plan grid and zero error: the optimum is the plan's own input
+    # Tracker grid = plan grid and zero error: the optimum is the plan's own input sequence
     tracker = Tracker(P, {**config["shot_mpc"]["tracker"], "H": P.N})
-    u = tracker.solve(plan, T0, tracker_state(plan.sol.X[:, 0], tracker.theta_ref))
-    assert np.allclose(u, [*plan.sol.U[:, 0], 0.0], atol=1e-6 * P.u_max.max())
+    track = tracker.solve(plan, T0, tracker_state(plan.sol.X[:, 0], tracker.theta_ref))
+    U = np.vstack([plan.sol.U, np.zeros(P.N)])
+    assert np.allclose(track.U, U, atol=1e-6 * P.u_max.max())
+    assert np.allclose(track.input_at(T0 + (np.arange(P.N) + 0.5) * TF / P.N), U)
 
 
 def test_offset_is_corrected(config, P, plan):
@@ -52,19 +54,21 @@ def test_offset_is_corrected(config, P, plan):
     A, B = discrete_matrices(dt, P.gamma, axes=3)
     offset = np.array([0.02, -0.02, 0.2, 0.0, 0.0, 0.0])
 
-    def run(track):
+    def run(tracking):
         x = tracker_state(plan.sol.X[:, 0], tracker.theta_ref) + offset
         for i in range(int(round(TF / dt))):
             t = T0 + i * dt
-            if track and plan.remaining(t) > tracker.t_min:
-                u = tracker.solve(plan, t, x)
-            else:
+            if not tracking:
                 u = np.append(plan.input_at(t), 0.0)
+            else:
+                if plan.remaining(t) > 0:  # as ShotController: re-solve until the impact
+                    track = tracker.solve(plan, t, x)
+                u = track.input_at(t)
             x = A @ x + B @ u
         return (np.linalg.norm(x[0:2] - plan.sol.X[0:2, -1]), np.linalg.norm(x[3:5] - plan.sol.X[2:4, -1]),
                 abs(x[2] - tracker.theta_ref))
 
-    pos_open, _, theta_open = run(track=False)
-    pos_err, vel_err, theta_err = run(track=True)
+    pos_open, _, theta_open = run(tracking=False)
+    pos_err, vel_err, theta_err = run(tracking=True)
     assert pos_open > 0.02 and theta_open == pytest.approx(0.2)
     assert pos_err < 1e-3 and vel_err < 0.02 and theta_err < 0.02

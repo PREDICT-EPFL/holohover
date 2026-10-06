@@ -1,13 +1,14 @@
 """Test 1: exact ZOH map against the simulator, and the frame/unit conversions."""
 
 import numpy as np
+from scipy.linalg import expm
 
 from conftest import DT, R2_PARK, PUCK_PARK, rollout
 from shot_mpc.params import (
     XY, state_world_to_planner, state_planner_to_world, pos_world_to_planner,
     accel_planner_to_force_world, force_world_to_accel_planner,
 )
-from shot_mpc.model import discrete_matrices
+from shot_mpc.model import discrete_matrices, zoh_coefficients
 
 
 def test_zoh_matches_simulator(physics, P):
@@ -40,8 +41,13 @@ def test_zoh_semigroup_and_gamma_limit(P):
     I2 = np.eye(2)
     assert np.allclose(A0, np.block([[I2, dt * I2], [0 * I2, I2]]))
     assert np.allclose(B0, np.vstack([0.5 * dt**2 * I2, dt * I2]))
-    As, Bs = discrete_matrices(dt, 1e-7)
-    assert np.allclose(As, A0, atol=1e-8) and np.allclose(Bs, B0, atol=1e-8)
+
+    # Smallest friction in use (gamma is 0 or >= 1e-3): the closed form of b, which cancels
+    # for small gamma dt, still matches the matrix exponential of one axis' (p, v, u)
+    g = 1e-3
+    E = expm(np.array([[0.0, 1.0, 0.0], [0.0, -g, 1.0], [0.0, 0.0, 0.0]]) * dt)
+    e1, a, b = zoh_coefficients(dt, g)
+    assert np.allclose([e1, a, b], [E[1, 1], E[0, 1], E[0, 2]], rtol=1e-6, atol=0)
 
 
 def test_frame_transforms(P):

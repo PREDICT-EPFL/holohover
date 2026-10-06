@@ -156,7 +156,7 @@ def _shot_schemas(labels):
     return {
         "holohover.ShotScores": {"t": NUMBER, "chosen": STRING, "scores": per_label(NUMBER),
                                  "valid": per_label(BOOL)},
-        "holohover.ShotSolve": {"t": NUMBER, "outer": BOOL, "chosen": STRING, "t_total_ms": NUMBER,
+        "holohover.ShotSolve": {"t": NUMBER, "outer": BOOL, "chosen": STRING, "t_total_ms": NUMBER, "t_wall_ms": NUMBER,
                                 "n_solves": NUMBER, "results": per_label(SOLVE_RESULT)},
     }
 
@@ -282,7 +282,9 @@ def _events(data, log, dt):
 def solve_message(update):
     return _json_ready({
         "t": update["t"], "outer": update["outer"], "chosen": update["chosen"],
-        "t_total_ms": 1e3 * update["t_total"], "n_solves": len(update["results"]),
+        # t_total: the solve times added up; t_wall: the update (shorter when solved in parallel)
+        "t_total_ms": 1e3 * update["t_total"], "t_wall_ms": 1e3 * update.get("t_wall", update["t_total"]),
+        "n_solves": len(update["results"]),
         "results": {name: {"valid": r["valid"], "cost": r["cost"], "score": r["score"], "tf": r["tf"],
                            "t_wall_ms": 1e3 * r["t_wall"], "iters": r["iters"], "cold": r["cold"]}
                     for name, r in update["results"].items()},
