@@ -1,0 +1,72 @@
+# Holohover stack. Use the ./holohover tool at the repository root, or e.g.
+#   docker compose -f docker/docker-compose.yml up -d
+# Settings can be overridden through environment variables or a docker/.env file.
+name: holohover
+
+x-ros: &ros
+  image: ${HOLOHOVER_IMAGE:-holohover-ws:latest}
+  network_mode: host
+  ipc: host # lets Fast DDS shared-memory transport work between containers
+  restart: unless-stopped
+  environment: &ros-env
+    ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-123}
+    ROS_DISCOVERY_SERVER: ${DISCOVERY_SERVER_IP:-127.0.0.1}:${DISCOVERY_SERVER_PORT:-11811}
+    FASTRTPS_DEFAULT_PROFILES_FILE: /tmp/fastdds_superclient.xml
+
+services:
+  discovery-server:
+    <<: *ros
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: holohover-discovery-server
+    environment:
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-123}
+    command: fastdds discovery -i 0 -p ${DISCOVERY_SERVER_PORT:-11811}
+
+  foxglove-bridge:
+    <<: *ros
+    container_name: holohover-foxglove-bridge
+    depends_on:
+      - discovery-server
+    command: ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=${FOXGLOVE_PORT:-8765}
+
+  # OptiTrack mocap node, only started with `./holohover mocap start` (profile "mocap").
+  # Waits until Motive is streaming on the multicast group of MOCAP_CONFIG before starting the node.
+  mocap:
+    <<: *ros
+    container_name: holohover-mocap
+    profiles: [mocap]
+    depends_on:
+      - discovery-server
+    environment:
+      <<: *ros-env
+      MOCAP_CONFIG: ${MOCAP_CONFIG:-/root/ros2_ws/src/holohover/holohover_utils/config/optitrack/mocap_simple_config.yaml}
+    volumes:
+      - ..:/root/ros2_ws/src/holohover
+    command: >-
+      bash -c 'check-optitrack --wait --config "$$MOCAP_CONFIG"
+      && exec ros2 run mocap_optitrack mocap_node --ros-args --params-file "$$MOCAP_CONFIG"'
+
+  workspace:
+    <<: *ros
+    container_name: holohover
+    depends_on:
+      - discovery-server
+    privileged: true
+    cap_add:
+      - SYS_NICE
+    environment:
+      <<: *ros-env
+      DISPLAY: ${DISPLAY:-}
+      QT_X11_NO_MITSHM: 1
+      HISTFILE: /root/data/.bash_history
+      ROS_LOG_DIR: /root/data/ros_log
+    volumes:
+      - ..:/root/ros2_ws/src/holohover
+      - ./data:/root/data
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    working_dir: /root/data
+    stdin_open: true
+    tty: true
+    command: sleep infinity

@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+.vscode
+.devcontainer
+**/__pycache__
+**/.venv
+build
+install
+log
+docker/*
+!docker/scripts
+holohover_simulator/python-sim/gifs
