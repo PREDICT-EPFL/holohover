@@ -93,10 +93,16 @@ class Plan:
 class SelectorLog:
     t: float
     outer: bool
-    results: dict = field(default_factory=dict)  # label -> (valid, cost, score, tf, t_spent, iters, cold)
+    # label -> (valid, cost, score, tf, t_spent, iters, cold, start); start: solve_sequence
+    results: dict = field(default_factory=dict)
     chosen: str = None
     t_total: float = 0.0  # sum of the solve times
     t_wall: float = 0.0  # wall time of the update: less than t_total when the sequences run in parallel
+    kind: str = None  # "outer": every sequence, "inner": B* only, "commit": the committed B* near impact
+    parallel: bool = False  # sequences solved at once in the worker processes, else one after the other
+    # Why no sequence was solved: "wall" (the puck hits a wall before t_min) or "reach" (it stays out of
+    # our half until min(t_max, tau1)); None when they were
+    skip: str = None
 
 
 ##########################
@@ -107,12 +113,14 @@ def solve_sequence(nlp, key, t_now, xR, u_prev, puck, t_lo, t_hi, warm, allow_co
     Solve P(B) for one B = (s, k), with t_lo <= t_f <= t_hi: warm start from
     warm = (Solution, t0) of B's stored plan if there is one; if not, or if it fails,
     cold starts with t_f seeds, keeping the cheapest valid one. Returns (best Solution
-    or None, wall time of all its solves). Free of selector state, so that it can run
-    in a worker process (solve_pool).
+    or None, wall time of all its solves, start), start being "warm", "cold" or "warm+cold"
+    (the warm start failed) for the solves run (None if none). Free of selector state,
+    so that it can run in a worker process (solve_pool).
     """
     P = nlp.P
     best = None
     t_spent = 0.0  # all solves for this key, including every cold seed
+    start = None
     ybar = virtual_goal_y(*key, P.w)
     p = nlp.make_params(xR, u_prev, ybar, puck.q, puck.v)
     if warm is not None:
@@ -120,8 +128,10 @@ def solve_sequence(nlp, key, t_now, xR, u_prev, puck, t_lo, t_hi, warm, allow_co
         w0 = nlp.warm_guess(sol, t_now - t0, xR, t_lo, t_hi)
         best = nlp.solve(nlp.init_slacks(w0, p), p, t_lo, t_hi, cold=False)
         t_spent += best.t_wall
+        start = "warm"
 
     if (best is None or not best.valid) and allow_cold:
+        start = "cold" if start is None else "warm+cold"
         n_seeds = max(1, P.n_tf_seeds)
         seeds = np.linspace(t_lo, t_hi, n_seeds + 2)[1:-1] if n_seeds > 1 else [0.5 * (t_lo + t_hi)]
         for tf0 in seeds:
@@ -130,7 +140,7 @@ def solve_sequence(nlp, key, t_now, xR, u_prev, puck, t_lo, t_hi, warm, allow_co
             t_spent += sol.t_wall
             if best is None or (sol.valid and (not best.valid or sol.cost < best.cost)):
                 best = sol
-    return best, t_spent
+    return best, t_spent, start
 
 
 ################
@@ -161,19 +171,24 @@ class ShotSelector:
         x_hi = puck.state_at(t_hi)[0][0]
         return min(x_lo, x_hi) <= self.P.x_mid + self.P.r_p
 
-    def _solve_keys(self, keys, t_now, xR, u_prev, puck, allow_cold):
-        """solve_sequence of every key: {key: (best Solution or None, t_spent)}, empty if no shot
-        is possible. Several keys run in parallel in nlp.pool when started."""
+    def _solve_keys(self, keys, t_now, xR, u_prev, puck, allow_cold, log):
+        """solve_sequence of every key: {key: (best Solution or None, t_spent, start)}, empty if no shot
+        is possible (log.skip says why). Several keys run in parallel in nlp.pool when started (log.parallel)."""
         # t_min <= t_f <= min(t_max, tau1): strike before the puck's next wall hit (Section 5)
         t_lo, t_hi = self.P.t_min, min(self.P.t_max, puck.tau1)
-        if t_hi < t_lo or not self._contact_possible(puck, t_lo, t_hi):
+        if t_hi < t_lo:
+            log.skip = "wall"
+            return {}
+        if not self._contact_possible(puck, t_lo, t_hi):
+            log.skip = "reach"
             return {}
         tasks = []
         for key in keys:
             plan = self.store.get(key)
             warm = (plan.sol, plan.t0) if plan is not None else None
             tasks.append((key, t_now, xR, u_prev, puck, t_lo, t_hi, warm, allow_cold))
-        if self.nlp.pool is not None and len(tasks) > 1:
+        log.parallel = self.nlp.pool is not None and len(tasks) > 1
+        if log.parallel:
             results = self.nlp.pool.map(solve_sequence, tasks)
         else:
             results = [solve_sequence(self.nlp, *task) for task in tasks]
@@ -189,16 +204,16 @@ class ShotSelector:
         t_start = time.perf_counter()
         log = SelectorLog(t=t_now, outer=outer)
         if commit_key is not None:
-            keys = [commit_key]
+            keys, log.kind = [commit_key], "commit"
         elif outer or self.key_prev is None:
-            keys = list(self.seqs)
+            keys, log.kind = list(self.seqs), "outer"
         else:
-            keys = [self.key_prev]
+            keys, log.kind = [self.key_prev], "inner"
 
-        results = self._solve_keys(keys, t_now, xR, u_prev, puck, allow_cold)
+        results = self._solve_keys(keys, t_now, xR, u_prev, puck, allow_cold, log)
         chosen = None
         for key in keys:
-            sol, t_spent = results.get(key, (None, 0.0))
+            sol, t_spent, start = results.get(key, (None, 0.0, None))
             if sol is None:
                 self.candidates.pop(key, None)
                 continue
@@ -208,7 +223,8 @@ class ShotSelector:
             if sol.valid:
                 self.store[key] = plan
             self.candidates[key] = plan
-            log.results[plan.label] = (sol.valid, sol.cost, plan.score, sol.tf, plan.t_spent, sol.iters, sol.cold)
+            log.results[plan.label] = (sol.valid, sol.cost, plan.score, sol.tf, plan.t_spent, sol.iters, sol.cold,
+                                       start)
             log.t_total += plan.t_spent
             if sol.valid and (chosen is None or plan.score < chosen.score):
                 chosen = plan

@@ -79,7 +79,11 @@
       "foxglovePanelTitle": "Robot 1 force [N]",
       "paths": [
         { "value": "/robot1/control.fx", "enabled": true, "timestampMethod": "receiveTime", "label": "Fx" },
-        { "value": "/robot1/control.fy", "enabled": true, "timestampMethod": "receiveTime", "label": "Fy" }
+        { "value": "/robot1/control.fy", "enabled": true, "timestampMethod": "receiveTime", "label": "Fy" },
+        { "value": "/robot1/plan_control.fx", "enabled": true, "timestampMethod": "receiveTime", "label": "plan Fx" },
+        { "value": "/robot1/plan_control.fy", "enabled": true, "timestampMethod": "receiveTime", "label": "plan Fy" },
+        { "value": "/robot1/def_control.fx", "enabled": false, "timestampMethod": "receiveTime", "label": "def Fx" },
+        { "value": "/robot1/def_control.fy", "enabled": false, "timestampMethod": "receiveTime", "label": "def Fy" }
       ],
       "showXAxisLabels": true,
       "showYAxisLabels": true,
@@ -111,7 +115,9 @@
     "Plot!solve_time": {
       "foxglovePanelTitle": "Selector update time [ms]",
       "paths": [
-        { "value": "/shot_mpc/solves.t_wall_ms", "enabled": true, "timestampMethod": "receiveTime", "label": "update" }
+        { "value": "/shot_mpc/solves{kind=='outer'}.t_wall_ms", "enabled": true, "timestampMethod": "receiveTime", "label": "outer" },
+        { "value": "/shot_mpc/solves{kind=='inner'}.t_wall_ms", "enabled": true, "timestampMethod": "receiveTime", "label": "inner" },
+        { "value": "/shot_mpc/solves{kind=='commit'}.t_wall_ms", "enabled": true, "timestampMethod": "receiveTime", "label": "commit" }
       ],
       "showXAxisLabels": true,
       "showYAxisLabels": true,
@@ -127,6 +133,18 @@
       "paths": [
         { "value": "/status.mode_name", "timestampMethod": "receiveTime" },
         { "value": "/shot_mpc/scores.chosen", "timestampMethod": "receiveTime" }
+      ],
+      "isSynced": true
+    },
+    "StateTransitions!compute": {
+      "foxglovePanelTitle": "Compute (bar width = wall time)",
+      "paths": [
+        { "value": "/shot_mpc/compute/selector.state", "timestampMethod": "receiveTime", "label": "update" },
+        { "value": "/shot_mpc/compute/direct.state", "timestampMethod": "receiveTime", "label": "direct" },
+        { "value": "/shot_mpc/compute/L.state", "timestampMethod": "receiveTime", "label": "L" },
+        { "value": "/shot_mpc/compute/R.state", "timestampMethod": "receiveTime", "label": "R" },
+        { "value": "/shot_mpc/compute/LR.state", "timestampMethod": "receiveTime", "label": "LR" },
+        { "value": "/shot_mpc/compute/RL.state", "timestampMethod": "receiveTime", "label": "RL" }
       ],
       "isSynced": true
     },
@@ -182,10 +200,15 @@
           "second": "StateTransitions!mode"
         },
         "second": {
-          "direction": "row",
+          "direction": "column",
           "splitPercentage": 50,
-          "first": "RosOut!events",
-          "second": "RawMessages!solves"
+          "first": "StateTransitions!compute",
+          "second": {
+            "direction": "row",
+            "splitPercentage": 50,
+            "first": "RosOut!events",
+            "second": "RawMessages!solves"
+          }
         }
       }
     }

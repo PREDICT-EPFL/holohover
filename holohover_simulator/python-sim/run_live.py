@@ -62,13 +62,14 @@ from mcap import records as mr
 from mcap.exceptions import EndOfFile
 from mcap.stream_reader import StreamReader
 from mcap.writer import Writer
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 import foxglove
 from foxglove import Capability, MessageSchema, Parameter, ParameterType, Schema, Service, ServiceSchema
 from foxglove import messages as fm
 
-from foxglove_viz import (MODE_NAMES, NUMBER, TRAIL_LENGTH, clear_overlays, geometry, json_channel,
-                          log_bodies, log_event, log_static, log_step, setup_channels, solve_message)
+from foxglove_viz import (MODE_NAMES, TRAIL_LENGTH, ComputeTimeline, clear_overlays, foxglove_schema, geometry,
+                          json_channel, log_bodies, log_event, log_static, log_step, setup_channels, solve_message)
 from run_shot import WORKERS_HELP, Episode, initial_state, sample_initial_state, start_workers, update_json
 from shot_mpc.shot_controller import make_tracker
 from shot_mpc.shot_selector import label, sequences
@@ -81,7 +82,6 @@ RESTART_AFTER_GOAL = 1.0  # s of simulated time
 PAUSE_POLL = 0.02  # s
 SUBSCRIBE_GRACE = 1.0  # s after the first subscription: the app subscribes panel by panel
 STATIC_TOPICS = ("/scene/table", "/scene/bodies")
-STATS_SCHEMA = {"t": NUMBER, "speed": NUMBER, "achieved_speed": NUMBER, "step_ms": NUMBER}
 SAVE_DIR = Path("simulation_data")
 SAVE_TIMEOUT = 60.0  # s: the /save response waits until the file is written
 
@@ -90,7 +90,40 @@ SAVE_TIMEOUT = 60.0  # s: the /save response waits until the file is written
 ### Controls ###
 ################
 MAX_STEPS = 1000  # per /step call
-OK = json.dumps({"ok": True}).encode()  # service response
+
+
+class Request(BaseModel):
+    """Service request. Strict: JSON types only ("1" is not 1, 1 is not true); unknown fields are ignored."""
+    model_config = ConfigDict(strict=True)
+
+
+class PauseRequest(Request):
+    paused: bool = True
+
+
+class StepRequest(Request):
+    steps: int = Field(1, ge=1, le=MAX_STEPS)
+
+
+class ResetRequest(Request):
+    scenario: str | None = None  # "random" or a config scenario (checked by Controls.reset); None: the current start
+    seed: int | None = None
+
+
+class SaveRequest(Request):
+    pass
+
+
+class Ok(BaseModel):
+    ok: bool = True
+
+
+class Saved(Ok):
+    path: str
+    t: float  # s: the file holds the episode from 0 to t
+
+
+OK = Ok().model_dump_json().encode()
 
 
 class Controls(foxglove.ServerListener):
@@ -159,18 +192,14 @@ class Controls(foxglove.ServerListener):
 
     ### Service handlers (the sim loop acts on them before its next step) ###
     def pause(self, request):
-        paused = _request(request).get("paused", True)
-        if not isinstance(paused, bool):
-            raise ValueError("paused must be true or false")
+        paused = _request(PauseRequest, request).paused
         with self._lock:
             self._set_paused(paused)
         self.params_changed.set()
         return OK
 
     def step(self, request):
-        steps = _request(request).get("steps", 1)
-        if isinstance(steps, bool) or not isinstance(steps, int) or not 1 <= steps <= MAX_STEPS:
-            raise ValueError(f"steps must be an integer from 1 to {MAX_STEPS}")
+        steps = _request(StepRequest, request).steps
         with self._lock:
             self._set_paused(True)
             self._steps += steps
@@ -178,43 +207,40 @@ class Controls(foxglove.ServerListener):
         return OK
 
     def reset(self, request):
-        args = _request(request)
-        scenario, seed = args.get("scenario"), args.get("seed")
-        if scenario not in (None, "random", *self.scenarios):
-            raise ValueError(f"unknown scenario {scenario!r}; use random or one of {', '.join(self.scenarios)}")
-        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
-            raise ValueError("seed must be an integer")
-        self.resets.put((scenario, seed))
+        args = _request(ResetRequest, request)
+        if args.scenario not in (None, "random", *self.scenarios):
+            raise ValueError(f"unknown scenario {args.scenario!r}; use random or one of {', '.join(self.scenarios)}")
+        self.resets.put((args.scenario, args.seed))
         return OK
 
     def save(self, request):
-        _request(request)
+        _request(SaveRequest, request)
         future = Future()
         self.saves.put(future)
-        return json.dumps(future.result(timeout=SAVE_TIMEOUT)).encode()
+        return future.result(timeout=SAVE_TIMEOUT).model_dump_json().encode()
 
 
-def _request(request):
-    args = json.loads(request.payload) if request.payload.strip() else {}
-    if not isinstance(args, dict):
-        raise ValueError("the request must be a JSON object")
-    return args
+def _request(model, request):
+    """The request's payload as `model`; an empty payload is {}. An invalid one raises a ValueError with
+    one line per error, which the app shows (pydantic's own message spans several lines per error)."""
+    try:
+        return model.model_validate_json(request.payload.strip() or b"{}")
+    except ValidationError as e:
+        lines = [f"{'.'.join(map(str, err['loc']))}: {err['msg']}" if err["loc"] else err["msg"] for err in e.errors()]
+        raise ValueError("; ".join(lines)) from None
 
 
 def services(controls):
     """/pause, /step, /reset and /save, all JSON."""
-    def json_schema(name, properties):
-        data = json.dumps({"type": "object", "properties": properties}).encode()
+    def json_schema(name, model):
+        data = json.dumps(foxglove_schema(model)).encode()
         return MessageSchema(encoding="json", schema=Schema(name=name, encoding="jsonschema", data=data))
 
-    ok = {"ok": {"type": "boolean"}}
-    saved = {**ok, "path": {"type": "string"}, "t": {"type": "number"}}
     requests = {
-        "/pause": ("holohover.Pause", {"paused": {"type": "boolean"}}, ok, controls.pause),
-        "/step": ("holohover.Step", {"steps": {"type": "integer"}}, ok, controls.step),
-        "/reset": ("holohover.Reset", {"scenario": {"type": "string"}, "seed": {"type": "integer"}}, ok,
-                   controls.reset),
-        "/save": ("holohover.Save", {}, saved, controls.save),
+        "/pause": ("holohover.Pause", PauseRequest, Ok, controls.pause),
+        "/step": ("holohover.Step", StepRequest, Ok, controls.step),
+        "/reset": ("holohover.Reset", ResetRequest, Ok, controls.reset),
+        "/save": ("holohover.Save", SaveRequest, Saved, controls.save),
     }
     return [Service(name, schema=ServiceSchema(name=type_name, request=json_schema(type_name + "Request", request),
                                                response=json_schema(type_name + "Response", response)),
@@ -289,6 +315,14 @@ def write_indexed(snapshot, output, metadata, attachments=()):
 ################
 ### Live sim ###
 ################
+class LiveStats(BaseModel):
+    model_config = ConfigDict(title="holohover.LiveStats")
+    t: float
+    speed: float  # set: fraction of real time
+    achieved_speed: float | None  # over the last second of wall time; None while that spans under 0.1 s
+    step_ms: float
+
+
 class LiveSim:
     def __init__(self, config, physics, P, nlp, server, ctx, start="random", seed=0, tracker=None):
         self.config, self.physics, self.P, self.nlp, self.server = config, physics, P, nlp, server
@@ -296,8 +330,8 @@ class LiveSim:
         self.dt = 1.0 / config["simulation"]["hz"]
         labels = [label(s, k) for s, k in sequences(config["shot_mpc"]["K"])]
         self.geom = geometry(config, labels)
-        self.ch = setup_channels(ctx, labels, solves=True)
-        self.ch["stats"] = json_channel(ctx, "/live/stats", "holohover.LiveStats", STATS_SCHEMA)
+        self.ch = setup_channels(ctx, labels, solves=True, robot1_controllers=True)
+        self.ch["stats"] = json_channel(ctx, "/live/stats", LiveStats)
         self.recorder = Recorder(ctx)
 
         self.t0_ns = time.time_ns()
@@ -322,6 +356,7 @@ class LiveSim:
         """Start the next episode: the current start again (a new draw if random) or `scenario`.
         reset: requested by /reset, possibly before the current episode is over."""
         if self.ep is not None:
+            self._log_compute(self.timeline.flush())  # the end of the last update
             self._log_outcome(reset)
             self.clock += self.dt  # the new episode's first row must not share the last one's time
         if scenario is not None:
@@ -339,6 +374,7 @@ class LiveSim:
             self.duration = self.config["simulation"]["duration"]
 
         self.ep = Episode(self.config, self.physics, self.P, self.nlp, init, verbose=False, tracker=self.tracker)
+        self.timeline = ComputeTimeline()
         self.t_start = self.clock
         self.trail = deque([init[12:14]], maxlen=TRAIL_LENGTH)
         self.mode, self.score = None, np.zeros(2, dtype=int)
@@ -370,7 +406,7 @@ class LiveSim:
 
     def save(self, future):
         """/save: write the episode recorded so far to SAVE_DIR, in a thread so that the live view
-        goes on. `future` gets {"ok", "path", "t"} once the file is written."""
+        goes on. `future` gets a Saved once the file is written."""
         try:
             t = self.ep.i * self.dt
             snapshot = self.recorder.snapshot()
@@ -401,7 +437,7 @@ class LiveSim:
                 future.set_exception(e)
             else:
                 print(f"Saved {path}: t = 0 to {t:.2f} s, {n} messages", flush=True)
-                future.set_result({"ok": True, "path": str(path), "t": t})
+                future.set_result(Saved(path=str(path), t=t))
 
         threading.Thread(target=write, name="save").start()
         self.event(self.ns(), f"saving t = 0 to {t:.2f} s to {path}")
@@ -418,7 +454,8 @@ class LiveSim:
         ns = self.ns()
         self.trail.append(row["states"][12:14])
         log_step(self.ch, self.geom, SimpleNamespace(
-            state=row["states"], input=row["inputs"], plan=row["plans"], tf=row["tfs"], mode=row["modes"],
+            state=row["states"], input=row["inputs"], plan_input=row["plan_inputs"], def_input=row["def_inputs"],
+            plan=row["plans"], tf=row["tfs"], mode=row["modes"],
             score=row["scores"], future=row["future"], trail=np.asarray(self.trail),
             cand={key: row["cand_" + key] for key in ("robot", "shot", "score", "valid", "chosen")},
         ), t, ns)
@@ -451,8 +488,15 @@ class LiveSim:
             self.prev_plan = (t_plan, name)
         self.n_plans = len(ctrl.plan_history)
         for log in ctrl.selector.logs[self.n_updates:]:
-            self.ch["solves"].log(solve_message(update_json(log)), log_time=self.episode_ns(log.t))
+            update = update_json(log)
+            self.ch["solves"].log(solve_message(update).model_dump_json(), log_time=self.episode_ns(log.t))
+            self._log_compute(self.timeline.add(update))
         self.n_updates = len(ctrl.selector.logs)
+        self._log_compute(self.timeline.flush(self.ep.i * self.dt))  # no update starts before the next step
+
+    def _log_compute(self, items):
+        for t, row, message in items:
+            self.ch["compute"][row].log(message.model_dump_json(), log_time=self.episode_ns(t))
 
     def _log_stats(self, t, ns, speed, step_s):
         now = time.perf_counter()
@@ -461,8 +505,8 @@ class LiveSim:
             self.window.popleft()
         (wall0, clock0), elapsed = self.window[0], now - self.window[0][0]
         achieved = (self.clock - clock0) / elapsed if elapsed > 0.1 else None
-        self.ch["stats"].log({"t": t, "speed": speed, "achieved_speed": achieved, "step_ms": 1e3 * step_s},
-                             log_time=ns)
+        stats = LiveStats(t=t, speed=speed, achieved_speed=achieved, step_ms=1e3 * step_s)
+        self.ch["stats"].log(stats.model_dump_json(), log_time=ns)
 
     ### Loop ###
     def run(self, controls):
@@ -544,10 +588,9 @@ def main():
     start_workers(config, nlp, args.workers)  # before JAX starts its threads
     physics = physics_from_config(config)
     tracker = make_tracker(config, P)
-    # Compile the jitted physics and defence controller now rather than in the first live steps
+    # Compile the jitted physics and defence controller (run at every step) now rather than in the first live steps
     warm_up = Episode(config, physics, P, nlp, initial_state(config), verbose=False, tracker=tracker)
     warm_up.step()
-    warm_up.ctrl.def_controller(warm_up.state)
 
     ctx = foxglove.Context()
     controls = Controls(float(np.clip(args.speed, *SPEED_RANGE)), args.auto_restart, scenarios)

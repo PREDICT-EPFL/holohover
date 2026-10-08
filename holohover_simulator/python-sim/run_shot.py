@@ -111,7 +111,8 @@ def sample_initial_state(rng, config):
 ### Episode ###
 ###############
 CANDIDATE_KEYS = ("cand_robot", "cand_shot", "cand_score", "cand_valid", "cand_chosen")
-RECORD_KEYS = ("states", "inputs", "plans", "tfs", "modes", "scores", "future") + CANDIDATE_KEYS
+RECORD_KEYS = ("states", "inputs", "plan_inputs", "def_inputs", "plans", "tfs", "modes", "scores",
+               "future") + CANDIDATE_KEYS
 
 
 class Episode:
@@ -151,6 +152,8 @@ class Episode:
         if record:
             row = {
                 "inputs": F1,
+                "plan_inputs": ctrl.F_plan,
+                "def_inputs": ctrl.F_def,
                 "plans": ctrl.plan_world(state),
                 "tfs": max(ctrl.plan.remaining(t), 0.0) if ctrl.mode == ATT and ctrl.plan else 0.0,
                 "modes": ctrl.mode,
@@ -237,6 +240,9 @@ def _animation_data(config, physics, init_state, rec, N):
     return {
         "states": np.vstack([init_state[None, :], np.asarray(rec["states"])]),
         "input_sequence": first("inputs"),
+        # Robot 1's plan and defence PD inputs before clipping (zero without a plan), for the MCAP export
+        "plan_input_sequence": first("plan_inputs"),
+        "def_input_sequence": first("def_inputs"),
         "path_plans": first("plans"),
         "tfs": first("tfs"),
         "modes": first("modes"),
@@ -265,8 +271,8 @@ def timing_summary(selector_logs, tracker_times=()):
     solves = [r for log in selector_logs for r in log.results.values()]
     warm = np.array([r[4] for r in solves if not r[6]]) * 1e3
     cold = np.array([r[4] for r in solves if r[6]]) * 1e3
-    outer = np.array([log.t_wall for log in selector_logs if log.outer]) * 1e3
-    inner = np.array([log.t_wall for log in selector_logs if not log.outer]) * 1e3
+    outer = np.array([log.t_wall for log in selector_logs if log.kind == "outer"]) * 1e3
+    inner = np.array([log.t_wall for log in selector_logs if log.kind != "outer"]) * 1e3  # inner and commit
     iters_warm = np.array([r[5] for r in solves if not r[6]])
     tracker = np.array(tracker_times) * 1e3
 
@@ -286,9 +292,11 @@ def timing_summary(selector_logs, tracker_times=()):
 
 def update_json(log):
     """One selector update (ShotSelector.logs entry) as plain data."""
-    return {"t": log.t, "outer": log.outer, "chosen": log.chosen, "t_total": log.t_total, "t_wall": log.t_wall,
+    return {"t": log.t, "outer": log.outer, "kind": log.kind, "parallel": log.parallel, "skip": log.skip,
+            "chosen": log.chosen, "t_total": log.t_total, "t_wall": log.t_wall,
             "results": {k: {"valid": v[0], "cost": v[1], "score": v[2], "tf": v[3],
-                            "t_wall": v[4], "iters": v[5], "cold": v[6]} for k, v in log.results.items()}}
+                            "t_wall": v[4], "iters": v[5], "cold": v[6], "start": v[7]}
+                        for k, v in log.results.items()}}
 
 
 def shot_log_json(result):

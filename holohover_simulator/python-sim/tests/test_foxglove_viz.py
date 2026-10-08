@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from mcap.reader import make_reader
 
-from foxglove_viz import write_mcap
+from foxglove_viz import ComputeTimeline, write_mcap
 
 N_STEPS, N_PLAN, N_FUTURE, N_SHOT = 21, 20, 60, 8
 START_NS = 1_700_000_000_000_000_000
@@ -110,7 +110,49 @@ def test_topics_and_counts(shot_file):
     assert count["/scene/table"] == count["/scene/bodies"] == count["/shot_mpc/solves"] == 1
     # mode DEF->ATT, goal, contact, plans direct and L, outcome
     assert count["/events"] == 6
-    assert set(count) == set(per_step) | {"/scene/table", "/scene/bodies", "/shot_mpc/solves", "/events"}
+    compute = [f"/shot_mpc/compute/{row}" for row in ("selector", *LABELS)]
+    assert {t: count.get(t) for t in compute} == {t: 2 for t in compute}  # busy, then idle
+    assert set(count) == set(per_step) | set(compute) | {"/scene/table", "/scene/bodies", "/shot_mpc/solves",
+                                                         "/events"}
+
+
+def test_compute_timeline():
+    """Bars as wide as the wall time: parallel sequences start with the update, serial ones in turn, and
+    a bar still running at the next one on its row is cut there. Failed solves and updates that solved
+    nothing are marked. Older logs: outer or inner, warm or cold."""
+    def update(t, kind, solves, t_wall, skip=None):
+        """solves: label -> (wall time, start, valid)."""
+        results = {name: {"t_wall": w, "cold": start != "warm", "start": start, "valid": valid}
+                   for name, (w, start, valid) in solves.items()}
+        return {"t": t, "outer": kind == "outer", "kind": kind, "parallel": len(solves) > 1, "skip": skip,
+                "t_total": sum(w for w, _, _ in solves.values()), "t_wall": t_wall, "results": results}
+
+    def rows(items):
+        return [(round(t, 6), row, m.state, None if m.ms is None else round(m.ms, 6)) for t, row, m in items]
+
+    timeline = ComputeTimeline()
+    items = timeline.add(update(0.0, "outer", {"direct": (0.02, "warm", True), "L": (0.08, "cold", False)}, 0.085))
+    items += timeline.add(update(0.05, "inner", {"direct": (0.004, "warm+cold", True)}, 0.005))
+    items += timeline.flush(0.06)
+    assert timeline.flush(0.08) == []  # L ends at 0.08: an update could still start then
+    items += timeline.add(update(0.2, "outer", {}, 0.0001, skip="reach"))
+    items += timeline.flush()
+    assert rows(items) == [
+        (0.0, "selector", "outer", 85.0), (0.0, "direct", "warm", 20.0), (0.0, "L", "cold fail", 80.0),
+        (0.05, "selector", "inner", 5.0),  # the outer update was still running: no idle
+        (0.02, "direct", "idle", None), (0.05, "direct", "warm+cold", 4.0),
+        (0.054, "direct", "idle", None), (0.055, "selector", "idle", None),
+        (0.2, "selector", "no shot (reach)", 0.1),
+        (0.08, "L", "idle", None), (0.2001, "selector", "idle", None),
+    ]
+
+    old = {"t": 0.1, "outer": True, "t_total": 0.03,
+           "results": {"direct": {"t_wall": 0.01, "cold": True, "valid": False},
+                       "L": {"t_wall": 0.02, "cold": False, "valid": True}}}
+    assert rows(ComputeTimeline().add(old)) == [
+        (0.1, "selector", "outer", 30.0), (0.1, "direct", "cold fail", 10.0), (0.11, "L", "warm", 20.0)]
+    assert rows(ComputeTimeline().add({"t": 0.3, "outer": True, "t_total": 0.0, "results": {}})) == [
+        (0.3, "selector", "no shot", 0.0)]
 
 
 def test_time_order_and_step(shot_file, config):

@@ -29,7 +29,19 @@ The layout has:
 - a top-down 3D view of the table with the plan, predictions, puck trail and bounce-sequence
   candidates;
 - plots of robot 1 and puck velocity, robot 1 force, the sequence scores and selector update times;
-- mode and chosen sequence over time, the event log, and the last selector update.
+  the force plot shows the applied input (the tracker's in ATT, clipped) and the plan's (before
+  clipping, zero without a plan, e.g. from a contact to the next attack); the defence PD's input (before clipping) is listed but off: tick it in the panel settings;
+  the update times are split into outer (every sequence), inner (B* only) and commit (the committed
+  B* near impact) updates;
+- mode and chosen sequence over time, the event log, and the last selector update;
+- a **Compute** timeline: one row for the selector updates (outer, inner, commit) and one per
+  sequence (warm, cold, or warm+cold when the warm start failed; "fail" added when no valid
+  solution came out), each bar as wide as the wall time of the solve, as if the simulation ran in
+  real time, so that you can read it against the 50 ms planning period. An update that solved
+  nothing shows "no shot (wall)" (the puck hits a wall before `t_min`) or "no shot (reach)" (it stays
+  in the other half until `t_max` or its next wall hit), with no bar on the sequence rows. Sequences solved in parallel start together. Zoom in on the time axis: the
+  inner bars last a few ms. The times themselves are in `/shot_mpc/compute/<row>.ms` and in the
+  last selector update.
 
 In the 3D panel, each candidate is its own topic (`/shot_mpc/candidates/<label>`), so you can hide
 sequences one by one. Slowing the playback down (speed control in the bottom bar) helps when looking

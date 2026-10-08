@@ -74,6 +74,11 @@ class ShotController:
         self.track = None  # last tracker solve (TrackerInputs) on the current plan
         self.puck = None  # puck flight predicted at the last planning tick
         self.u_prev = np.zeros(3)  # last applied input, planner accelerations (a_x, a_y, a_theta)
+        # World-frame inputs of the plan and the defence PD at the last step, before clipping, logged
+        # next to the applied one: F_plan is zero without a plan (a null would be bridged by the app's
+        # plots), F_def is computed in ATT too
+        self.F_plan = np.zeros(3)
+        self.F_def = np.full(3, np.nan)
         self.attack_after = 0.0
         self.contact_times = []
         self.plan_history = []  # (t, label, tf) of every accepted plan
@@ -125,9 +130,13 @@ class ShotController:
                     self.mode = ATT
                     self.plan_history.append((t, new.label, new.tf))
 
+        self.F_def = np.asarray(self.def_controller(jnp.asarray(state)), dtype=float)
+        self.F_plan = np.zeros(3)
         if self.mode == ATT and self.plan is not None:
+            u_plan = np.append(self.plan.input_at(t), 0.0)  # a_theta = 0: the plan has no heading
+            self.F_plan = accel_planner_to_force_world(u_plan, P)
             if self.tracker is None:
-                u = np.append(self.plan.input_at(t), 0.0)  # a_theta = 0: the plan has no heading
+                u = u_plan
             else:
                 # Re-solve until the impact; past it (no contact yet) the last solve runs open loop.
                 # A new plan starts at least shot_mpc.t_min before its impact, so its first step solves.
@@ -138,7 +147,7 @@ class ShotController:
                 u = self.track.input_at(t)
             F = accel_planner_to_force_world(u, P)
         else:
-            F = np.asarray(self.def_controller(jnp.asarray(state)), dtype=float)
+            F = self.F_def
 
         F = np.clip(F, -self.F_max, self.F_max)
         self.u_prev = force_world_to_accel_planner(F, P)

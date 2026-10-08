@@ -25,9 +25,15 @@ Topics:
     /shot_mpc/candidates/<label>     SceneUpdate      robot path and shot of each bounce sequence
     /robot1/state, /robot2/state, /puck/state   JSON  x, y, theta, vx, vy, omega
     /robot1/control (/robot2/control)           JSON  applied fx, fy, tau
+    /robot1/plan_control, /robot1/def_control   JSON  plan and defence PD inputs before clipping
+                                                      (plan: zero without one; needs the data's
+                                                      plan_input_sequence and def_input_sequence)
     /status                          JSON             mode, time to impact, goals
     /shot_mpc/scores                 JSON             score and validity of every sequence
     /shot_mpc/solves                 JSON             one message per selector update (needs log)
+    /shot_mpc/compute/selector, /shot_mpc/compute/<label>   JSON  compute timeline (ComputeTimeline):
+                                                      busy for the wall time of each update and
+                                                      sequence solve, idle between (needs log)
     /events                          Log              mode switches, goals; contacts, plan
                                                       switches and the outcome (needs log)
 """
@@ -39,9 +45,11 @@ import pickle
 import time
 from pathlib import Path
 from types import SimpleNamespace
+from typing import get_args, get_origin
 
 import numpy as np
 from matplotlib.colors import to_rgba
+from pydantic import BaseModel, ConfigDict, create_model
 
 import foxglove
 from foxglove import messages as fm
@@ -115,62 +123,128 @@ def _circle(center, radius, z, color, px, n=32):
     return _line(xy, z, color, px, fm.LinePrimitiveLineType.LineLoop)
 
 
-def _json_ready(value):
-    """Plain Python for json.dumps: numpy scalars converted, NaN/inf -> null (the web app rejects NaN)."""
-    if isinstance(value, dict):
-        return {str(k): _json_ready(v) for k, v in value.items()}
-    if isinstance(value, (list, tuple, np.ndarray)):
-        return [_json_ready(v) for v in value]
-    if isinstance(value, (bool, np.bool_)):
-        return bool(value)
-    if isinstance(value, (int, np.integer)):
-        return int(value)
-    if isinstance(value, (float, np.floating)):
-        return float(value) if math.isfinite(value) else None
-    return value
+#####################
+### JSON messages ###
+#####################
+# Logged with model_dump_json, which converts numpy scalars and writes NaN and inf as null
+# (the web app rejects NaN). model_dump keeps NaN: don't log its dict.
+class BodyState(BaseModel):
+    model_config = ConfigDict(title="holohover.BodyState")
+    t: float
+    x: float
+    y: float
+    theta: float
+    vx: float
+    vy: float
+    omega: float
+
+
+class Control(BaseModel):
+    model_config = ConfigDict(title="holohover.Control")
+    t: float
+    fx: float
+    fy: float
+    tau: float
+
+
+class Status(BaseModel):
+    model_config = ConfigDict(title="holohover.Status")
+    t: float
+    mode: int
+    mode_name: str
+    time_to_impact: float | None  # ATT only
+    goals_robot1: int
+    goals_robot2: int
+
+
+class ShotScores(BaseModel):
+    """Score and validity of every bounce sequence, by label."""
+    model_config = ConfigDict(title="holohover.ShotScores")
+    t: float
+    chosen: str | None  # None: no valid sequence
+    scores: dict[str, float]
+    valid: dict[str, bool]
+
+
+class SolveResult(BaseModel):
+    valid: bool
+    cost: float
+    score: float
+    tf: float
+    t_wall_ms: float
+    iters: int
+    cold: bool  # the solution kept is from a cold start
+    start: str  # the solves run: warm, cold or warm+cold (the warm start failed)
+
+
+class ShotSolve(BaseModel):
+    """One selector update; results has the sequences it solved."""
+    model_config = ConfigDict(title="holohover.ShotSolve")
+    t: float
+    outer: bool
+    kind: str  # outer: every sequence, inner: B* only, commit: the committed B* near impact
+    # No sequence solved: wall (the puck hits a wall before t_min) or reach (it stays out of our half)
+    skip: str | None
+    chosen: str | None
+    t_total_ms: float  # the solve times added up
+    t_wall_ms: float  # the update (shorter when solved in parallel)
+    n_solves: int
+    results: dict[str, SolveResult]
+
+
+class ComputeState(BaseModel):
+    """What one row of the compute timeline does from t on (ComputeTimeline)."""
+    model_config = ConfigDict(title="holohover.ComputeState")
+    t: float
+    state: str  # idle, or while busy _selector_state or _sequence_state
+    ms: float | None  # wall time of the busy interval; None when idle
+
+
+def foxglove_schema(model):
+    """JSON schema of `model` in plain types: $refs inlined, `X | None` written as X (the value may still
+    be null). Lichtblick's parser (parseJsonSchema.ts) rejects $ref, anyOf and type lists; the Foxglove
+    docs add $ref only."""
+    schema = model.model_json_schema()
+    defs = schema.pop("$defs", {})
+
+    def simplify(node):
+        if isinstance(node, list):
+            return [simplify(v) for v in node]
+        if not isinstance(node, dict):
+            return node
+        if "$ref" in node:
+            return simplify(defs[node["$ref"].rsplit("/", 1)[-1]])
+        options = [o for o in node.get("anyOf", ()) if o.get("type") != "null"]
+        if len(options) == 1:
+            return simplify(options[0])
+        return {k: simplify(v) for k, v in node.items()}
+
+    return simplify(schema)
+
+
+def with_labels(model, labels):
+    """`model` with each dict field written as one property per bounce-sequence label, so that the app
+    offers them in message paths. For the channel schema only: the messages are the same."""
+    fields = {}
+    for name, field in model.model_fields.items():
+        if get_origin(field.annotation) is dict:
+            item = get_args(field.annotation)[1]
+            per_label = create_model(f"{model.__name__}_{name}", **{label: (item | None, None) for label in labels})
+            fields[name] = (per_label, ...)
+    return create_model(model.__name__, __base__=model, **fields)
 
 
 ################
 ### Channels ###
 ################
-NUMBER = {"type": ["number", "null"]}
-BOOL = {"type": ["boolean", "null"]}
-STRING = {"type": ["string", "null"]}
-
-SOLVE_RESULT = {"type": "object", "properties": {
-    "valid": BOOL, "cost": NUMBER, "score": NUMBER, "tf": NUMBER, "t_wall_ms": NUMBER, "iters": NUMBER, "cold": BOOL}}
-
-JSON_SCHEMAS = {
-    "holohover.BodyState": {k: NUMBER for k in ("t", "x", "y", "theta", "vx", "vy", "omega")},
-    "holohover.Control": {k: NUMBER for k in ("t", "fx", "fy", "tau")},
-    "holohover.Status": {"t": NUMBER, "mode": NUMBER, "mode_name": STRING, "time_to_impact": NUMBER,
-                         "goals_robot1": NUMBER, "goals_robot2": NUMBER},
-}
+def json_channel(ctx, topic, model):
+    """JSON channel with `model`'s schema, named by its title."""
+    return foxglove.Channel(topic, schema=foxglove_schema(model), context=ctx)
 
 
-def _shot_schemas(labels):
-    """Sequence labels as explicit properties, so Foxglove offers them in message paths."""
-    def per_label(item):
-        return {"type": "object", "properties": {name: item for name in labels}}
-
-    return {
-        "holohover.ShotScores": {"t": NUMBER, "chosen": STRING, "scores": per_label(NUMBER),
-                                 "valid": per_label(BOOL)},
-        "holohover.ShotSolve": {"t": NUMBER, "outer": BOOL, "chosen": STRING, "t_total_ms": NUMBER, "t_wall_ms": NUMBER,
-                                "n_solves": NUMBER, "results": per_label(SOLVE_RESULT)},
-    }
-
-
-def json_channel(ctx, topic, schema_name, properties=None):
-    schema = {"type": "object", "properties": properties or JSON_SCHEMAS[schema_name]}
-    return foxglove.Channel(
-        topic, message_encoding="json", context=ctx,
-        schema=foxglove.Schema(name=schema_name, encoding="jsonschema", data=json.dumps(schema).encode()),
-    )
-
-
-def setup_channels(ctx, labels=(), robot2_control=False, solves=False):
-    """All channels of one file, in context ctx; labels are the bounce sequences (may be empty)."""
+def setup_channels(ctx, labels=(), robot2_control=False, solves=False, robot1_controllers=False):
+    """All channels of one file, in context ctx; labels are the bounce sequences (may be empty).
+    robot1_controllers: the plan and defence PD inputs of robot 1, besides the applied one."""
     ch = {
         "tf": FrameTransformsChannel("/tf", context=ctx),
         "table": SceneUpdateChannel("/scene/table", context=ctx),
@@ -179,20 +253,24 @@ def setup_channels(ctx, labels=(), robot2_control=False, solves=False):
         "puck_prediction": SceneUpdateChannel("/puck/prediction", context=ctx),
         "robot2_prediction": SceneUpdateChannel("/robot2/prediction", context=ctx),
         "trail": SceneUpdateChannel("/puck/trail", context=ctx),
-        "status": json_channel(ctx, "/status", "holohover.Status"),
+        "status": json_channel(ctx, "/status", Status),
         "events": LogChannel("/events", context=ctx),
-        "robot1_control": json_channel(ctx, "/robot1/control", "holohover.Control"),
+        "robot1_control": json_channel(ctx, "/robot1/control", Control),
     }
     for body in BODIES:
-        ch[f"{body}_state"] = json_channel(ctx, f"/{body}/state", "holohover.BodyState")
+        ch[f"{body}_state"] = json_channel(ctx, f"/{body}/state", BodyState)
     if robot2_control:
-        ch["robot2_control"] = json_channel(ctx, "/robot2/control", "holohover.Control")
-    shot = _shot_schemas(labels)
+        ch["robot2_control"] = json_channel(ctx, "/robot2/control", Control)
+    if robot1_controllers:
+        ch["robot1_plan_control"] = json_channel(ctx, "/robot1/plan_control", Control)
+        ch["robot1_def_control"] = json_channel(ctx, "/robot1/def_control", Control)
     if len(labels):
-        ch["scores"] = json_channel(ctx, "/shot_mpc/scores", "holohover.ShotScores", shot["holohover.ShotScores"])
+        ch["scores"] = json_channel(ctx, "/shot_mpc/scores", with_labels(ShotScores, labels))
         ch["candidates"] = [SceneUpdateChannel(f"/shot_mpc/candidates/{name}", context=ctx) for name in labels]
     if solves:
-        ch["solves"] = json_channel(ctx, "/shot_mpc/solves", "holohover.ShotSolve", shot["holohover.ShotSolve"])
+        ch["solves"] = json_channel(ctx, "/shot_mpc/solves", with_labels(ShotSolve, labels))
+        ch["compute"] = {row: json_channel(ctx, f"/shot_mpc/compute/{row}", ComputeState)
+                         for row in ("selector", *labels)}
     return ch
 
 
@@ -279,16 +357,80 @@ def _events(data, log, dt):
     return events
 
 
+def _kind(update):
+    """Update kind; older logs have no commit."""
+    return update.get("kind") or ("outer" if update["outer"] else "inner")
+
+
+def _start(result):
+    """Solves run for one sequence; older logs have no warm+cold."""
+    return result.get("start") or ("cold" if result["cold"] else "warm")
+
+
+def _selector_state(update):
+    """Compute timeline state of an update: its kind, or "no shot (<skip>)" when it solved nothing."""
+    if update["results"]:
+        return _kind(update)
+    return f"no shot ({update['skip']})" if update.get("skip") else "no shot"
+
+
+def _sequence_state(result):
+    """Compute timeline state of one sequence's solves: their start, then "fail" when none was valid."""
+    return _start(result) + ("" if result["valid"] else " fail")
+
+
 def solve_message(update):
-    return _json_ready({
-        "t": update["t"], "outer": update["outer"], "chosen": update["chosen"],
-        # t_total: the solve times added up; t_wall: the update (shorter when solved in parallel)
-        "t_total_ms": 1e3 * update["t_total"], "t_wall_ms": 1e3 * update.get("t_wall", update["t_total"]),
-        "n_solves": len(update["results"]),
-        "results": {name: {"valid": r["valid"], "cost": r["cost"], "score": r["score"], "tf": r["tf"],
-                           "t_wall_ms": 1e3 * r["t_wall"], "iters": r["iters"], "cold": r["cold"]}
-                    for name, r in update["results"].items()},
-    })
+    """ShotSolve of one selector update (run_shot.update_json)."""
+    return ShotSolve(
+        t=update["t"], outer=update["outer"], kind=_kind(update), skip=update.get("skip"), chosen=update["chosen"],
+        t_total_ms=1e3 * update["t_total"], t_wall_ms=1e3 * update.get("t_wall", update["t_total"]),
+        n_solves=len(update["results"]),
+        results={name: SolveResult(valid=r["valid"], cost=r["cost"], score=r["score"], tf=r["tf"],
+                                   t_wall_ms=1e3 * r["t_wall"], iters=r["iters"], cold=r["cold"], start=_start(r))
+                 for name, r in update["results"].items()},
+    )
+
+
+class ComputeTimeline:
+    """
+    The selector updates (run_shot.update_json) as busy intervals on the simulated-time axis, for a
+    State Transitions panel: the "selector" row is busy (outer, inner, commit, or no shot when it
+    solved nothing) for the wall time of each update, each sequence's row (warm, cold or warm+cold,
+    plus fail when invalid) for the wall time of its solves, as if the simulation ran in real time;
+    idle otherwise. Sequences solved in parallel start with the update, serial ones one after the
+    other. An interval still running when the next one on its row starts is cut there: the
+    simulation does not wait for the solver.
+    add and flush return the messages to log, as (t, row, ComputeState).
+    """
+
+    def __init__(self):
+        self.ends = {}  # row -> end of its busy interval, whose idle message is not out yet
+
+    def add(self, update):
+        """The messages of one update, the updates coming in time order."""
+        items = []
+
+        def busy(row, t, state, seconds):
+            end = self.ends.pop(row, None)
+            if end is not None and end < t:
+                items.append((end, row, ComputeState(t=end, state="idle", ms=None)))
+            items.append((t, row, ComputeState(t=t, state=state, ms=1e3 * seconds)))
+            self.ends[row] = t + seconds
+
+        t = update["t"]
+        busy("selector", t, _selector_state(update), update.get("t_wall", update["t_total"]))
+        for name, r in update["results"].items():
+            busy(name, t, _sequence_state(r), r["t_wall"])
+            if not update.get("parallel", False):
+                t += r["t_wall"]
+        return items
+
+    def flush(self, t=np.inf):
+        """The idle messages of the intervals ending before t, once no update can start before t."""
+        done = sorted((end, row) for row, end in self.ends.items() if end < t)
+        for _, row in done:
+            del self.ends[row]
+        return [(end, row, ComputeState(t=end, state="idle", ms=None)) for end, row in done]
 
 
 ##############
@@ -309,6 +451,8 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
     run = SimpleNamespace(
         states=np.asarray(data["states"], dtype=float),
         inputs=np.asarray(data["input_sequence"], dtype=float),
+        plan_inputs=data.get("plan_input_sequence"),  # absent from older pickles
+        def_inputs=data.get("def_input_sequence"),
         plans=np.asarray(data["path_plans"], dtype=float),
         tfs=np.asarray(data["tfs"], dtype=float),
         modes=np.asarray(data["modes"]),
@@ -319,10 +463,13 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
     geom = geometry(config, list(cand["labels"]) if cand else [])
     n = run.states.shape[0]
 
-    # Timed extras (events, selector updates), logged in time order between the steps
+    # Timed extras (events, selector updates, compute timeline), logged in time order between the steps
     timed = [(t, 0, ("event", level, text)) for t, level, text in _events(data, log, dt)]
     if log is not None:
         timed += [(u["t"], 1, ("solve", u)) for u in log["updates"]]
+        timeline = ComputeTimeline()
+        compute = [item for u in log["updates"] for item in timeline.add(u)] + timeline.flush()
+        timed += [(t, 2, ("compute", row, message)) for t, row, message in compute]
     timed.sort(key=lambda item: (item[0], item[1]))
 
     path = Path(path)
@@ -330,7 +477,8 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
     ctx = foxglove.Context()  # one per file: several exports can run in one process
     writer = foxglove.open_mcap(str(path), allow_overwrite=True, context=ctx)
     try:
-        ch = setup_channels(ctx, geom.labels, robot2_control=run.inputs.shape[1] >= 6, solves=log is not None)
+        ch = setup_channels(ctx, geom.labels, robot2_control=run.inputs.shape[1] >= 6, solves=log is not None,
+                            robot1_controllers=run.plan_inputs is not None)
         meta = {"source": "holohover python-sim", "dt": dt, "steps": n, **(metadata or {})}
         writer.write_metadata("holohover", {k: str(v) for k, v in meta.items()})
         writer.attach(log_time=start_ns, create_time=time.time_ns(), name="config.json",
@@ -357,8 +505,11 @@ def _log_timed(ch, item, start_ns):
     ns = start_ns + round(t * 1e9)
     if kind == "event":
         log_event(ch, ns, *payload)
+    elif kind == "compute":
+        row, message = payload
+        ch["compute"][row].log(message.model_dump_json(), log_time=ns)
     else:
-        ch["solves"].log(solve_message(payload[0]), log_time=ns)
+        ch["solves"].log(solve_message(payload[0]).model_dump_json(), log_time=ns)
 
 
 def log_event(ch, ns, level, text):
@@ -374,7 +525,10 @@ def step_row(run, k):
     """Row k of the data, as log_step takes it (run_live.py builds the same from run_shot.Episode.step)."""
     cand = run.cand
     return SimpleNamespace(
-        state=run.states[k], input=run.inputs[k], plan=run.plans[k], tf=run.tfs[k], mode=run.modes[k],
+        state=run.states[k], input=run.inputs[k],
+        plan_input=None if run.plan_inputs is None else run.plan_inputs[k],
+        def_input=None if run.def_inputs is None else run.def_inputs[k],
+        plan=run.plans[k], tf=run.tfs[k], mode=run.modes[k],
         score=run.scores[k], future=run.future[k], trail=run.states[max(0, k - TRAIL_LENGTH + 1):k + 1, 12:14],
         cand=None if cand is None else {key: cand[key][k] for key in ("robot", "shot", "score", "valid", "chosen")},
     )
@@ -389,8 +543,8 @@ def log_bodies(ch, state, t, ns):
         transforms.append(fm.FrameTransform(timestamp=stamp, parent_frame_id="world", child_frame_id=body,
                                             translation=fm.Vector3(x=x, y=y, z=0.0),
                                             rotation=_quat(theta + FRAME_YAW[body])))
-        ch[f"{body}_state"].log(_json_ready({"t": t, "x": x, "y": y, "theta": theta, "vx": vx, "vy": vy,
-                                             "omega": omega}), log_time=ns)
+        message = BodyState(t=t, x=x, y=y, theta=theta, vx=vx, vy=vy, omega=omega)
+        ch[f"{body}_state"].log(message.model_dump_json(), log_time=ns)
     ch["tf"].log(fm.FrameTransforms(transforms=transforms), log_time=ns)
 
 
@@ -402,13 +556,17 @@ def log_step(ch, geom, row, t, ns):
     for robot in (1, 2):
         if f"robot{robot}_control" in ch:
             fx, fy, tau = row.input[3 * (robot - 1):3 * robot]
-            ch[f"robot{robot}_control"].log(_json_ready({"t": t, "fx": fx, "fy": fy, "tau": tau}), log_time=ns)
+            ch[f"robot{robot}_control"].log(Control(t=t, fx=fx, fy=fy, tau=tau).model_dump_json(), log_time=ns)
+    if "robot1_plan_control" in ch:
+        for key, u in (("robot1_plan_control", row.plan_input), ("robot1_def_control", row.def_input)):
+            fx, fy, tau = u
+            ch[key].log(Control(t=t, fx=fx, fy=fy, tau=tau).model_dump_json(), log_time=ns)
 
     mode = int(row.mode)
-    ch["status"].log(_json_ready({
-        "t": t, "mode": mode, "mode_name": MODE_NAMES[mode], "time_to_impact": row.tf if mode == 1 else None,
-        "goals_robot1": row.score[0], "goals_robot2": row.score[1],
-    }), log_time=ns)
+    ch["status"].log(Status(
+        t=t, mode=mode, mode_name=MODE_NAMES[mode], time_to_impact=row.tf if mode == 1 else None,
+        goals_robot1=row.score[0], goals_robot2=row.score[1],
+    ).model_dump_json(), log_time=ns)
 
     def scene(channel, entity_id, lines):
         channel.log(fm.SceneUpdate(entities=[fm.SceneEntity(
@@ -435,10 +593,10 @@ def log_step(ch, geom, row, t, ns):
                  if np.isfinite(xy).all(axis=1).any()]
         # The scores are plotted from /shot_mpc/scores rather than written on the table
         scene(ch["candidates"][j], name, lines)
-    ch["scores"].log(_json_ready({
-        "t": t, "chosen": geom.labels[chosen] if chosen >= 0 else None,
-        "scores": dict(zip(geom.labels, cand["score"])), "valid": dict(zip(geom.labels, cand["valid"])),
-    }), log_time=ns)
+    ch["scores"].log(ShotScores(
+        t=t, chosen=geom.labels[chosen] if chosen >= 0 else None,
+        scores=dict(zip(geom.labels, cand["score"])), valid=dict(zip(geom.labels, cand["valid"])),
+    ).model_dump_json(), log_time=ns)
 
 
 def clear_overlays(ch, ns):

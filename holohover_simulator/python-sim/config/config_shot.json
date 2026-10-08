@@ -5,7 +5,7 @@
     "animation_hz": 50,
     "duration": 10,
     "H": 20,
-    "physics_hz": 500,
+    "physics_hz": 1000,
     "u_limits": [0.35, 0.35, 0.005]
   },
 
