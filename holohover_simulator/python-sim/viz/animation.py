@@ -10,6 +10,7 @@ import signal
 from types import SimpleNamespace
 
 import matplotlib.animation as animation
+import matplotlib.widgets
 import matplotlib.pyplot as plt
 from matplotlib.animation import PillowWriter
 import numpy as np
@@ -1024,8 +1025,8 @@ class TrajecoryAnimation:
         )
 
         normalized_weights = candidate_costs - np.min(candidate_costs)
-        normalized_weights /= np.max(normalized_weights)
-
+        if np.max(normalized_weights) > 0:  # all equal (e.g. all penalised): leave them at 0
+            normalized_weights /= np.max(normalized_weights)
 
         for k, line in enumerate(self.dial_candidate_lines):
             traj_k = candidate_trajs[k]

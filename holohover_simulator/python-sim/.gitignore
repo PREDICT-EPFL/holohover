@@ -7,5 +7,6 @@ tmp_casadi_compiler_shell*
 *.o
 *.so
 
-# run_shot.py results
-simulation_data/shot_*
+# Run outputs (main.py)
+simulation_data/
+gifs/

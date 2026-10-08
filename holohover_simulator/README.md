@@ -14,12 +14,14 @@ The simulator leverages the **Box2D physics engine** to model the dynamics of th
 
   Otherwise if the experiment includes only simulated hovercraft, the simulator publishes to the `/optitrack/table_pose_raw` a fixed dummy position of the table that is defined in the config file.
 
-## Python simulation output
+## Python simulation
 
-The standalone simulator in `python-sim` simulates the system being possible to visualize the data via matplotlib or exporting the data with mcap files to visualize in FoxGlove.
+`python-sim` is a standalone Python simulator of the air-hockey table. Robot 1 is driven by the
+DIAL planner or the shot MPC. A run is shown with matplotlib or exported to MCAP for Foxglove.
+See [python-sim/README.md](python-sim/README.md).
 
 ```bash
 cd python-sim
-python main.py
+python main.py simulate --controller shot_mpc     # or dial
 ```
 

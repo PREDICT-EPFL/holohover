@@ -31,7 +31,8 @@
         "/shot_mpc/candidates/L": { "visible": true },
         "/shot_mpc/candidates/R": { "visible": true },
         "/shot_mpc/candidates/LR": { "visible": true },
-        "/shot_mpc/candidates/RL": { "visible": true }
+        "/shot_mpc/candidates/RL": { "visible": true },
+        "/dial/samples": { "visible": true }
       },
       "layers": {},
       "publish": {
