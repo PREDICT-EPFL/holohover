@@ -16,7 +16,14 @@ This repository contains the ROS2 packages necessary to run the Holohover system
 
 ## Setup
 
-The ROS2 system is designed to run on Docker containers. Setup scripts and documentation can be found in the [Holohover Docker repository](https://github.com/PREDICT-EPFL/holohover-docker).
+The ROS2 system is designed to run on Docker containers. The image and the docker compose stack (Fast DDS discovery server, Foxglove bridge and workspace) live in [`docker/`](docker/) and are managed with the `./holohover` tool:
+
+```bash
+./holohover build   # build the image and compile the ROS2 packages
+./holohover up      # start the discovery server, the foxglove bridge (ws://localhost:8765) and the workspace
+./holohover shell   # open a sourced shell in the workspace container
+./holohover -h      # all commands
+```
 
 ## Packages Overview
 
