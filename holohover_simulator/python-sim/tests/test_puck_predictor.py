@@ -3,8 +3,8 @@
 import numpy as np
 
 from conftest import DT, R1_PARK, R2_PARK, rollout
-from shot_mpc.params import state_world_to_planner
-from shot_mpc.model import predict, bounce_path
+from controllers.shot_mpc.params import state_world_to_planner
+from controllers.shot_mpc.model import predict, bounce_path
 
 
 def _planner(puck_world, P):

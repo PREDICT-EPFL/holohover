@@ -30,12 +30,12 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
-from dynamics import physics_step
-from foxglove_viz import write_mcap
-from shot_mpc.params import load_config, physics_from_config, ShotParams
-from shot_mpc.shot_selector import sequences, label
-from shot_mpc.shot_nlp import ShotNLP
-from shot_mpc.shot_controller import ShotController, ATT, defence_controller, make_tracker
+from simulation.dynamics import physics_step
+from viz.foxglove_viz import write_mcap
+from controllers.shot_mpc.params import load_config, physics_from_config, ShotParams
+from controllers.shot_mpc.shot_selector import sequences, label
+from controllers.shot_mpc.shot_nlp import ShotNLP
+from controllers.shot_mpc.shot_controller import ShotController, ATT, defence_controller, make_tracker
 
 N_FUTURE = 60
 
@@ -364,7 +364,7 @@ def play_animation(data):
     if os.environ.get("XDG_SESSION_TYPE") == "wayland":
         os.environ.setdefault("QT_QPA_PLATFORM", "wayland")
     import matplotlib.pyplot as plt
-    from animation import TrajecoryAnimation
+    from viz.animation import TrajecoryAnimation
 
     timers = []  # a backend timer garbage-collected before it fires never fires
 
@@ -395,7 +395,7 @@ def export_gif(data, name):
 
     matplotlib.use("Agg")  # no window needed to render a GIF; must precede the pyplot import
     import matplotlib.pyplot as plt
-    from animation import TrajecoryAnimation
+    from viz.animation import TrajecoryAnimation
 
     anim = TrajecoryAnimation(**data)
     anim.export_animation(filename=name)

@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from mcap.reader import make_reader
 
-from foxglove_viz import ComputeTimeline, write_mcap
+from viz.foxglove_viz import ComputeTimeline, write_mcap
 
 N_STEPS, N_PLAN, N_FUTURE, N_SHOT = 21, 20, 60, 8
 START_NS = 1_700_000_000_000_000_000

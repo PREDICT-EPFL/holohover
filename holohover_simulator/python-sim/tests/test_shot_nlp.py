@@ -3,9 +3,9 @@
 import numpy as np
 import pytest
 
-from shot_mpc.params import XY, state_world_to_planner
-from shot_mpc.model import predict
-from shot_mpc.shot_selector import ShotSelector
+from controllers.shot_mpc.params import XY, state_world_to_planner
+from controllers.shot_mpc.model import predict
+from controllers.shot_mpc.shot_selector import ShotSelector
 
 
 def _planner_setup(config, P, scenario):

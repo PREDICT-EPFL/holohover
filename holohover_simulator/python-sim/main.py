@@ -3,8 +3,8 @@ import json
 import pickle
 from pathlib import Path
 
-from simulation import run_sim
-from animation import TrajecoryAnimation
+from controllers.dial.controller import run_sim
+from viz.animation import TrajecoryAnimation
 from mcap_export import default_output_path, write_mcap
 
 

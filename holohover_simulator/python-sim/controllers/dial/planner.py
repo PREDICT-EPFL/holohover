@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 
-from rollout import rollout, rollout_dial, rollout_controller
+from .rollout import rollout, rollout_dial, rollout_controller
 
 
 def build_dial_path_planner(config, def_controller, imagined_r2_controller):

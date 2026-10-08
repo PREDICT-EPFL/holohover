@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 
 from conftest import DT, R1_PARK, R2_PARK, rollout
-from shot_mpc.params import state_planner_to_world
-from shot_mpc.model import hit_time, bounce_path
-from shot_mpc.shot_selector import sequences, label, virtual_goal_y
+from controllers.shot_mpc.params import state_planner_to_world
+from controllers.shot_mpc.model import hit_time, bounce_path
+from controllers.shot_mpc.shot_selector import sequences, label, virtual_goal_y
 
 # wall_bounces indices of dynamics.wall_collision: 1 = top (planner wall R), 4 = bottom (planner wall L)
 WALL_OF_INDEX = {1: "R", 4: "L"}

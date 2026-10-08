@@ -17,7 +17,7 @@ from functools import lru_cache
 import numpy as np
 import jax.numpy as jnp
 
-from controller import build_pd_controller
+from controllers.pd import build_pd_controller
 
 from .params import (
     ShotParams, XY, state_world_to_planner, state_planner_to_world,

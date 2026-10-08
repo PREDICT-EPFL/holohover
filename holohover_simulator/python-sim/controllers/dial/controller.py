@@ -8,18 +8,18 @@ import jax.numpy as jnp
 
 jax.config.update("jax_disable_jit", False)
 
-from dynamics import Table, Entity, PhysicsParams, physics_step
-from controller import (
+from simulation.dynamics import Table, Entity, PhysicsParams, physics_step
+from controllers.pd import (
     build_do_nothing_controller,
     build_pd_controller,
     build_force_field_enemy_controller,
     build_mpc_controller,
     build_interpolation_controller,
 )
-from path_planning import (
+from .planner import (
     build_dial_path_planner,
 )
-from rollout import rollout, rollout_pd
+from .rollout import rollout, rollout_pd
 
 
 def run_sim(config=None, save_data=False):

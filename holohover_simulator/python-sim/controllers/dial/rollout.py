@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 
-from dynamics import physics_step
+from simulation.dynamics import physics_step
 
 
 def print_cost_overview(

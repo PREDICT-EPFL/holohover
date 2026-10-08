@@ -68,13 +68,13 @@ import foxglove
 from foxglove import Capability, MessageSchema, Parameter, ParameterType, Schema, Service, ServiceSchema
 from foxglove import messages as fm
 
-from foxglove_viz import (MODE_NAMES, TRAIL_LENGTH, ComputeTimeline, clear_overlays, foxglove_schema, geometry,
+from viz.foxglove_viz import (MODE_NAMES, TRAIL_LENGTH, ComputeTimeline, clear_overlays, foxglove_schema, geometry,
                           json_channel, log_bodies, log_event, log_static, log_step, setup_channels, solve_message)
 from run_shot import WORKERS_HELP, Episode, initial_state, sample_initial_state, start_workers, update_json
-from shot_mpc.shot_controller import make_tracker
-from shot_mpc.shot_selector import label, sequences
-from shot_mpc.params import load_config, physics_from_config, ShotParams
-from shot_mpc.shot_nlp import ShotNLP
+from controllers.shot_mpc.shot_controller import make_tracker
+from controllers.shot_mpc.shot_selector import label, sequences
+from controllers.shot_mpc.params import load_config, physics_from_config, ShotParams
+from controllers.shot_mpc.shot_nlp import ShotNLP
 
 SPEED_RANGE = (0.01, 4.0)  # fraction of real time
 MAX_LAG = 0.1  # s of wall time behind schedule before the pacing stops trying to catch up

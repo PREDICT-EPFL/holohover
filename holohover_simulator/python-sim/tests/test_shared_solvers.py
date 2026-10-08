@@ -13,10 +13,10 @@ POOL_CHECK = """
 import sys
 sys.path.insert(0, ".")
 import numpy as np
-from shot_mpc.params import load_config, ShotParams, XY, state_world_to_planner
-from shot_mpc.model import predict
-from shot_mpc.shot_nlp import ShotNLP
-from shot_mpc.shot_selector import ShotSelector
+from controllers.shot_mpc.params import load_config, ShotParams, XY, state_world_to_planner
+from controllers.shot_mpc.model import predict
+from controllers.shot_mpc.shot_nlp import ShotNLP
+from controllers.shot_mpc.shot_selector import ShotSelector
 
 config = load_config("config/config_shot.json")
 P = ShotParams.from_config(config)
@@ -52,7 +52,7 @@ def test_pool_matches_serial():
 
 def test_episodes_share_tracker_and_pd(config, physics, P, nlp):
     from run_shot import Episode, initial_state
-    from shot_mpc.shot_controller import make_tracker
+    from controllers.shot_mpc.shot_controller import make_tracker
 
     tracker = make_tracker(config, P)
     eps = [Episode(config, physics, P, nlp, initial_state(config, "stationary"), verbose=False, tracker=tracker)

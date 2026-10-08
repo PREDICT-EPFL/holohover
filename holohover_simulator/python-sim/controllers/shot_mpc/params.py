@@ -18,7 +18,7 @@ from dataclasses import dataclass
 import numpy as np
 import jax.numpy as jnp
 
-from dynamics import Table, Entity, PhysicsParams
+from simulation.dynamics import Table, Entity, PhysicsParams
 
 # Translational part (x, y, vx, vy) of a body state (x, y, theta, vx, vy, omega)
 XY = [0, 1, 3, 4]

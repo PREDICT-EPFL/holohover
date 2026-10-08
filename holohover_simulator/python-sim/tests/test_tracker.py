@@ -5,10 +5,10 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from shot_mpc.params import XY
-from shot_mpc.model import discrete_matrices
-from shot_mpc.shot_selector import Plan
-from shot_mpc.tracker import Tracker
+from controllers.shot_mpc.params import XY
+from controllers.shot_mpc.model import discrete_matrices
+from controllers.shot_mpc.shot_selector import Plan
+from controllers.shot_mpc.tracker import Tracker
 
 T0, TF = 1.0, 0.5
 

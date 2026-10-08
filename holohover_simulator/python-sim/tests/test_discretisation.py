@@ -4,11 +4,11 @@ import numpy as np
 from scipy.linalg import expm
 
 from conftest import DT, R2_PARK, PUCK_PARK, rollout
-from shot_mpc.params import (
+from controllers.shot_mpc.params import (
     XY, state_world_to_planner, state_planner_to_world, pos_world_to_planner,
     accel_planner_to_force_world, force_world_to_accel_planner,
 )
-from shot_mpc.model import discrete_matrices, zoh_coefficients
+from controllers.shot_mpc.model import discrete_matrices, zoh_coefficients
 
 
 def test_zoh_matches_simulator(physics, P):

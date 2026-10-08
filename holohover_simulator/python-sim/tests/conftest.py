@@ -10,8 +10,8 @@ import numpy as np
 import jax.numpy as jnp
 import pytest
 
-from dynamics import physics_step
-from shot_mpc.params import load_config, physics_from_config, ShotParams
+from simulation.dynamics import physics_step
+from controllers.shot_mpc.params import load_config, physics_from_config, ShotParams
 
 DT = 0.01
 # Robots parked in the top corners (world frame), out of the tested puck paths
@@ -41,7 +41,7 @@ def P(config):
 
 @pytest.fixture(scope="session")
 def nlp(P):
-    from shot_mpc.shot_nlp import ShotNLP
+    from controllers.shot_mpc.shot_nlp import ShotNLP
 
     return ShotNLP(P, jit=False, verbose=False)  # interpreted: no compile time in the tests
 
