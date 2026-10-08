@@ -13,17 +13,18 @@ POOL_CHECK = """
 import sys
 sys.path.insert(0, ".")
 import numpy as np
-from controllers.shot_mpc.params import load_config, ShotParams, XY, state_world_to_planner
+from controllers.shot_mpc.params import ShotParams, XY, state_world_to_planner
 from controllers.shot_mpc.model import predict
 from controllers.shot_mpc.shot_nlp import ShotNLP
 from controllers.shot_mpc.shot_selector import ShotSelector
+from simulation.setup import load_config
 
-config = load_config("config/config_shot.json")
+config = load_config("config/config.json")
 P = ShotParams.from_config(config)
 nlp = ShotNLP(P, jit=False, verbose=False)
 pool = nlp.start_pool(2)
 for scenario in ("stationary", "incoming", "around"):
-    sc = config["shot_mpc"]["scenarios"][scenario]
+    sc = config["scenarios"][scenario]
     xR = state_world_to_planner(np.array(sc["robot1"], dtype=float), P)[XY]
     puck = state_world_to_planner(np.array(sc["puck"], dtype=float), P)
     puck = predict(puck[0:2], puck[3:5], P)
@@ -51,11 +52,13 @@ def test_pool_matches_serial():
 
 
 def test_episodes_share_tracker_and_pd(config, physics, P, nlp):
-    from run_shot import Episode, initial_state
-    from controllers.shot_mpc.shot_controller import make_tracker
+    from controllers.shot_mpc.shot_controller import ShotController, make_tracker
+    from simulation.episode import Episode
+    from simulation.setup import initial_state
 
     tracker = make_tracker(config, P)
-    eps = [Episode(config, physics, P, nlp, initial_state(config, "stationary"), verbose=False, tracker=tracker)
+    eps = [Episode(config, physics, ShotController(config, physics, P, nlp, tracker, verbose=False),
+                   initial_state(config, "stationary"))
            for _ in range(2)]
     assert eps[0].ctrl.tracker is eps[1].ctrl.tracker is tracker
     assert eps[0].ctrl.def_controller is eps[1].ctrl.def_controller  # compiled once per process

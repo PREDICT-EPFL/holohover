@@ -1,53 +1,86 @@
 """
-Contains definition of the airhockey table on which the robot(s) and puck move.
+Matplotlib view of an episode's recorded data (simulation.episode.episode_data): play() opens an
+interactive window, export_gif() writes gifs/<name>.gif. Mode "dial" steps through the DIAL
+planner's samples (keyboard only).
 """
 
 import time
 import os
+import signal
+from types import SimpleNamespace
 
-import matplotlib
-try:
-    matplotlib.use("TkAgg")
-except ImportError:
-    pass  # no tkinter: keep matplotlib's default backend (e.g. QtAgg, or Agg when headless)
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
-from matplotlib.animation import PillowWriter, FFMpegWriter
+from matplotlib.animation import PillowWriter
 import numpy as np
-import jax.numpy as jnp
-import jax
 
+
+def play(data, mode="standard"):
+    """Interactive window; Ctrl+C closes it like its close button. A KeyboardInterrupt would
+    mostly land in a Tk redraw callback, where tkinter prints it and the animation carries on,
+    so the handler queues the close on the GUI event loop, which play() pumps every frame."""
+    # Qt's default xcb plugin aborts on GNOME/Wayland
+    if os.environ.get("XDG_SESSION_TYPE") == "wayland":
+        os.environ.setdefault("QT_QPA_PLATFORM", "wayland")
+    try:
+        plt.switch_backend("TkAgg")
+    except ImportError:
+        pass  # no tkinter: keep matplotlib's default backend (e.g. QtAgg)
+
+    timers = []  # a backend timer garbage-collected before it fires never fires
+
+    def close_on_sigint(signum, frame):
+        if not plt.get_fignums():
+            raise KeyboardInterrupt
+        timer = plt.figure(plt.get_fignums()[0]).canvas.new_timer(interval=0)
+        timer.single_shot = True
+        timer.add_callback(plt.close, "all")
+        timer.start()
+        timers.append(timer)
+
+    previous = signal.signal(signal.SIGINT, close_on_sigint)
+    try:
+        TrajecoryAnimation(data).play(mode=mode)
+    finally:
+        signal.signal(signal.SIGINT, previous)
+
+
+def gif_name(name):
+    """export_gif always writes gifs/<name>.gif: accept 'x', 'x.gif' or 'gifs/x.gif'."""
+    name = os.path.basename(name)
+    return name[:-4] if name.endswith(".gif") else name
+
+
+def export_gif(data, name):
+    plt.switch_backend("Agg")  # no window needed
+    anim = TrajecoryAnimation(data)
+    anim.export_animation(filename=gif_name(name))
+    plt.close(anim.fig)
 
 
 class TrajecoryAnimation:
-    def __init__(
-        self,
-        states,
-        input_sequence,
-        path_plans,
-        tfs,
-        modes,
-        scores,
-        future_trajs,
-        diffusion_trajs,
-        diffusion_costs,
-        physics,
-        config,
-        candidates=None,
-    ):
+    def __init__(self, data):
         """
-        candidates (optional, from run_shot.py): every bounce sequence's latest plan,
-        drawn as semi-transparent lines. Dict with "labels" (n), "robot" (T, n, N+1, 2) and
-        "shot" (T, n, S, 2) world paths (NaN if absent), "score" (T, n),
-        "valid" (T, n) and "chosen" (T,) index or -1.
+        data: simulation.episode.episode_data. Optional keys:
+        candidates (shot_mpc): every bounce sequence's latest plan, drawn as semi-transparent
+        lines. Dict with "labels" (n), "robot" (T, n, N+1, 2) and "shot" (T, n, S, 2) world paths
+        (NaN if absent), "score" (T, n), "valid" (T, n) and "chosen" (T,) index or -1.
+        diffusion_trajs, diffusion_costs (dial): the planner's samples, for mode "dial".
         """
-        self.dimension = (physics.table.width, physics.table.height)
+        config = data["config"]
+        states, input_sequence, path_plans = data["states"], data["input_sequence"], data["path_plans"]
+        tfs, modes, scores, future_trajs = data["tfs"], data["modes"], data["scores"], data["future_trajs"]
+        diffusion_trajs, diffusion_costs = data.get("diffusion_trajs"), data.get("diffusion_costs")
+        candidates = data.get("candidates")
+
+        table = config["table"]
+        self.dimension = (table["width"], table["height"])
         self.candidates = candidates
         self.cand_robot_lines, self.cand_shot_lines, self.cand_texts = [], [], []
-        self.goal_width = physics.table.goal_width
+        self.goal_width = table["goal_width"]
 
-        self.robot = physics.robot
-        self.puck = physics.puck
+        self.robot = SimpleNamespace(radius=config["robot"]["radius"])
+        self.puck = SimpleNamespace(radius=config["puck"]["radius"])
 
         self.r1_state = states[:, :6]
         self.r2_state = states[:, 6:12]
@@ -70,25 +103,29 @@ class TrajecoryAnimation:
         self.animation_mode = "standard"
         self.dial_time_idx = 0
         self.dial_diff_step = 0
-        self.dial_n_steps = int(self.diffusion_trajs.shape[1])
-        self.dial_n_candidates = int(self.diffusion_trajs.shape[2])
+        has_dial = diffusion_trajs is not None
+        self.dial_n_steps = int(self.diffusion_trajs.shape[1]) if has_dial else 0
+        self.dial_n_candidates = int(self.diffusion_trajs.shape[2]) if has_dial else 0
 
-        self.H = config["simulation"]["H"]
+        self.H = path_plans.shape[1]
         self.dt = 1 / config["simulation"]["hz"]
         self.horizon_time = self.H * self.dt
-        self.duration = config["simulation"]["duration"]
+        self.n_steps = self.r1_state.shape[0]
+        self.duration = (self.n_steps - 1) * self.dt
         self.dt_anim = 1 / config["simulation"]["animation_hz"]
         self.fps = config["simulation"]["animation_hz"]
-        self.dt_pp = 1 / config["simulation"]["path_planning_hz"]
+        # Plans are made every dt_pp (the plan time axes and the DIAL view step by it)
+        replan_hz = (config["dial"]["path_planning_hz"] if has_dial
+                     else config["shot_mpc"]["rates"]["inner_hz"])
+        self.dt_pp = 1 / replan_hz
         self.replan_every = max(1, int(np.round(self.dt_pp / self.dt)))
         self.current_step = 0
         self.max_steps = int(self.duration / self.dt_anim)
-        self.n_steps = self.r1_state.shape[0]
 
         self.is_finished = False
         self.is_zoomed = False
 
-        self.time_array = np.arange(0, self.duration+self.dt, self.dt)
+        self.time_array = np.arange(self.n_steps) * self.dt
         self.time_arrays_pp = np.zeros((self.tfs.shape[0], self.H))
         for i, tf in enumerate(self.tfs):
             if i == 0:
@@ -1058,6 +1095,8 @@ class TrajecoryAnimation:
     def play(self, mode="standard"):
         """Display the animation in standard mode or DIAL debug mode."""
         if mode == "dial":
+            if self.diffusion_trajs is None:
+                raise ValueError("mode dial needs DIAL data (diffusion_trajs)")
             self.play_dial_debug()
             return
 

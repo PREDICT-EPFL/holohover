@@ -11,7 +11,8 @@ import jax.numpy as jnp
 import pytest
 
 from simulation.dynamics import physics_step
-from controllers.shot_mpc.params import load_config, physics_from_config, ShotParams
+from controllers.shot_mpc.params import ShotParams
+from simulation.setup import load_config, physics_from_config
 
 DT = 0.01
 # Robots parked in the top corners (world frame), out of the tested puck paths
@@ -26,7 +27,7 @@ def pytest_configure(config):
 
 @pytest.fixture(scope="session")
 def config():
-    return load_config(SIM_DIR / "config" / "config_shot.json")
+    return load_config(SIM_DIR / "config" / "config.json")
 
 
 @pytest.fixture(scope="session")

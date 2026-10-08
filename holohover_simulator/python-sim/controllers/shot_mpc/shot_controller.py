@@ -12,23 +12,24 @@ Closed-loop integration (Section 8, direct mode): P(B*) runs as the MPC itself.
 """
 
 import time
-from functools import lru_cache
 
 import numpy as np
 import jax.numpy as jnp
 
-from controllers.pd import build_pd_controller
+from controllers import DEF, ATT
+from controllers.pd import defence_controller
 
 from .params import (
     ShotParams, XY, state_world_to_planner, state_planner_to_world,
     accel_planner_to_force_world, force_world_to_accel_planner, pos_planner_to_world,
 )
 from .model import predict, bounce_path
+from .report import timing_summary, update_json
 from .shot_nlp import ShotNLP
-from .shot_selector import ShotSelector
+from .shot_selector import ShotSelector, label
 from .tracker import Tracker
 
-DEF, ATT = 0, 1
+N_FUTURE = 60  # samples of the recorded predicted puck path
 
 
 def make_tracker(config, P):
@@ -38,17 +39,32 @@ def make_tracker(config, P):
     return Tracker(P, trk) if trk.get("enabled") else None
 
 
-def defence_controller(config, physics, robot_id):
-    """PD controller holding robot `robot_id` at its defensive position, built once per process:
-    every build_pd_controller call is a new jax.jit, which compiles on its first call (~20 ms)."""
-    rel = config["robot"][f"robot{robot_id}"]["defensive_position_rel"]
-    home = (float(rel * physics.table.width), float(0.5 * physics.table.height), 0.0, 0.0, 0.0, 0.0)
-    return _pd_controller(home, robot_id)
+class ShotFactory:
+    """What every episode shares, built once per process: the NLP (compiled), the worker processes
+    of its outer updates (shot_mpc.n_workers, one per bounce sequence) and the tracker."""
 
+    def __init__(self, config, workers=None):
+        self.config = config
+        self.P = ShotParams.from_config(config)
+        self.nlp = ShotNLP(self.P)
+        pool = self.nlp.start_pool(config["shot_mpc"]["n_workers"] if workers is None else workers)
+        if pool is not None:
+            print(f"[solve_pool] {pool.n_workers} worker processes for the outer updates")
+        self.tracker = make_tracker(config, self.P)
 
-@lru_cache(maxsize=None)
-def _pd_controller(home, robot_id):
-    return build_pd_controller(jnp.array(home), robot_id=robot_id)
+    def new(self, physics, init_state, verbose=False):
+        return ShotController(self.config, physics, self.P, self.nlp, self.tracker, verbose=verbose)
+
+    def summary(self, logs):
+        """Solve times over the episode logs (ShotController.log)."""
+        workers = self.nlp.pool.n_workers if self.nlp.pool else 0
+        return (f"JIT: {self.nlp.jit} | tracker: {self.tracker is not None} | workers: {workers}\n"
+                + timing_summary([u for log in logs for u in log["updates"]],
+                                 [t for log in logs for t in log["tracker_times"]]))
+
+    def close(self):
+        if self.nlp.pool is not None:
+            self.nlp.pool.close()
 
 
 class ShotController:
@@ -61,13 +77,14 @@ class ShotController:
         self.tracker = tracker or make_tracker(config, self.P)
         self.tracker_times = []  # wall time of every tracker solve of this episode
         self.verbose = verbose
+        self.candidate_labels = [label(s, k) for s, k in self.selector.seqs]
 
         hz = config["simulation"]["hz"]
         self.dt = 1.0 / hz
         self.inner_every = max(1, int(round(hz / self.P.inner_hz)))
         self.outer_every = max(self.inner_every, int(round(hz / self.P.outer_hz)))
         self.F_max = np.array(config["simulation"]["u_limits"])
-        self.def_controller = defence_controller(config, physics, robot_id=1)
+        self.def_controller = defence_controller(config, robot_id=1)
 
         self.mode = DEF
         self.plan = None
@@ -80,7 +97,6 @@ class ShotController:
         self.F_plan = np.zeros(3)
         self.F_def = np.full(3, np.nan)
         self.attack_after = 0.0
-        self.contact_times = []
         self.plan_history = []  # (t, label, tf) of every accepted plan
 
     def reset_plan(self):
@@ -89,7 +105,6 @@ class ShotController:
 
     def notify_contact(self, t):
         """Robot 1 touched the puck: back to defence for a cooldown (Till's state machine)."""
-        self.contact_times.append(t)
         self.mode = DEF
         self.reset_plan()
         self.attack_after = t + self.P.contact_cooldown
@@ -156,6 +171,27 @@ class ShotController:
     ########################
     ### Logging helpers  ###
     ########################
+    def record(self, state, t):
+        """What the viewers show at this step (simulation.episode.episode_data)."""
+        future = np.zeros((N_FUTURE, 18))
+        future[:, 6:9] = state[6:9]
+        future[:, 12:14] = self.predicted_puck_world(state, t, N_FUTURE)
+        row = {
+            "plan_input_sequence": self.F_plan,
+            "def_input_sequence": self.F_def,
+            "path_plans": self.plan_world(state),
+            "tfs": max(self.plan.remaining(t), 0.0) if self.mode == ATT and self.plan else 0.0,
+            "future_trajs": future,
+        }
+        row.update(zip(("cand_robot", "cand_shot", "cand_score", "cand_valid", "cand_chosen"),
+                       self.candidates_world()))
+        return row
+
+    def log(self):
+        """Episode log: accepted plans (t, label, tf), selector updates and tracker solve times."""
+        return {"plan_history": self.plan_history, "updates": [update_json(u) for u in self.selector.logs],
+                "tracker_times": self.tracker_times}
+
     def plan_world(self, state):
         """Current plan as (N, 9) rows (x_{k+1} world, F_k world), the path_plans layout.
         The plan has no heading: its rows keep the current heading and rate, and zero torque."""

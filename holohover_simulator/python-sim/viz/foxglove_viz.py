@@ -1,14 +1,12 @@
 """
-Foxglove export: writes the dict that animation.TrajecoryAnimation takes (from
-simulation.run_sim or run_shot.py) to an MCAP file for the Foxglove web app.
+Foxglove export: writes an episode's recorded data (simulation.episode.episode_data) to an MCAP
+file for the Foxglove web app.
 
-    python run_shot.py --scenario incoming --mcap --no-animate   # new run
-    python foxglove_viz.py simulation_data/shot_incoming_<stamp>.pkl   # existing pickle
+    python main.py simulate --mcap --no-animate              # new run
+    python main.py mcap simulation_data/<run>.pkl            # saved run
 
-Open https://app.foxglove.dev, "Open local file..." with the .mcap, then import the
-layout foxglove/shot_mpc_layout.json (see foxglove/README.md).
-run_live.py streams the same topics to the app while the simulation runs (log_step and
-friends below).
+Open https://app.foxglove.dev, "Open local file..." with the .mcap, then import the layout
+viz/foxglove_layout.json (README.md).
 
 Frames: "world" is the simulator table frame (origin at the bottom-left corner, z up);
 "robot1", "robot2" and "puck" are its children. Each robot frame's x-axis points at the
@@ -22,26 +20,26 @@ Topics:
     /puck/prediction                 SceneUpdate      predicted puck path (future_trajs)
     /robot2/prediction               SceneUpdate      predicted robot 2 path (future_trajs)
     /puck/trail                      SceneUpdate      last TRAIL_LENGTH puck positions
-    /shot_mpc/candidates/<label>     SceneUpdate      robot path and shot of each bounce sequence
     /robot1/state, /robot2/state, /puck/state   JSON  x, y, theta, vx, vy, omega
-    /robot1/control (/robot2/control)           JSON  applied fx, fy, tau
-    /robot1/plan_control, /robot1/def_control   JSON  plan and defence PD inputs before clipping
-                                                      (plan: zero without one; needs the data's
-                                                      plan_input_sequence and def_input_sequence)
+    /robot1/control                  JSON             applied fx, fy, tau
     /status                          JSON             mode, time to impact, goals
+    /events                          Log              mode switches, goals; contacts and the outcome (needs log)
+  dial:
+    /dial/samples                    SceneUpdate      robot paths of some samples of the last diffusion step
+  shot_mpc:
+    /robot1/plan_control, /robot1/def_control   JSON  plan and defence PD inputs before clipping
+                                                      (plan: zero without one)
+    /shot_mpc/candidates/<label>     SceneUpdate      robot path and shot of each bounce sequence
     /shot_mpc/scores                 JSON             score and validity of every sequence
     /shot_mpc/solves                 JSON             one message per selector update (needs log)
     /shot_mpc/compute/selector, /shot_mpc/compute/<label>   JSON  compute timeline (ComputeTimeline):
                                                       busy for the wall time of each update and
                                                       sequence solve, idle between (needs log)
-    /events                          Log              mode switches, goals; contacts, plan
-                                                      switches and the outcome (needs log)
+    /events                                           also plan switches (needs log)
 """
 
-import argparse
 import json
 import math
-import pickle
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -66,10 +64,11 @@ TRAIL_LENGTH = 60  # samples, as in the animation
 # What keeps lines visible is the table being opaque (table_scene), not the gap.
 Z_TABLE, Z_MARKINGS = -0.02, -0.01  # table top; border, centre line and goals
 Z_TRAIL, Z_CANDIDATE, Z_PREDICTION, Z_PLAN = 0.0, 0.005, 0.01, 0.015
+Z_SAMPLE = Z_CANDIDATE
 Z_BODY = 0.03  # disc height (from z = 0)
 
 # Line widths in pixels; the candidates are faint except the executed one
-LINE_PX = {"plan": 3.0, "prediction": 2.0, "trail": 2.0, "candidate": 2.0, "chosen": 4.0}
+LINE_PX = {"plan": 3.0, "prediction": 2.0, "trail": 2.0, "candidate": 2.0, "chosen": 4.0, "sample": 1.5}
 CANDIDATE_ALPHA = {"other": 0.3, "chosen": 0.85}
 TABLE_COLOR = "#f7f7f7"
 # Same colours as animation.TrajecoryAnimation.CANDIDATE_COLORS
@@ -242,9 +241,10 @@ def json_channel(ctx, topic, model):
     return foxglove.Channel(topic, schema=foxglove_schema(model), context=ctx)
 
 
-def setup_channels(ctx, labels=(), robot2_control=False, solves=False, robot1_controllers=False):
+def setup_channels(ctx, labels=(), solves=False, robot1_controllers=False, samples=False):
     """All channels of one file, in context ctx; labels are the bounce sequences (may be empty).
-    robot1_controllers: the plan and defence PD inputs of robot 1, besides the applied one."""
+    robot1_controllers: the plan and defence PD inputs of robot 1, besides the applied one.
+    samples: DIAL's sample paths."""
     ch = {
         "tf": FrameTransformsChannel("/tf", context=ctx),
         "table": SceneUpdateChannel("/scene/table", context=ctx),
@@ -259,14 +259,14 @@ def setup_channels(ctx, labels=(), robot2_control=False, solves=False, robot1_co
     }
     for body in BODIES:
         ch[f"{body}_state"] = json_channel(ctx, f"/{body}/state", BodyState)
-    if robot2_control:
-        ch["robot2_control"] = json_channel(ctx, "/robot2/control", Control)
     if robot1_controllers:
         ch["robot1_plan_control"] = json_channel(ctx, "/robot1/plan_control", Control)
         ch["robot1_def_control"] = json_channel(ctx, "/robot1/def_control", Control)
     if len(labels):
         ch["scores"] = json_channel(ctx, "/shot_mpc/scores", with_labels(ShotScores, labels))
         ch["candidates"] = [SceneUpdateChannel(f"/shot_mpc/candidates/{name}", context=ctx) for name in labels]
+    if samples:
+        ch["samples"] = SceneUpdateChannel("/dial/samples", context=ctx)
     if solves:
         ch["solves"] = json_channel(ctx, "/shot_mpc/solves", with_labels(ShotSolve, labels))
         ch["compute"] = {row: json_channel(ctx, f"/shot_mpc/compute/{row}", ComputeState)
@@ -320,7 +320,7 @@ def bodies_scene(config, stamp):
 
 
 def log_static(ch, config, ns):
-    """Table and body discs: logged once to a file; a live server repeats them for new subscribers."""
+    """Table and body discs, logged once."""
     stamp = _timestamp(ns)
     ch["table"].log(table_scene(config, stamp), log_time=ns)
     ch["bodies"].log(bodies_scene(config, stamp), log_time=ns)
@@ -330,7 +330,8 @@ def log_static(ch, config, ns):
 ### Events ###
 ##############
 def _events(data, log, dt):
-    """(t, level, text) of mode switches and goals, plus contacts, plan switches and the outcome from log."""
+    """(t, level, text) of mode switches and goals, plus contacts, the outcome and (shot_mpc) plan
+    switches from log."""
     Info, Warning = fm.LogLevel.Info, fm.LogLevel.Warning
     modes, scores = np.asarray(data["modes"]), np.asarray(data["scores"])
     events = []
@@ -346,7 +347,7 @@ def _events(data, log, dt):
     contacts = sorted(log["contacts"])
     events += [(t, Info, "contact robot1-puck") for t in contacts]
     prev_t, prev_label = -np.inf, None
-    for t, name, tf in log["plan_history"]:
+    for t, name, tf in log.get("plan_history", ()):
         # A plan is re-accepted at every planning tick: report switches and the first plan after a contact
         if name != prev_label or any(prev_t < c <= t for c in contacts):
             events.append((t, Info, f"plan {name}: impact in {tf:.2f}s"))
@@ -380,7 +381,7 @@ def _sequence_state(result):
 
 
 def solve_message(update):
-    """ShotSolve of one selector update (run_shot.update_json)."""
+    """ShotSolve of one selector update (controllers/shot_mpc/report.update_json)."""
     return ShotSolve(
         t=update["t"], outer=update["outer"], kind=_kind(update), skip=update.get("skip"), chosen=update["chosen"],
         t_total_ms=1e3 * update["t_total"], t_wall_ms=1e3 * update.get("t_wall", update["t_total"]),
@@ -393,7 +394,7 @@ def solve_message(update):
 
 class ComputeTimeline:
     """
-    The selector updates (run_shot.update_json) as busy intervals on the simulated-time axis, for a
+    The selector updates (report.update_json) as busy intervals on the simulated-time axis, for a
     State Transitions panel: the "selector" row is busy (outer, inner, commit, or no shot when it
     solved nothing) for the wall time of each update, each sequence's row (warm, cold or warm+cold,
     plus fail when invalid) for the wall time of its solves, as if the simulation ran in real time;
@@ -438,9 +439,9 @@ class ComputeTimeline:
 ##############
 def write_mcap(data, path, log=None, metadata=None, start_ns=None):
     """
-    Write `data` (the dict TrajecoryAnimation takes) to the MCAP file `path`.
-    log: optional run_shot.shot_log_json(result) (or the saved _log.json), which adds the
-    selector updates, contacts, plan switches and the outcome.
+    Write `data` (simulation.episode.episode_data) to the MCAP file `path`.
+    log: optional simulation.episode.episode_log(result) (or the saved _log.json), which adds the
+    contacts and the outcome, and for the shot MPC the selector updates and plan switches.
     metadata: extra key-values stored in the file (scenario, seed, ...).
     start_ns: wall-clock time of row 0 in ns (default: now).
     """
@@ -448,28 +449,32 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
     dt = 1.0 / config["simulation"]["hz"]
     start_ns = time.time_ns() if start_ns is None else int(start_ns)
     cand = data.get("candidates")
+    samples = data.get("diffusion_trajs")
     run = SimpleNamespace(
         states=np.asarray(data["states"], dtype=float),
         inputs=np.asarray(data["input_sequence"], dtype=float),
-        plan_inputs=data.get("plan_input_sequence"),  # absent from older pickles
+        plan_inputs=data.get("plan_input_sequence"),
         def_inputs=data.get("def_input_sequence"),
         plans=np.asarray(data["path_plans"], dtype=float),
         tfs=np.asarray(data["tfs"], dtype=float),
         modes=np.asarray(data["modes"]),
         scores=np.asarray(data["scores"]),
         future=np.asarray(data["future_trajs"], dtype=float),
+        samples=None if samples is None else np.asarray(samples)[:, -1],  # last diffusion step
         cand=cand,
+        labels=list(cand["labels"]) if cand else [],
+        r_robot=config["robot"]["radius"],
+        r_puck=config["puck"]["radius"],
     )
-    geom = geometry(config, list(cand["labels"]) if cand else [])
+    updates = (log or {}).get("updates", [])
     n = run.states.shape[0]
 
     # Timed extras (events, selector updates, compute timeline), logged in time order between the steps
     timed = [(t, 0, ("event", level, text)) for t, level, text in _events(data, log, dt)]
-    if log is not None:
-        timed += [(u["t"], 1, ("solve", u)) for u in log["updates"]]
-        timeline = ComputeTimeline()
-        compute = [item for u in log["updates"] for item in timeline.add(u)] + timeline.flush()
-        timed += [(t, 2, ("compute", row, message)) for t, row, message in compute]
+    timed += [(u["t"], 1, ("solve", u)) for u in updates]
+    timeline = ComputeTimeline()
+    compute = [item for u in updates for item in timeline.add(u)] + timeline.flush()
+    timed += [(t, 2, ("compute", row, message)) for t, row, message in compute]
     timed.sort(key=lambda item: (item[0], item[1]))
 
     path = Path(path)
@@ -477,9 +482,10 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
     ctx = foxglove.Context()  # one per file: several exports can run in one process
     writer = foxglove.open_mcap(str(path), allow_overwrite=True, context=ctx)
     try:
-        ch = setup_channels(ctx, geom.labels, robot2_control=run.inputs.shape[1] >= 6, solves=log is not None,
-                            robot1_controllers=run.plan_inputs is not None)
-        meta = {"source": "holohover python-sim", "dt": dt, "steps": n, **(metadata or {})}
+        ch = setup_channels(ctx, run.labels, solves=bool(updates), robot1_controllers=run.plan_inputs is not None,
+                            samples=run.samples is not None)
+        meta = {"source": "holohover python-sim", "controller": config.get("controller"), "dt": dt, "steps": n,
+                **(metadata or {})}
         writer.write_metadata("holohover", {k: str(v) for k, v in meta.items()})
         writer.attach(log_time=start_ns, create_time=time.time_ns(), name="config.json",
                       media_type="application/json", data=json.dumps(config, indent=1, default=float).encode())
@@ -492,7 +498,7 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
             while i_timed < len(timed) and timed[i_timed][0] <= t + 1e-9:
                 _log_timed(ch, timed[i_timed], start_ns)
                 i_timed += 1
-            log_step(ch, geom, step_row(run, k), t, start_ns + round(t * 1e9))
+            log_step(ch, run, k, t, start_ns + round(t * 1e9))
         for item in timed[i_timed:]:
             _log_timed(ch, item, start_ns)
     finally:
@@ -504,7 +510,8 @@ def _log_timed(ch, item, start_ns):
     t, _, (kind, *payload) = item
     ns = start_ns + round(t * 1e9)
     if kind == "event":
-        log_event(ch, ns, *payload)
+        level, text = payload
+        ch["events"].log(fm.Log(timestamp=_timestamp(ns), level=level, message=text, name="holohover"), log_time=ns)
     elif kind == "compute":
         row, message = payload
         ch["compute"][row].log(message.model_dump_json(), log_time=ns)
@@ -512,31 +519,11 @@ def _log_timed(ch, item, start_ns):
         ch["solves"].log(solve_message(payload[0]).model_dump_json(), log_time=ns)
 
 
-def log_event(ch, ns, level, text):
-    ch["events"].log(fm.Log(timestamp=_timestamp(ns), level=level, message=text, name="holohover"), log_time=ns)
-
-
-def geometry(config, labels=()):
-    """What log_step needs besides the step itself: sizes and the bounce-sequence labels."""
-    return SimpleNamespace(labels=list(labels), r_robot=config["robot"]["radius"], r_puck=config["puck"]["radius"])
-
-
-def step_row(run, k):
-    """Row k of the data, as log_step takes it (run_live.py builds the same from run_shot.Episode.step)."""
-    cand = run.cand
-    return SimpleNamespace(
-        state=run.states[k], input=run.inputs[k],
-        plan_input=None if run.plan_inputs is None else run.plan_inputs[k],
-        def_input=None if run.def_inputs is None else run.def_inputs[k],
-        plan=run.plans[k], tf=run.tfs[k], mode=run.modes[k],
-        score=run.scores[k], future=run.future[k], trail=run.states[max(0, k - TRAIL_LENGTH + 1):k + 1, 12:14],
-        cand=None if cand is None else {key: cand[key][k] for key in ("robot", "shot", "score", "valid", "chosen")},
-    )
-
-
-def log_bodies(ch, state, t, ns):
-    """Frames and /<body>/state of the 18-dim state."""
+def log_step(ch, run, k, t, ns):
+    """Everything shown for row k of the data: frames, states, inputs, status and overlays."""
     stamp = _timestamp(ns)
+    state = run.states[k]
+
     transforms = []
     for j, body in enumerate(BODIES):
         x, y, theta, vx, vy, omega = state[6 * j:6 * j + 6]
@@ -547,44 +534,40 @@ def log_bodies(ch, state, t, ns):
         ch[f"{body}_state"].log(message.model_dump_json(), log_time=ns)
     ch["tf"].log(fm.FrameTransforms(transforms=transforms), log_time=ns)
 
-
-def log_step(ch, geom, row, t, ns):
-    """Everything shown for one row (step_row): frames, states, inputs, status and overlays."""
-    stamp = _timestamp(ns)
-    log_bodies(ch, row.state, t, ns)
-
-    for robot in (1, 2):
-        if f"robot{robot}_control" in ch:
-            fx, fy, tau = row.input[3 * (robot - 1):3 * robot]
-            ch[f"robot{robot}_control"].log(Control(t=t, fx=fx, fy=fy, tau=tau).model_dump_json(), log_time=ns)
+    controls = [("robot1_control", run.inputs[k])]
     if "robot1_plan_control" in ch:
-        for key, u in (("robot1_plan_control", row.plan_input), ("robot1_def_control", row.def_input)):
-            fx, fy, tau = u
-            ch[key].log(Control(t=t, fx=fx, fy=fy, tau=tau).model_dump_json(), log_time=ns)
+        controls += [("robot1_plan_control", run.plan_inputs[k]), ("robot1_def_control", run.def_inputs[k])]
+    for key, (fx, fy, tau) in controls:
+        ch[key].log(Control(t=t, fx=fx, fy=fy, tau=tau).model_dump_json(), log_time=ns)
 
-    mode = int(row.mode)
+    mode = int(run.modes[k])
     ch["status"].log(Status(
-        t=t, mode=mode, mode_name=MODE_NAMES[mode], time_to_impact=row.tf if mode == 1 else None,
-        goals_robot1=row.score[0], goals_robot2=row.score[1],
+        t=t, mode=mode, mode_name=MODE_NAMES[mode], time_to_impact=run.tfs[k] if mode == 1 else None,
+        goals_robot1=run.scores[k, 0], goals_robot2=run.scores[k, 1],
     ).model_dump_json(), log_time=ns)
 
     def scene(channel, entity_id, lines):
         channel.log(fm.SceneUpdate(entities=[fm.SceneEntity(
             timestamp=stamp, frame_id="world", id=entity_id, lines=lines)]), log_time=ns)
 
-    scene(ch["plan"], "plan", [_line(row.plan[:, :2], Z_PLAN, _color("red", 0.9), LINE_PX["plan"])])
-    for key, cols, radius, color in (("puck_prediction", slice(12, 14), geom.r_puck, "green"),
-                                     ("robot2_prediction", slice(6, 8), geom.r_robot, "#1f77b4")):
-        xy = row.future[:, cols]
+    scene(ch["plan"], "plan", [_line(run.plans[k, :, :2], Z_PLAN, _color("red", 0.9), LINE_PX["plan"])])
+    for key, cols, radius, color in (("puck_prediction", slice(12, 14), run.r_puck, "green"),
+                                     ("robot2_prediction", slice(6, 8), run.r_robot, "#1f77b4")):
+        xy = run.future[k, :, cols]
         scene(ch[key], key, [_line(xy, Z_PREDICTION, _color(color, 0.7), LINE_PX["prediction"]),
                              _circle(xy[-1], radius, Z_PREDICTION, _color(color, 0.7), LINE_PX["prediction"])])
-    scene(ch["trail"], "trail", [_line(row.trail, Z_TRAIL, _color("gray", 0.55), LINE_PX["trail"])])
+    trail = run.states[max(0, k - TRAIL_LENGTH + 1):k + 1, 12:14]
+    scene(ch["trail"], "trail", [_line(trail, Z_TRAIL, _color("gray", 0.55), LINE_PX["trail"])])
 
-    if not geom.labels or row.cand is None:
+    if run.samples is not None:
+        scene(ch["samples"], "samples", [_line(xy, Z_SAMPLE, _color("tab:purple", 0.4), LINE_PX["sample"])
+                                         for xy in run.samples[k]])
+
+    if not run.labels:
         return
-    cand = row.cand
+    cand = {key: run.cand[key][k] for key in ("robot", "shot", "score", "valid", "chosen")}
     chosen = int(cand["chosen"])
-    for j, name in enumerate(geom.labels):
+    for j, name in enumerate(run.labels):
         style = "chosen" if j == chosen else "other"
         base = CANDIDATE_COLORS[j % len(CANDIDATE_COLORS)]
         color = _color(base, CANDIDATE_ALPHA[style])
@@ -594,37 +577,6 @@ def log_step(ch, geom, row, t, ns):
         # The scores are plotted from /shot_mpc/scores rather than written on the table
         scene(ch["candidates"][j], name, lines)
     ch["scores"].log(ShotScores(
-        t=t, chosen=geom.labels[chosen] if chosen >= 0 else None,
-        scores=dict(zip(geom.labels, cand["score"])), valid=dict(zip(geom.labels, cand["valid"])),
+        t=t, chosen=run.labels[chosen] if chosen >= 0 else None,
+        scores=dict(zip(run.labels, cand["score"])), valid=dict(zip(run.labels, cand["valid"])),
     ).model_dump_json(), log_time=ns)
-
-
-def clear_overlays(ch, ns):
-    """Remove the plan, predictions, trail and candidates drawn so far (a new live episode)."""
-    deletion = fm.SceneUpdate(deletions=[fm.SceneEntityDeletion(timestamp=_timestamp(ns),
-                                                                 type=fm.SceneEntityDeletionType.All)])
-    for channel in [ch["plan"], ch["puck_prediction"], ch["robot2_prediction"], ch["trail"], *ch.get("candidates", [])]:
-        channel.log(deletion, log_time=ns)
-
-
-############
-### Main ###
-############
-def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("pkl", help="simulation pickle (main.py or run_shot.py); its _log.json is used if present")
-    parser.add_argument("--output", help="MCAP path (default: the pickle path with .mcap)")
-    args = parser.parse_args()
-
-    pkl = Path(args.pkl)
-    with pkl.open("rb") as f:
-        data = pickle.load(f)
-    log_path = pkl.with_name(pkl.stem + "_log.json")
-    log = json.loads(log_path.read_text()) if log_path.exists() else None
-    output = write_mcap(data, args.output or pkl.with_suffix(".mcap"), log=log,
-                        metadata={"source_file": pkl.name}, start_ns=int(pkl.stat().st_mtime * 1e9))
-    print(f"Saved MCAP to {output}")
-
-
-if __name__ == "__main__":
-    main()

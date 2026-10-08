@@ -28,7 +28,7 @@ def theta(k):
 
 
 def episode(config, shot=True):
-    """A run_shot.py-style dict (or simulation.run_sim-style with shot=False) with known values."""
+    """A shot_mpc episode's data (or a dial one with shot=False) with known values."""
     n = N_STEPS
     states = np.zeros((n, 18))
     states[:, 0] = 1.8 - 0.01 * np.arange(n)
@@ -41,7 +41,7 @@ def episode(config, shot=True):
     scores[10:, 0] = 1
     data = {
         "states": states,
-        "input_sequence": np.ones((n, 3 if shot else 6)),
+        "input_sequence": np.ones((n, 3)),
         "path_plans": np.zeros((n, N_PLAN, 9)),
         "tfs": np.linspace(0.5, 0.3, n),
         "modes": modes,
@@ -60,6 +60,9 @@ def episode(config, shot=True):
             "valid": np.tile([True, False], (n, 1)),
             "chosen": np.where(modes == 1, 0, -1),
         }
+    else:
+        data["diffusion_trajs"] = np.zeros((n, 12, 5, N_PLAN, 2))
+        data["diffusion_costs"] = np.zeros((n, 12, 5))
     return data
 
 
@@ -238,9 +241,13 @@ def test_metadata_and_config_attachment(shot_file):
     assert attachments == ["config.json"]
 
 
-def test_run_sim_data_without_shot_mpc(config, tmp_path):
-    """simulation.run_sim output: no candidates or log, both robots' inputs."""
-    messages, _, _ = read(write_mcap(episode(config, shot=False), tmp_path / "sim.mcap"))
-    topics = {topic for topic, _, _ in messages}
-    assert "/robot2/control" in topics
-    assert not any(topic.startswith("/shot_mpc") for topic in topics)
+def test_dial_data(config, tmp_path):
+    """DIAL episode: its samples, no shot-MPC topics; a log with only the outcome and contacts."""
+    log = {"outcome": "miss", "t_goal": None, "contacts": [0.05]}
+    messages, _, _ = read(write_mcap(episode(config, shot=False), tmp_path / "dial.mcap", log=log))
+    count = {}
+    for topic, _, _ in messages:
+        count[topic] = count.get(topic, 0) + 1
+    assert count["/dial/samples"] == N_STEPS
+    assert not any(topic.startswith("/shot_mpc") or topic.startswith("/robot1/plan_") for topic in count)
+    assert count["/events"] == 4  # mode DEF->ATT, goal, contact, outcome

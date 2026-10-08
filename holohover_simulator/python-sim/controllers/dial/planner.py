@@ -6,27 +6,26 @@ from .rollout import rollout, rollout_dial, rollout_controller
 
 def build_dial_path_planner(config, def_controller, imagined_r2_controller):
 
-    H = config["simulation"]["H"]
-    Nw = config["dial"]["Nw"]
-    temperature = config["dial"]["update_temperature"]
+    d = config["dial"]
+    H = d["H"]
+    Nw = d["Nw"]
+    temperature = d["update_temperature"]
     u_max = jnp.array(config["simulation"]["u_limits"])
-    n_debug = config["simulation"]["n_debug_trajectories"]
+    n_debug = d["n_debug_trajectories"]
 
-    goal_check_horizon = config["simulation"]["goal_check_horizon"]
     dt_sim = 1 / config["simulation"]["hz"]
-    H_goal_check = jnp.round(goal_check_horizon / dt_sim).astype(int)
+    H_goal_check = int(round(d["goal_check_horizon"] / dt_sim))
 
     # Number of diffusion steps
-    N = config["dial"]["N"]
+    N = d["N"]
 
-    beta1 = config["dial"]["beta1"]
-    beta2 = config["dial"]["beta2"]
+    beta1 = d["beta1"]
+    beta2 = d["beta2"]
 
-    Q = jnp.diag(jnp.array(config["dial"]["Q_diag"]))
-    R = jnp.diag(jnp.array(config["dial"]["R_diag"]))
+    R = jnp.diag(jnp.array(d["R_diag"]))
 
-    pp_scale = jnp.diag(jnp.array(config["dial"]["path_planning_scale"]))
-    tf_scale = config["dial"]["tf_scale"]
+    pp_scale = jnp.diag(jnp.array(d["path_planning_scale"]))
+    tf_scale = d["tf_scale"]
 
     # Build base covariance blocks (time decay)
     base_blocks = []
@@ -43,10 +42,6 @@ def build_dial_path_planner(config, def_controller, imagined_r2_controller):
         shrink = jnp.exp(-i / (beta1 * N))
         dial_covariances.append(base_cov * shrink)
     dial_covariances = jnp.stack(dial_covariances)
-    # print(dial_covariances[0, :3, :3])
-    # print(dial_covariances[0, 42:, 42:])
-    # print(dial_covariances[-1, :3, :3])
-    # print(dial_covariances[-1, 42:, 42:])
 
     def path_planner(key, x0, plan_prev, tf_prev, physics):
 
@@ -64,26 +59,20 @@ def build_dial_path_planner(config, def_controller, imagined_r2_controller):
             )
 
             input_sequences = W[:, :-1].reshape(Nw, H, 3)  # exclude tf here
-            candidate_inputs = jnp.clip(input_sequences + input_mean, -u_max, u_max)
-            candidate_inputs = input_sequences + input_mean
+            candidate_inputs = input_sequences + input_mean  # not clipped: the simulator clips
 
             tf_sequence = W[:, -1]  # shape (Nw, 1)
-            candidate_tf = jnp.clip(tf_sequence + tf_mean, 1e-3, 5.0)
             candidate_tf = tf_sequence + tf_mean
 
             batched_rollout = jax.vmap(
                 rollout_dial,
-                in_axes=(None, 0, 0, 0, None, None, None, None, None, None, None, None),
+                in_axes=(None, 0, 0, None, None, None, None, None, None, None),
             )
 
             trajs, raw_costs, _ = batched_rollout(
                 x0,
-                # input_sequences + input_mean,
                 candidate_inputs,
-                jnp.arange(Nw),
-                # tf_sequence + tf_mean,
                 candidate_tf,
-                Q,
                 R,
                 physics,
                 H,
@@ -97,30 +86,11 @@ def build_dial_path_planner(config, def_controller, imagined_r2_controller):
             weights = jnp.exp(-shifted_costs / temperature)
             weights /= jnp.sum(weights)
 
-            # Debug print: Show how many non-zero weights we have -> how many trajectories contribute
-            n_nonzero = jnp.sum(weights > 1e-6)
-            n_min = jnp.sum(shifted_costs == 0)
-            n_hard_penalty = jnp.sum(raw_costs >= 1e9)
-            jax.debug.print("Diffusion step {}/{}, non-zero weighted trajectories: {}/{}", i+1, N, n_nonzero, Nw)
-            jax.debug.print(
-                "Cost stats raw[min,max]=[{:.5e}, {:.5e}] shifted[min,max]=[{:.5e}, {:.5e}] n_min={} n_penalty={}",
-                jnp.min(raw_costs),
-                jnp.max(raw_costs),
-                jnp.min(shifted_costs),
-                jnp.max(shifted_costs),
-                n_min,
-                n_hard_penalty,
-            )
-            jax.debug.print("Example raw costs: {}", raw_costs[:25])
-            jax.debug.print("Example shifted costs: {}", shifted_costs[:25])
-            jax.debug.print("Example weights: {}", jnp.round(weights[:25], 5))
-
             input_new = jnp.sum(
                 weights[:, None, None] * (candidate_inputs), axis=0
             )
 
             tf_new = jnp.sum(weights * (candidate_tf))
-
 
             # Return a couple of example trajectories for visuals and debugging
             # show both xy coordinate of robot and cost of each trajectory
@@ -142,7 +112,7 @@ def build_dial_path_planner(config, def_controller, imagined_r2_controller):
 
         # rollout again, because of collisions etc. trajectories can't simply be weighted like the inputs
         # This is done for animation purposes, to show the trajectory of the final planned path
-        trajectory, r1_collisions_detected = rollout(
+        trajectory, _ = rollout(
             x0,
             input_final,
             physics,
@@ -153,8 +123,6 @@ def build_dial_path_planner(config, def_controller, imagined_r2_controller):
 
         # Generate future trajectory prediction (from collision point)
         # This is purely for animation purposes as well
-        idx_collision = jnp.argmax(r1_collisions_detected)  # detect FIRST RP-collision
-        # collision_state = trajectory[idx_collision, :]
         final_state = trajectory[-1, :]
         future_trajectory_post, _, _, _, _, _ = rollout_controller(
             final_state,
@@ -166,7 +134,6 @@ def build_dial_path_planner(config, def_controller, imagined_r2_controller):
         )
         # Include entire imagined sequence for animation:
         # 1) pre-collision planned rollout, 2) post-collision controller rollout.
-        # Skip duplicated collision state when stitching both parts.
         future_trajectory = jnp.concatenate((trajectory, future_trajectory_post), axis=0)
         path_plan = jnp.hstack((r1_trajectory, input_final))
         return key, path_plan, tf_final, future_trajectory, diffusion_trajs, diffusion_costs

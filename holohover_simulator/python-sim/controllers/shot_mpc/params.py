@@ -12,39 +12,12 @@ The shot planner only uses the translational axes, (x, y, vx, vy) and (a_x, a_y)
 the heading is the tracker's (Section 1).
 """
 
-import json
 from dataclasses import dataclass
 
 import numpy as np
-import jax.numpy as jnp
-
-from simulation.dynamics import Table, Entity, PhysicsParams
 
 # Translational part (x, y, vx, vy) of a body state (x, y, theta, vx, vy, omega)
 XY = [0, 1, 3, 4]
-
-
-def load_config(path="config/config_shot.json"):
-    with open(path, "r") as f:
-        return json.load(f)
-
-
-def physics_from_config(config):
-    """Same construction as simulation.run_sim, so the simulator sees identical parameters."""
-    table = Table(**config["table"])
-    robot = Entity(
-        radius=config["robot"]["radius"],
-        mass=config["robot"]["mass"],
-        inertia=0.5 * config["robot"]["mass"] * config["robot"]["radius"] ** 2,
-        u_limits=jnp.array(config["simulation"]["u_limits"]),
-    )
-    puck = Entity(
-        radius=config["puck"]["radius"],
-        mass=config["puck"]["mass"],
-        inertia=0.5 * config["puck"]["mass"] * config["puck"]["radius"] ** 2,
-        u_limits=jnp.array([0, 0, 0]),
-    )
-    return PhysicsParams(table=table, robot=robot, puck=puck)
 
 
 @dataclass(frozen=True)

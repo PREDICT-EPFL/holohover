@@ -4,42 +4,6 @@ import jax.numpy as jnp
 from simulation.dynamics import physics_step
 
 
-def print_cost_overview(
-    stage_cost,
-    positive_tf_cost,
-    enforce_collision_cost,
-    goal_cost,
-    enemy_robot_collision_cost,
-    proximity_reward,
-    total_cost,
-    hit_y,
-    will_score,
-    will_r2p_collision,
-    stopped_at,
-):
-    jax.debug.print(
-        (
-            "\nDIAL cost overview | hit_y={hit_y:.3f} | stage={stage_cost:.3f} | "
-            "tf_positive={positive_tf_cost:.3f} | enforce_collision={enforce_collision_cost:.3f} | "
-            "goal={goal_cost:.3f} | r2_collision={enemy_robot_collision_cost:.3f} | "
-            "proximity_reward={proximity_reward:.3f} | total={total_cost:.3f} | "
-            "score={will_score} | r2_collision_flag={will_r2p_collision} | stopped_at={stopped_at}"
-        ),
-        hit_y=hit_y,
-        stage_cost=stage_cost,
-        positive_tf_cost=positive_tf_cost,
-        enforce_collision_cost=enforce_collision_cost,
-        goal_cost=goal_cost,
-        enemy_robot_collision_cost=enemy_robot_collision_cost,
-        proximity_reward=proximity_reward,
-        total_cost=total_cost,
-        will_score=will_score,
-        will_r2p_collision=will_r2p_collision,
-        stopped_at=stopped_at,
-    )
-    return 0
-
-
 def rollout(x0, control_seq, physics, dt, r2_controller):
     """
     Rollout from a given starting position using a pre-defined set of inputs at refresh rate dt.
@@ -172,9 +136,7 @@ def rollout_controller(x0, physics, H_max, dt, r1_controller, r2_controller):
 def rollout_dial(
     x0,
     input_seq,
-    sample_idx,
     tf,
-    Q,
     R,
     physics,
     H,
@@ -188,11 +150,8 @@ def rollout_dial(
     Used inside the DIAL function to evaluate cost of all randomly generate trajectories.
     """
     dt = tf / H
-    # dt = jnp.clip(dt, 1e-3, None)  # prevent exploding when tf is very small
 
-    def step(carry, u):
-        x, u_prev = carry
-
+    def step(x, u):
         u0_r1 = u
         u0_r2 = r2_controller(x)
         u0 = jnp.concatenate([u0_r1, u0_r2])
@@ -201,25 +160,14 @@ def rollout_dial(
         r1_pos = x_next[:2]
         p_pos = x_next[12:14]
 
-        cost_du = 1e3 * (u - u_prev) @ R @ (u - u_prev)
-        cost_du = 0
-
         cost_u = 1e0 * u @ R @ u
-        # cost_u = 0
-
         cost_dist = 1e1*jnp.linalg.norm(r1_pos - p_pos) ** 2
-        # cost_dist = 0
+        cost_side = jnp.where(r1_pos[0] <= 0.5 * physics.table.width, 1e10, 0)  # stay in our half
 
-        cost_side = jnp.where(r1_pos[0] <= 0.5 * physics.table.width, 1e10, 0)
-        # cost_side = 0
+        cost = cost_side + cost_dist + cost_u
+        return x_next, (x_next, cost, r1_has_collision)
 
-        cost = cost_side + cost_du + cost_dist + cost_u
-        return (x_next, u), (x_next, cost, r1_has_collision)
-
-    carry_init = (x0, jnp.zeros_like(input_seq[0]))
-    (x_final, _), (trajectory, costs, puck_collisions) = jax.lax.scan(
-        step, carry_init, input_seq
-    )
+    x_final, (trajectory, costs, puck_collisions) = jax.lax.scan(step, x0, input_seq)
 
     stage_cost = jnp.sum(costs)
 
@@ -258,7 +206,6 @@ def rollout_dial(
 
     goal_cost = jnp.where(will_score == 1, 0, 1e10)  # 0: no goal, 1: goal left, 2: goal right
     enemy_robot_collision_cost = jnp.where(will_r2p_collision == 0, 0, 1e10)  # punish hiting enemy robot
-    
 
     puck_pos_post = post_traj[:, 12:14]
     r1_pos_post = post_traj[:, :2]
@@ -281,28 +228,4 @@ def rollout_dial(
         + enemy_robot_collision_cost
         + proximity_reward
     )
-
-
-    hit_wall = hit_y != -1.0
-    should_print = (sample_idx % 100 == 0) & hit_wall
-
-    # jax.lax.cond(
-    #     should_print,
-    #     lambda _: print_cost_overview(
-    #         stage_cost,
-    #         positive_tf_cost,
-    #         enforce_collision_cost,
-    #         goal_cost,
-    #         enemy_robot_collision_cost,
-    #         proximity_reward,
-    #         total_cost,
-    #         hit_y,
-    #         will_score,
-    #         will_r2p_collision,
-    #         stopped_at,
-    #     ),
-    #     lambda _: 0,
-    #     operand=None,
-    # )
-
     return trajectory, total_cost, wall_bounce_sequence

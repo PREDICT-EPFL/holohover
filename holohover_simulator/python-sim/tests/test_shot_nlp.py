@@ -10,7 +10,7 @@ from controllers.shot_mpc.shot_selector import ShotSelector
 
 def _planner_setup(config, P, scenario):
     """Robot state (x, y, vx, vy) and puck flight of a scenario, planner frame."""
-    sc = config["shot_mpc"]["scenarios"][scenario]
+    sc = config["scenarios"][scenario]
     xR = state_world_to_planner(np.array(sc["robot1"], dtype=float), P)[XY]
     puck = state_world_to_planner(np.array(sc["puck"], dtype=float), P)
     return xR, predict(puck[0:2], puck[3:5], P)
@@ -56,8 +56,11 @@ def test_cold_start_converges(config, P, nlp, scenario):
 
 @pytest.mark.slow
 def test_closed_loop_scores(config, physics, P, nlp):
-    from run_shot import initial_state, run_episode
+    from controllers.shot_mpc.shot_controller import ShotController
+    from simulation.episode import run_episode
+    from simulation.setup import initial_state
 
-    res = run_episode(config, physics, P, nlp, initial_state(config, "stationary"), 3.0,
-                      stop_on_goal=True, verbose=False, record=False)
+    ctrl = ShotController(config, physics, P, nlp, verbose=False)
+    res = run_episode(config, physics, ctrl, initial_state(config, "stationary"), 3.0, stop_on_goal=True,
+                      record=False)
     assert res["outcome"] == "goal", res["outcome"]
