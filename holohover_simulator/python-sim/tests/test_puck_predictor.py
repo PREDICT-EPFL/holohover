@@ -56,10 +56,9 @@ def test_goal_crossing(physics, P):
 
 
 def test_bounce_path_side_walls(physics, P):
-    """The drawn path has every side-wall hit of a 1.5 s rollout (it ends before the goal line),
-    alternating and in place."""
+    """The drawn path has every side-wall hit of a 2 s rollout, alternating and in place."""
     puck = [1.0, 0.3, 0.0, -0.5, 1.2, 0.0]
-    t_end = 1.5
+    t_end = 2.0
     states, *_ = rollout(physics, np.array(R1_PARK + R2_PARK + puck), int(t_end / DT))
     q, v = _planner(puck, P)
     points, hits = bounce_path(q, v, P, t_end)

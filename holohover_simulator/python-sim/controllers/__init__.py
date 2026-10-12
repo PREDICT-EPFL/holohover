@@ -3,6 +3,7 @@ Robot 1 controllers, selected by the config's "controller":
 
     dial      sampling-based path planner (DIAL) plus input interpolation (controllers/dial)
     shot_mpc  gradient-based shot MPC plus tracking QP (controllers/shot_mpc)
+    forward   example: a constant force toward the opponent goal (controllers/forward)
 
 A controller is built per episode by its factory, and provides
     mode                      DEF or ATT
@@ -18,7 +19,7 @@ A factory, built once per process by load(), provides
 """
 
 DEF, ATT = 0, 1  # defend at home, attack the puck
-CONTROLLERS = ("dial", "shot_mpc")
+CONTROLLERS = ("dial", "shot_mpc", "forward")
 
 
 def load(config, workers=None):
@@ -33,4 +34,7 @@ def load(config, workers=None):
     if name == "shot_mpc":
         from .shot_mpc.shot_controller import ShotFactory
         return ShotFactory(config, workers)
+    if name == "forward":
+        from .forward.controller import ForwardFactory
+        return ForwardFactory(config)
     raise ValueError(f"unknown controller {name!r}: use one of {', '.join(CONTROLLERS)}")

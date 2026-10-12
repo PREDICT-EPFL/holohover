@@ -5,7 +5,6 @@
     "hz": 100,
     "physics_hz": 1000,
     "duration": 10,
-    "animation_hz": 50,
     "u_limits": [0.35, 0.35, 0.005],
     "opponent": "none"
   },
@@ -14,7 +13,7 @@
     "width": 2.13,
     "height": 1.06,
     "goal_width": 0.34,
-    "friction": 0.0
+    "friction": 0.3
   },
 
   "robot": {
@@ -49,29 +48,36 @@
 
   "evaluation": {
     "duration": 4.0,
-    "robot1_jitter": 0.05,
-    "stationary_fraction": 0.4,
-    "puck_x_stationary": [1.2, 1.9],
-    "puck_x_moving": [0.4, 1.6],
-    "puck_y": [0.15, 0.91],
-    "speed": [0.3, 1.2],
-    "heading_deg": [-45, 45]
+    "starts": "config/eval_starts.json",
+    "sampling": {
+      "robot1_jitter": 0.05,
+      "stationary_fraction": 0.4,
+      "puck_x_stationary": [1.2, 1.9],
+      "puck_x_moving": [0.4, 1.6],
+      "puck_y": [0.15, 0.91],
+      "speed": [0.3, 1.2],
+      "heading_deg": [-45, 45]
+    }
   },
 
   "dial": {
-    "H": 15,
-    "H_interpolation": 10,
     "path_planning_hz": 10,
-    "goal_check_horizon": 1,
-    "n_debug_trajectories": 5,
-    "Nw": 2500,
-    "N": 12,
-    "update_temperature": 1e0,
+    "H": 15,
+    "n_knots": 5,
+    "Nw": 2000,
+    "N": 8,
+    "update_temperature": 10,
     "beta1": 0.25,
     "beta2": 1,
-    "path_planning_scale": [0.02, 0.02, 0.025],
+    "path_planning_scale": [0.01, 0.01, 0.5],
     "tf_scale": 0.01,
-    "R_diag": [1, 1, 0.05]
+    "goal_check_horizon": 1.0,
+    "goal_check_hz": 25,
+    "n_debug_trajectories": 25,
+    "H_mpc": 5,
+    "Q_diag": [10, 10, 10, 5, 5, 5],
+    "R_diag": [10, 10, 0.05],
+    "Qt_factor": 0
   },
 
   "shot_mpc": {
@@ -121,8 +127,10 @@
       "acceptable_tol": 1e-3,
       "valid_tol": 1e-3
     },
-    "jit": true,
-    "jit_flags": ["-O2"],
     "n_workers": 5
+  },
+
+  "forward": {
+    "force": 0.05
   }
 }

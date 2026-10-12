@@ -21,12 +21,7 @@ Initial guesses w0 (Section 7): the previous solution shifted to now (warm), or 
 closed-form guess from the virtual-goal aim and the inverted impact (cold).
 """
 
-import atexit
-import os
-import shutil
-import tempfile
 import time
-from contextlib import contextmanager
 from dataclasses import dataclass
 
 import numpy as np
@@ -38,22 +33,6 @@ from .solve_pool import SolvePool
 NX, NU = 4, 2  # robot state (x, y, vx, vy) and input (a_x, a_y)
 ZETA_MIN = 1e-3  # floor of zeta for the strict reach inequality; T_B <= -ln(ZETA_MIN) / gamma
 OK_STATUS = ("Solve_Succeeded", "Solved_To_Acceptable_Level")
-
-
-@contextmanager
-def jit_build_dir():
-    """Run the JIT build in a private temp directory, removed at exit. CasADi writes
-    jit_tmp*.c and tmp_casadi_compiler_shell*.{o,so} to the cwd and deletes them only when
-    the solver is destroyed, so every killed run left them in python-sim/. Its
-    jit_options "directory" does not help: CasADi 3.8.1 still writes the source to the cwd."""
-    d = tempfile.mkdtemp(prefix="shot_nlp_jit_")
-    atexit.register(shutil.rmtree, d, ignore_errors=True)
-    cwd = os.getcwd()
-    os.chdir(d)
-    try:
-        yield
-    finally:
-        os.chdir(cwd)
 
 
 @dataclass
@@ -78,12 +57,11 @@ class Solution:
 
 
 class ShotNLP:
-    def __init__(self, P, jit=None, verbose=True):
+    def __init__(self, P, verbose=True):
         self.P = P
         self.pool = None  # worker processes of the outer updates (start_pool); None: serial
         N = P.N
         gam = P.gamma
-        jit = P.jit if jit is None else jit
 
         ###########################
         ### Decision variables  ###
@@ -240,21 +218,14 @@ class ShotNLP:
         ##############
         ### Solver ###
         ##############
+        # Interpreted SX, no JIT: compiling the functions to C made a solve only 2-7 % faster
+        # (IPOPT and MUMPS take the rest of the time) for ~2.4 s of build per run.
         nlp = {"x": w, "p": p, "f": J, "g": g}
         t_build = time.perf_counter()
-        self.jit = False
-        if jit:
-            try:
-                with jit_build_dir():
-                    self._build_solver(nlp, jit=True)
-                self.jit = True
-            except Exception as err:  # no compiler or compile error: interpreted fallback
-                print(f"[shot_nlp] JIT build failed ({err}); falling back to the SX interpreter")
-        if not self.jit:
-            self._build_solver(nlp, jit=False)
+        self._build_solver(nlp)
         self.t_build = time.perf_counter() - t_build
         if verbose:
-            print(f"[shot_nlp] {self.nw} variables, {g.numel()} constraints, jit={self.jit}, "
+            print(f"[shot_nlp] {self.nw} variables, {g.numel()} constraints, "
                   f"build {self.t_build:.2f} s")
 
     def start_pool(self, n_workers):
@@ -265,7 +236,7 @@ class ShotNLP:
             self.pool = SolvePool(self, n_workers)
         return self.pool
 
-    def _build_solver(self, nlp, jit):
+    def _build_solver(self, nlp):
         P = self.P
         opts = {
             "print_time": False,
@@ -278,14 +249,6 @@ class ShotNLP:
                 "acceptable_iter": 5,
             },
         }
-        if jit:
-            # No CasADi cleanup: its paths are relative to the build dir, which jit_build_dir removes
-            opts.update({
-                "jit": True,
-                "compiler": "shell",
-                "jit_cleanup": False,
-                "jit_options": {"flags": list(P.jit_flags), "verbose": False, "cleanup": False},
-            })
         self.solver = ca.nlpsol("shot", "ipopt", nlp, opts)
 
     ########################

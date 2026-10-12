@@ -21,7 +21,7 @@ from simulation.setup import load_config
 
 config = load_config("config/config.json")
 P = ShotParams.from_config(config)
-nlp = ShotNLP(P, jit=False, verbose=False)
+nlp = ShotNLP(P, verbose=False)
 pool = nlp.start_pool(2)
 for scenario in ("stationary", "incoming", "around"):
     sc = config["scenarios"][scenario]

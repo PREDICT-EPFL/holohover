@@ -68,8 +68,6 @@ class ShotParams:
     tol: float
     acceptable_tol: float
     valid_tol: float
-    jit: bool
-    jit_flags: tuple
 
     @classmethod
     def from_config(cls, config):
@@ -118,8 +116,6 @@ class ShotParams:
             tol=ip["tol"],
             acceptable_tol=ip["acceptable_tol"],
             valid_tol=ip["valid_tol"],
-            jit=c["jit"],
-            jit_flags=tuple(c["jit_flags"]),
         )
 
     # Effective geometry for the puck centre (Section 1)

@@ -234,11 +234,11 @@ def test_table_cubes_opaque(shot_file):
     assert len(cubes) == 3 and all(cube.color.a == 1.0 for cube in cubes)
 
 
-def test_metadata_and_config_attachment(shot_file):
+def test_metadata_and_attachments(shot_file):
     _, metadata, attachments = shot_file
     assert metadata["holohover"]["scenario"] == "test"
     assert metadata["holohover"]["steps"] == str(N_STEPS)
-    assert attachments == ["config.json"]
+    assert attachments == ["config.json", "log.json"]
 
 
 def test_dial_data(config, tmp_path):

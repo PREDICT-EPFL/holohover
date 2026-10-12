@@ -4,7 +4,8 @@ robot 1's controller gives its input, robot 2 holds its home with a PD controlle
 "static") or stays parked (opponent "none"), then simulation.physics_hz / hz physics substeps run
 under the held inputs.
 
-The recorded data (episode_data) is what viz/ reads: one row per step, row 0 the initial state.
+The recorded data (episode_data) is what viz/foxglove_viz.py writes to MCAP: one row per step,
+row 0 the initial state.
 """
 
 from functools import partial
@@ -140,7 +141,9 @@ def episode_data(config, init_state, rec, candidate_labels=()):
         states (n, 18), scores (n, 2), input_sequence (n, 3), modes (n,), and from the controller:
         path_plans (n, H, 9) robot 1's plan as rows (x, y, theta, vx, vy, omega, Fx, Fy, tau),
         tfs (n,), future_trajs (n, m, 18) predicted states (robot 2 and puck are drawn), plus
-        shot_mpc: plan_input_sequence, def_input_sequence and candidates (a dict, see viz/animation.py)
+        shot_mpc: plan_input_sequence, def_input_sequence and candidates, every bounce sequence's
+            latest plan: a dict with "labels" (c), "robot" (n, c, N+1, 2) and "shot" (n, c, S, 2) world
+            paths (NaN if absent), "score" (n, c), "valid" (n, c) and "chosen" (n,) index or -1
         dial: diffusion_trajs (n, N, n_debug, H, 2) and diffusion_costs (n, N, n_debug)
     """
     data = {key: np.concatenate([np.asarray(rows[:1]), np.asarray(rows)]) for key, rows in rec.items()}

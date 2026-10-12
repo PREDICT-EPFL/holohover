@@ -1,47 +1,33 @@
 """
-DIAL controller (Till's project). Robot 1 attacks from the start: every 1 / dial.path_planning_hz
-the planner (planner.py) re-plans its input sequence from the current state, and in between the
-plan's inputs are interpolated. Once robot 1 touches the puck it defends at home with a PD
-controller for the rest of the episode.
+DIAL controller: Till's final DIAL (Till-mpc-semester-project, branch pvp, commit 35c96ab;
+SP_hockey/literature/report-till.pdf) for robot 1.
 
-The plan is H input nodes spread over its duration tf; tf is a decision variable of the planner.
-The planner imagines robot 2 as a force field (controllers.pd.build_force_field_enemy_controller).
+Every 1 / dial.path_planning_hz the planner (planner.py) plans a shot from the current state:
+- in DEF, from a fresh initial guess (initial_plan), while an LQR holds robot 1 at home;
+- in ATT, warm-started from the previous plan shifted by the planning period (warm_start).
+Robot 1 switches to ATT when a plan is a valid shot, and then follows it with the MPC path
+follower (follower.py); it switches back to DEF when it touches the puck. The planner imagines
+robot 2 standing still (no force).
+
+Differences from Till's code: the plant is simulation/dynamics.py while DIAL plans with his
+physics (model.py), and there is no planning delay (his path_planning_delay_ms).
 """
 
 import numpy as np
 import jax
 import jax.numpy as jnp
+import interpax
 
 from controllers import DEF, ATT
-from controllers.pd import build_force_field_enemy_controller, defence_controller, home_state
+from controllers.pd import home_state
+from .follower import build_lqr_controller, build_path_follower
 from .planner import build_dial_path_planner
-from .rollout import rollout, rollout_pd
-
-
-def build_interpolation_controller(H):
-    """Input at time time_pp into a plan of duration tf, linearly interpolated between its nodes."""
-    def controller(x0, plan, tf, time_pp):
-        t_normalized = time_pp / tf * H # in range [0, H]
-        idx = jnp.floor(t_normalized).astype(int)
-        idx = jnp.clip(idx, 0, H-1)
-
-        u_left = plan[idx, 6:]
-        u_right = jnp.where(idx<H-1, plan[idx+1, 6:], jnp.zeros(3))
-
-        # interpolate
-        alpha = jnp.clip(t_normalized - idx, 0, 1)
-        u0 = (1-alpha) * u_left + alpha * u_right
-
-        u0 = jnp.where(time_pp > tf, plan[H-1, 6:], u0)
-
-        return u0
-
-    return jax.jit(controller)
+from .rollout import rollout, rollout_mpc
 
 
 class DialFactory:
-    """Builds the jitted planner and controllers once per process (on the first episode): each
-    jax.jit compiles on its first call."""
+    """Builds the jitted planner, follower and helpers once per process (on the first episode):
+    each jax.jit compiles on its first call."""
 
     def __init__(self, config):
         self.config = config
@@ -49,20 +35,8 @@ class DialFactory:
 
     def new(self, physics, init_state, verbose=False):
         if self.parts is None:
-            config = self.config
-            r2_imagined = build_force_field_enemy_controller(
-                home_state=jnp.array(home_state(config, 2)),
-                table_width=config["table"]["width"],
-                robot_id=2,
-            )
-            def_controller = defence_controller(config, 1)
-            self.parts = dict(
-                planner=build_dial_path_planner(config, def_controller, r2_imagined),
-                interpolate=build_interpolation_controller(config["dial"]["H_interpolation"]),
-                def_controller=def_controller,
-                r2_imagined=r2_imagined,
-            )
-        return DialController(self.config, physics, init_state, **self.parts)
+            self.parts = build_parts(self.config, physics)
+        return DialController(self.config, physics, **self.parts)
 
     def summary(self, logs):
         return ""
@@ -71,63 +45,112 @@ class DialFactory:
         pass
 
 
+def build_parts(config, physics):
+    d = config["dial"]
+    H, K = d["H"], d["n_knots"]
+    dt_pp = 1.0 / d["path_planning_hz"]
+    a_max = config["simulation"]["u_limits"][0] / config["robot"]["mass"]
+    knot_times = jnp.linspace(0.0, 1.0, K + 1, endpoint=False)
+    control_times = jnp.linspace(0.0, 1.0, H, endpoint=False)
+    spline_bc = ((1, jnp.zeros(3)), "not-a-knot")  # zero slope at the start
+
+    def enemy(x):
+        return jnp.zeros(3)  # robot 2 imagined still
+
+    def_controller = build_lqr_controller(home_state(config, 1), config, physics)
+    reach = build_path_follower(config, physics, final_only=True)
+
+    @jax.jit
+    def initial_plan(state):
+        """tf: the time robot 1 needs, at full acceleration along x, to meet the puck (at most 1 s);
+        inputs: the follower driving robot 1 to where the puck will be at tf, fitted with the spline."""
+        rel_dist = jnp.abs(state[0] - state[12])
+        delta_v = state[3] - state[15]
+        tf = jnp.minimum(delta_v / a_max + jnp.sqrt((delta_v / a_max) ** 2 + 2 * rel_dist / a_max), 1.0)
+        puck_traj, _, _ = rollout(state.at[:6].set(0.0), jnp.zeros((H, 3)), physics, tf / H, enemy)
+        _, inputs = rollout_mpc(state, puck_traj[-1, 12:15], H, physics, tf / H, enemy, reach)
+        knots = interpax.CubicSpline(control_times, inputs, axis=0, bc_type=spline_bc, check=False)(knot_times)
+        return tf, interpax.CubicSpline(knot_times, knots, axis=0, bc_type=spline_bc, check=False)
+
+    @jax.jit
+    def warm_start(spline, tf, cost):
+        """The plan dt_pp later: the spline shifted by dt_pp and re-sampled over [0, tf - dt_pp],
+        with its slope kept at the splice."""
+        tf_new = jnp.maximum(tf - dt_pp, 1e-8)
+
+        def shift(_):
+            times = jnp.clip((dt_pp + knot_times * tf_new) / jnp.maximum(tf, 1e-8), 0.0, 1.0)
+            rate = spline.derivative()(times[0]) * (tf_new / jnp.maximum(tf, 1e-8))
+            shifted = interpax.CubicSpline(knot_times, spline(times), axis=0, bc_type=((1, rate), "not-a-knot"),
+                                           check=False)
+            return shifted, tf_new, cost - 1e1 * tf**2 + 1e1 * tf_new**2
+
+        return jax.lax.cond(tf_new > 1e-8, shift, lambda _: (spline, tf, jnp.inf), operand=None)
+
+    return dict(
+        planner=build_dial_path_planner(config, def_controller, enemy),
+        follower=build_path_follower(config, physics),
+        def_controller=def_controller,
+        initial_plan=initial_plan,
+        warm_start=warm_start,
+    )
+
+
 class DialController:
-    def __init__(self, config, physics, init_state, planner, interpolate, def_controller, r2_imagined):
+    def __init__(self, config, physics, planner, follower, def_controller, initial_plan, warm_start):
         d = config["dial"]
         self.physics = physics
-        self.planner, self.interpolate, self.def_controller = planner, interpolate, def_controller
-        self.H = H = d["H"]
+        self.planner, self.follower, self.def_controller = planner, follower, def_controller
+        self.initial_plan, self.warm_start = initial_plan, warm_start
         self.dt = 1.0 / config["simulation"]["hz"]
-        self.dt_pp = 1.0 / d["path_planning_hz"]
-        self.replan_every = int(round(self.dt_pp / self.dt))
+        self.replan_every = int(round(config["simulation"]["hz"] / d["path_planning_hz"]))
         self.u_max = np.array(config["simulation"]["u_limits"])
-        n_goal_check = int(round(d["goal_check_horizon"] / self.dt))
+        H, n_goal_check = d["H"], int(round(d["goal_check_horizon"] * d["goal_check_hz"]))
 
-        self.key = jax.random.PRNGKey(1)
-        self.mode = ATT
-
-        # Initial plan: a PD rollout toward where the puck will be after the time robot 1 needs to
-        # reach it at full acceleration
-        x0 = jnp.asarray(init_state, dtype=jnp.float32)
-        a_max = physics.robot.u_limits[0] / physics.robot.mass
-        r1p_dist = jnp.linalg.norm(x0[:2] - x0[12:14])
-        delta_v = jnp.linalg.norm(x0[3:5] - x0[15:17])
-        # s = (1/2) * a * t^2 + v * t
-        tf = -delta_v / a_max + jnp.sqrt((delta_v / a_max) ** 2 + 2 * r1p_dist / a_max)
-        no_r1 = x0.at[:6].set(0.0)
-        puck_traj, _ = rollout(no_r1, jnp.zeros((H, 6)), physics, tf / H, r2_imagined)
-        traj, inputs = rollout_pd(x0, puck_traj[-1, 12:15], H, physics, tf / H, r2_imagined)
-        inputs = jnp.clip(inputs, -self.u_max, self.u_max)
-
-        self.plan = jnp.hstack((traj[:, :6], inputs))  # (H, 9): states, inputs
-        self.tf = tf
-        self.future = jnp.zeros((H + n_goal_check, 18))  # predicted states (plan, then shot), for display
-        self.diffusion_trajs = jnp.zeros((d["N"], d["n_debug_trajectories"], H, 2))  # robot xy of some samples
-        self.diffusion_costs = jnp.zeros((d["N"], d["n_debug_trajectories"])).at[:, 0].set(1.0)
+        self.key = jax.random.PRNGKey(0)
+        self.mode = DEF
+        self.attacking = False  # mode during the current step: a contact in DEF does not count
+        self.valid_shot = False  # the last plan is a valid shot
+        self.spline, self.tf, self.cost = None, 0.0, np.inf
+        self.plan = np.zeros((H, 9))  # (H, 9): planned states and inputs
+        self.future = np.zeros((H + n_goal_check, 18))  # planned states, then the shot
+        self.diffusion_trajs = np.zeros((d["N"], d["n_debug_trajectories"], H, 2))
+        self.diffusion_costs = np.zeros((d["N"], d["n_debug_trajectories"]))
+        self.plan_history = []  # (t, "dial", tf) of every plan that is a valid shot
 
     def step(self, i, state):
-        if self.mode == ATT:
-            if i % self.replan_every == 0:
-                self._replan(state)
-            time_pp = (i % self.replan_every) * self.dt  # how far down the plan we are
-            u = self.interpolate(state, self.plan, self.tf, time_pp)
+        """Robot 1's input at control step i (world frame, clipped)."""
+        self.attacking = self.mode == ATT
+        replan = i % self.replan_every == 0
+        if replan:
+            x = jnp.asarray(state, dtype=jnp.float32)
+            if self.mode == DEF:
+                tf, spline = self.initial_plan(x)
+                cost = jnp.inf
+            else:
+                spline, tf, cost = self.warm_start(self.spline, self.tf, self.cost)
+            (self.key, self.spline, self.plan, self.tf, self.cost, self.future, self.diffusion_trajs,
+             self.diffusion_costs, valid_shot) = self.planner(self.key, x, spline, tf, cost, self.physics)
+            self.valid_shot = bool(valid_shot)
+            if self.valid_shot:
+                self.plan_history.append((i * self.dt, "dial", float(self.tf)))
+
+        if self.attacking:
+            u = self.follower(state, self.plan, self.tf, (i % self.replan_every) * self.dt)
         else:
             u = self.def_controller(state)
+        if replan and self.mode == DEF and self.valid_shot:
+            self.mode = ATT  # from the next step
         return np.clip(np.asarray(u, dtype=float), -self.u_max, self.u_max)
 
-    def _replan(self, state):
-        """New plan, warm-started from the current one shifted by the time since it was made."""
-        roll_by = jnp.round(self.dt_pp / (self.tf / self.H)).astype(int)
-        rolled = self.plan[jnp.minimum(jnp.arange(self.H) + roll_by, self.H - 1)]
-        (self.key, self.plan, self.tf, self.future,
-         self.diffusion_trajs, self.diffusion_costs) = self.planner(self.key, state, rolled, self.tf, self.physics)
-
     def notify_contact(self, t):
-        self.mode = DEF  # for the rest of the episode
+        if self.attacking:
+            self.mode = DEF
 
     def record(self, state, t):
         return {"path_plans": np.asarray(self.plan), "tfs": float(self.tf), "future_trajs": np.asarray(self.future),
-                "diffusion_trajs": np.asarray(self.diffusion_trajs), "diffusion_costs": np.asarray(self.diffusion_costs)}
+                "diffusion_trajs": np.asarray(self.diffusion_trajs),
+                "diffusion_costs": np.asarray(self.diffusion_costs)}
 
     def log(self):
-        return {}
+        return {"plan_history": self.plan_history}

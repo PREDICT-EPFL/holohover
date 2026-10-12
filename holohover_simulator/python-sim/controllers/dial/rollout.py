@@ -1,231 +1,137 @@
+"""
+Rollouts of DIAL's planning model (model.py) for robot 1, after Till's rollout.py: open loop
+(rollout), under a state-feedback controller until the puck reaches an end wall
+(rollout_controller), under the path follower toward a target (rollout_mpc), and a sampled input
+sequence with its cost (rollout_dial).
+"""
+
 import jax
 import jax.numpy as jnp
 
-from simulation.dynamics import physics_step
+from .model import heading_to_goal, physics_step
 
 
-def rollout(x0, control_seq, physics, dt, r2_controller):
-    """
-    Rollout from a given starting position using a pre-defined set of inputs at refresh rate dt.
-
-    This is used
-    1. to visualize Path Plan when DIAL has finished cooking up an input sequence
-    2. to initilize the simulation by prodiding predicted future puck position as target for a PD controller
-    """
+def rollout(x0, control_seq, physics, dt, enemy_controller):
+    """Robot 1 under control_seq, one input per step dt. Returns the states after each step and
+    the robot 1 and robot 2 contact flags."""
 
     def step(x, u):
-        u0_r1 = u
-        u0_r2 = r2_controller(x)
-        u0 = jnp.concatenate([u0_r1, u0_r2])
-        x_next, r1_has_collision, _, _, _, _ = physics_step(x, u0, physics, dt)
-        return x_next, (x_next, r1_has_collision)
+        x_next, r1_col, r2_col, _, _, _ = physics_step(x, jnp.concatenate([u, enemy_controller(x)]), physics, dt)
+        return x_next, (x_next, r1_col, r2_col)
 
-    _, (trajectory, r1_collisions_detected) = jax.lax.scan(step, x0, control_seq)
-    return trajectory, r1_collisions_detected
+    _, (trajectory, r1_cols, r2_cols) = jax.lax.scan(step, x0, control_seq)
+    return trajectory, r1_cols, r2_cols
 
 
-def rollout_pd(x0, target_pos, H, physics, dt, r2_controller):
-    """
-    Rollout from a given starting position using a PD-controller tracking a fixed target state.
+def rollout_mpc(x0, target_pos, H, physics, dt, enemy_controller, follower):
+    """H steps of dt with robot 1 driven by the path follower's final-state variant to target_pos
+    (x, y, theta), reached at H dt with a speed of 2 sqrt(distance) toward it. Returns the states
+    before each step and the inputs."""
+    offset = target_pos[:2] - x0[:2]
+    direction = offset / jnp.linalg.norm(offset + 1e-6)
+    speed = 2 * jnp.sqrt(jnp.linalg.norm(offset))
+    target_state = jnp.concatenate([target_pos, direction * speed, jnp.zeros(1)])
 
-    Used to warm-start simulation (robot set to track future puck position)
-    """
+    def step(carry, _):
+        x, k = carry
+        u = jnp.clip(follower(x, target_state, H * dt, k * dt), -physics.robot.u_limits, physics.robot.u_limits)
+        x_next, _, _, _, _, _ = physics_step(x, jnp.concatenate([u, enemy_controller(x)]), physics, dt)
+        return (x_next, k + 1), (x, u)
 
-    def step(x, _):
-        kp = 10
-        kd = 2
-        u0_r1 = kp * (target_pos - x[:3]) + kd * (jnp.zeros(3) - x[3:6])
-        u0_r2 = r2_controller(x)
-        u0 = jnp.concatenate([u0_r1, u0_r2])
-        x_next, _, _, _, _, _ = physics_step(x, u0, physics, dt)
-        return x_next, (x, u0_r1)
-
-    _, (trajectory, inputs) = jax.lax.scan(step, x0, length=H)
+    _, (trajectory, inputs) = jax.lax.scan(step, (x0, 0), length=H)
     return trajectory, inputs
 
 
-def rollout_controller(x0, physics, H_max, dt, r1_controller, r2_controller):
+def rollout_controller(x0, physics, H_max, dt, my_controller, enemy_controller):
     """
-    Rollout from a given initial state with a given controller (defined as u = f(state)).
-    Simulate only until a goal is scored.
-
-    Used in DIAL cost calulation to see if shot went in.
+    Up to H_max steps of dt under state-feedback controllers, stopped once the puck reaches the
+    left end wall. Used to check where a shot goes. Returns the states, whether robot 1 and
+    robot 2 touch the puck, the goal flag, where the puck hits the left end wall (-1: it does
+    not), the wall bounce sequence (wall indices 1-6 as decimal digits, first bounce last) and
+    the step at which the puck reached the end wall (0 if it did not).
     """
 
     def step(carry, _):
-        x, has_r2p_collision, has_scored, hit_y, wall_bounce_sequence, bounce_idx = (
-            carry
-        )
-        u0_r1 = r1_controller(x)
-        u0_r2 = r2_controller(x)
-        u0 = jnp.concatenate([u0_r1, u0_r2])
+        x, has_r1_col, has_r2_col, has_scored, hit_y, bounce_sequence, n_bounces = carry
+        u = jnp.concatenate([my_controller(x), enemy_controller(x)])
 
-        def scored_branch(_):  # do nothing
-            return x, 0, False, has_scored, hit_y, jnp.zeros(6)
+        def stopped(_):
+            return x, has_r1_col, has_r2_col, has_scored, hit_y, jnp.zeros(6)
 
-        def normal_branch(_):
-            # Regular physics step
-            (
-                x_next,
-                _,
-                r2p_collision_next,
-                has_scored_next,
-                hit_y_next,
-                wall_bounces_next,
-            ) = physics_step(x, u0, physics, dt)
-            return (
-                x_next,
-                0,
-                r2p_collision_next,
-                has_scored_next,
-                hit_y_next,
-                wall_bounces_next,
-            )
+        def moving(_):
+            x_next, r1_col, r2_col, scored, hit_y_next, wall_bounces = physics_step(x, u, physics, dt)
+            return x_next, r1_col, r2_col, scored, hit_y_next, wall_bounces
 
-        hit_wall = hit_y != -1.0  # magic number defined in dynamics
-        trajectory, _, r2p_collision, has_scored, hit_y, wall_bounces = jax.lax.cond(
-            hit_wall, scored_branch, normal_branch, operand=None
-        )
+        x_next, r1_col, r2_col, has_scored, hit_y, wall_bounces = jax.lax.cond(
+            hit_y != -1.0, stopped, moving, operand=None)
 
-        # Extract wall indices from wall bounces
-        wall_indices = jnp.where(wall_bounces > 0, size=2, fill_value=-1)[0]
-        has_bounce = jnp.any(wall_bounces > 0)
-        # Store
-        wall_bounce_sequence = wall_bounce_sequence.at[bounce_idx].set(
-            jnp.where(has_bounce, wall_indices[0], -1)
-        )
-        wall_bounce_sequence = wall_bounce_sequence.at[bounce_idx + 1].set(
-            jnp.where(has_bounce & (wall_indices[1] != -1), wall_indices[1], -1)
-        )
-        bounce_idx = bounce_idx + jnp.where(has_bounce, jnp.sum(wall_bounces > 0), 0)
+        walls = jnp.where(wall_bounces > 0, size=2, fill_value=-1)[0] + 1
+        n_new = jnp.sum(wall_bounces > 0)
+        bounce_sequence += jnp.where(n_new > 0, walls[0], 0) * 10**n_bounces
+        bounce_sequence += jnp.where(n_new > 1, walls[1], 0) * 10 ** (n_bounces + 1)
+        n_bounces += n_new
 
-        # Register and remember Robot2-Puck collision
-        has_r2p_collision = jnp.where(r2p_collision == 1, 1, has_r2p_collision)
+        has_r1_col = jnp.where(r1_col == 1, 1, has_r1_col)
+        has_r2_col = jnp.where(r2_col == 1, 1, has_r2_col)
+        return (x_next, has_r1_col, has_r2_col, has_scored, hit_y, bounce_sequence, n_bounces), (x, hit_y)
 
-        return (
-            trajectory,
-            has_r2p_collision,
-            has_scored,
-            hit_y,
-            wall_bounce_sequence,
-            bounce_idx,
-        ), (x, hit_y)
-
-    wall_bounce_sequence = jnp.full(
-        10, -1, dtype=jnp.int32
-    )  # Pre-allocate with -1 as padding, also very naughty hardcoding
-    (_, has_r2p_collision, has_scored, hit_y, wall_bounce_sequence, _), (
-        trajectory,
-        hit_y_sequence,
-    ) = jax.lax.scan(step, (x0, 0, 0, -1.0, wall_bounce_sequence, 0), length=H_max)
-
-    sim_stopped_idx = jnp.where(
-        hit_y == -1.0, H_max - 1, jnp.argmax(hit_y_sequence != -1.0)
-    )
-
-    return (
-        trajectory,
-        has_r2p_collision,
-        has_scored,
-        hit_y,
-        wall_bounce_sequence,
-        sim_stopped_idx,
-    )
+    (_, has_r1_col, has_r2_col, has_scored, hit_y, bounce_sequence, _), (trajectory, hit_ys) = jax.lax.scan(
+        step, (x0, 0, 0, 0, -1.0, 0, 0), length=H_max)
+    stopped_at = jnp.where(hit_y == -1.0, 0, jnp.argmax(hit_ys != -1.0))
+    return trajectory, has_r1_col, has_r2_col, has_scored, hit_y, bounce_sequence, stopped_at
 
 
-def rollout_dial(
-    x0,
-    input_seq,
-    tf,
-    R,
-    physics,
-    H,
-    H_goal_check,
-    dt_sim,
-    def_controller,
-    r2_controller,
-):
+def rollout_dial(x0, input_seq, input_knots, tf, physics, H, H_goal_check, dt_goal, def_controller,
+                 enemy_controller):
     """
-    Rollout a starting position with given inputs while computing the costs.
-    Used inside the DIAL function to evaluate cost of all randomly generate trajectories.
+    One sample of the planner: robot 1 under input_seq over tf (H steps), then robot 1 under
+    def_controller until the puck reaches the left end wall. Returns the states, the cost and the
+    wall bounce sequence of the shot, 67 when the shot is invalid (the puck misses the end wall or
+    robot 2 touches it); the cost is inf when the puck is not heading to the goal at tf.
     """
     dt = tf / H
+    half = 0.5 * physics.table.width
 
     def step(x, u):
-        u0_r1 = u
-        u0_r2 = r2_controller(x)
-        u0 = jnp.concatenate([u0_r1, u0_r2])
+        u = jnp.clip(u, -physics.robot.u_limits, physics.robot.u_limits)
+        x_next, _, _, _, _, _ = physics_step(x, jnp.concatenate([u, enemy_controller(x)]), physics, dt)
+        dist = jnp.linalg.norm(x[:2] - x[12:14])
+        dist_next = jnp.linalg.norm(x_next[:2] - x_next[12:14])
+        cost_approach = 1e2 * ((dist_next - dist) / tf) ** 3  # rewards closing in on the puck
+        cost_side = jnp.where(x_next[0] < 0.52 * physics.table.width, 1e4 * (x_next[0] - half) ** 2, 0)
+        return x_next, (x_next, cost_side + cost_approach)
 
-        x_next, r1_has_collision, _, _, _, _ = physics_step(x, u0, physics, dt)
-        r1_pos = x_next[:2]
-        p_pos = x_next[12:14]
+    x_final, (trajectory, costs) = jax.lax.scan(step, x0, input_seq)
 
-        cost_u = 1e0 * u @ R @ u
-        cost_dist = 1e1*jnp.linalg.norm(r1_pos - p_pos) ** 2
-        cost_side = jnp.where(r1_pos[0] <= 0.5 * physics.table.width, 1e10, 0)  # stay in our half
+    # Inputs beyond the limits, and the jumps between knots
+    knots = input_knots.reshape(-1)
+    u_max = jnp.kron(jnp.ones(input_knots.shape[0]), physics.robot.u_limits)
+    input_constraint_cost = 1e2 * (jnp.linalg.norm(jnp.minimum(knots, -u_max) + u_max) ** 2
+                                   + jnp.linalg.norm(jnp.maximum(knots, u_max) - u_max) ** 2)
+    input_continuity_cost = jnp.sum(jnp.diff(input_knots, axis=0) ** 2)
 
-        cost = cost_side + cost_dist + cost_u
-        return x_next, (x_next, cost, r1_has_collision)
+    final_position_cost = 4e2 * jnp.linalg.norm(x_final[:2] - x_final[12:14]) ** 2  # robot on the puck at tf
+    tf_cost = 1e1 * tf**2
+    base_cost = jnp.sum(costs) + input_constraint_cost + input_continuity_cost + final_position_cost + tf_cost
 
-    x_final, (trajectory, costs, puck_collisions) = jax.lax.scan(step, x0, input_seq)
+    def goal_check(_):
+        post, _, will_r2_col, _, hit_y, bounce_sequence, stopped_at = rollout_controller(
+            x_final, physics, H_goal_check, dt_goal, def_controller, enemy_controller)
+        goal_cost = 1e3 * (hit_y - physics.table.left_goal[1]) ** 2
+        # Rewards keeping the puck away from robot 2 until it reaches the end wall
+        dist = jnp.linalg.norm(post[:, 12:14] - post[:, 6:8], axis=1)
+        valid = jnp.arange(H_goal_check) < stopped_at
+        n_valid = jnp.sum(valid)
+        avg_dist = jnp.where(n_valid > 0, jnp.sum(jnp.where(valid, dist, 0.0)) / n_valid, 0.0)
+        proximity_reward = -3e1 * avg_dist
+        time_to_goal_cost = 3e1 * (stopped_at / H_goal_check) ** 2
+        invalid = (hit_y == -1.0) | (will_r2_col == 1)
+        return (base_cost + goal_cost + proximity_reward + time_to_goal_cost,
+                jnp.where(invalid, 67, bounce_sequence))
 
-    stage_cost = jnp.sum(costs)
+    def reject(_):
+        return jnp.inf, 67
 
-    # Minimize time to hit puck
-    positive_tf_cost = jnp.where(tf > 0.0, 0, 1e10)  # keep tf positive
-
-    # Keep paths from becoming too short -> avoid jiggly behavior near puck
-    enforce_last_step_collision = dt > dt_sim
-    tf_cost = 1e2 * tf
-    last_step_collision_cost = jnp.where(
-        jnp.all(puck_collisions[:-1] == 0) & (puck_collisions[-1] == 1), 0, 1e10
-    )
-    any_step_collision_cost = jnp.where(jnp.any(puck_collisions == 1), 0, 1e10)
-    enforce_collision_cost = jnp.where(
-        enforce_last_step_collision,
-        tf_cost + last_step_collision_cost,
-        any_step_collision_cost,
-    )
-
-    # Puck going to goal
-    (
-        post_traj,
-        will_r2p_collision,
-        will_score,
-        hit_y,
-        wall_bounce_sequence,
-        stopped_at,
-    ) = rollout_controller(
-        x_final,
-        physics,
-        H_goal_check,
-        dt_sim,
-        def_controller,
-        r2_controller,
-    )
-
-    goal_cost = jnp.where(will_score == 1, 0, 1e10)  # 0: no goal, 1: goal left, 2: goal right
-    enemy_robot_collision_cost = jnp.where(will_r2p_collision == 0, 0, 1e10)  # punish hiting enemy robot
-
-    puck_pos_post = post_traj[:, 12:14]
-    r1_pos_post = post_traj[:, :2]
-    dist_post = jnp.linalg.norm(puck_pos_post - r1_pos_post, axis=1)
-    valid_mask = jnp.arange(H_goal_check) < stopped_at
-    masked_dist_post = jnp.where(valid_mask, dist_post, 0.0)
-    valid_count = jnp.sum(valid_mask)
-    avg_dist_post = jnp.where(
-        valid_count > 0,
-        jnp.sum(masked_dist_post) / valid_count,
-        0.0,
-    )
-    proximity_reward = -1e1 * avg_dist_post
-
-    total_cost = (
-        stage_cost
-        + positive_tf_cost
-        + enforce_collision_cost
-        + goal_cost
-        + enemy_robot_collision_cost
-        + proximity_reward
-    )
-    return trajectory, total_cost, wall_bounce_sequence
+    cost, bounce_sequence = jax.lax.cond(
+        heading_to_goal(physics, x_final[12:14], x_final[15:17]), goal_check, reject, operand=None)
+    return trajectory, cost, bounce_sequence

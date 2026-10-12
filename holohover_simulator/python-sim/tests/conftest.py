@@ -44,7 +44,7 @@ def P(config):
 def nlp(P):
     from controllers.shot_mpc.shot_nlp import ShotNLP
 
-    return ShotNLP(P, jit=False, verbose=False)  # interpreted: no compile time in the tests
+    return ShotNLP(P, verbose=False)
 
 
 def rollout(physics, state, steps, r1_force=(0.0, 0.0, 0.0), stop_on_goal=False):

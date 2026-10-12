@@ -58,7 +58,7 @@ class ShotFactory:
     def summary(self, logs):
         """Solve times over the episode logs (ShotController.log)."""
         workers = self.nlp.pool.n_workers if self.nlp.pool else 0
-        return (f"JIT: {self.nlp.jit} | tracker: {self.tracker is not None} | workers: {workers}\n"
+        return (f"tracker: {self.tracker is not None} | workers: {workers}\n"
                 + timing_summary([u for log in logs for u in log["updates"]],
                                  [t for log in logs for t in log["tracker_times"]]))
 
@@ -92,10 +92,10 @@ class ShotController:
         self.puck = None  # puck flight predicted at the last planning tick
         self.u_prev = np.zeros(3)  # last applied input, planner accelerations (a_x, a_y, a_theta)
         # World-frame inputs of the plan and the defence PD at the last step, before clipping, logged
-        # next to the applied one: F_plan is zero without a plan (a null would be bridged by the app's
-        # plots), F_def is computed in ATT too
+        # next to the applied one: each is zero while the other one is applied (a null would be
+        # bridged by the app's plots)
         self.F_plan = np.zeros(3)
-        self.F_def = np.full(3, np.nan)
+        self.F_def = np.zeros(3)
         self.attack_after = 0.0
         self.plan_history = []  # (t, label, tf) of every accepted plan
 
@@ -145,8 +145,8 @@ class ShotController:
                     self.mode = ATT
                     self.plan_history.append((t, new.label, new.tf))
 
-        self.F_def = np.asarray(self.def_controller(jnp.asarray(state)), dtype=float)
         self.F_plan = np.zeros(3)
+        self.F_def = np.zeros(3)
         if self.mode == ATT and self.plan is not None:
             u_plan = np.append(self.plan.input_at(t), 0.0)  # a_theta = 0: the plan has no heading
             self.F_plan = accel_planner_to_force_world(u_plan, P)
@@ -162,6 +162,7 @@ class ShotController:
                 u = self.track.input_at(t)
             F = accel_planner_to_force_world(u, P)
         else:
+            self.F_def = np.asarray(self.def_controller(jnp.asarray(state)), dtype=float)
             F = self.F_def
 
         F = np.clip(F, -self.F_max, self.F_max)

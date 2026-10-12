@@ -41,21 +41,24 @@ def _robot2(config):
     return [r2["park"][0], r2["park"][1], 0.0, 0.0, 0.0, 0.0]
 
 
-def initial_state(config, scenario=None):
-    """18-dim state [robot1, robot2, puck], each (x, y, theta, vx, vy, omega). A scenario of the
-    config replaces the initial robot 1 and puck states."""
+def start_state(config, start):
+    """18-dim state [robot1, robot2, puck], each (x, y, theta, vx, vy, omega), from a start
+    {"robot1": [6], "puck": [6]} (a config scenario or an evaluation start). A missing key keeps
+    the config's initial state; robot 2 always comes from the config."""
     r1 = config["robot"]["robot1"]["initial_position"] + config["robot"]["robot1"]["initial_velocity"]
     puck = config["puck"]["initial_position"] + config["puck"]["initial_velocity"]
-    if scenario:
-        sc = config["scenarios"][scenario]
-        r1 = sc.get("robot1", r1)
-        puck = sc.get("puck", puck)
-    return np.array(r1 + _robot2(config) + puck, dtype=float)
+    return np.array(list(start.get("robot1", r1)) + _robot2(config) + list(start.get("puck", puck)), dtype=float)
 
 
-def sample_initial_state(rng, config):
-    """Random start for the evaluation: robot 1 near home, puck stationary in our half or incoming."""
-    ev = config["evaluation"]
+def initial_state(config, scenario=None):
+    """Initial state of a config scenario (default: the config's initial states)."""
+    return start_state(config, config["scenarios"][scenario] if scenario else {})
+
+
+def sample_start(rng, config):
+    """Random start (config "evaluation.sampling"): robot 1 near home, puck stationary in our half
+    or incoming."""
+    ev = config["evaluation"]["sampling"]
     width, height = config["table"]["width"], config["table"]["height"]
     r1 = np.array([config["robot"]["robot1"]["defensive_position_rel"] * width, 0.5 * height, 0.0, 0, 0, 0])
     r1[:2] += rng.uniform(-ev["robot1_jitter"], ev["robot1_jitter"], 2)
@@ -71,4 +74,27 @@ def sample_initial_state(rng, config):
                              speed * np.cos(heading), speed * np.sin(heading), 0.0])
         if np.linalg.norm(puck[:2] - r1[:2]) > d_min:
             break
-    return np.concatenate([r1, _robot2(config), puck])
+    return {"robot1": r1.tolist(), "puck": puck.tolist()}
+
+
+def generate_starts(config, count, seed):
+    """The evaluation start file's contents: `count` starts drawn by sample_start from seed `seed`,
+    with the seed and the sampling parameters that reproduce them."""
+    rng = np.random.default_rng(seed)
+    return {"seed": seed, "sampling": config["evaluation"]["sampling"],
+            "starts": [sample_start(rng, config) for _ in range(count)]}
+
+
+def write_starts(path, contents):
+    """JSON with one start per line. Floats are written in full, so they read back bit-identical."""
+    lines = ",\n".join("    " + json.dumps(s) for s in contents["starts"])
+    with open(path, "w") as f:
+        f.write(f'{{\n  "seed": {json.dumps(contents["seed"])},\n'
+                f'  "sampling": {json.dumps(contents["sampling"])},\n'
+                f'  "starts": [\n{lines}\n  ]\n}}\n')
+
+
+def load_starts(path):
+    """The list of starts of an evaluation start file (write_starts)."""
+    with open(path, "r") as f:
+        return json.load(f)["starts"]

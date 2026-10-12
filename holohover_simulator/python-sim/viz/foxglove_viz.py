@@ -2,16 +2,16 @@
 Foxglove export: writes an episode's recorded data (simulation.episode.episode_data) to an MCAP
 file for the Foxglove web app.
 
-    python main.py simulate --mcap --no-animate              # new run
-    python main.py mcap simulation_data/<run>.pkl            # saved run
+    python main.py simulate                                  # new run, opened in Foxglove
+    python main.py view [simulation_data/<run>.mcap]         # saved run (default: the newest)
 
-Open https://app.foxglove.dev, "Open local file..." with the .mcap, then import the layout
-viz/foxglove_layout.json (README.md).
+main.py opens the file in the Foxglove web app (viz/foxglove_open.py). The first time, import the
+layout viz/foxglove_layout.json (README.md).
 
 Frames: "world" is the simulator table frame (origin at the bottom-left corner, z up);
 "robot1", "robot2" and "puck" are its children. Each robot frame's x-axis points at the
 goal that robot attacks (FRAME_YAW); the /<body>/state topics keep the simulator's theta.
-Row k of the data is logged at start + k / simulation.hz, the time the animation shows it at.
+Row k of the data is logged at start + k / simulation.hz.
 
 Topics:
     /tf                              FrameTransforms  world -> robot1, robot2, puck
@@ -46,7 +46,6 @@ from types import SimpleNamespace
 from typing import get_args, get_origin
 
 import numpy as np
-from matplotlib.colors import to_rgba
 from pydantic import BaseModel, ConfigDict, create_model
 
 import foxglove
@@ -58,9 +57,9 @@ BODIES = ("robot1", "robot2", "puck")  # the 6-dim blocks of the 18-dim state, i
 # Frame yaw added to theta: x toward the goal each robot attacks. Robot 1 attacks x = 0, as in
 # the shot MPC's planner frame (shot_mpc/params.py: theta_p = theta_w + pi); robot 2 attacks +x.
 FRAME_YAW = {"robot1": math.pi, "robot2": 0.0, "puck": 0.0}
-TRAIL_LENGTH = 60  # samples, as in the animation
+TRAIL_LENGTH = 60  # samples
 
-# Heights (m). Overlays are 5 mm apart, stacked like in the animation, well above the table surface.
+# Heights (m). Overlays are 5 mm apart, well above the table surface.
 # What keeps lines visible is the table being opaque (table_scene), not the gap.
 Z_TABLE, Z_MARKINGS = -0.02, -0.01  # table top; border, centre line and goals
 Z_TRAIL, Z_CANDIDATE, Z_PREDICTION, Z_PLAN = 0.0, 0.005, 0.01, 0.015
@@ -71,7 +70,11 @@ Z_BODY = 0.03  # disc height (from z = 0)
 LINE_PX = {"plan": 3.0, "prediction": 2.0, "trail": 2.0, "candidate": 2.0, "chosen": 4.0, "sample": 1.5}
 CANDIDATE_ALPHA = {"other": 0.3, "chosen": 0.85}
 TABLE_COLOR = "#f7f7f7"
-# Same colours as animation.TrajecoryAnimation.CANDIDATE_COLORS
+# The colour names used here, with matplotlib's values
+COLORS = {"red": "#ff0000", "blue": "#0000ff", "black": "#000000", "gray": "#808080", "darkblue": "#00008b",
+          "yellow": "#ffff00", "green": "#008000", "tab:blue": "#1f77b4", "tab:orange": "#ff7f0e",
+          "tab:purple": "#9467bd", "tab:brown": "#8c564b", "tab:pink": "#e377c2", "tab:olive": "#bcbd22",
+          "tab:cyan": "#17becf", "tab:gray": "#7f7f7f"}
 CANDIDATE_COLORS = ["tab:blue", "tab:orange", "tab:purple", "tab:brown", "tab:pink",
                     "tab:olive", "tab:cyan", "tab:gray"]
 
@@ -79,14 +82,20 @@ CANDIDATE_COLORS = ["tab:blue", "tab:orange", "tab:purple", "tab:brown", "tab:pi
 #######################
 ### Message helpers ###
 #######################
+def _rgb(name):
+    """(r, g, b) in [0, 1] of a COLORS name or a "#rrggbb" string."""
+    code = COLORS.get(name, name)
+    return tuple(int(code[i:i + 2], 16) / 255 for i in (1, 3, 5))
+
+
 def _color(name, alpha=1.0):
-    r, g, b, _ = to_rgba(name)
+    r, g, b = _rgb(name)
     return fm.Color(r=r, g=g, b=b, a=alpha)
 
 
 def _color_over_table(name, alpha):
     """Opaque colour that looks like `name` at `alpha` over the table."""
-    top, base = np.array(to_rgba(name)[:3]), np.array(to_rgba(TABLE_COLOR)[:3])
+    top, base = np.array(_rgb(name)), np.array(_rgb(TABLE_COLOR))
     r, g, b = alpha * top + (1.0 - alpha) * base
     return fm.Color(r=r, g=g, b=b, a=1.0)
 
@@ -277,8 +286,9 @@ def setup_channels(ctx, labels=(), solves=False, robot1_controllers=False, sampl
 ####################
 ### Static scene ###
 ####################
-def table_scene(config, stamp):
-    """Table surface, border, goals (left red, right blue) and dashed centre line, as in the animation.
+def table_scene(config, stamp, extra=()):
+    """Table surface, border, goals (left red, right blue) and dashed centre line, plus the `extra`
+    entities: on a seek the app only restores a topic's last message, so all go in one update.
     Every cube is opaque: the app draws all cubes of an entity as transparent if one is, without
     writing depth, and the table surface then covers whatever lines happen to be drawn before it."""
     width, height = config["table"]["width"], config["table"]["height"]
@@ -299,7 +309,7 @@ def table_scene(config, stamp):
                    fm.LinePrimitiveLineType.LineList)
     return fm.SceneUpdate(entities=[fm.SceneEntity(
         timestamp=stamp, frame_id="world", id="table", cubes=[surface, *goals], lines=[border, centre],
-    )])
+    ), *extra])
 
 
 def bodies_scene(config, stamp):
@@ -440,8 +450,8 @@ class ComputeTimeline:
 def write_mcap(data, path, log=None, metadata=None, start_ns=None):
     """
     Write `data` (simulation.episode.episode_data) to the MCAP file `path`.
-    log: optional simulation.episode.episode_log(result) (or the saved _log.json), which adds the
-    contacts and the outcome, and for the shot MPC the selector updates and plan switches.
+    log: optional simulation.episode.episode_log(result), which adds the contacts and the outcome,
+    and for the shot MPC the selector updates and plan switches. It is also attached as log.json.
     metadata: extra key-values stored in the file (scenario, seed, ...).
     start_ns: wall-clock time of row 0 in ns (default: now).
     """
@@ -487,8 +497,10 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
         meta = {"source": "holohover python-sim", "controller": config.get("controller"), "dt": dt, "steps": n,
                 **(metadata or {})}
         writer.write_metadata("holohover", {k: str(v) for k, v in meta.items()})
-        writer.attach(log_time=start_ns, create_time=time.time_ns(), name="config.json",
-                      media_type="application/json", data=json.dumps(config, indent=1, default=float).encode())
+        for name, content in (("config.json", config), ("log.json", log)):
+            if content is not None:
+                writer.attach(log_time=start_ns, create_time=time.time_ns(), name=name, media_type="application/json",
+                              data=json.dumps(content, indent=1, default=float).encode())
 
         log_static(ch, config, start_ns)
 
@@ -519,20 +531,23 @@ def _log_timed(ch, item, start_ns):
         ch["solves"].log(solve_message(payload[0]).model_dump_json(), log_time=ns)
 
 
-def log_step(ch, run, k, t, ns):
-    """Everything shown for row k of the data: frames, states, inputs, status and overlays."""
-    stamp = _timestamp(ns)
-    state = run.states[k]
-
+def log_bodies(ch, state, t, ns):
+    """Frames (/tf) and /<body>/state of an 18-dim state."""
     transforms = []
     for j, body in enumerate(BODIES):
         x, y, theta, vx, vy, omega = state[6 * j:6 * j + 6]
-        transforms.append(fm.FrameTransform(timestamp=stamp, parent_frame_id="world", child_frame_id=body,
+        transforms.append(fm.FrameTransform(timestamp=_timestamp(ns), parent_frame_id="world", child_frame_id=body,
                                             translation=fm.Vector3(x=x, y=y, z=0.0),
                                             rotation=_quat(theta + FRAME_YAW[body])))
         message = BodyState(t=t, x=x, y=y, theta=theta, vx=vx, vy=vy, omega=omega)
         ch[f"{body}_state"].log(message.model_dump_json(), log_time=ns)
     ch["tf"].log(fm.FrameTransforms(transforms=transforms), log_time=ns)
+
+
+def log_step(ch, run, k, t, ns):
+    """Everything shown for row k of the data: frames, states, inputs, status and overlays."""
+    stamp = _timestamp(ns)
+    log_bodies(ch, run.states[k], t, ns)
 
     controls = [("robot1_control", run.inputs[k])]
     if "robot1_plan_control" in ch:

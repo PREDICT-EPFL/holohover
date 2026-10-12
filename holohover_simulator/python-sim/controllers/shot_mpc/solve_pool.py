@@ -5,7 +5,7 @@ parallel, one task per sequence (shot_selector.solve_sequence).
 Processes, not threads: IPOPT 3.14 serialises every call into MUMPS with a process-wide
 mutex, so threads queue on it (measured: 4 threads slower than 1), and one CasADi solver
 called from several threads crashes. Each forked worker has its own copy of the built
-solvers, JIT-compiled code included, and of the MUMPS lock.
+solvers and of the MUMPS lock.
 
 Create the pool before JAX starts its threads (physics_from_config): forking a
 multithreaded process can deadlock the child. ProcessPoolExecutor forks all its workers at
