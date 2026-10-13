@@ -43,7 +43,7 @@ services:
       <<: *ros-env
       MOCAP_CONFIG: ${MOCAP_CONFIG:-/root/ros2_ws/src/holohover/holohover_utils/config/optitrack/mocap_simple_config.yaml}
     volumes:
-      - ..:/root/ros2_ws/src/holohover
+      - ../src:/root/ros2_ws/src/holohover
     command: >-
       bash -c 'check-optitrack --wait --config "$$MOCAP_CONFIG"
       && exec ros2 run mocap_optitrack mocap_node --ros-args --params-file "$$MOCAP_CONFIG"'
@@ -63,7 +63,7 @@ services:
       HISTFILE: /root/data/.bash_history
       ROS_LOG_DIR: /root/data/ros_log
     volumes:
-      - ..:/root/ros2_ws/src/holohover
+      - ../src:/root/ros2_ws/src/holohover
       - ./data:/root/data
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
     working_dir: /root/data

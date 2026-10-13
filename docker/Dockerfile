@@ -38,7 +38,7 @@ RUN chmod +x /usr/local/bin/holohover-entrypoint /usr/local/bin/check-optitrack 
 
 # Compile the ROS 2 packages of this repository
 WORKDIR /root/ros2_ws
-COPY . src/holohover
+COPY src src/holohover
 RUN source /opt/ros/humble/setup.bash \
     && colcon build --symlink-install
 

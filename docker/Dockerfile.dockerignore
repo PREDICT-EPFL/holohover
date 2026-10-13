@@ -10,4 +10,4 @@ install
 log
 docker/*
 !docker/scripts
-holohover_simulator/python-sim/gifs
+src/holohover_simulator/python-sim/gifs

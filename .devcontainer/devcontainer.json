@@ -5,7 +5,7 @@
     "context": ".."
   },
   "workspaceMount": "source=${localWorkspaceFolder},target=/root/ros2_ws,type=bind,consistency=cached",
-  "workspaceFolder": "/root/ros2_ws/holohover_simulator/python-sim",
+  "workspaceFolder": "/root/ros2_ws/src/holohover_simulator/python-sim",
   "runArgs": [
     "--env=DISPLAY=${localEnv:DISPLAY}",
     "--volume=/tmp/.X11-unix:/tmp/.X11-unix:rw"

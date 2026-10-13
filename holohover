@@ -14,7 +14,7 @@ WORKSPACE = "workspace"
 MOCAP = "mocap"
 # Lets compose commands also see the optional mocap service (it is not started by `up`)
 WITH_MOCAP = ["--profile", MOCAP]
-SUBMODULES = ["holohover_mpc/external/laopt", "mocap_optitrack"]
+SUBMODULES = ["src/holohover_mpc/external/laopt", "src/mocap_optitrack"]
 
 DESCRIPTION = """\
 Holohover docker tool: builds the ROS 2 workspace image and runs the stack.
@@ -38,7 +38,7 @@ getting started:
   ./holohover down            # stop everything
 
 notes:
-  - The repository is mounted at /root/ros2_ws/src/holohover, so launch/config/python
+  - src/ is mounted at /root/ros2_ws/src/holohover, so launch/config/python
     edits are live. After C++ changes run `./holohover colcon` to recompile in the running
     container (kept until the container is recreated), or `./holohover build` + `up` to bake it in.
   - Rosbags, ROS logs and shell history are stored in docker/data/ (/root/data in the container).
@@ -217,7 +217,7 @@ def main():
     mocap_parser = subparsers.add_parser(
         "mocap", help="OptiTrack mocap node: check | start | stop | logs",
         description="Manage the OptiTrack mocap node. `check` listens for Motive NatNet data on the multicast\n"
-                    "group/port of MOCAP_CONFIG (holohover_utils/config/optitrack/mocap_config.yaml) and prints\n"
+                    "group/port of MOCAP_CONFIG (src/holohover_utils/config/optitrack/mocap_config.yaml) and prints\n"
                     "the IP of the Motive PC. `start` runs the check first and only starts the node if Motive streams.",
         formatter_class=argparse.RawDescriptionHelpFormatter)
     mocap_parser.add_argument("action", choices=["check", "start", "stop", "logs"], help="What to do")

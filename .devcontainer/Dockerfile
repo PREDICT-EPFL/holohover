@@ -13,7 +13,7 @@ RUN apt-get update \
 		python3-venv \
 	&& rm -rf /var/lib/apt/lists/*
 
-COPY holohover_simulator/python-sim/pyproject.toml holohover_simulator/python-sim/uv.lock /tmp/python-sim/
+COPY src/holohover_simulator/python-sim/pyproject.toml src/holohover_simulator/python-sim/uv.lock /tmp/python-sim/
 RUN uv venv /opt/venv --python python3 \
 	&& uv export --project /tmp/python-sim --locked --format requirements.txt --output-file /tmp/python-sim-requirements.txt \
 	&& uv pip install --python /opt/venv --no-cache --requirement /tmp/python-sim-requirements.txt \
@@ -22,4 +22,4 @@ RUN uv venv /opt/venv --python python3 \
 ENV VIRTUAL_ENV=/opt/venv \
 	PATH="/opt/venv/bin:${PATH}"
 
-WORKDIR /root/ros2_ws/holohover_simulator/python-sim
+WORKDIR /root/ros2_ws/src/holohover_simulator/python-sim
