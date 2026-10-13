@@ -1,0 +1,70 @@
+# Puck identification settings. Every value can be overridden per run with --config <file>
+# (a partial file is merged over this one).
+
+# Data for the fit and the plots:
+#   state: EKF output of the puck navigation node (position, yaw, velocities, yaw rate)
+#   pose:  raw mocap pose (velocities are then estimated by smoothing)
+source: state
+
+topics:
+  state: /puck/state             # holohover_msgs/HolohoverStateStamped
+  pose: /optitrack/puck/pose     # geometry_msgs/PoseStamped, z-up
+  table: /optitrack/table/pose   # optional: when present, data is expressed in the table frame
+
+puck:
+  radius: 0.035   # [m] puck radius, couples spin and tangential velocity at impacts
+  kappa: 0.5      # I / (m r^2), 0.5 for a uniform disk
+
+preprocessing:
+  max_gap: 0.03          # [s] split the recording where samples are missing for longer
+  max_tilt: 0.15         # |(qx, qy)| above this means the mocap orientation is wrong: yaw sample dropped
+  max_yaw_rate: 60.0     # [rad/s] EKF yaw rates above this (orientation flips) invalidate the yaw nearby
+  yaw_outlier: 0.3       # [rad] yaw samples this far from a running median are dropped
+  smoothing_window: 0.06 # [s] Savitzky-Golay window for the accelerations (and velocities of the raw pose)
+
+segmentation:
+  # data for segment and review. The raw pose is used when the bag has it: the EKF state is
+  # extrapolated into the walls for a few samples at every impact, which spoils the detection
+  source: pose
+  acc_threshold: 4.0     # [m/s^2] smoothed acceleration peaks above this are events (impacts, hits)
+  min_dv: 0.05           # [m/s] events with a smaller velocity change are mocap glitches, ignored
+  min_speed: 0.1         # [m/s] slower parts are not used (puck at rest or being handled)
+  fit_window: 0.10       # [s] window of the local line fits before/after an event
+  event_gap: 0.02        # [s] samples this close to an event are left out of the local fits
+  wall_tolerance: 0.03   # [m] an impact further than this from its wall is not a wall impact
+  min_wall_impacts: 3    # walls with fewer impacts are not used (their impacts become hits)
+  impact_window: 0.30    # [s] max time kept before and after a wall impact in its segment
+  min_impact_window: 0.08 # [s] impacts with less clean data on either side are dropped
+  margin: 0.03           # [s] distance kept from hits, gaps and bad data
+  min_glide: 0.25        # [s] shortest glide segment
+  bad_tilt_fraction: 0.3 # data is bad where more than this fraction of yaw samples (0.1 s) is invalid
+
+fit:
+  decimate: 1            # use every n-th sample (EKF state: 100 Hz, raw pose: 240 Hz)
+  sigma_position: 0.002  # [m]   residual scaling of the position
+  sigma_yaw: 0.05        # [rad] residual scaling of the yaw
+  # velocities in the fit: only with source: state (the EKF velocities)
+  sigma_velocity: 0.02   # [m/s]   residual scaling of the EKF velocity
+  sigma_yaw_rate: 0.5    # [rad/s] residual scaling of the EKF yaw rate
+  # the EKF state is unreliable right after a contact: its prediction runs into the wall
+  # (position, a few samples) and its velocity overshoots (until the filter settles)
+  position_settle: 0.03  # [s] EKF positions this long after an impact or hit are left out
+  velocity_settle: 0.12  # [s] EKF velocities and yaw rates this long after an impact or hit are left out
+  loss: soft_l1          # robust loss of scipy.optimize.least_squares
+  f_scale: 3.0           # residuals (in sigmas) above this are down-weighted
+  fit_walls: true        # refine the wall offsets together with the model
+  max_nfev: 200
+  # value: initial guess, fit: false keeps it fixed
+  parameters:
+    c_v:  {value: 0.05, min: 0.0, max: 5.0,  fit: true}   # [1/s]     linear viscous drag
+    g_x:  {value: 0.0,  min: -1.0, max: 1.0, fit: true}   # [m/s^2]   table tilt, acceleration along x
+    g_y:  {value: 0.0,  min: -1.0, max: 1.0, fit: true}   # [m/s^2]   table tilt, acceleration along y
+    c_w:  {value: 0.10, min: 0.0, max: 20.0, fit: true}   # [1/s]     spin viscous drag
+    c_wc: {value: 0.10, min: 0.0, max: 50.0, fit: true}   # [rad/s^2] spin Coulomb drag
+    e_n:  {value: 0.85, min: 0.0, max: 1.0,  fit: true}   # normal restitution
+    mu:   {value: 0.20, min: 0.0, max: 2.0,  fit: true}   # wall friction
+    e_t:  {value: 0.30, min: 0.0, max: 1.0,  fit: true}   # tangential restitution
+
+plot:
+  horizon: 0.5           # [s] prediction horizon of the "predict from every time" view and the error curve
+  every: 0.05            # [s] time between two predictions in that view

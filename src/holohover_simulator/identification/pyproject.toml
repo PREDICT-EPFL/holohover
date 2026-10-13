@@ -1,0 +1,24 @@
+[project]
+name = "holohover-puck-identification"
+version = "0.1.0"
+description = "Puck model identification from OptiTrack / EKF recordings"
+requires-python = ">=3.10"
+dependencies = [
+    "matplotlib>=3.5",
+    "mcap>=1.1,<2",
+    "mcap-ros2-support>=0.5,<1",
+    "numpy>=1.21",
+    "pyyaml>=5.4",
+    "scipy>=1.8",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
