@@ -5,7 +5,8 @@ robot 1's controller gives its input, robot 2 holds its home with a PD controlle
 under the held inputs.
 Robot 1's input reaches the physics simulation.input_delay control steps late (0 by default): the
 input its controller computes at step i is applied at step i + delay, and zero before the first one
-arrives. The controller is not told about the delay.
+arrives. The controller is not told about the delay (shot_mpc can compensate a delay it assumes:
+shot_mpc.delay_compensation).
 
 The recorded data (episode_data) is what viz/foxglove_viz.py writes to MCAP: one row per step,
 row 0 the initial state.

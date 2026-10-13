@@ -6,13 +6,16 @@ air-hockey table, robot 1 driven by the DIAL planner, the shot MPC or the forwar
     python main.py simulate                                   # config scenario "default", opened in Foxglove
     python main.py simulate --controller dial --scenario incoming --no-view
     python main.py evaluate --episodes 50                     # the stored random starts: conversion rate
+    python main.py evaluate --mcap --outcomes miss            # the misses, in one MCAP file
     python main.py evaluate --first 37 --episodes 1 --mcap    # rerun start 37 only
     python main.py evaluate --input-delay 3                   # robot 1's inputs applied 3 steps (30 ms) late
+    python main.py evaluate --input-delay 3 --compensate      # shot_mpc plans from the state 3 steps ahead
     python main.py view [simulation_data/<run>.mcap]          # open a saved run (default: the newest)
     python main.py starts --count 1000 --seed 0 --force       # redraw the stored starts
 
 A run is saved to simulation_data/<controller>_<scenario>_<stamp>.mcap, with its config and log
 attached. simulate then serves it to the Foxglove web app until Ctrl-C (viz/foxglove_open.py).
+evaluate --mcap saves its episodes one after the other to simulation_data/<controller>_eval_<stamp>.mcap.
 
 evaluate always runs the same starts, read from the file config "evaluation.starts": episode i
 starts from its start i. starts draws that file (config "evaluation.sampling").
@@ -27,7 +30,7 @@ from simulation.episode import episode_log, run_episode
 from simulation.setup import (generate_starts, initial_state, load_config, load_starts, physics_from_config,
                               start_state, write_starts)
 from viz.foxglove_open import open_in_foxglove
-from viz.foxglove_viz import write_mcap
+from viz.foxglove_viz import McapWriter, write_mcap
 
 DATA_DIR = Path("simulation_data")
 
@@ -58,23 +61,28 @@ def simulate(config, factory, physics, scenario):
 def evaluate(config, factory, physics, starts, first, mcap=False, outcomes=None):
     """Episodes from `starts` (evaluation starts, numbered from `first`), each stopped shortly
     after the first goal. With mcap, every episode (or only those whose outcome is in `outcomes`)
-    is saved to simulation_data/<controller>_eval_<stamp>_ep<i>_<outcome>.mcap."""
+    is saved to simulation_data/<controller>_eval_<stamp>.mcap, one after the other."""
     duration = config["evaluation"]["duration"]
-    stamp = f"{datetime.now():%Y%m%d_%H%M%S}"
     episodes = len(starts)
     counts, logs, first_shot = {}, [], 0
-    for e, start in enumerate(starts, first):
-        init = start_state(config, start)
-        res = run_episode(config, physics, factory.new(physics, init), init, duration, stop_on_goal=True,
-                          record=mcap, tail=0.5 if mcap else 0.0)
-        outcome = res["outcome"]
-        counts[outcome] = counts.get(outcome, 0) + 1
-        first_shot += outcome == "goal" and res["contacts_at_goal"] == 1
-        logs.append(res["log"])
-        print(f"episode {e:3d}: {outcome:<10} contacts={len(res['contacts'])}")
-        if mcap and (not outcomes or outcome in outcomes):
-            write_mcap(res["data"], DATA_DIR / f"{config['controller']}_eval_{stamp}_ep{e:03d}_{outcome}.mcap",
-                       log=episode_log(res), metadata={"episode": e, "outcome": outcome})
+    writer = McapWriter(DATA_DIR / f"{config['controller']}_eval_{datetime.now():%Y%m%d_%H%M%S}.mcap",
+                        metadata={"starts": config["evaluation"]["starts"]})  # file created at its first episode
+    try:
+        for e, start in enumerate(starts, first):
+            init = start_state(config, start)
+            res = run_episode(config, physics, factory.new(physics, init), init, duration, stop_on_goal=True,
+                              record=mcap, tail=0.5 if mcap else 0.0)
+            outcome = res["outcome"]
+            counts[outcome] = counts.get(outcome, 0) + 1
+            first_shot += outcome == "goal" and res["contacts_at_goal"] == 1
+            logs.append(res["log"])
+            print(f"episode {e:3d}: {outcome:<10} contacts={len(res['contacts'])}")
+            if mcap and (not outcomes or outcome in outcomes):
+                writer.add(res["data"], log=episode_log(res), episode=e)
+    finally:
+        writer.close()
+        if writer.episodes:
+            print(f"{len(writer.episodes)} episodes saved to {writer.path}")
 
     goals = counts.get("goal", 0)
     print(f"\nConversion: {goals}/{episodes} = {100 * goals / episodes:.0f}% "
@@ -106,6 +114,9 @@ def main(argv=None):
         shot = p.add_argument_group("shot_mpc")
         shot.add_argument("--workers", type=int, help="solver processes (default shot_mpc.n_workers; 0: serial)")
         shot.add_argument("--no-tracker", action="store_true", help="apply the plan's inputs open loop")
+        shot.add_argument("--compensate", nargs="?", type=int, const=True, metavar="STEPS",
+                          help="plan from the state predicted STEPS control steps ahead "
+                               "(shot_mpc.delay_compensation; without STEPS: the input delay)")
         return p
 
     p = run_parser("simulate", "run one episode from a config scenario")
@@ -115,7 +126,7 @@ def main(argv=None):
     p = run_parser("evaluate", "run episodes from the stored random starts and report the conversion rate")
     p.add_argument("--episodes", type=int, default=50)
     p.add_argument("--first", type=int, default=0, help="index of the first start")
-    p.add_argument("--mcap", action="store_true", help="save the episodes to MCAP files")
+    p.add_argument("--mcap", action="store_true", help="save the episodes to one MCAP file")
     p.add_argument("--outcomes", nargs="+", help="with --mcap: only save these outcomes, e.g. miss no_contact")
 
     p = commands.add_parser("view", help="open a saved run in Foxglove")
@@ -152,6 +163,12 @@ def main(argv=None):
         config["simulation"]["input_delay"] = args.input_delay
     if args.no_tracker:
         config["shot_mpc"]["tracker"]["enabled"] = False
+    if args.compensate is not None:
+        if args.compensate is True:  # no STEPS (argparse would pass a str const through int)
+            args.compensate = config["simulation"]["input_delay"]
+        if args.compensate < 0:
+            parser.error("--compensate: 0 or more steps")
+        config["shot_mpc"]["delay_compensation"] = args.compensate
     if args.command == "simulate" and args.scenario and args.scenario not in config["scenarios"]:
         parser.error(f"--scenario: one of {', '.join(config['scenarios'])}")
     if args.command == "evaluate":

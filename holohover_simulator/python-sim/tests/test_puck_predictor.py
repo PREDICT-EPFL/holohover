@@ -4,7 +4,7 @@ import numpy as np
 
 from conftest import DT, R1_PARK, R2_PARK, rollout
 from controllers.shot_mpc.params import state_world_to_planner
-from controllers.shot_mpc.model import predict, bounce_path
+from controllers.shot_mpc.model import predict, bounce_path, flight_after
 
 
 def _planner(puck_world, P):
@@ -69,3 +69,16 @@ def test_bounce_path_side_walls(physics, P):
     for q_hit, i in zip(points[1:-1], flips):  # the last point is the position at t_end
         q_sim = state_world_to_planner(states[i, 12:18], P)[0:2]
         assert np.linalg.norm(q_hit - q_sim) <= np.linalg.norm(v) * DT + 2e-3
+
+
+def test_flight_after_side_wall(physics, P):
+    """Position and velocity after a side-wall hit, against the rollout."""
+    puck = [1.0, 0.3, 0.0, -0.5, 1.2, 0.0]
+    steps = 80
+    states, *_ = rollout(physics, np.array(R1_PARK + R2_PARK + puck), steps)
+    q, v = flight_after(*_planner(puck, P), P, steps * DT)
+
+    assert len(_flip_steps(states[:, 16])) == 1
+    s = state_world_to_planner(states[-1, 12:18], P)
+    assert np.linalg.norm(q - s[0:2]) < 3e-3  # the rollout's Euler friction drifts by ~v gamma DT t / 2
+    assert np.linalg.norm(v - s[3:5]) < 1e-3

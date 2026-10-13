@@ -194,15 +194,16 @@ class ShotSelector:
             results = [solve_sequence(self.nlp, *task) for task in tasks]
         return dict(zip(keys, results))
 
-    def update(self, t_now, xR, u_prev, puck, outer=True, commit_key=None, allow_cold=True):
+    def update(self, t_now, xR, u_prev, puck, outer=True, commit_key=None, allow_cold=True, t_log=None):
         """
         One planning update. With outer=True every sequence is solved and the one with
         the lowest inner cost J*(B) is selected; otherwise only the current (or committed)
         sequence is re-solved. xR = (x, y, vx, vy), u_prev = (a_x, a_y), puck: PuckFlight.
-        Returns the chosen valid Plan or None.
+        t_log: time of the update in the log (default t_now; with delay compensation t_now
+        is ahead of it). Returns the chosen valid Plan or None.
         """
         t_start = time.perf_counter()
-        log = SelectorLog(t=t_now, outer=outer)
+        log = SelectorLog(t=t_now if t_log is None else t_log, outer=outer)
         if commit_key is not None:
             keys, log.kind = [commit_key], "commit"
         elif outer or self.key_prev is None:

@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from mcap.reader import make_reader
 
-from viz.foxglove_viz import ComputeTimeline, write_mcap
+from viz.foxglove_viz import EPISODE_GAP, ComputeTimeline, McapWriter, write_mcap
 
 N_STEPS, N_PLAN, N_FUTURE, N_SHOT = 21, 20, 60, 8
 START_NS = 1_700_000_000_000_000_000
@@ -251,3 +251,37 @@ def test_dial_data(config, tmp_path):
     assert count["/dial/samples"] == N_STEPS
     assert not any(topic.startswith("/shot_mpc") or topic.startswith("/robot1/plan_") for topic in count)
     assert count["/events"] == 4  # mode DEF->ATT, goal, contact, outcome
+
+
+def test_episodes_one_after_the_other(config, tmp_path):
+    """evaluate --mcap: episodes in one file, each EPISODE_GAP after the last message of the one before,
+    with its start marked and its log attached; the static scene and config once."""
+    path = tmp_path / "eval.mcap"
+    with McapWriter(path, metadata={"starts": "test"}, start_ns=START_NS) as writer:
+        assert writer.add(episode(config), log=LOG, episode=3) == 0.0
+        second = writer.add(episode(config), log=dict(LOG, outcome="miss"), episode=7)
+    # The last message of the first episode is its last step (the compute bars end before)
+    assert second == pytest.approx((N_STEPS - 1) / config["simulation"]["hz"] + EPISODE_GAP)
+    messages, metadata, attachments = read(path)
+
+    times = [message.log_time for _, _, message in messages]
+    assert times == sorted(times)
+    tf = [message.log_time for topic, _, message in messages if topic == "/tf"]
+    assert len(tf) == 2 * N_STEPS and tf[N_STEPS] == START_NS + round(second * 1e9)
+    episodes = [(message.log_time, strict_json(message.data)) for topic, _, message in messages
+                if topic == "/episode"]
+    assert [(ns, e["label"], e["contacts"]) for ns, e in episodes] == [
+        (START_NS, "3 goal", 1), (tf[N_STEPS], "7 miss", 1)]
+    count = {}
+    for topic, _, _ in messages:
+        count[topic] = count.get(topic, 0) + 1
+    assert count["/scene/table"] == count["/scene/bodies"] == 1 and count["/shot_mpc/solves"] == 2
+    assert count["/events"] == 2 * (6 + 1)
+
+    assert attachments == ["config.json", "log_ep003.json", "log_ep007.json"]
+    assert metadata["holohover"]["episodes"] == "3 7" and metadata["holohover"]["steps"] == str(2 * N_STEPS)
+    assert metadata["holohover"]["starts"] == "test"
+
+    unused = McapWriter(tmp_path / "none.mcap")
+    unused.close()
+    assert not unused.path.exists()  # created at the first episode

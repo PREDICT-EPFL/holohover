@@ -48,6 +48,11 @@ computed at step `i` is applied at step `i + delay`, and the input is zero until
 The controller doesn't know about the delay. The recorded `/robot1/control` is the applied input; for
 `shot_mpc`, `/robot1/plan_control` and `/robot1/def_control` are still the computed ones.
 
+`shot_mpc` can compensate a delay it assumes, `shot_mpc.delay_compensation` control steps (or
+`--compensate [STEPS]`, by default the input delay). Its planner and tracker then start from the state
+predicted for when the input is applied: robot 1 rolled through its pending inputs with the planner's ZOH
+model, and the puck along its free flight. The defence PD also acts on the predicted robot state.
+
 Every step is recorded in one data dict (`simulation.episode.episode_data`), which is written to an MCAP file for Foxglove.
 
 ## Run
@@ -59,7 +64,7 @@ python main.py simulate                                   # shot_mpc (the config
 python main.py simulate --controller dial --scenario incoming
 python main.py simulate --scenario stationary --no-view   # only save the MCAP
 python main.py evaluate --episodes 50                     # the first 50 stored starts: conversion rate
-python main.py evaluate --mcap --outcomes miss no_contact # also save the failures
+python main.py evaluate --mcap --outcomes miss no_contact # also save the failures, in one MCAP file
 python main.py evaluate --first 37 --episodes 1 --mcap    # rerun start 37 only
 python main.py view                                       # open the newest saved run in Foxglove
 python main.py view simulation_data/<run>.mcap
@@ -74,10 +79,13 @@ Options shared by `simulate` and `evaluate`:
 Options for `shot_mpc` only:
 - `--workers N`: number of solver processes, 0 for serial solves
 - `--no-tracker`
+- `--compensate [STEPS]`: delay compensation over STEPS control steps, by default `--input-delay`'s
 
 Outputs go to `simulation_data/` (git-ignored): `<controller>_<scenario>_<stamp>.mcap` for `simulate`, and
-`<controller>_eval_<stamp>_ep<i>_<outcome>.mcap` for `evaluate --mcap`. Each file has the config and the
-log (outcome, contacts, the controller's log) attached as `config.json` and `log.json`.
+`<controller>_eval_<stamp>.mcap` for `evaluate --mcap`, which holds the saved episodes one after the other,
+1 s apart. Each file has the config and the log (outcome, contacts, the controller's log) attached as
+`config.json` and `log.json`; an evaluation file has one `log_ep<i>.json` per episode instead of `log.json`,
+and marks each episode's start on `/episode` (the Episode row of the Mode panel) and `/events`.
 
 Tests: `python -m pytest` (`-m "not slow"` skips the closed-loop run).
 

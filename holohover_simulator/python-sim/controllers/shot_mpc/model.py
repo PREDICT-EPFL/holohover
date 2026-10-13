@@ -212,3 +212,14 @@ def bounce_path(q0, v0, P, t_end, max_hits=30):
         flight = predict(q, v, P)
     points.append(flight.state_at(t_end)[0])
     return np.array(points), hits
+
+
+def flight_after(q0, v0, P, t):
+    """Puck position and velocity t after (q0, v0): the free flight of bounce_path with its wall
+    reflections (a puck entering a goal stops on the goal line)."""
+    points, hits = bounce_path(q0, v0, P, t)
+    v = np.array(v0, dtype=float) * flight_decay(t, P.gamma)
+    for wall in hits:
+        if wall in ("L", "R", "near", "far"):
+            v[1 if wall in ("L", "R") else 0] *= -1
+    return points[-1], v

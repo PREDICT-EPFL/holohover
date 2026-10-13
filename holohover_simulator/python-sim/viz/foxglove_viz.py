@@ -11,7 +11,8 @@ layout viz/foxglove_layout.json (README.md).
 Frames: "world" is the simulator table frame (origin at the bottom-left corner, z up);
 "robot1", "robot2" and "puck" are its children. Each robot frame's x-axis points at the
 goal that robot attacks (FRAME_YAW); the /<body>/state topics keep the simulator's theta.
-Row k of the data is logged at start + k / simulation.hz.
+Row k of the data is logged at start + k / simulation.hz. A file can hold several episodes
+(McapWriter, evaluate --mcap), one after the other.
 
 Topics:
     /tf                              FrameTransforms  world -> robot1, robot2, puck
@@ -24,6 +25,7 @@ Topics:
     /robot1/control                  JSON             applied fx, fy, tau
     /status                          JSON             mode, time to impact, goals
     /events                          Log              mode switches, goals; contacts and the outcome (needs log)
+    /episode                         JSON             start and outcome of each episode (evaluate files)
   dial:
     /dial/samples                    SceneUpdate      robot paths of some samples of the last diffusion step
   shot_mpc:
@@ -58,6 +60,7 @@ BODIES = ("robot1", "robot2", "puck")  # the 6-dim blocks of the 18-dim state, i
 # the shot MPC's planner frame (shot_mpc/params.py: theta_p = theta_w + pi); robot 2 attacks +x.
 FRAME_YAW = {"robot1": math.pi, "robot2": 0.0, "puck": 0.0}
 TRAIL_LENGTH = 60  # samples
+EPISODE_GAP = 1.0  # s between the episodes of one file
 
 # Heights (m). Overlays are 5 mm apart, well above the table surface.
 # What keeps lines visible is the table being opaque (table_scene), not the gap.
@@ -198,6 +201,16 @@ class ShotSolve(BaseModel):
     t_wall_ms: float  # the update (shorter when solved in parallel)
     n_solves: int
     results: dict[str, SolveResult]
+
+
+class EpisodeInfo(BaseModel):
+    """An episode of a multi-episode file, at its start."""
+    model_config = ConfigDict(title="holohover.Episode")
+    episode: int  # index of its evaluation start
+    label: str  # "<episode> <outcome>", for a State Transitions row
+    outcome: str | None
+    contacts: int | None
+    t_goal: float | None
 
 
 class ComputeState(BaseModel):
@@ -449,60 +462,102 @@ class ComputeTimeline:
 ##############
 def write_mcap(data, path, log=None, metadata=None, start_ns=None):
     """
-    Write `data` (simulation.episode.episode_data) to the MCAP file `path`.
+    Write one episode's `data` (simulation.episode.episode_data) to the MCAP file `path`.
     log: optional simulation.episode.episode_log(result), which adds the contacts and the outcome,
     and for the shot MPC the selector updates and plan switches. It is also attached as log.json.
     metadata: extra key-values stored in the file (scenario, seed, ...).
     start_ns: wall-clock time of row 0 in ns (default: now).
     """
-    config = data["config"]
-    dt = 1.0 / config["simulation"]["hz"]
-    start_ns = time.time_ns() if start_ns is None else int(start_ns)
-    cand = data.get("candidates")
-    samples = data.get("diffusion_trajs")
-    run = SimpleNamespace(
-        states=np.asarray(data["states"], dtype=float),
-        inputs=np.asarray(data["input_sequence"], dtype=float),
-        plan_inputs=data.get("plan_input_sequence"),
-        def_inputs=data.get("def_input_sequence"),
-        plans=np.asarray(data["path_plans"], dtype=float),
-        tfs=np.asarray(data["tfs"], dtype=float),
-        modes=np.asarray(data["modes"]),
-        scores=np.asarray(data["scores"]),
-        future=np.asarray(data["future_trajs"], dtype=float),
-        samples=None if samples is None else np.asarray(samples)[:, -1],  # last diffusion step
-        cand=cand,
-        labels=list(cand["labels"]) if cand else [],
-        r_robot=config["robot"]["radius"],
-        r_puck=config["puck"]["radius"],
-    )
-    updates = (log or {}).get("updates", [])
-    n = run.states.shape[0]
+    with McapWriter(path, metadata, start_ns) as writer:
+        writer.add(data, log)
+    return writer.path
 
-    # Timed extras (events, selector updates, compute timeline), logged in time order between the steps
-    timed = [(t, 0, ("event", level, text)) for t, level, text in _events(data, log, dt)]
-    timed += [(u["t"], 1, ("solve", u)) for u in updates]
-    timeline = ComputeTimeline()
-    compute = [item for u in updates for item in timeline.add(u)] + timeline.flush()
-    timed += [(t, 2, ("compute", row, message)) for t, row, message in compute]
-    timed.sort(key=lambda item: (item[0], item[1]))
 
-    path = Path(path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    ctx = foxglove.Context()  # one per file: several exports can run in one process
-    writer = foxglove.open_mcap(str(path), allow_overwrite=True, context=ctx)
-    try:
-        ch = setup_channels(ctx, run.labels, solves=bool(updates), robot1_controllers=run.plan_inputs is not None,
-                            samples=run.samples is not None)
-        meta = {"source": "holohover python-sim", "controller": config.get("controller"), "dt": dt, "steps": n,
-                **(metadata or {})}
-        writer.write_metadata("holohover", {k: str(v) for k, v in meta.items()})
-        for name, content in (("config.json", config), ("log.json", log)):
-            if content is not None:
-                writer.attach(log_time=start_ns, create_time=time.time_ns(), name=name, media_type="application/json",
-                              data=json.dumps(content, indent=1, default=float).encode())
+class McapWriter:
+    """
+    Episodes (simulation.episode.episode_data) written one after the other to the MCAP file `path`,
+    created at the first one: each starts EPISODE_GAP after the last message of the one before. The
+    first episode sets the channels and the attached config.json: all must come from one config.
+    metadata: extra key-values stored in the file, with the controller, dt and the steps in all.
+    start_ns: wall-clock time of the first episode's row 0 in ns (default: now).
+    """
 
-        log_static(ch, config, start_ns)
+    def __init__(self, path, metadata=None, start_ns=None):
+        self.path = Path(path)
+        self.metadata = dict(metadata or {})
+        self.start_ns = time.time_ns() if start_ns is None else int(start_ns)
+        self.next_ns = self.start_ns
+        self.ctx = self.writer = self.ch = None
+        self.steps = 0
+        self.episodes = []  # the indices passed to add
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+
+    def _open(self, config, run, log):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.ctx = foxglove.Context()  # one per file: several exports can run in one process
+        self.writer = foxglove.open_mcap(str(self.path), allow_overwrite=True, context=self.ctx)
+        self.ch = setup_channels(self.ctx, run.labels, solves="updates" in (log or {}),
+                                 robot1_controllers=run.plan_inputs is not None, samples=run.samples is not None)
+        self.metadata = {"source": "holohover python-sim", "controller": config.get("controller"),
+                         "dt": 1.0 / config["simulation"]["hz"], **self.metadata}
+        self._attach("config.json", config)
+        log_static(self.ch, config, self.start_ns)
+
+    def _attach(self, name, content):
+        self.writer.attach(log_time=self.next_ns, create_time=time.time_ns(), name=name, media_type="application/json",
+                           data=json.dumps(content, indent=1, default=float).encode())
+
+    def add(self, data, log=None, episode=None):
+        """
+        Append one episode. log: optional simulation.episode.episode_log(result), which adds the contacts
+        and the outcome, and for the shot MPC the selector updates and plan switches. It is attached as
+        log.json, or as log_ep<episode>.json when `episode` (an evaluation start's index) is given, which
+        also marks the episode's start on /episode and /events.
+        Returns the episode's start, in seconds from the first one's.
+        """
+        config = data["config"]
+        dt = 1.0 / config["simulation"]["hz"]
+        cand = data.get("candidates")
+        samples = data.get("diffusion_trajs")
+        run = SimpleNamespace(
+            states=np.asarray(data["states"], dtype=float),
+            inputs=np.asarray(data["input_sequence"], dtype=float),
+            plan_inputs=data.get("plan_input_sequence"),
+            def_inputs=data.get("def_input_sequence"),
+            plans=np.asarray(data["path_plans"], dtype=float),
+            tfs=np.asarray(data["tfs"], dtype=float),
+            modes=np.asarray(data["modes"]),
+            scores=np.asarray(data["scores"]),
+            future=np.asarray(data["future_trajs"], dtype=float),
+            samples=None if samples is None else np.asarray(samples)[:, -1],  # last diffusion step
+            cand=cand,
+            labels=list(cand["labels"]) if cand else [],
+            r_robot=config["robot"]["radius"],
+            r_puck=config["puck"]["radius"],
+        )
+        updates = (log or {}).get("updates", [])
+        n = run.states.shape[0]
+
+        # Timed extras (events, selector updates, compute timeline), logged in time order between the steps
+        timed = [(t, 0, ("event", level, text)) for t, level, text in _events(data, log, dt)]
+        timed += [(u["t"], 1, ("solve", u)) for u in updates]
+        timeline = ComputeTimeline()
+        compute = [item for u in updates for item in timeline.add(u)] + timeline.flush()
+        timed += [(t, 2, ("compute", row, message)) for t, row, message in compute]
+        timed.sort(key=lambda item: (item[0], item[1]))
+
+        if self.writer is None:
+            self._open(config, run, log)
+        ch, start_ns = self.ch, self.next_ns
+        if log is not None:
+            self._attach("log.json" if episode is None else f"log_ep{episode:03d}.json", log)
+        if episode is not None:
+            log_episode(ch, self.ctx, episode, log, start_ns)
 
         i_timed = 0
         for k in range(n):
@@ -513,9 +568,40 @@ def write_mcap(data, path, log=None, metadata=None, start_ns=None):
             log_step(ch, run, k, t, start_ns + round(t * 1e9))
         for item in timed[i_timed:]:
             _log_timed(ch, item, start_ns)
-    finally:
-        writer.close()
-    return path
+
+        t_end = max((n - 1) * dt, timed[-1][0] if timed else 0.0)
+        self.next_ns = start_ns + round((t_end + EPISODE_GAP) * 1e9)
+        self.steps += n
+        if episode is not None:
+            self.episodes.append(episode)
+        return (start_ns - self.start_ns) / 1e9
+
+    def close(self):
+        """Write the metadata and close the file (nothing if no episode was added)."""
+        if self.writer is None:
+            return
+        try:
+            meta = {**self.metadata, "steps": self.steps}
+            if self.episodes:
+                meta["episodes"] = " ".join(map(str, self.episodes))
+            self.writer.write_metadata("holohover", {k: str(v) for k, v in meta.items()})
+        finally:
+            self.writer.close()
+            self.writer = None
+
+
+def log_episode(ch, ctx, episode, log, ns):
+    """/episode and /events message at the start of an episode of a multi-episode file."""
+    if "episode" not in ch:
+        ch["episode"] = json_channel(ctx, "/episode", EpisodeInfo)
+    log = log or {}
+    outcome = log.get("outcome")
+    label = f"{episode} {outcome}" if outcome else str(episode)
+    ch["episode"].log(EpisodeInfo(episode=episode, label=label, outcome=outcome, t_goal=log.get("t_goal"),
+                                  contacts=len(log["contacts"]) if "contacts" in log else None).model_dump_json(),
+                      log_time=ns)
+    ch["events"].log(fm.Log(timestamp=_timestamp(ns), level=fm.LogLevel.Info, message=f"episode {label}",
+                            name="holohover"), log_time=ns)
 
 
 def _log_timed(ch, item, start_ns):

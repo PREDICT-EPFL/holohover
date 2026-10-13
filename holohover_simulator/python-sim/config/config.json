@@ -112,6 +112,7 @@
     "contact_cooldown": 0.5,
     "sigma_init": 1.0,
     "n_tf_seeds": 1,
+    "delay_compensation": 0,
 
     "tracker": {
       "enabled": true,

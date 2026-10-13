@@ -9,9 +9,17 @@ Closed-loop integration (Section 8, direct mode): P(B*) runs as the MPC itself.
   The plan has no heading axis: only the tracker controls the heading.
 - DEF/ATT state machine as in Till's project: defend at home while no valid plan
   exists, attack once one does, return to defence after contact.
+- Delay compensation (shot_mpc.delay_compensation = d control steps, 0: off): the
+  input computed at t is applied at t + d dt (simulation.input_delay). The planner
+  and the tracker then start from the state predicted at t + d dt: robot 1 rolled
+  through its d pending inputs with the exact ZOH model, the puck along its free
+  flight. Plans are timed in that application time; the state machine (cooldown,
+  plan expiry) and the recorded data stay in the measurement time t. The defence
+  PD also acts on the predicted robot state.
 """
 
 import time
+from collections import deque
 
 import numpy as np
 import jax.numpy as jnp
@@ -23,7 +31,7 @@ from .params import (
     ShotParams, XY, state_world_to_planner, state_planner_to_world,
     accel_planner_to_force_world, force_world_to_accel_planner, pos_planner_to_world,
 )
-from .model import predict, bounce_path
+from .model import predict, bounce_path, discrete_matrices, flight_after
 from .report import timing_summary, update_json
 from .shot_nlp import ShotNLP
 from .shot_selector import ShotSelector, label
@@ -85,6 +93,11 @@ class ShotController:
         self.outer_every = max(self.inner_every, int(round(hz / self.P.outer_hz)))
         self.F_max = np.array(config["simulation"]["u_limits"])
         self.def_controller = defence_controller(config, robot_id=1)
+        # Delay compensation: the input computed at t acts from t + lead
+        n_delay = int(config["shot_mpc"].get("delay_compensation", 0))
+        self.lead = n_delay * self.dt
+        self.A_d, self.B_d = discrete_matrices(self.dt, self.P.gamma, axes=3)  # one control step, with heading
+        self.pending = deque([np.zeros(3)] * n_delay, maxlen=n_delay)  # inputs not applied yet, as u_prev
 
         self.mode = DEF
         self.plan = None
@@ -113,9 +126,14 @@ class ShotController:
         """Return the world-frame input (Fx, Fy, tau) of robot 1 at simulation step i."""
         P = self.P
         t = i * self.dt
+        t_u = t + self.lead  # when the input computed now is applied: the planner's and the tracker's time
         state = np.asarray(state, dtype=float)
         xR = state_world_to_planner(state[0:6], P)  # (x, y, theta, vx, vy, omega); the planner uses xR[XY]
         puck = state_world_to_planner(state[12:18], P)
+        if self.pending:
+            xR, puck = self.compensate(xR, puck)
+            state = state.copy()  # for the defence PD
+            state[0:6] = state_planner_to_world(xR, P)
 
         # Drop a plan whose impact passed without contact
         if self.plan is not None and self.plan.remaining(t) < -P.plan_expiry:
@@ -128,13 +146,13 @@ class ShotController:
         # Without a plan (DEF) the sequences are searched at the outer rate only
         if t >= self.attack_after and i % self.inner_every == 0 and (self.plan is not None or outer_tick):
             self.puck = predict(puck[0:2], puck[3:5], P)
-            remaining = self.plan.remaining(t) if self.plan is not None else np.inf
+            remaining = self.plan.remaining(t_u) if self.plan is not None else np.inf
             if remaining > P.t_stop_replan:
                 committed = self.plan is not None and remaining < P.t_commit
                 outer = outer_tick or self.plan is None
                 new = self.selector.update(
-                    t, xR[XY], self.u_prev[0:2], self.puck, outer=outer,
-                    commit_key=self.plan.key if committed else None,
+                    t_u, xR[XY], self.u_prev[0:2], self.puck, outer=outer,
+                    commit_key=self.plan.key if committed else None, t_log=t,
                 )
                 if new is not None:
                     if self.verbose and (self.plan is None or new.key != self.plan.key):
@@ -143,23 +161,23 @@ class ShotController:
                               f"{1e3 * new.sol.t_wall:.1f} ms)")
                     self.plan = new
                     self.mode = ATT
-                    self.plan_history.append((t, new.label, new.tf))
+                    self.plan_history.append((t, new.label, new.tf + self.lead))  # time to impact from t
 
         self.F_plan = np.zeros(3)
         self.F_def = np.zeros(3)
         if self.mode == ATT and self.plan is not None:
-            u_plan = np.append(self.plan.input_at(t), 0.0)  # a_theta = 0: the plan has no heading
+            u_plan = np.append(self.plan.input_at(t_u), 0.0)  # a_theta = 0: the plan has no heading
             self.F_plan = accel_planner_to_force_world(u_plan, P)
             if self.tracker is None:
                 u = u_plan
             else:
                 # Re-solve until the impact; past it (no contact yet) the last solve runs open loop.
                 # A new plan starts at least shot_mpc.t_min before its impact, so its first step solves.
-                if self.plan.remaining(t) > 0:
+                if self.plan.remaining(t_u) > 0:
                     t_start = time.perf_counter()
-                    self.track = self.tracker.solve(self.plan, t, xR)
+                    self.track = self.tracker.solve(self.plan, t_u, xR)
                     self.tracker_times.append(time.perf_counter() - t_start)
-                u = self.track.input_at(t)
+                u = self.track.input_at(t_u)
             F = accel_planner_to_force_world(u, P)
         else:
             self.F_def = np.asarray(self.def_controller(jnp.asarray(state)), dtype=float)
@@ -167,7 +185,18 @@ class ShotController:
 
         F = np.clip(F, -self.F_max, self.F_max)
         self.u_prev = force_world_to_accel_planner(F, P)
+        self.pending.append(self.u_prev)
         return F
+
+    def compensate(self, xR, puck):
+        """Robot 1 and the puck (planner frame) at t + lead, from their measured states at t: the robot
+        rolled through its pending inputs with the exact ZOH model, the puck along its free flight with
+        wall reflections. A robot-puck contact within the lead is not predicted."""
+        for u in self.pending:
+            xR = self.A_d @ xR + self.B_d @ u
+        puck = puck.copy()
+        puck[0:2], puck[3:5] = flight_after(puck[0:2], puck[3:5], self.P, self.lead)
+        return xR, puck
 
     ########################
     ### Logging helpers  ###

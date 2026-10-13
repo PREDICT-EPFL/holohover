@@ -132,6 +132,7 @@
     "StateTransitions!mode": {
       "foxglovePanelTitle": "Mode",
       "paths": [
+        { "value": "/episode.label", "timestampMethod": "receiveTime", "label": "episode" },
         { "value": "/status.mode_name", "timestampMethod": "receiveTime" },
         { "value": "/shot_mpc/scores.chosen", "timestampMethod": "receiveTime" }
       ],
