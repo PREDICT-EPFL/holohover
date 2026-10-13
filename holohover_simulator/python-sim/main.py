@@ -7,6 +7,7 @@ air-hockey table, robot 1 driven by the DIAL planner, the shot MPC or the forwar
     python main.py simulate --controller dial --scenario incoming --no-view
     python main.py evaluate --episodes 50                     # the stored random starts: conversion rate
     python main.py evaluate --first 37 --episodes 1 --mcap    # rerun start 37 only
+    python main.py evaluate --input-delay 3                   # robot 1's inputs applied 3 steps (30 ms) late
     python main.py view [simulation_data/<run>.mcap]          # open a saved run (default: the newest)
     python main.py starts --count 1000 --seed 0 --force       # redraw the stored starts
 
@@ -100,6 +101,8 @@ def main(argv=None):
         p.add_argument("--controller", choices=controllers.CONTROLLERS, help="default: the config's")
         p.add_argument("--opponent", choices=["none", "static"],
                        help="robot 2 parked in a corner, or holding its home (default: the config's)")
+        p.add_argument("--input-delay", type=int, metavar="STEPS",
+                       help="control steps between robot 1's input and its application (default: the config's)")
         shot = p.add_argument_group("shot_mpc")
         shot.add_argument("--workers", type=int, help="solver processes (default shot_mpc.n_workers; 0: serial)")
         shot.add_argument("--no-tracker", action="store_true", help="apply the plan's inputs open loop")
@@ -143,6 +146,10 @@ def main(argv=None):
         config["controller"] = args.controller
     if args.opponent:
         config["simulation"]["opponent"] = args.opponent
+    if args.input_delay is not None:
+        if args.input_delay < 0:
+            parser.error("--input-delay: 0 or more steps")
+        config["simulation"]["input_delay"] = args.input_delay
     if args.no_tracker:
         config["shot_mpc"]["tracker"]["enabled"] = False
     if args.command == "simulate" and args.scenario and args.scenario not in config["scenarios"]:

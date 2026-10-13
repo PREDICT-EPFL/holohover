@@ -6,6 +6,7 @@
     "physics_hz": 1000,
     "duration": 10,
     "u_limits": [0.35, 0.35, 0.005],
+    "input_delay": 0,
     "opponent": "none"
   },
 

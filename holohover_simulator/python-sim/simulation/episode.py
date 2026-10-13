@@ -3,11 +3,15 @@ One closed-loop episode, the same for every controller. At each control step (si
 robot 1's controller gives its input, robot 2 holds its home with a PD controller (opponent
 "static") or stays parked (opponent "none"), then simulation.physics_hz / hz physics substeps run
 under the held inputs.
+Robot 1's input reaches the physics simulation.input_delay control steps late (0 by default): the
+input its controller computes at step i is applied at step i + delay, and zero before the first one
+arrives. The controller is not told about the delay.
 
 The recorded data (episode_data) is what viz/foxglove_viz.py writes to MCAP: one row per step,
 row 0 the initial state.
 """
 
+from collections import deque
 from functools import partial
 
 import numpy as np
@@ -53,6 +57,9 @@ class Episode:
         self.h = self.dt / self.n_sub
         self.F_max = np.array(config["simulation"]["u_limits"])
         self.r2_ctrl = defence_controller(config, 2) if config["simulation"]["opponent"] == "static" else None
+        delay = config["simulation"].get("input_delay", 0)
+        assert delay >= 0 and delay == int(delay), "simulation.input_delay must be a whole number of control steps"
+        self.pending = deque([np.zeros(3)] * int(delay))  # robot 1's inputs computed but not applied yet
 
         self.state = np.asarray(init_state, dtype=float)
         self.score = np.zeros(2, dtype=int)
@@ -63,10 +70,12 @@ class Episode:
 
     def step(self, record=True):
         """One control step, then the physics substeps. With record, returns the step's row:
-        the applied input, the mode, the controller's record, then the new state and score."""
+        the applied input (delayed by simulation.input_delay), the mode, the controller's record,
+        then the new state and score."""
         ctrl, state, i = self.ctrl, self.state, self.i
         t = i * self.dt
-        F1 = ctrl.step(i, state)
+        self.pending.append(ctrl.step(i, state))
+        F1 = self.pending.popleft()  # computed at step i - delay
         F2 = (np.clip(np.asarray(self.r2_ctrl(jnp.asarray(state)), dtype=float), -self.F_max, self.F_max)
               if self.r2_ctrl else np.zeros(3))
         self.attacked |= ctrl.mode == ATT

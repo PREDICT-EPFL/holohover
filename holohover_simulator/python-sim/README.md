@@ -42,6 +42,12 @@ Each control step (`simulation.hz`, 100 Hz) works in the same way for every cont
 2. Robot 2 gets its own input (PD to home, or none when it is parked).
 3. The physics runs `simulation.physics_hz / hz` substeps under those inputs.
 
+Robot 1's input can reach the physics late, to test a controller's robustness to delay:
+`simulation.input_delay` (or `--input-delay`) is a number of control steps, 0 by default. The input
+computed at step `i` is applied at step `i + delay`, and the input is zero until the first one arrives.
+The controller doesn't know about the delay. The recorded `/robot1/control` is the applied input; for
+`shot_mpc`, `/robot1/plan_control` and `/robot1/def_control` are still the computed ones.
+
 Every step is recorded in one data dict (`simulation.episode.episode_data`), which is written to an MCAP file for Foxglove.
 
 ## Run
@@ -62,6 +68,7 @@ python main.py view simulation_data/<run>.mcap
 Options shared by `simulate` and `evaluate`:
 - `--controller dial|shot_mpc|forward`
 - `--opponent none|static`
+- `--input-delay STEPS`: robot 1's input is applied STEPS control steps late (`simulation.input_delay`)
 - `--config PATH`
 
 Options for `shot_mpc` only:
@@ -105,7 +112,7 @@ all the starts shown. The Events panel gives each start's index, puck speed and 
 | Key | Contents |
 |---|---|
 | `controller` | the default controller |
-| `simulation` | control and physics rates, duration, force limits, `opponent` (`none` or `static`) |
+| `simulation` | control and physics rates, duration, force limits, `input_delay` (control steps), `opponent` (`none` or `static`) |
 | `table`, `robot`, `puck` | the physical parameters; robot 2 is parked at `robot.robot2.park` when `opponent` is `none` |
 | `scenarios` | named starts for `simulate --scenario` |
 | `evaluation` | `duration` of an episode, the `starts` file, and the `sampling` that `main.py starts` draws it from |
