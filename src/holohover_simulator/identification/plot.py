@@ -1,23 +1,26 @@
-"""Measured data vs model prediction.
+"""Measured data vs model prediction: the computations, and the PNG export (--save).
 
-Three windows (or PNGs with --save):
+The interactive window is viewer.py. Three views:
   segments  one segment at a time: measured (dots) and the model simulated from the fitted
             initial state (line) for position, velocity, yaw and yaw rate, the position error,
-            and the path on the table. Keys: n / b next / previous segment, h toggles the
-            predictions started every `every` seconds from the measured state.
+            and the path on the table, optionally with the predictions started every `every`
+            seconds from the measured state.
   timeline  the whole recording with the model predictions over `horizon`, started every
             `every` seconds from the measured state (the EKF state, or for the raw pose a fit
-            of past samples only, as an online predictor would). Zoom with the toolbar.
+            of past samples only, as an online predictor would).
   summary   impact law against every measured impact, glide accelerations and spin decay
             against the model, and the prediction error against the horizon.
 """
 import os
 
-import matplotlib.pyplot as plt
+import matplotlib
+
+matplotlib.use("Agg")  # export only, the window is viewer.py
+import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np
 
-import model
-import segment as seg
+import model  # noqa: E402
+import segment as seg  # noqa: E402
 
 C_MEAS = "0.25"
 C_MODEL = "tab:red"
@@ -102,6 +105,29 @@ class Results:
 
 
 # ------------------------------------------------------------------------------------- segments
+SEGMENT_PAD = 0.15  # [s] measured data shown before and after a segment
+
+
+def segment_curves(R, g):
+    """Model simulated from the fitted initial state of segment g, against the measurement.
+
+    t, st: dense model time and state; st_meas: model at the measured samples idx; yaw: model
+    yaw shifted by whole turns onto the measurement (the fit compares wrapped angles); err_mm:
+    position error at idx; ctx: measured samples shown (the segment with SEGMENT_PAD)."""
+    r = R.rec
+    idx = r.window(g["t0"], g["t1"])
+    ctx = r.window(g["t0"] - SEGMENT_PAD, g["t1"] + SEGMENT_PAD)
+    tt = np.linspace(0.0, g["t1"] - g["t0"], max(50, int((g["t1"] - g["t0"]) / 0.002)))
+    st, imp = R.simulate(np.array(g["state0"]), tt)
+    st_m = R.simulate(np.array(g["state0"]), r.t[idx] - g["t0"])[0]
+    ok = r.yaw_ok[idx]
+    shift = 0.0
+    if ok.any():
+        shift = 2 * np.pi * np.round(np.median(r.yaw_u[idx][ok] - st_m[ok, 2]) / (2 * np.pi))
+    return {"idx": idx, "ctx": ctx, "t": g["t0"] + tt, "st": st, "impacts": imp, "st_meas": st_m,
+            "yaw": st[:, 2] + shift, "err_mm": 1e3 * np.linalg.norm(st_m[:, 0:2] - r.p[idx], axis=1)}
+
+
 class SegmentView:
     def __init__(self, R, start, horizon, every):
         self.R, self.horizon, self.every = R, horizon, every
@@ -109,7 +135,7 @@ class SegmentView:
         if start is not None:
             ids = [g["id"] for g in R.segments]
             self.i = ids.index(start) if start in ids else 0
-        self.fan = False
+        self.fan = True
         self.fig = plt.figure(figsize=(16, 9.5))
         gs = self.fig.add_gridspec(4, 3, width_ratios=[1, 1, 1.1], hspace=0.35, wspace=0.25,
                                    left=0.05, right=0.98, top=0.92, bottom=0.06)
@@ -118,33 +144,15 @@ class SegmentView:
                    "vx": f.add_subplot(gs[1, 0]), "vy": f.add_subplot(gs[1, 1]),
                    "yaw": f.add_subplot(gs[2, 0]), "w": f.add_subplot(gs[2, 1]),
                    "err": f.add_subplot(gs[3, 0:2]), "xy": f.add_subplot(gs[:, 2])}
-        self.fig.canvas.mpl_connect("key_press_event", self.on_key)
-
-    def on_key(self, e):
-        if e.key == "n":
-            self.i = (self.i + 1) % len(self.R.segments)
-        elif e.key == "b":
-            self.i = (self.i - 1) % len(self.R.segments)
-        elif e.key == "h":
-            self.fan = not self.fan
-        else:
-            return
-        self.draw()
-        self.fig.canvas.draw_idle()
 
     def draw(self):
         R, r = self.R, self.R.rec
         g = R.segments[self.i]
         for a in self.ax.values():
             a.clear()
-        pad = 0.15
-        idx = r.window(g["t0"], g["t1"])
-        ctx = r.window(g["t0"] - pad, g["t1"] + pad)
-        t_rel = r.t[idx] - g["t0"]
-        tt = np.linspace(0.0, g["t1"] - g["t0"], max(50, int((g["t1"] - g["t0"]) / 0.002)))
-        st, imp = R.simulate(np.array(g["state0"]), tt)
-        st_m = R.simulate(np.array(g["state0"]), t_rel)[0]
-        tm = g["t0"] + tt
+        pad = SEGMENT_PAD
+        c = segment_curves(R, g)
+        idx, ctx, st, imp, tm, st_m = c["idx"], c["ctx"], c["st"], c["impacts"], c["t"], c["st_meas"]
 
         def meas(ax, y, ok=None, ylabel=""):
             sl = ctx if ok is None else ctx[ok[ctx]]
@@ -161,18 +169,12 @@ class SegmentView:
         meas(self.ax["w"], r.w, ok=r.yaw_ok, ylabel=f"yaw rate [rad/s] {vlab}")
         for key, col in (("x", 0), ("y", 1), ("vx", 3), ("vy", 4), ("w", 5)):
             self.ax[key].plot(tm, st[:, col], color=C_MODEL, lw=1.5, label="model")
-        # the fit compares wrapped angles: shift the model yaw by whole turns onto the measurement
-        ok = r.yaw_ok[idx]
-        shift = 0.0
-        if ok.any():
-            shift = 2 * np.pi * np.round(np.median(r.yaw_u[idx][ok] - st_m[ok, 2]) / (2 * np.pi))
-        self.ax["yaw"].plot(tm, st[:, 2] + shift, color=C_MODEL, lw=1.5, label="model")
+        self.ax["yaw"].plot(tm, c["yaw"], color=C_MODEL, lw=1.5, label="model")
         for t_hit, _ in imp:
             for a in self.ax.values():
                 if a is not self.ax["xy"]:
                     a.axvline(g["t0"] + t_hit, color=C_MODEL, ls=":", lw=1)
-        err = 1e3 * np.linalg.norm(st_m[:, 0:2] - r.p[idx], axis=1)
-        self.ax["err"].plot(r.t[idx], err, color=C_MODEL, lw=1)
+        self.ax["err"].plot(r.t[idx], c["err_mm"], color=C_MODEL, lw=1)
         self.ax["err"].set_ylabel("position error [mm]")
         self.ax["err"].set_xlabel("time [s]")
         self.ax["err"].axvspan(g["t0"], g["t1"], color="0.9", zorder=-1)
@@ -198,8 +200,7 @@ class SegmentView:
         fan = f"   blue: predictions over {self.horizon:.2f} s from the measured state every {self.every:.2f} s" if self.fan else ""
         self.fig.suptitle(f"segment {g['id']} ({self.i + 1}/{len(R.segments)}): {g['label']}, "
                           f"{g['t0']:.2f}-{g['t1']:.2f} s, rms position {g['rms_position_mm']:.2f} mm, "
-                          f"yaw {g['rms_yaw_deg']:.2f} deg, model impacts {len(imp)}{fan}\n"
-                          "keys: n / b next / previous segment, h predictions from every time", fontsize=10)
+                          f"yaw {g['rms_yaw_deg']:.2f} deg, model impacts {len(imp)}{fan}", fontsize=10)
 
 
 def _walls(ax, walls, pts):
@@ -215,10 +216,11 @@ def _walls(ax, walls, pts):
 
 
 # ------------------------------------------------------------------------------------- timeline
-def timeline(R, horizon, every, t_range=None):
+def timeline(R, horizon, every, t_range):
+    """Measured positions and the model predictions in t_range = (t0, t1)."""
     r = R.rec
     fig, axs = plt.subplots(3, 1, figsize=(16, 9), sharex=True)
-    t0, t1 = t_range if t_range else (r.t[0], r.t[-1])
+    t0, t1 = t_range
     sl = r.window(t0, t1)
     for ax, y, lab in zip(axs, (r.p[:, 0], r.p[:, 1]), ("x [m]", "y [m]")):
         ax.plot(r.t[sl], y[sl], ".", ms=1.5, color=C_MEAS)
@@ -250,14 +252,25 @@ def timeline(R, horizon, every, t_range=None):
                 ax.axvline(e["t"], color="tab:red" if e["kind"] == "hit" else "0.6", lw=0.6,
                            ls="-" if e["kind"] == "hit" else ":")
     axs[0].set_xlim(t0, t1)
-    fig.suptitle(f"measured (grey) and model predictions over {horizon:.2f} s started every {every:.2f} s "
-                 "from the measured state (blue); red lines: hits (not modelled)", fontsize=10)
-    fig.tight_layout()
+    fig.text(0.5, 0.975, "Ground truth vs model", ha="center", va="top", fontsize=13)
+    fig.text(0.5, 0.94, f"model predictions over {horizon:.2f} s, started every {every:.2f} s from the "
+             "measured state", ha="center", fontsize=9)
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Patch
+    handles = [Line2D([], [], ls="", marker=".", color=C_MEAS, label="measured (ground truth)"),
+               Line2D([], [], color=C_PRED, marker=".", ms=4, label="model prediction (dot: start)"),
+               Line2D([], [], color="tab:red", lw=1, label="hit (not modelled)"),
+               Line2D([], [], color="0.6", lw=1, ls=":", label="wall impact"),
+               Patch(color="tab:green", alpha=0.25, label="glide segment"),
+               Patch(color="tab:orange", alpha=0.25, label="wall impact segment")]
+    fig.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, 0.93), ncol=len(handles),
+               fontsize=9, frameon=False)
+    fig.tight_layout(rect=(0, 0.03, 1, 0.9))
     return fig
 
 
 # ------------------------------------------------------------------------------------- summary
-def _glide_stats(R):
+def glide_stats(R):
     """Per glide (> 0.4 s): mean velocity, constant acceleration and spin decay from fits."""
     r = R.rec
     rows = []
@@ -278,7 +291,7 @@ def _glide_stats(R):
     return rows
 
 
-def _impact_stats(R):
+def impact_stats(R):
     rows = []
     walls = {w["name"]: w for w in R.walls}
     for e in R.events:
@@ -304,7 +317,7 @@ def summary(R, horizon):
     p = R.p
     fig, axs = plt.subplots(2, 3, figsize=(16, 9.5))
     fig.subplots_adjust(left=0.06, right=0.98, top=0.9, bottom=0.07, hspace=0.35, wspace=0.28)
-    imp = _impact_stats(R)
+    imp = impact_stats(R)
     # (a) normal restitution: where on the wall, at which angle
     ax = axs[0, 0]
     sc = None
@@ -334,7 +347,7 @@ def summary(R, horizon):
     ax.set_title("tangential: stick (left, -e_t) to slide (right)", fontsize=10)
     ax.legend(fontsize=8)
     # (c) glide accelerations: measured vs model
-    gl = _glide_stats(R)
+    gl = glide_stats(R)
     ax = axs[0, 2]
     if gl:
         g = np.array([p["g_x"], p["g_y"]])
@@ -435,8 +448,5 @@ def run(rec, seg_yaml, res, cfg, save_dir=None, segment_id=None, horizon=None, e
         plt.close(view.fig)
         print(f"wrote plots to {save_dir}")
         return
-    view = SegmentView(R, segment_id, horizon, every)
-    view.draw()
-    timeline(R, horizon, every)
-    summary(R, horizon)
-    plt.show()
+    import viewer
+    viewer.run(R, segment_id, horizon, every)

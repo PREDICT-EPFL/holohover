@@ -7,15 +7,21 @@ predictions.
 
 ## Setup
 
-Runs on the host (it needs a display for the review and plot windows) with
-[uv](https://docs.astral.sh/uv/), which creates the environment from
-[pyproject.toml](pyproject.toml) and `uv.lock` on the first `uv run`:
+Runs on the host with [uv](https://docs.astral.sh/uv/), which creates the environment (Python
+3.12, downloaded by uv if needed) from [pyproject.toml](pyproject.toml) and `uv.lock` on the
+first `uv run`:
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh   # once, if uv is not installed
 cd src/holohover_simulator/identification
 uv sync
 ```
+
+The review and plot windows use [Dear ImGui / ImPlot](https://github.com/pthom/imgui_bundle)
+(OpenGL). Open them on a machine with a display: on your laptop (copy the bag and the
+`results/<bag name>/` folder) or at the lab computer's screen. Over ssh X forwarding every frame
+is sent as an image and the window runs at ~2 frames per second. `segment`, `fit` and
+`plot --save` need no display.
 
 ## Recording
 
@@ -24,7 +30,7 @@ the EKF state, the raw puck pose and the table pose:
 
 ```bash
 ros2 bag record -s mcap -o puck_id_$(date +%Y-%m-%d_%H-%M-%S) \
-  /puck/state /optitrack/puck/pose /optitrack/table/pose
+  /puck/state /optitrack/puck/pose /optitrack/table/pose /tf
 ```
 
 - `/puck/state` (EKF: position, yaw, velocities, yaw rate) is the data of the fit and the plots
@@ -84,20 +90,27 @@ them (the model has no robot contact).
 
 ### review
 
+Left: the segment list (click a row to go to it, `!` marks warnings), the label, the edit
+buttons and the warnings of the selected segment. Middle: speed, position and yaw over time
+with the segments, the gaps in the data (dark), the events (blue: wall impact, red: hit, grey:
+flight) and the time cursor (red line). Right: the table with the walls, the selected segment
+and the puck at the cursor time with its last 0.5 s.
+
 | input | action |
 |---|---|
-| drag on a time plot | new segment with the current label; dragging over the selected segment changes its bounds |
-| click | move the time slider there |
-| time slider (bottom) | red dot where the puck is on the table at that time, with its last 0.5 s, and a red line on the time plots; selects the segment there (shown on the table view, with warnings, e.g. it contains a hit); when zoomed in, the time plots follow it with the same zoom |
+| mouse wheel, right drag | zoom (the time plots stay aligned); left drag: pan; double click: fit |
+| click on a time plot | move the cursor there, which selects the segment there |
+| drag the red line, slider (bottom) | move the cursor; when zoomed in, the view follows it with the same zoom |
+| drag an edge of the selected segment | change its start / end (stops at the neighbours) |
 | `g` / `w` / `h` | label glide / wall_impact / hit (also relabels the selected segment) |
+| `i` | new segment at the cursor (0.5 s, or up to the next segment) |
 | `d`, `delete` | delete the selected segment |
 | `n` / `b` | next / previous segment, zoomed |
 | `a` | whole recording |
-| `u` | undo |
-| `s` | save |
-| `q` | quit (twice with unsaved changes) |
-
-The toolbar zoom/pan work as usual; segments are not edited while one of them is active.
+| left / right | move the cursor by 0.02 s (shift: 0.2 s) |
+| `u`, `ctrl+z` | undo |
+| `s`, `ctrl+s` | save |
+| `q`, window close | quit (asks when there are unsaved changes) |
 
 ### fit
 
@@ -110,14 +123,22 @@ parameters with their 1-sigma, the walls, and the error and fitted initial state
 
 ### plot
 
+One window with three tabs ([viewer.py](viewer.py)); `--save` writes the same views as PNGs
+(matplotlib, no display needed).
+
 - **segments**: per segment, measured (dots) and model simulated from the fitted initial
-  state (red) for x, y, vx, vy, yaw, yaw rate, the position error and the path on the table.
-  `n` / `b` change segment, `h` adds predictions (blue) started every 0.05 s from the
-  measured state, i.e. what an online predictor (the MPC) would get.
-- **timeline**: the whole recording with those predictions over 0.5 s; hits are marked.
+  state (red) for x, y, vx, vy, yaw, yaw rate, the position and yaw errors and the path on the
+  table. `n` / `b` or the list change segment, `h` (or the checkbox) adds predictions (blue)
+  started every 0.05 s from the measured state, i.e. what an online predictor (the MPC) would get.
+- **timeline**: ground truth vs model over the whole recording: the fitted model (red, every
+  segment simulated from its fitted initial state) and those predictions over 0.5 s (blue), the
+  error of both, the segments, hits and wall impacts. The slider moves the view.
 - **summary**: restitution of every impact against its position on the wall, the tangential
   impact law against every impact, glide accelerations, spin decay, prediction error against
   the horizon, error per segment.
+
+In every plot: mouse wheel / right drag zoom, left drag pans, double click fits, a click on a
+legend entry hides that series.
 
 The measured state of a prediction is the last EKF state (`source: state`) or, for the raw
 pose, line fits over the last 0.06 s; predictions starting within 0.07 s after a contact are

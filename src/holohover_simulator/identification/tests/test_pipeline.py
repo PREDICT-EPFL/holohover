@@ -62,60 +62,104 @@ def test_fit_recovers_the_parameters(synthetic_fit):
     assert out["fit"]["data"] == synthetic_fit[0].kind
 
 
-def test_review_and_plot_run_headless(synthetic_fit, tmp_path):
-    import matplotlib
-    matplotlib.use("Agg")
-    import plot
+def test_review_state(synthetic_fit, tmp_path):
     import review
 
     rec, walls, events, segments, out, seg_yaml, rec_seg = synthetic_fit
     seg_file = tmp_path / "segments.yaml"
     data.save_yaml(str(seg_file), segment.to_yaml(rec_seg, walls, events, segments))
-    # review: select, relabel, delete, add, undo and save through the handlers
-    rv = review.Review(rec_seg, str(seg_file), data.load_config())
-    n = len(rv.segments)
-    g = dict(rv.segments[0])  # copy: the review edits its segments in place
-
-    class Ev:
-        def __init__(self, **kw):
-            self.__dict__.update(kw)
-
-    rv.on_click(Ev(inaxes=rv.ax_s, button=1, xdata=(g["t0"] + g["t1"]) / 2))
-    assert rv.selected == 0
-    # the click moved the time slider: red dot at the puck position at that time
-    i = np.searchsorted(rec_seg.t, rv.slider.val)
-    np.testing.assert_allclose(np.ravel(rv.cursor_dot.get_data()), rec_seg.p[i])
-    # zoomed in, the time plots follow the slider with the same zoom
-    rv.ax_s.set_xlim(rec_seg.t[0], rec_seg.t[0] + 2.0)
-    rv.slider.set_val(rec_seg.t[0] + 10.0)
-    lo, hi = rv.ax_s.get_xlim()
-    assert hi - lo == pytest.approx(2.0) and lo < rec_seg.t[0] + 10.0 < hi
-    rv.slider.set_val(rec_seg.t[-1])
-    assert rv.ax_s.get_xlim()[1] == pytest.approx(rec_seg.t[-1])  # stops at the end of the recording
-    # moving the slider selects the segment under it, and nothing outside the segments
-    g1 = rv.segments[1]
-    rv.slider.set_val((g1["t0"] + g1["t1"]) / 2)
-    assert rv.selected == 1
-    rv.slider.set_val(rec_seg.t[0])
-    assert rv.selected is None or rv.segments[rv.selected]["t0"] <= rec_seg.t[0]
-    rv.slider.set_val((g["t0"] + g["t1"]) / 2)
-    assert rv.selected == 0
-    rv.on_key(Ev(key="h"))
-    assert rv.segments[0]["label"] == "hit"
-    rv.on_key(Ev(key="w"))
-    assert rv.segments[0]["label"] == "wall_impact"
-    rv.on_key(Ev(key="d"))
-    assert len(rv.segments) == n - 1
-    rv.on_key(Ev(key="u"))
-    rv.on_key(Ev(key="u"))
-    rv.on_key(Ev(key="u"))
-    assert len(rv.segments) == n and rv.segments[0]["label"] == g["label"]
-    rv.on_key(Ev(key="d"))
-    rv.on_span(g["t0"], g["t1"])  # re-add it as a new segment
-    rv.on_key(Ev(key="s"))
+    s = review.ReviewState(rec_seg, str(seg_file))
+    n = len(s.segments)
+    g0, g1 = dict(s.segments[0]), dict(s.segments[1])
+    # the cursor selects the segment under it, nothing outside the segments
+    s.select_at((g1["t0"] + g1["t1"]) / 2)
+    assert s.selected == 1
+    s.select_at((g0["t0"] + g0["t1"]) / 2)
+    assert s.selected == 0
+    s.select_at(rec_seg.t[0] - 1.0)
+    assert s.selected is None
+    # where two segments touch, the selected one stays selected
+    s.select(1)
+    s.select_at(g1["t0"])
+    assert s.selected == 1 or g1["t0"] != g0["t1"]
+    # relabel, delete, undo
+    s.select(0)
+    s.set_label("hit")
+    assert s.segments[0]["label"] == "hit" and s.dirty
+    s.set_label("wall_impact")
+    s.delete()
+    assert len(s.segments) == n - 1 and s.selected is None
+    for _ in range(3):
+        s.undo()
+    assert len(s.segments) == n and s.segments[0]["label"] == g0["label"]
+    # edges stay between the neighbours
+    s.select(1)
+    s.begin_edit()
+    s.set_bounds(g0["t0"] - 5.0, g1["t1"])
+    assert s.segments[1]["t0"] == pytest.approx(s.segments[0]["t1"])
+    s.undo()
+    assert s.segments[1]["t0"] == g1["t0"]
+    # new segments do not overlap
+    s.select(0)
+    s.delete()
+    assert not s.add(g0["t0"], g1["t1"])  # overlaps segment 1
+    assert s.add_at(g0["t0"]) and s.segments[0]["t0"] == pytest.approx(g0["t0"])
+    assert s.segments[0]["t1"] <= s.segments[1]["t0"]
+    assert not s.add_at(s.segments[0]["t0"] + 0.01)  # inside a segment
+    s.save()
     saved = data.load_yaml(str(seg_file))["segments"]
-    assert len(saved) == n and [s["id"] for s in saved] == list(range(n))
-    # plots
+    assert len(saved) == n and [g["id"] for g in saved] == list(range(n)) and not s.dirty
+
+
+def test_windows_draw_headless(synthetic_fit, tmp_path):
+    """Both windows draw frames without a display; the review handles its keys and the cursor."""
+    import gui
+    import plot
+    import review
+    import viewer
+
+    rec, walls, events, segments, out, seg_yaml, rec_seg = synthetic_fit
+    seg_file = tmp_path / "segments.yaml"
+    data.save_yaml(str(seg_file), segment.to_yaml(rec_seg, walls, events, segments))
+    R = plot.Results(rec, seg_yaml, out, data.load_config())
+    with gui.headless() as frame:
+        app = review.ReviewApp(rec_seg, str(seg_file))
+        frame(app.gui)
+        app.goto(1)
+        frame(app.gui)
+        g = app.s.segments[0]
+        assert app.s.selected == 0 and app.axis.lo.value < g["t0"] < g["t1"] < app.axis.hi.value
+        # zoomed in, the view follows the cursor with the same zoom, and stops at the end
+        app.axis.show(rec_seg.t[0], rec_seg.t[0] + 2.0)
+        app.move_cursor(rec_seg.t[0] + 10.0)
+        assert app.axis.hi.value - app.axis.lo.value == pytest.approx(2.0)
+        assert app.axis.lo.value < app.axis.cursor < app.axis.hi.value
+        app.move_cursor(rec_seg.t[-1] + 1.0)
+        assert app.axis.hi.value == pytest.approx(rec_seg.t[-1])
+        app.s.select(0)
+        app.s.set_label("hit")
+        app.request_quit()  # unsaved changes: asks first
+        frame(app.gui)
+        assert not app.quit_now and not app.confirm_exit()
+        app.s.save()
+        assert app.confirm_exit()
+
+        v = viewer.Viewer(R, None, 0.5, 0.05)
+        v.fan = True
+        frame(v.gui)
+        for tab in (v.timeline_tab, v.summary_tab):
+            def draw(tab=tab):
+                with gui.fullscreen("viewer"):
+                    tab()
+            frame(draw)
+        v._set_segment(len(R.segments))  # wraps around
+        assert v.i == 0
+
+
+def test_plots_saved(synthetic_fit, tmp_path):
+    import plot
+
+    rec, *_, out, seg_yaml, _ = synthetic_fit
     plot.run(rec, seg_yaml, out, data.load_config(), save_dir=str(tmp_path / "plots"), segment_id=0)
     assert (tmp_path / "plots" / "summary.png").exists()
     hs, rms, _ = plot.prediction_error(plot.Results(rec, seg_yaml, out, data.load_config()), 0.5)

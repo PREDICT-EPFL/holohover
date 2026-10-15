@@ -2,8 +2,9 @@
 name = "holohover-puck-identification"
 version = "0.1.0"
 description = "Puck model identification from OptiTrack / EKF recordings"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
+    "imgui-bundle>=1.92.900",
     "matplotlib>=3.5",
     "mcap>=1.1,<2",
     "mcap-ros2-support>=0.5,<1",
