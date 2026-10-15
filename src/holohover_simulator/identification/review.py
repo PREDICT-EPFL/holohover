@@ -1,15 +1,17 @@
 """Window to check and correct the segments (matplotlib).
 
 Left: speed, position and yaw over time with the segments (green: glide, orange: wall
-impact) and the detected events (blue: wall impact, red: hit, grey: glitch). Right: the table
+impact, red: hit) and the detected events (blue: wall impact, red: hit, grey: flight, an
+acceleration spike without velocity change). Hit segments are kept but not fitted. Right: the table
 with the walls and the selected segment. The time slider at the bottom shows where the puck
 is at that time (red dot on the table, red line on the time plots).
 
     drag on a time plot      new segment with the current label
                              (dragging over the selected segment changes its start and end)
-    click on a time plot     select the segment there and move the time slider to it
-    time slider              red dot on the table at that time
-    g / w                    current label glide / wall_impact (also relabels the selected segment)
+    click on a time plot     move the time slider there
+    time slider              red dot on the table at that time, selects the segment there
+                             (when zoomed in, the time plots follow it with the same zoom)
+    g / w / h                current label glide / wall_impact / hit (also relabels the selected segment)
     d, delete                delete the selected segment
     n / b                    next / previous segment (zooms to it)
     a                        show the whole recording
@@ -28,9 +30,10 @@ from matplotlib.widgets import Slider, SpanSelector
 import data
 import model
 
-COLORS = {"glide": "tab:green", "wall_impact": "tab:orange"}
-EVENT_STYLE = {"wall": ("tab:blue", ":"), "hit": ("tab:red", "-"), "glitch": ("0.6", ":")}
-KEYS = ["g", "w", "d", "delete", "n", "b", "a", "u", "s", "q", "backspace"]
+COLORS = {"glide": "tab:green", "wall_impact": "tab:orange", "hit": "tab:red"}
+LABEL_KEYS = {"g": "glide", "w": "wall_impact", "h": "hit"}
+EVENT_STYLE = {"wall": ("tab:blue", ":"), "hit": ("tab:red", "-"), "flight": ("0.6", ":")}
+KEYS = ["g", "w", "h", "d", "delete", "n", "b", "a", "u", "s", "q", "backspace"]
 
 
 def _free_keys():
@@ -84,9 +87,38 @@ class Review:
         self.cursor_trail, = self.ax_xy.plot([], [], color="tab:red", lw=1, alpha=0.5, zorder=4)
         self.cursor_dot, = self.ax_xy.plot([], [], "o", color="tab:red", ms=9, mec="k", zorder=5)
         self.slider.on_changed(self.on_time)
-        self.on_time(self.slider.val)
+        self._show_time(self.slider.val)
 
     def on_time(self, t):
+        self._follow(t)
+        self._show_time(t)
+        self._select_at(t)
+
+    def _follow(self, t, edge=0.05):
+        """Pan the time plots (same zoom) when t gets within `edge` of the view border."""
+        lo, hi = self.ax_s.get_xlim()
+        m = edge * (hi - lo)
+        if lo + m <= t <= hi - m:
+            return
+        shift = t - (hi - m) if t > hi - m else t - (lo + m)
+        t0, t1 = float(self.rec.t[0]), float(self.rec.t[-1])
+        shift = float(np.clip(shift, t0 - lo, t1 - hi)) if hi - lo < t1 - t0 else 0.0
+        if shift:
+            self.ax_s.set_xlim(lo + shift, hi + shift)
+
+    def _select_at(self, t):
+        """Select the segment at time t (the selected one wins where two segments touch)."""
+        sel = self.selected
+        if sel is None or not self.segments[sel]["t0"] <= t <= self.segments[sel]["t1"]:
+            sel = next((i for i, g in enumerate(self.segments) if g["t0"] <= t <= g["t1"]), None)
+        if sel == self.selected:
+            return
+        self.selected = sel
+        self._draw_segments()
+        warn = self._check(self.segments[sel]) if sel is not None else ""
+        self._update_status(f"WARNING: {warn}" if warn else "")
+
+    def _show_time(self, t):
         """Puck position at time t on the table (with the last 0.5 s as a trail)."""
         r = self.rec
         i = int(np.clip(np.searchsorted(r.t, t), 0, r.t.size - 1))
@@ -165,8 +197,8 @@ class Review:
             self.sel_line.set_color(COLORS.get(g["label"], "k"))
         else:
             self.sel_line.set_data([], [])
-        n_g = sum(g["label"] == "glide" for g in self.segments)
-        self.ax_s.set_title(f"{n_g} glides, {len(self.segments) - n_g} wall impacts, "
+        n = {k: sum(g["label"] == k for g in self.segments) for k in COLORS}
+        self.ax_s.set_title(f"{n['glide']} glides, {n['wall_impact']} wall impacts, {n['hit']} hits, "
                             f"{sum(g['t1'] - g['t0'] for g in self.segments):.1f} s"
                             f"{'   (unsaved)' if self.dirty else ''}", fontsize=10)
         self.fig.canvas.draw_idle()
@@ -177,7 +209,7 @@ class Review:
             g = self.segments[self.selected]
             sel = f"selected: {g['label']} {g['t0']:.3f}-{g['t1']:.3f} s ({g['t1'] - g['t0']:.2f} s)"
         self.status.set_text(f"label for new segments: {self.label:12s} {sel}\n{msg}    "
-                             "[drag] new  [click] select  [slider] puck on the table  g/w label  d delete  "
+                             "[drag] new  [click] select  [slider] puck on the table  g/w/h label  d delete  "
                              "n/b next/prev  a all  u undo  s save  q quit")
         self.fig.canvas.draw_idle()
 
@@ -191,9 +223,13 @@ class Review:
         """Warnings for a segment: what it contains that the model does not explain."""
         inside = [e for e in self.events if g["t0"] < e["t"] < g["t1"]]
         n_wall = sum(e["kind"] == "wall" for e in inside)
+        n_hit = sum(e["kind"] == "hit" for e in inside)
         msgs = []
-        if any(e["kind"] == "hit" for e in inside):
-            msgs.append("contains a hit (the model cannot explain it)")
+        if g["label"] == "hit":
+            if n_hit != 1:
+                msgs.append(f"hit segment with {n_hit} detected hits")
+        elif n_hit:
+            msgs.append("contains a hit (the model cannot explain it, label it hit)")
         if g["label"] == "wall_impact" and n_wall != 1:
             msgs.append(f"wall_impact with {n_wall} detected wall impacts")
         if g["label"] == "glide" and n_wall:
@@ -235,12 +271,8 @@ class Review:
     def on_click(self, event):
         if self._busy() or event.inaxes not in (self.ax_s, self.ax_p, self.ax_y) or event.button != 1:
             return
+        # the slider selects the segment there
         self.slider.set_val(float(np.clip(event.xdata, self.slider.valmin, self.slider.valmax)))
-        hit = [i for i, g in enumerate(self.segments) if g["t0"] <= event.xdata <= g["t1"]]
-        self.selected = hit[0] if hit else None
-        self._draw_segments()
-        warn = self._check(self.segments[self.selected]) if hit else ""
-        self._update_status(f"WARNING: {warn}" if warn else "")
 
     def _goto(self, i):
         if not self.segments:
@@ -249,15 +281,15 @@ class Review:
         g = self.segments[self.selected]
         pad = max(0.5, 0.5 * (g["t1"] - g["t0"]))
         self.ax_s.set_xlim(g["t0"] - pad, g["t1"] + pad)
-        self.slider.set_val(float(g["t0"]))
+        self.slider.set_val(float(g["t0"]))  # keeps this selection: it contains t0
         self._draw_segments()
         warn = self._check(g)
         self._update_status(f"segment {self.selected + 1}/{len(self.segments)}" + (f"  WARNING: {warn}" if warn else ""))
 
     def on_key(self, event):
         k = event.key
-        if k in ("g", "w"):
-            self.label = "glide" if k == "g" else "wall_impact"
+        if k in LABEL_KEYS:
+            self.label = LABEL_KEYS[k]
             if self.selected is not None and self.segments[self.selected]["label"] != self.label:
                 self._push()
                 self.segments[self.selected]["label"] = self.label
@@ -298,7 +330,7 @@ class Review:
         self.doc["segments"] = self.segments
         data.save_yaml(self.seg_file, self.doc,
                        header="Puck identification segments, times in s from t_ref (first puck stamp).\n"
-                              "Edit with `identify.py review`. Labels: glide, wall_impact.")
+                              "Edit with `identify.py review`. Labels: glide, wall_impact, hit (not fitted).")
         self.dirty = False
         self._draw_segments()
         self._update_status(f"saved {self.seg_file}")
@@ -306,5 +338,6 @@ class Review:
 
 
 def run(rec, seg_file, cfg):
-    Review(rec, seg_file, cfg)
+    review = Review(rec, seg_file, cfg)  # keep a reference: matplotlib holds the callbacks weakly
     plt.show()
+    return review

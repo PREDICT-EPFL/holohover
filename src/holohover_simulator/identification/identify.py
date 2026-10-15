@@ -37,14 +37,14 @@ def cmd_segment(args, cfg):
     walls, events, segments = segment.auto_segment(rec, cfg)
     data.save_yaml(seg_file, segment.to_yaml(rec, walls, events, segments),
                    header="Puck identification segments, times in s from t_ref (first puck stamp).\n"
-                          "Edit with `identify.py review`. Labels: glide, wall_impact.")
+                          "Edit with `identify.py review`. Labels: glide, wall_impact, hit (not fitted).")
     kinds = {}
     for e in events:
         kinds[e["kind"]] = kinds.get(e["kind"], 0) + 1
-    n_glide = sum(g["label"] == "glide" for g in segments)
+    n = {k: sum(g["label"] == k for g in segments) for k in segment.LABELS}
     print(f"events: {kinds}")
     print(f"walls: {[w['name'] for w in walls]}")
-    print(f"segments: {n_glide} glides, {len(segments) - n_glide} wall impacts, "
+    print(f"segments: {n['glide']} glides, {n['wall_impact']} wall impacts, {n['hit']} hits, "
           f"{sum(g['t1'] - g['t0'] for g in segments):.1f} s of {rec.t[-1]:.1f} s")
     print(f"wrote {seg_file}")
 

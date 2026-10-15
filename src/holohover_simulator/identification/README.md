@@ -75,19 +75,21 @@ Events are peaks of the smoothed acceleration. Lines fitted to the position befo
 each event give the velocities, the impact time and the contact point. An event is a **wall
 impact** when the velocity change is along a table axis and reverses the normal velocity; the
 walls are lines fitted to the contact points (at least 3 impacts, no data beyond them). Other
-events are **hits** (hand, robot), events without velocity change are mocap **glitches**
-(ignored). Data near hits, in gaps, at low speed or with a mostly invalid orientation is not
-used. Each wall impact gets a `wall_impact` segment (up to 0.3 s on each side), what is left
-in between becomes `glide` segments.
+events are **hits** (robot, hand), events without velocity change are **flight** (an
+acceleration spike from the mocap while the puck keeps flying freely, ignored). Data in gaps,
+at low speed or with a mostly invalid orientation is not used. Each wall impact gets a
+`wall_impact` segment and each hit a `hit` segment (up to 0.3 s on each side), what is left
+in between becomes `glide` segments. `hit` segments are for the review only: the fit skips
+them (the model has no robot contact).
 
 ### review
 
 | input | action |
 |---|---|
 | drag on a time plot | new segment with the current label; dragging over the selected segment changes its bounds |
-| click | select a segment (shown on the table view, with warnings, e.g. it contains a hit) and move the time slider there |
-| time slider (bottom) | red dot where the puck is on the table at that time, with its last 0.5 s, and a red line on the time plots |
-| `g` / `w` | label glide / wall_impact (also relabels the selected segment) |
+| click | move the time slider there |
+| time slider (bottom) | red dot where the puck is on the table at that time, with its last 0.5 s, and a red line on the time plots; selects the segment there (shown on the table view, with warnings, e.g. it contains a hit); when zoomed in, the time plots follow it with the same zoom |
+| `g` / `w` / `h` | label glide / wall_impact / hit (also relabels the selected segment) |
 | `d`, `delete` | delete the selected segment |
 | `n` / `b` | next / previous segment, zoomed |
 | `a` | whole recording |

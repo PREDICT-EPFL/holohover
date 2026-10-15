@@ -1,4 +1,4 @@
-"""Automatic segmentation of a recording into free glides and wall impacts.
+"""Automatic segmentation of a recording into free glides, wall impacts and hits.
 
 1. Events are peaks of the smoothed acceleration. Around each one, lines fitted to the position
    before and after give the velocities, the impact time (where the two lines meet) and the
@@ -6,9 +6,12 @@
 2. An event is a wall impact when the velocity change points along a table axis and reverses
    the normal velocity. The walls are lines fitted to the contact points of their impacts.
    Impacts too far from their wall, and every other event, are "hits" (robot, hand, ...).
-3. Data is unusable near hits, in gaps, where the puck is slow and where the mocap orientation
-   is mostly invalid. In the usable parts each wall impact gets a segment of up to
-   impact_window on both sides, and what is left between them becomes glide segments.
+   Events without a velocity change are "flight": an acceleration spike from the mocap while
+   the puck keeps flying freely.
+3. Data is unusable in gaps, where the puck is slow and where the mocap orientation is mostly
+   invalid. In the usable parts each wall impact and each hit gets a segment of up to
+   impact_window on both sides, and what is left between them becomes glide segments. Hit
+   segments are kept for the review but not fitted (the model has no robot contact).
 """
 import numpy as np
 from scipy.signal import find_peaks
@@ -16,7 +19,14 @@ from scipy.signal import find_peaks
 import model
 
 AXES = [("x_min", (1.0, 0.0)), ("x_max", (-1.0, 0.0)), ("y_min", (0.0, 1.0)), ("y_max", (0.0, -1.0))]
-LABELS = ("glide", "wall_impact")
+LABELS = ("glide", "wall_impact", "hit")
+FIT_LABELS = ("glide", "wall_impact")  # the model explains these, hit segments are not fitted
+CONTACT_LABEL = {"wall": "wall_impact", "hit": "hit"}
+
+
+def is_contact(e):
+    """Wall impact or hit with velocities before and after: it can get its own segment."""
+    return e["kind"] in CONTACT_LABEL and "v_pre" in e
 
 
 def _line(t, y):
@@ -69,8 +79,8 @@ def detect_events(rec, cfg):
             events.append({"t": float(rec.t[k]), "kind": "hit", "wall": None})
             continue
         dv = fit["v_post"] - fit["v_pre"]
-        # no velocity change: an acceleration spike from a mocap glitch, not a contact
-        fit["kind"], fit["wall"] = ("hit", None) if np.linalg.norm(dv) > s["min_dv"] else ("glitch", None)
+        # no velocity change: an acceleration spike from the mocap, the puck keeps flying
+        fit["kind"], fit["wall"] = ("hit", None) if np.linalg.norm(dv) > s["min_dv"] else ("flight", None)
         if fit["kind"] == "hit":
             name, n = max(AXES, key=lambda ax: float(dv @ np.array(ax[1])))
             n = np.array(n)
@@ -129,11 +139,11 @@ def usable_mask(rec, events, cfg):
     """Samples that can be used for the fit."""
     s = cfg["segmentation"]
     fast = rec.speed >= s["min_speed"]
-    # the smoothed speed dips at a wall impact (the filter averages across the velocity
-    # reversal): there the line fits before and after the impact decide
+    # the smoothed speed dips at a contact (the filter averages across the velocity change):
+    # there the line fits before and after it decide
     half = cfg["preprocessing"]["smoothing_window"]
     for e in events:
-        if e["kind"] == "wall":
+        if is_contact(e):
             near = np.abs(rec.t - e["t"]) <= half
             fast[near] = min(np.linalg.norm(e["v_pre"]), np.linalg.norm(e["v_post"])) >= s["min_speed"]
     ok = np.isfinite(rec.v[:, 0]) & fast
@@ -142,8 +152,8 @@ def usable_mask(rec, events, cfg):
     n = max(1, int(round(0.1 / dt)))
     bad_yaw = np.convolve((~rec.yaw_ok).astype(float), np.ones(n) / n, mode="same")
     ok &= bad_yaw <= s["bad_tilt_fraction"]
-    # keep a margin to everything that is not usable, to hits and to the chunk ends
-    bad_t = list(rec.t[~ok]) + [e["t"] for e in events if e["kind"] == "hit"]
+    # keep a margin to everything that is not usable, to hits without line fits and to the chunk ends
+    bad_t = list(rec.t[~ok]) + [e["t"] for e in events if e["kind"] == "hit" and not is_contact(e)]
     for a, b in rec.chunks:
         bad_t += [rec.t[a], rec.t[b - 1]]
     bad_t = np.sort(np.array(bad_t))
@@ -165,20 +175,21 @@ def build_segments(rec, events, ok, cfg):
     # a run must not cross a gap
     for a, b in rec.chunks:
         ok[a] = ok[b - 1] = False
-    impacts = [e for e in events if e["kind"] == "wall"]
+    contacts = [e for e in events if is_contact(e)]
     segments = []
     for a, b in _runs(ok):
         rs, re = rec.t[a], rec.t[b - 1]
-        inside = [e["t"] for e in impacts if rs < e["t"] < re]
-        blocks = []  # time intervals taken by impact segments or blocked by dropped impacts
-        for j, ti in enumerate(inside):
+        inside = [e for e in contacts if rs < e["t"] < re]
+        blocks = []  # time intervals taken by contact segments or blocked by dropped contacts
+        for j, e in enumerate(inside):
+            ti = e["t"]
             w = min(s["impact_window"], ti - rs, re - ti)
             if j > 0:
-                w = min(w, (ti - inside[j - 1]) / 2.0)
+                w = min(w, (ti - inside[j - 1]["t"]) / 2.0)
             if j + 1 < len(inside):
-                w = min(w, (inside[j + 1] - ti) / 2.0)
+                w = min(w, (inside[j + 1]["t"] - ti) / 2.0)
             if w >= s["min_impact_window"]:
-                segments.append({"label": "wall_impact", "t0": ti - w, "t1": ti + w})
+                segments.append({"label": CONTACT_LABEL[e["kind"]], "t0": ti - w, "t1": ti + w})
                 blocks.append((ti - w, ti + w))
             else:
                 blocks.append((ti - s["margin"], ti + s["margin"]))

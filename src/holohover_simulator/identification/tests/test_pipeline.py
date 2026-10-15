@@ -48,7 +48,7 @@ def test_segmentation_finds_the_walls_and_impacts(synthetic_fit):
     for name, off in offsets.items():
         assert off == pytest.approx(truth[name], abs=0.005)
     assert sum(e["kind"] == "wall" for e in events) >= 20
-    assert {g["label"] for g in segments} == {"glide", "wall_impact"}
+    assert {g["label"] for g in segments} == {"glide", "wall_impact", "hit"}  # the random shots are hits
 
 
 def test_fit_recovers_the_parameters(synthetic_fit):
@@ -85,10 +85,28 @@ def test_review_and_plot_run_headless(synthetic_fit, tmp_path):
     # the click moved the time slider: red dot at the puck position at that time
     i = np.searchsorted(rec_seg.t, rv.slider.val)
     np.testing.assert_allclose(np.ravel(rv.cursor_dot.get_data()), rec_seg.p[i])
+    # zoomed in, the time plots follow the slider with the same zoom
+    rv.ax_s.set_xlim(rec_seg.t[0], rec_seg.t[0] + 2.0)
+    rv.slider.set_val(rec_seg.t[0] + 10.0)
+    lo, hi = rv.ax_s.get_xlim()
+    assert hi - lo == pytest.approx(2.0) and lo < rec_seg.t[0] + 10.0 < hi
+    rv.slider.set_val(rec_seg.t[-1])
+    assert rv.ax_s.get_xlim()[1] == pytest.approx(rec_seg.t[-1])  # stops at the end of the recording
+    # moving the slider selects the segment under it, and nothing outside the segments
+    g1 = rv.segments[1]
+    rv.slider.set_val((g1["t0"] + g1["t1"]) / 2)
+    assert rv.selected == 1
+    rv.slider.set_val(rec_seg.t[0])
+    assert rv.selected is None or rv.segments[rv.selected]["t0"] <= rec_seg.t[0]
+    rv.slider.set_val((g["t0"] + g["t1"]) / 2)
+    assert rv.selected == 0
+    rv.on_key(Ev(key="h"))
+    assert rv.segments[0]["label"] == "hit"
     rv.on_key(Ev(key="w"))
     assert rv.segments[0]["label"] == "wall_impact"
     rv.on_key(Ev(key="d"))
     assert len(rv.segments) == n - 1
+    rv.on_key(Ev(key="u"))
     rv.on_key(Ev(key="u"))
     rv.on_key(Ev(key="u"))
     assert len(rv.segments) == n and rv.segments[0]["label"] == g["label"]

@@ -36,7 +36,7 @@ class Results:
         self.radius, self.kappa = res["puck"]["radius"], res["puck"]["kappa"]
         self.segments = res["segments"]
         self.events = seg_yaml.get("events", [])
-        current = [(g["t0"], g["t1"]) for g in seg_yaml["segments"]]
+        current = [(g["t0"], g["t1"]) for g in seg_yaml["segments"] if g["label"] in seg.FIT_LABELS]
         if current != [(g["t0"], g["t1"]) for g in self.segments]:
             print("warning: segments.yaml changed since the fit, showing the fitted segments (run fit again)")
         # contiguous segments (glide - impact - glide) form runs, a prediction may cross segments

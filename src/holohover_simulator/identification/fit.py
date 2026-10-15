@@ -132,7 +132,7 @@ def initial_state(rec, g, contacts=(), window=0.06, yaw_window=0.25):
 
 def run(rec, seg_yaml, cfg, verbose=1):
     walls = model.walls_from_yaml(seg_yaml["walls"])
-    segments = seg_yaml["segments"]
+    segments = [g for g in seg_yaml["segments"] if g["label"] in seg.FIT_LABELS]
     if not segments:
         raise RuntimeError("no segments to fit")
     pr = Problem(rec, segments, walls, cfg, seg_yaml.get("events", []))

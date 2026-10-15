@@ -246,6 +246,9 @@ def load_segments(path, rec):
     Times are relative to the first sample, which differs between the EKF state and the raw
     pose: segments made with one source still work with the other."""
     doc = load_yaml(path)
+    for e in doc.get("events", []):
+        if e["kind"] == "glitch":  # older name of the "flight" events
+            e["kind"] = "flight"
     shift = float(doc.get("t_ref", rec.t_ref)) - rec.t_ref
     if abs(shift) > 1e-9:
         for g in doc.get("segments", []):
