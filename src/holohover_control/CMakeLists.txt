@@ -14,6 +14,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 
 find_package(rclcpp REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(Eigen3 REQUIRED)
 
@@ -44,13 +45,17 @@ add_executable(control_exp src/control_exp_node.cpp)
 ament_target_dependencies(control_exp rclcpp geometry_msgs holohover_msgs holohover_common)
 target_link_libraries(control_exp yaml-cpp)
 
+add_executable(control_teleop src/control_teleop_node.cpp)
+ament_target_dependencies(control_teleop rclcpp ament_index_cpp holohover_msgs holohover_common)
+target_link_libraries(control_teleop yaml-cpp)
+
 # install(DIRECTORY
 #   config
 #   DESTINATION share/${PROJECT_NAME}
 # )
 
 install(TARGETS
-  control_lqr control_exp # control_signal
+  control_lqr control_exp control_teleop # control_signal
   DESTINATION lib/${PROJECT_NAME}
 )
 
