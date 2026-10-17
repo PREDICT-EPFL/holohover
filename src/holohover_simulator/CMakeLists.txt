@@ -18,6 +18,7 @@ find_package(yaml-cpp REQUIRED)
 
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs)
+find_package(std_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(holohover_msgs REQUIRED)
 find_package(holohover_common REQUIRED)
@@ -36,7 +37,7 @@ endif()
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(simulator src/simulator_node.cpp)
-ament_target_dependencies(simulator rclcpp holohover_msgs holohover_common geometry_msgs box2d tf2_ros visualization_msgs)
+ament_target_dependencies(simulator rclcpp holohover_msgs holohover_common geometry_msgs std_msgs box2d tf2_ros visualization_msgs)
 target_link_libraries(simulator box2d yaml-cpp)
 
 # install(DIRECTORY

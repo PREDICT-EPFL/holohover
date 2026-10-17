@@ -24,6 +24,41 @@ SimulatorNode::SimulatorNode() :
 
     init_hovercraft();
     init_timer();
+
+    reset_subscription = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+            "~/reset", 10, std::bind(&SimulatorNode::reset_callback, this, std::placeholders::_1));
+}
+
+// The contact listener is destroyed before the bodies, whose destruction ends their contacts: detach it
+// first, or Box2D calls it after its destruction (segfault at shutdown when the puck touches something)
+SimulatorNode::~SimulatorNode()
+{
+    world->SetContactListener(nullptr);
+}
+
+void SimulatorNode::reset_callback(const std_msgs::msg::Float64MultiArray &msg)
+{
+    const size_t n = hovercraft_bodies.size();
+    if (msg.data.size() != 6 * n + 4) {
+        RCLCPP_WARN(get_logger(), "Reset ignored: %zu values, expected %zu (6 per hovercraft, then 4 for the puck).",
+                    msg.data.size(), 6 * n + 4);
+        return;
+    }
+    for (size_t i = 0; i < n; i++) {
+        const double *s = &msg.data[6 * i];
+        hovercraft_bodies[i]->SetTransform(b2Vec2(s[0], s[1]), s[2]);
+        hovercraft_bodies[i]->SetLinearVelocity(b2Vec2(s[3], s[4]));
+        hovercraft_bodies[i]->SetAngularVelocity(s[5]);
+        hovercraft_bodies[i]->SetAwake(true);
+        motor_velocities_vec[i].setZero();
+        body_to_state(states_vec[i], hovercraft_bodies[i]);
+    }
+    const double *p = &msg.data[6 * n];
+    puck_bodies[0]->SetTransform(b2Vec2(p[0], p[1]), 0.0);
+    puck_bodies[0]->SetLinearVelocity(b2Vec2(p[2], p[3]));
+    puck_bodies[0]->SetAngularVelocity(0.0);
+    puck_bodies[0]->SetAwake(true);
+    body_to_state(state_puck, puck_bodies[0]);
 }
 
 // Update Sep 30: puck simulation
