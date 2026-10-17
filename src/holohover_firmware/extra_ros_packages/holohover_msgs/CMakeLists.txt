@@ -42,6 +42,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/HolohoverDmpcStateRefStamped.msg"
         "msg/HolohoverPathPlan.msg"
         "msg/HolohoverControl.msg"
+        "msg/HolohoverPlan.msg"
+        "msg/HolohoverPlanCandidate.msg"
         DEPENDENCIES std_msgs geometry_msgs
         )
 
