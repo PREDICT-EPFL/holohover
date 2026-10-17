@@ -36,6 +36,13 @@ COPY docker/scripts/check_optitrack.py /usr/local/bin/check-optitrack
 RUN chmod +x /usr/local/bin/holohover-entrypoint /usr/local/bin/check-optitrack \
     && echo "source /root/setup.bash" >> /root/.bashrc
 
+# Python packages from pip (numpy stays the apt one, < 2, as Humble's message packages need)
+COPY src/holohover_planner/requirements.txt /tmp/planner_requirements.txt
+RUN apt-get update && apt-get install --no-install-recommends -y python3-pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m pip install --no-cache-dir -r /tmp/planner_requirements.txt \
+    && rm /tmp/planner_requirements.txt
+
 # Compile the ROS 2 packages of this repository
 WORKDIR /root/ros2_ws
 COPY src src/holohover

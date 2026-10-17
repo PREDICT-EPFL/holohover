@@ -1,0 +1,64 @@
+# holohover_planner shot_planner (one per hovercraft, namespace hN): every parameter is required, the
+# code has no defaults. python-sim's config.json, with the Box2D hovercraft and puck.
+/**:
+  ros__parameters:
+    attack_goal: left        # goal attacked: left (x = -width/2) or right (x = +width/2), table frame
+    max_state_age: 0.05      # s: no planning from older robot or puck states
+
+    table:
+      width: 2.13
+      height: 1.06
+      goal_width: 0.34
+      friction: 0.3          # 1/s, viscous friction of robot and puck
+
+    robot:
+      mass: 0.1463           # holohover_params_new.yaml
+      radius: 0.07
+      force_max: [0.4414, 0.4414, 0.0063]   # python-sim's accelerations (0.35 N / 0.116 kg)
+
+    puck:
+      mass: 0.003848         # the Box2D puck: density 1 kg/m^2, pi 0.035^2
+      radius: 0.035
+
+    contact:                 # model-based contact detection (contact.py)
+      dv: 0.3                # m/s, velocity error not explained by the puck model
+      margin: 0.03           # m, largest robot-puck gap at a contact
+      lookback: 0.05         # s, age of the sample the prediction starts from; the robot must
+                             # have been within margin at some sample since then
+
+    shot_mpc:
+      N: 20
+      t_min: 0.05
+      t_max: 1.0
+      K: 2                   # at most K wall bounces of the shot
+      restitution: 0.8       # the Box2D puck's (max with the hovercraft's 0)
+      goal_margin: 0.01
+      v_min: 0.2
+      eps: 0.05
+      delta: 0.01
+      t_clear: 0.015
+      t_react: 0.01
+      t_ref: 0.5
+      T_ref: 1.0
+      weights:
+        w_u: 1.0
+        w_du: 0.1
+        w_t: 1.0
+        w_T: 1.0
+        w_a: 1.0
+        w_slack: 1000.0
+      rates:
+        outer_hz: 5.0        # all bounce sequences
+        inner_hz: 20.0       # the chosen sequence; the planning timer
+      t_commit: 0.15
+      t_stop_replan: 0.06
+      plan_expiry: 0.1
+      contact_cooldown: 0.5
+      sigma_init: 1.0
+      n_tf_seeds: 1
+      ipopt:
+        max_iter: 40
+        tol: 1.0e-4
+        acceptable_tol: 1.0e-3
+        valid_tol: 1.0e-3
+      n_workers: 5           # solver processes of the outer updates; 0 or 1: serial

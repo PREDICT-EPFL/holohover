@@ -1,0 +1,2 @@
+# pip packages of holohover_planner (installed by docker/Dockerfile); numpy comes from apt (< 2 for Humble)
+casadi==3.8.1
