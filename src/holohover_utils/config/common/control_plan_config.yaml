@@ -1,0 +1,25 @@
+# holohover_control control_plan: follows the plans of holohover_planner (one per hovercraft, namespace hN)
+# and publishes the motor signals (control). Every parameter is required, the code has no defaults;
+# holohover_props_file comes from the launch file. python-sim runs the same controller.
+/**:
+  ros__parameters:
+    period: 0.01
+    plan_expiry: 0.1           # s past the planned impact without a new plan: back to defence
+
+    # Bounds of the commanded accelerations (a_x, a_y, w_dot_z): the planner's force_max / mass and
+    # force_max[2] / (0.5 mass radius^2) (shot_planner_config.yaml)
+    acc_max: [3.017, 3.017, 17.58]
+
+    tracker:                   # tracking QP (holohover_control/tracker.py)
+      H: 10                    # intervals up to the impact
+      friction: 0.3            # 1/s, the planner's table.friction
+      yaw_ref: 0.0             # heading held while attacking
+      # (x, y, yaw, v_x, v_y, w_z): Q on nodes 1..H-1, Q_f on node H (the impact)
+      Q: [1.0e4, 1.0e4, 1.0e2, 1.0e2, 1.0e2, 1.0]
+      Q_f: [1.0e6, 1.0e6, 1.0e2, 1.0e4, 1.0e4, 1.0]
+      R: [1.0, 1.0, 1.0]       # input deviations from the plan, normalised by acc_max
+
+    defence:                   # PD to home (python-sim robot 1: defensive_position_rel 0.85)
+      home: [0.7455, 0.0, 0.0] # x, y, yaw, table frame
+      kp: [43.1, 43.1, 100.0]  # 1/s^2 (python-sim: 5 N/m on 0.116 kg)
+      kd: [8.62, 8.62, 20.0]   # 1/s   (python-sim: 1 Ns/m on 0.116 kg)

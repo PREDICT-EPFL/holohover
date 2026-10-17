@@ -12,6 +12,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
 
 find_package(rclcpp REQUIRED)
 find_package(yaml-cpp REQUIRED)
@@ -53,5 +54,18 @@ install(TARGETS
   control_lqr control_exp # control_signal
   DESTINATION lib/${PROJECT_NAME}
 )
+
+# Python controllers (holohover_control/) and their nodes
+ament_python_install_package(${PROJECT_NAME})
+install(PROGRAMS scripts/control_plan DESTINATION lib/${PROJECT_NAME})
+
+if(BUILD_TESTING)
+  find_package(ament_cmake_pytest QUIET)
+  if(ament_cmake_pytest_FOUND)
+    ament_add_pytest_test(test_holohover_control test)  # test_parity.py also needs holohover_planner
+  else()
+    message(STATUS "ament_cmake_pytest not found: run test/ with python3 -m pytest")
+  endif()
+endif()
 
 ament_package()
