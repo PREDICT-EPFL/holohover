@@ -5,3 +5,4 @@ __pycache__
 docker/data/
 docker/.env
 simulation_data/
+*.egg-info/

@@ -44,10 +44,16 @@ RUN apt-get update && apt-get install --no-install-recommends -y python3-pip \
     && rm /tmp/planner_requirements.txt
 
 # Compile the ROS 2 packages of this repository
+# Each C++ compiler process can take ~2 GB, so cap the parallelism (at most
+# COLCON_WORKERS x MAKE_JOBS compilers at once); unbounded it exhausts RAM
+# and freezes the host. Override with --build-arg on machines with more RAM.
+ARG COLCON_WORKERS=2
+ARG MAKE_JOBS=2
 WORKDIR /root/ros2_ws
 COPY src src/holohover
 RUN source /opt/ros/humble/setup.bash \
-    && colcon build --symlink-install
+    && MAKEFLAGS="-j${MAKE_JOBS}" colcon build --symlink-install \
+        --parallel-workers ${COLCON_WORKERS}
 
 ENTRYPOINT ["/usr/local/bin/holohover-entrypoint"]
 CMD ["bash"]
