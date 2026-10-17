@@ -9,7 +9,7 @@ Robot 1 is driven by one of these controllers:
 | Controller | What it does | Code |
 |---|---|---|
 | `dial` | Sampling-based path planner (DIAL, Till's project) plus an MPC path follower | [`controllers/dial/`](controllers/dial/), see `SP_hockey/literature/report-till.pdf` |
-| `shot_mpc` | Gradient-based shot MPC (CasADi + IPOPT) plus a tracking QP | [`controllers/shot_mpc/`](controllers/shot_mpc/), see [`docs/air-hockey-mpc-formulation.md`](docs/air-hockey-mpc-formulation.md) |
+| `shot_mpc` | Gradient-based shot MPC (CasADi + IPOPT) plus a tracking QP: the planner and the controller of the ROS nodes, from [`holohover_planner`](../../holohover_planner/) and [`holohover_control`](../../holohover_control/) | [`controllers/shot_mpc/`](controllers/shot_mpc/), see [`docs/air-hockey-mpc-formulation.md`](docs/air-hockey-mpc-formulation.md) |
 | `forward` | Example: a constant force toward the opponent goal (`forward.force`), a template for a new controller | [`controllers/forward/`](controllers/forward/) |
 
 ## Layout
@@ -24,15 +24,15 @@ simulation/
   episode.py           the closed loop shared by all controllers, and its recorded data
 controllers/
   __init__.py          the controller interface, and load() to pick one
-  pd.py                PD to home (shot_mpc defence, robot 2)
+  pd.py                PD to home (robot 2), home positions
   dial/                controller.py, planner.py, rollout.py, follower.py (MPC, LQR), model.py
-  shot_mpc/            see its __init__.py
+  shot_mpc/            controller.py (closed loop: holohover_planner, then holohover_control), frames.py
   forward/             example: constant force forward
 viz/
   foxglove_viz.py      MCAP file for the Foxglove app
   foxglove_open.py     opens an MCAP file in the Foxglove web app
   view_starts.py       shows the evaluation starts in Foxglove (python viz/view_starts.py)
-  foxglove_layout.json Foxglove layout
+  ros_messages.py      the ROS nodes' topics in the MCAP (CDR), for the shared layout
 tests/                 pytest
 ```
 
@@ -48,16 +48,12 @@ computed at step `i` is applied at step `i + delay`, and the input is zero until
 The controller doesn't know about the delay. The recorded `/robot1/control` is the applied input; for
 `shot_mpc`, `/robot1/plan_control` and `/robot1/def_control` are still the computed ones.
 
-`shot_mpc` can compensate a delay it assumes, `shot_mpc.delay_compensation` control steps (or
-`--compensate [STEPS]`, by default the input delay). Its planner and tracker then start from the state
-predicted for when the input is applied: robot 1 rolled through its pending inputs with the planner's ZOH
-model, and the puck along its free flight. The defence PD also acts on the predicted robot state.
-
 Every step is recorded in one data dict (`simulation.episode.episode_data`), which is written to an MCAP file for Foxglove.
 
 ## Run
 
-From `python-sim/`, either in the devcontainer or with `uv sync` and then `.venv/bin/python`:
+From `python-sim/`, either in the devcontainer or with `uv sync` and then `.venv/bin/python`. `uv sync` also
+installs `holohover_planner` and `holohover_control` from `src/` (editable: their edits apply at once):
 
 ```bash
 python main.py simulate                                   # shot_mpc (the config's), scenario "default", opened in Foxglove
@@ -79,7 +75,6 @@ Options shared by `simulate` and `evaluate`:
 Options for `shot_mpc` only:
 - `--workers N`: number of solver processes, 0 for serial solves
 - `--no-tracker`
-- `--compensate [STEPS]`: delay compensation over STEPS control steps, by default `--input-delay`'s
 
 Outputs go to `simulation_data/` (git-ignored): `<controller>_<scenario>_<stamp>.mcap` for `simulate`, and
 `<controller>_eval_<stamp>.mcap` for `evaluate --mcap`, which holds the saved episodes one after the other,
@@ -124,7 +119,7 @@ all the starts shown. The Events panel gives each start's index, puck speed and 
 | `table`, `robot`, `puck` | the physical parameters; robot 2 is parked at `robot.robot2.park` when `opponent` is `none` |
 | `scenarios` | named starts for `simulate --scenario` |
 | `evaluation` | `duration` of an episode, the `starts` file, and the `sampling` that `main.py starts` draws it from |
-| `dial`, `shot_mpc`, `forward` | the controllers' parameters |
+| `dial`, `forward` | the controllers' parameters; `shot_mpc` has none here: its planner and controller read the ROS nodes' files, `holohover_utils/config/common/shot_planner_config.yaml` and `control_plan_config.yaml` (one config for python-sim and Box2D), with python-sim's `table`, `robot` and `puck` |
 
 ## Foxglove
 
@@ -139,7 +134,7 @@ https://app.foxglove.dev/~/view?ds=remote-file&ds.url=http://127.0.0.1:8790/<run
 The link is also printed (Ctrl+click it in the VS Code terminal). The file is served until Ctrl-C.
 `view --no-browser` only prints the link.
 
-- The first time, import the layout [`viz/foxglove_layout.json`](viz/foxglove_layout.json) from the layout menu (**Import from file…**). The app then keeps using it.
+- The first time, import the layout [`holohover_utils/gui/air_hockey.foxglove.json`](../../holohover_utils/gui/air_hockey.foxglove.json) from the layout menu (**Import from file…**). The app then keeps using it. It is the layout of the ROS rosbags too: a file has the ROS nodes' topics (`/h0/state`, `/puck/state`, `/h0/acc_ref`, `/h0/plan`, see [`viz/ros_messages.py`](viz/ros_messages.py)), shown in its first tab; the second tab has python-sim's own views (its scene, inputs, scores, solves, compute timeline, events).
 - Chrome may ask to let app.foxglove.dev access apps on this device. Allow it, or the app can't read the file.
 - In the devcontainer, the port must be forwarded to the host. VS Code usually does this by itself; if it doesn't, add 8790 in its **Ports** tab.
 - Without the server, you can still open a `.mcap` by hand with **Open local file…** in the app.

@@ -5,19 +5,22 @@ import json
 import numpy as np
 import pytest
 from mcap.reader import make_reader
+from mcap_ros2.decoder import DecoderFactory
 
+from holohover_planner.shot_planner import Candidate, PlanSet
 from viz.foxglove_viz import EPISODE_GAP, ComputeTimeline, McapWriter, write_mcap
 
 N_STEPS, N_PLAN, N_FUTURE, N_SHOT = 21, 20, 60, 8
 START_NS = 1_700_000_000_000_000_000
 LABELS = ["direct", "L"]
+PLAN_ROWS = (6, 12)  # rows with a PlanSet: the plans of steps 5 and 11
 
 LOG = {
     "outcome": "goal", "t_goal": 0.105, "contacts": [0.075],
     "plan_history": [[0.05, "direct", 0.3], [0.06, "direct", 0.29], [0.1, "L", 0.2]],
     "updates": [{"t": 0.05, "outer": True, "chosen": "direct", "t_total": 0.012, "results": {
-        "direct": {"valid": True, "cost": 1.0, "score": 1.0, "tf": 0.3, "t_wall": 0.010, "iters": 12, "cold": False},
-        "L": {"valid": False, "cost": float("inf"), "score": float("nan"), "tf": 0.4, "t_wall": 0.002,
+        "direct": {"valid": True, "cost": 1.0, "tf": 0.3, "t_wall": 0.010, "iters": 12, "cold": False},
+        "L": {"valid": False, "cost": float("inf"), "tf": 0.4, "t_wall": 0.002,
               "iters": 50, "cold": True},
     }}],
 }
@@ -60,6 +63,13 @@ def episode(config, shot=True):
             "valid": np.tile([True, False], (n, 1)),
             "chosen": np.where(modes == 1, 0, -1),
         }
+        plans = np.full(n, None, dtype=object)
+        for k in PLAN_ROWS:
+            c = Candidate(label="direct", cost=1.5, t0=(k - 1) * 0.01, tf=0.3, states=np.ones((N_PLAN + 1, 4)),
+                          acc=np.full((N_PLAN, 2), 0.5), impact_puck=np.array([0.1, 0.2]),
+                          puck_velocity=np.array([-1.0, 0.0]))
+            plans[k] = PlanSet(LABELS, [c, None], chosen=0)
+        data["ros_plan"] = plans
     else:
         data["diffusion_trajs"] = np.zeros((n, 12, 5, N_PLAN, 2))
         data["diffusion_costs"] = np.zeros((n, 12, 5))
@@ -106,17 +116,18 @@ def test_topics_and_counts(shot_file):
     count = {}
     for topic, _, _ in messages:
         count[topic] = count.get(topic, 0) + 1
-    per_step = ["/tf", "/robot1/state", "/robot2/state", "/puck/state", "/robot1/control", "/status",
+    per_step = ["/tf", "/h0/state", "/robot2/state", "/puck/state", "/robot1/control", "/status",
                 "/robot1/plan", "/puck/prediction", "/robot2/prediction", "/puck/trail", "/shot_mpc/scores",
                 "/shot_mpc/candidates/direct", "/shot_mpc/candidates/L"]
     assert {t: count.get(t) for t in per_step} == {t: N_STEPS for t in per_step}
     assert count["/scene/table"] == count["/scene/bodies"] == count["/shot_mpc/solves"] == 1
+    assert count["/h0/acc_ref"] == N_STEPS - 1 and count["/h0/plan"] == len(PLAN_ROWS)
     # mode DEF->ATT, goal, contact, plans direct and L, outcome
     assert count["/events"] == 6
     compute = [f"/shot_mpc/compute/{row}" for row in ("selector", *LABELS)]
     assert {t: count.get(t) for t in compute} == {t: 2 for t in compute}  # busy, then idle
     assert set(count) == set(per_step) | set(compute) | {"/scene/table", "/scene/bodies", "/shot_mpc/solves",
-                                                         "/events"}
+                                                         "/events", "/h0/acc_ref", "/h0/plan"}
 
 
 def test_compute_timeline():
@@ -173,7 +184,7 @@ def test_json_is_strict_and_non_finite_is_null(shot_file):
         if schema.encoding == "jsonschema":
             decoded.setdefault(topic, []).append(strict_json(message.data))
     solve = decoded["/shot_mpc/solves"][0]
-    assert solve["results"]["L"]["cost"] is None and solve["results"]["L"]["score"] is None
+    assert solve["results"]["L"]["cost"] is None
     assert solve["t_total_ms"] == pytest.approx(12.0)
     assert decoded["/shot_mpc/scores"][-1] == {"t": pytest.approx(0.2), "chosen": "direct",
                                                "scores": {"direct": 1.0, "L": None},
@@ -181,10 +192,35 @@ def test_json_is_strict_and_non_finite_is_null(shot_file):
     status = decoded["/status"]
     assert status[0]["mode_name"] == "DEF" and status[0]["time_to_impact"] is None
     assert status[5]["mode_name"] == "ATT" and status[10]["goals_robot1"] == 1
-    assert [s["theta"] for s in decoded["/robot1/state"]] == pytest.approx([theta(k) for k in range(N_STEPS)])
 
 
-def test_tf_decodes_with_yaw_from_theta(shot_file):
+def test_ros_topics_decode_in_the_table_frame(config, tmp_path):
+    """/h0/state, /puck/state, /h0/acc_ref and /h0/plan decode as the ROS nodes' messages, table frame."""
+    path = tmp_path / "shot.mcap"
+    write_mcap(episode(config), path, start_ns=START_NS)
+    decoded = {}
+    with open(path, "rb") as f:
+        for schema, channel, message, msg in make_reader(f, decoder_factories=[DecoderFactory()]).iter_decoded_messages(
+                topics=["/h0/state", "/puck/state", "/h0/acc_ref", "/h0/plan"]):
+            assert schema.encoding == "ros2msg" and channel.message_encoding == "cdr"
+            decoded.setdefault(channel.topic, []).append((message.log_time, msg))
+    cx, cy = 0.5 * config["table"]["width"], 0.5 * config["table"]["height"]
+    h0 = [m.state_msg for _, m in decoded["/h0/state"]]
+    assert [s.x for s in h0] == pytest.approx([1.8 - 0.01 * k - cx for k in range(N_STEPS)])
+    assert [s.yaw for s in h0] == pytest.approx([theta(k) for k in range(N_STEPS)])
+    assert decoded["/puck/state"][0][1].state_msg.x == pytest.approx(1.0 - cx)
+    assert decoded["/puck/state"][0][1].state_msg.y == pytest.approx(0.5 - cy)
+    m = config["robot"]["mass"]
+    acc = decoded["/h0/acc_ref"][0][1].accel
+    assert (acc.linear.x, acc.angular.z) == pytest.approx((1.0 / m, 1.0 / (0.5 * m * config["robot"]["radius"] ** 2)))
+    (t_plan, plan), _ = decoded["/h0/plan"]
+    assert t_plan == START_NS + 5 * 10**7 and plan.chosen == 0 and plan.label == "direct"
+    assert [c.label for c in plan.candidates] == LABELS and len(plan.candidates[1].states) == 0
+    c = plan.candidates[0]
+    assert c.t0.sec * 10**9 + c.t0.nanosec == t_plan and len(c.states) == N_PLAN + 1 and c.acc_x[0] == 0.5
+
+
+def test_tf_decodes_with_yaw_from_theta(shot_file, config):
     """Decode /tf with the protobuf schema stored in the file, as the Foxglove app does.
     Robot 1's frame faces the goal it attacks (x = 0): yaw theta + pi; the others use theta."""
     messages, _, _ = shot_file
@@ -195,9 +231,11 @@ def test_tf_decodes_with_yaw_from_theta(shot_file):
 
     for k, (_, message) in enumerate(tf):
         transforms = {t.child_frame_id: t for t in cls.FromString(message.data).transforms}
-        assert set(transforms) == {"robot1", "robot2", "puck"}
+        assert set(transforms) == {"sim", "robot1", "robot2", "puck"}
+        sim = transforms["sim"]  # the simulator's frame, in the table frame "world"
+        assert sim.parent_frame_id == "world" and sim.translation.x == pytest.approx(-0.5 * config["table"]["width"])
         r1 = transforms["robot1"]
-        assert r1.parent_frame_id == "world"
+        assert r1.parent_frame_id == "sim"
         assert r1.translation.x == pytest.approx(1.8 - 0.01 * k)
         yaw = theta(k) + np.pi
         assert (r1.rotation.z, r1.rotation.w) == pytest.approx((np.sin(yaw / 2), np.cos(yaw / 2)))

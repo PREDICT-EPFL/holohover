@@ -5,6 +5,7 @@ from collections import Counter
 
 import numpy as np
 from mcap.reader import make_reader
+from mcap_ros2.decoder import DecoderFactory
 
 from conftest import SIM_DIR
 from simulation.setup import generate_starts, load_starts, start_state, write_starts
@@ -45,8 +46,11 @@ def test_view_starts_mcap(config, tmp_path):
     counts = Counter(topic for topic, _ in messages)
     assert counts["/scene/table"] == counts["/scene/bodies"] == 1
     assert all(counts[topic] == 3 for topic in ("/tf", "/puck/prediction", "/events", "/puck/state"))
-    puck = [json.loads(m.data) for topic, m in messages if topic == "/puck/state"]
-    assert [p["t"] for p in puck] == [5.0, 6.0, 7.0]
-    assert [[p[k] for k in ("x", "y", "theta", "vx", "vy", "omega")] for p in puck] == [s["puck"] for s in starts]
+    with open(path, "rb") as f:  # /puck/state: the ROS nodes' message, table frame (origin at the centre)
+        puck = [m.state_msg for _, channel, _, m in make_reader(f, decoder_factories=[DecoderFactory()])
+                .iter_decoded_messages(topics=["/puck/state"])]
+    cx, cy = 0.5 * config["table"]["width"], 0.5 * config["table"]["height"]
+    np.testing.assert_allclose([[p.x + cx, p.y + cy, p.yaw, p.v_x, p.v_y, p.w_z] for p in puck],
+                               [s["puck"] for s in starts], atol=1e-12)
     times = [m.log_time for topic, m in messages if topic == "/tf"]
     assert np.diff(times).tolist() == [1_000_000_000] * 2

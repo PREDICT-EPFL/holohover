@@ -9,7 +9,6 @@ air-hockey table, robot 1 driven by the DIAL planner, the shot MPC or the forwar
     python main.py evaluate --mcap --outcomes miss            # the misses, in one MCAP file
     python main.py evaluate --first 37 --episodes 1 --mcap    # rerun start 37 only
     python main.py evaluate --input-delay 3                   # robot 1's inputs applied 3 steps (30 ms) late
-    python main.py evaluate --input-delay 3 --compensate      # shot_mpc plans from the state 3 steps ahead
     python main.py view [simulation_data/<run>.mcap]          # open a saved run (default: the newest)
     python main.py starts --count 1000 --seed 0 --force       # redraw the stored starts
 
@@ -112,11 +111,8 @@ def main(argv=None):
         p.add_argument("--input-delay", type=int, metavar="STEPS",
                        help="control steps between robot 1's input and its application (default: the config's)")
         shot = p.add_argument_group("shot_mpc")
-        shot.add_argument("--workers", type=int, help="solver processes (default shot_mpc.n_workers; 0: serial)")
+        shot.add_argument("--workers", type=int, help="solver processes (default: shot_mpc.n_workers of shot_planner_config.yaml; 0: serial)")
         shot.add_argument("--no-tracker", action="store_true", help="apply the plan's inputs open loop")
-        shot.add_argument("--compensate", nargs="?", type=int, const=True, metavar="STEPS",
-                          help="plan from the state predicted STEPS control steps ahead "
-                               "(shot_mpc.delay_compensation; without STEPS: the input delay)")
         return p
 
     p = run_parser("simulate", "run one episode from a config scenario")
@@ -162,13 +158,7 @@ def main(argv=None):
             parser.error("--input-delay: 0 or more steps")
         config["simulation"]["input_delay"] = args.input_delay
     if args.no_tracker:
-        config["shot_mpc"]["tracker"]["enabled"] = False
-    if args.compensate is not None:
-        if args.compensate is True:  # no STEPS (argparse would pass a str const through int)
-            args.compensate = config["simulation"]["input_delay"]
-        if args.compensate < 0:
-            parser.error("--compensate: 0 or more steps")
-        config["shot_mpc"]["delay_compensation"] = args.compensate
+        config["shot_mpc"] = {"tracker": False}
     if args.command == "simulate" and args.scenario and args.scenario not in config["scenarios"]:
         parser.error(f"--scenario: one of {', '.join(config['scenarios'])}")
     if args.command == "evaluate":

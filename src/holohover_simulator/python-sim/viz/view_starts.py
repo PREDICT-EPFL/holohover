@@ -1,6 +1,6 @@
 """
 The evaluation starts (config "evaluation.starts") in the Foxglove web app, with the episode layout
-(viz/foxglove_layout.json). Run from python-sim/:
+(holohover_utils/gui/air_hockey.foxglove.json; the arrows are in its second tab). Run from python-sim/:
 
     python viz/view_starts.py                       # all starts (or python -m viz.view_starts)
     python viz/view_starts.py --first 37 --count 10
@@ -30,7 +30,7 @@ if not __package__:  # run as a file (python viz/view_starts.py): import from py
 from simulation.setup import load_config, load_starts, start_state
 from viz.foxglove_open import open_in_foxglove
 from viz.foxglove_viz import (Z_PREDICTION, Z_TRAIL, _color, _color_over_table, _line, _pose, _timestamp,
-                              bodies_scene, log_bodies, setup_channels, table_scene)
+                              SIM_FRAME, bodies_scene, log_bodies, setup_channels, table_scene)
 
 PATH = Path("simulation_data/eval_starts.mcap")
 PERIOD_NS = 1_000_000_000  # timeline time per start
@@ -51,13 +51,14 @@ def overview(starts, stamp):
                + dots(puck[~moving, :2], _color_over_table("gray", 0.6), 0.012)
                + dots(puck[moving, :2], _color_over_table("tab:blue", 0.6), 0.012))
     lines = [_line(ticks, Z_TRAIL, _color("tab:blue", 0.6), 1.5, fm.LinePrimitiveLineType.LineList)]
-    return fm.SceneEntity(timestamp=stamp, frame_id="world", id="starts", spheres=spheres, lines=lines)
+    return fm.SceneEntity(timestamp=stamp, frame_id=SIM_FRAME, id="starts", spheres=spheres, lines=lines)
 
 
 def log_start(ch, config, i, start, ns):
     """Bodies, puck arrow and Events line of start i."""
     stamp = _timestamp(ns)
-    log_bodies(ch, start_state(config, start), float(i), ns)
+    log_bodies(ch, start_state(config, start), float(i), ns,
+               (0.5 * config["table"]["width"], 0.5 * config["table"]["height"]))
     x, y, _, vx, vy, _ = start["puck"]
     speed, heading = math.hypot(vx, vy), math.atan2(vy, vx)
     arrows = []
@@ -68,7 +69,7 @@ def log_start(ch, config, i, start, ns):
                                         shaft_diameter=0.01, head_length=head, head_diameter=0.03,
                                         color=_color("green")))
     ch["puck_prediction"].log(fm.SceneUpdate(entities=[fm.SceneEntity(
-        timestamp=stamp, frame_id="world", id="puck_prediction", arrows=arrows)]), log_time=ns)
+        timestamp=stamp, frame_id=SIM_FRAME, id="puck_prediction", arrows=arrows)]), log_time=ns)
     motion = f"{speed:.2f} m/s at {math.degrees(heading):+.0f} deg" if speed > 0 else "stationary"
     ch["events"].log(fm.Log(timestamp=stamp, level=fm.LogLevel.Info, name="holohover",
                             message=f"start {i}: puck at ({x:.2f}, {y:.2f}), {motion}"), log_time=ns)

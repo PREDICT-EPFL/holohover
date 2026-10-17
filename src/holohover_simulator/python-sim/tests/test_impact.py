@@ -7,7 +7,7 @@ import jax.numpy as jnp
 
 from conftest import DT, R2_PARK
 from simulation.dynamics import physics_step
-from controllers.shot_mpc.model import impact, invert
+from holohover_planner.shot_mpc.model import impact, invert
 
 
 def test_kappa_sanity(P):
