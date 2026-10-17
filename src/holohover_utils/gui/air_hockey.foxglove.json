@@ -1,0 +1,629 @@
+{
+  "configById": {
+    "3D!table": {
+      "foxglovePanelTitle": "Table (h0 attacks the left goal): /h0/state, /puck/state, /h0/plan",
+      "cameraState": {
+        "perspective": false,
+        "distance": 2.6,
+        "phi": 0,
+        "thetaOffset": 0,
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 100
+      },
+      "followMode": "follow-none",
+      "followTf": "world",
+      "scene": {
+        "transforms": {
+          "showLabel": false,
+          "axisScale": 0.5
+        },
+        "meshUpAxis": "z_up"
+      },
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/studio_script/air_hockey": {
+          "visible": true
+        },
+        "/scene/table": {
+          "visible": false
+        },
+        "/scene/bodies": {
+          "visible": false
+        },
+        "/robot1/plan": {
+          "visible": false
+        },
+        "/puck/prediction": {
+          "visible": false
+        },
+        "/robot2/prediction": {
+          "visible": false
+        },
+        "/puck/trail": {
+          "visible": false
+        },
+        "/shot_mpc/candidates/direct": {
+          "visible": false
+        },
+        "/shot_mpc/candidates/L": {
+          "visible": false
+        },
+        "/shot_mpc/candidates/R": {
+          "visible": false
+        },
+        "/shot_mpc/candidates/LR": {
+          "visible": false
+        },
+        "/shot_mpc/candidates/RL": {
+          "visible": false
+        },
+        "/dial/samples": {
+          "visible": false
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {}
+    },
+    "Plot!h0_velocity": {
+      "foxglovePanelTitle": "h0 velocity [m/s] (EKF)",
+      "paths": [
+        {
+          "value": "/h0/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vx"
+        },
+        {
+          "value": "/h0/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vy"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!puck_velocity": {
+      "foxglovePanelTitle": "Puck velocity [m/s] (EKF)",
+      "paths": [
+        {
+          "value": "/puck/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vx"
+        },
+        {
+          "value": "/puck/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vy"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!h0_acc": {
+      "foxglovePanelTitle": "h0 commanded acceleration [m/s\u00b2] (control_plan)",
+      "paths": [
+        {
+          "value": "/h0/acc_ref.accel.linear.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "ax"
+        },
+        {
+          "value": "/h0/acc_ref.accel.linear.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "ay"
+        },
+        {
+          "value": "/h0/acc_ref.accel.angular.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "w_dot_z"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "StateTransitions!plan": {
+      "foxglovePanelTitle": "Chosen sequence (empty: none, defence)",
+      "paths": [
+        {
+          "value": "/h0/plan.label",
+          "timestampMethod": "receiveTime",
+          "label": "label"
+        }
+      ],
+      "isSynced": true
+    },
+    "RosOut!log": {
+      "foxglovePanelTitle": "Log",
+      "searchTerms": [],
+      "minLogLevel": 2,
+      "nameFilter": {}
+    },
+    "RawMessages!plan": {
+      "foxglovePanelTitle": "Last plan",
+      "topicPath": "/h0/plan",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 12,
+      "expansion": "none"
+    },
+    "Plot!shot_costs": {
+      "foxglovePanelTitle": "Shot costs J*(B) (gap: no valid plan)",
+      "paths": [
+        {
+          "value": "/h0/plan.candidates[0].cost",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "direct"
+        },
+        {
+          "value": "/h0/plan.candidates[1].cost",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "L"
+        },
+        {
+          "value": "/h0/plan.candidates[2].cost",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "R"
+        },
+        {
+          "value": "/h0/plan.candidates[3].cost",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "LR"
+        },
+        {
+          "value": "/h0/plan.candidates[4].cost",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "RL"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!robot1_force": {
+      "foxglovePanelTitle": "Robot 1 force [N]",
+      "paths": [
+        {
+          "value": "/robot1/control.fx",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "Fx"
+        },
+        {
+          "value": "/robot1/control.fy",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "Fy"
+        },
+        {
+          "value": "/robot1/plan_control.fx",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "plan Fx"
+        },
+        {
+          "value": "/robot1/plan_control.fy",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "plan Fy"
+        },
+        {
+          "value": "/robot1/def_control.fx",
+          "enabled": false,
+          "timestampMethod": "receiveTime",
+          "label": "def Fx"
+        },
+        {
+          "value": "/robot1/def_control.fy",
+          "enabled": false,
+          "timestampMethod": "receiveTime",
+          "label": "def Fy"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!sequence_scores": {
+      "foxglovePanelTitle": "Sequence costs J*(B) (gap: no valid plan)",
+      "paths": [
+        {
+          "value": "/shot_mpc/scores.scores.direct",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "direct"
+        },
+        {
+          "value": "/shot_mpc/scores.scores.L",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "L"
+        },
+        {
+          "value": "/shot_mpc/scores.scores.R",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "R"
+        },
+        {
+          "value": "/shot_mpc/scores.scores.LR",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "LR"
+        },
+        {
+          "value": "/shot_mpc/scores.scores.RL",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "RL"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!solve_time": {
+      "foxglovePanelTitle": "Selector update time [ms]",
+      "paths": [
+        {
+          "value": "/shot_mpc/solves{kind=='outer'}.t_wall_ms",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "outer"
+        },
+        {
+          "value": "/shot_mpc/solves{kind=='inner'}.t_wall_ms",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "inner"
+        },
+        {
+          "value": "/shot_mpc/solves{kind=='commit'}.t_wall_ms",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "commit"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "StateTransitions!mode": {
+      "foxglovePanelTitle": "Mode",
+      "paths": [
+        {
+          "value": "/episode.label",
+          "timestampMethod": "receiveTime",
+          "label": "episode"
+        },
+        {
+          "value": "/status.mode_name",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/shot_mpc/scores.chosen",
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "isSynced": true
+    },
+    "StateTransitions!compute": {
+      "foxglovePanelTitle": "Compute (bar width = wall time)",
+      "paths": [
+        {
+          "value": "/shot_mpc/compute/selector.state",
+          "timestampMethod": "receiveTime",
+          "label": "update"
+        },
+        {
+          "value": "/shot_mpc/compute/direct.state",
+          "timestampMethod": "receiveTime",
+          "label": "direct"
+        },
+        {
+          "value": "/shot_mpc/compute/L.state",
+          "timestampMethod": "receiveTime",
+          "label": "L"
+        },
+        {
+          "value": "/shot_mpc/compute/R.state",
+          "timestampMethod": "receiveTime",
+          "label": "R"
+        },
+        {
+          "value": "/shot_mpc/compute/LR.state",
+          "timestampMethod": "receiveTime",
+          "label": "LR"
+        },
+        {
+          "value": "/shot_mpc/compute/RL.state",
+          "timestampMethod": "receiveTime",
+          "label": "RL"
+        }
+      ],
+      "isSynced": true
+    },
+    "RosOut!events": {
+      "foxglovePanelTitle": "Events",
+      "searchTerms": [],
+      "minLogLevel": 1,
+      "topicToRender": "/events"
+    },
+    "RawMessages!solves": {
+      "foxglovePanelTitle": "Last selector update",
+      "topicPath": "/shot_mpc/solves",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 12
+    },
+    "3D!sim": {
+      "foxglovePanelTitle": "python-sim scene (frame sim, under the table frame world)",
+      "cameraState": {
+        "perspective": false,
+        "distance": 2.6,
+        "phi": 0,
+        "thetaOffset": 0,
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 100
+      },
+      "followMode": "follow-none",
+      "followTf": "world",
+      "scene": {
+        "transforms": {
+          "showLabel": false,
+          "axisScale": 0.5
+        }
+      },
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/scene/table": {
+          "visible": true
+        },
+        "/scene/bodies": {
+          "visible": true
+        },
+        "/robot1/plan": {
+          "visible": true
+        },
+        "/puck/prediction": {
+          "visible": true
+        },
+        "/robot2/prediction": {
+          "visible": true
+        },
+        "/puck/trail": {
+          "visible": true
+        },
+        "/shot_mpc/candidates/direct": {
+          "visible": true
+        },
+        "/shot_mpc/candidates/L": {
+          "visible": true
+        },
+        "/shot_mpc/candidates/R": {
+          "visible": true
+        },
+        "/shot_mpc/candidates/LR": {
+          "visible": true
+        },
+        "/shot_mpc/candidates/RL": {
+          "visible": true
+        },
+        "/dial/samples": {
+          "visible": true
+        },
+        "/studio_script/air_hockey": {
+          "visible": false
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {}
+    },
+    "Tab!main": {
+      "activeTabIdx": 0,
+      "tabs": [
+        {
+          "title": "Air hockey (Box2D and python-sim)",
+          "layout": {
+            "direction": "row",
+            "splitPercentage": 55,
+            "first": {
+              "direction": "column",
+              "splitPercentage": 65,
+              "first": "3D!table",
+              "second": {
+                "direction": "row",
+                "splitPercentage": 50,
+                "first": "StateTransitions!plan",
+                "second": "RosOut!log"
+              }
+            },
+            "second": {
+              "direction": "column",
+              "splitPercentage": 75,
+              "first": {
+                "direction": "column",
+                "splitPercentage": 50,
+                "first": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "Plot!h0_velocity",
+                  "second": "Plot!puck_velocity"
+                },
+                "second": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "Plot!h0_acc",
+                  "second": "Plot!shot_costs"
+                }
+              },
+              "second": "RawMessages!plan"
+            }
+          }
+        },
+        {
+          "title": "Shot MPC details (python-sim)",
+          "layout": {
+            "direction": "row",
+            "splitPercentage": 45,
+            "first": "3D!sim",
+            "second": {
+              "direction": "column",
+              "splitPercentage": 50,
+              "first": {
+                "direction": "column",
+                "splitPercentage": 50,
+                "first": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "Plot!robot1_force",
+                  "second": "Plot!sequence_scores"
+                },
+                "second": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "Plot!solve_time",
+                  "second": "StateTransitions!mode"
+                }
+              },
+              "second": {
+                "direction": "column",
+                "splitPercentage": 50,
+                "first": "StateTransitions!compute",
+                "second": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "RosOut!events",
+                  "second": "RawMessages!solves"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {
+    "holohover-air-hockey-scene": {
+      "name": "air hockey scene",
+      "sourceCode": "// Air hockey scene for live runs and recordings, frame \"world\" (= table frame, origin at the centre):\n// the table, its goal mouths and midline, h0 and the puck from their EKF states, and h0's plans\n// (holohover_msgs/HolohoverPlan): for every valid candidate its planned path, its predicted shot\n// (straight, with side-wall reflections, up to an end wall) and its label and cost; the chosen one in\n// full colour with the robot and the puck at the impact, the others faint. No candidate clears them.\n// Each message updates its own entities; the table is redrawn with every h0 state, so it is there\n// right after a seek in a recording.\nimport { Input } from \"./types\";\nimport { SceneUpdate, SceneEntity, LinePrimitive, CylinderPrimitive, TextPrimitive, Color, Point3 } from \"@foxglove/schemas\";\n\ntype Time = { sec: number; nsec: number };\n\nexport const inputs = [\"/h0/state\", \"/puck/state\", \"/h0/plan\"];\nexport const output = \"/studio_script/air_hockey\";\n\n// Table and bodies: shot_planner_config.yaml\nconst WIDTH = 2.13, HEIGHT = 1.06, GOAL_WIDTH = 0.34, R_ROBOT = 0.07, R_PUCK = 0.035;\n\nconst identity = { x: 0, y: 0, z: 0, w: 1 };\nconst pose = { position: { x: 0, y: 0, z: 0 }, orientation: identity };\nconst rgba = (r: number, g: number, b: number, a = 1): Color => ({ r, g, b, a });\nconst pt = (x: number, y: number, z = 0.02): Point3 => ({ x, y, z });\n\nconst ROBOT = rgba(0.2, 0.6, 1), PUCK = rgba(1, 0.85, 0.2), WALL = rgba(0.85, 0.85, 0.85), GOAL = rgba(1, 0.2, 0.2);\n\nfunction line(points: Point3[], color: Color, thickness = 0.008): LinePrimitive {\n  return { type: 0, pose, thickness, scale_invariant: false, points, color, colors: [], indices: [] };\n}\n\nfunction disc(x: number, y: number, radius: number, color: Color, z = 0.01): CylinderPrimitive {\n  return { pose: { position: { x, y, z }, orientation: identity },\n           size: { x: 2 * radius, y: 2 * radius, z: 0.02 }, bottom_scale: 1, top_scale: 1, color };\n}\n\nfunction text(p: Point3, s: string, color: Color): TextPrimitive {\n  return { pose: { position: p, orientation: identity }, billboard: true, font_size: 12, scale_invariant: true,\n           color, text: s };\n}\n\nfunction entity(timestamp: Time, id: string, lines: LinePrimitive[], cylinders: CylinderPrimitive[] = [],\n                texts: TextPrimitive[] = []): SceneEntity {\n  return { timestamp, frame_id: \"world\", id, lifetime: { sec: 0, nsec: 0 }, frame_locked: false, metadata: [],\n           arrows: [], cubes: [], spheres: [], cylinders, lines, triangles: [], texts, models: [] };\n}\n\nfunction table(ts: Time): SceneEntity {\n  const x = WIDTH / 2, y = HEIGHT / 2, g = GOAL_WIDTH / 2;\n  return entity(ts, \"table\", [\n    line([pt(-x, -y), pt(x, -y), pt(x, y), pt(-x, y), pt(-x, -y)], WALL, 0.01),\n    line([pt(0, -y), pt(0, y)], rgba(0.85, 0.85, 0.85, 0.4), 0.004),\n    line([pt(-x, -g), pt(-x, g)], GOAL, 0.025),\n    line([pt(x, -g), pt(x, g)], GOAL, 0.025),\n  ]);\n}\n\n// Straight puck path from p along v, reflected on the side walls, up to an end wall\nfunction shot(px: number, py: number, vx: number, vy: number): Point3[] {\n  const xw = WIDTH / 2 - R_PUCK, yw = HEIGHT / 2 - R_PUCK;\n  const points = [pt(px, py)];\n  for (let i = 0; i < 6 && (vx !== 0 || vy !== 0); i++) {\n    const tx = vx !== 0 ? ((vx > 0 ? xw : -xw) - px) / vx : Infinity;\n    const ty = vy !== 0 ? ((vy > 0 ? yw : -yw) - py) / vy : Infinity;\n    const t = Math.max(0, Math.min(tx, ty));\n    px += vx * t;\n    py += vy * t;\n    points.push(pt(px, py));\n    if (tx <= ty) break;  // end wall\n    vy = -vy;\n  }\n  return points;\n}\n\nexport default function script(\n  event: Input<\"/h0/state\"> | Input<\"/puck/state\"> | Input<\"/h0/plan\">,\n): SceneUpdate {\n  const ts = event.receiveTime;\n  if (event.topic === \"/h0/state\") {\n    const s = event.message.state_msg;\n    const heading = [pt(s.x, s.y, 0.03), pt(s.x + R_ROBOT * Math.cos(s.yaw), s.y + R_ROBOT * Math.sin(s.yaw), 0.03)];\n    return { deletions: [], entities: [table(ts), entity(ts, \"h0\", [line(heading, rgba(1, 1, 1), 0.01)],\n                                                         [disc(s.x, s.y, R_ROBOT, ROBOT)])] };\n  }\n  if (event.topic === \"/puck/state\") {\n    const s = event.message.state_msg;\n    return { deletions: [], entities: [entity(ts, \"puck\", [], [disc(s.x, s.y, R_PUCK, PUCK)])] };\n  }\n  const msg = event.message;\n  const lines: LinePrimitive[] = [], cylinders: CylinderPrimitive[] = [], texts: TextPrimitive[] = [];\n  msg.candidates.forEach((c, i) => {\n    if (c.states.length === 0) return;  // no valid plan for this sequence\n    const chosen = i === msg.chosen;\n    const alpha = chosen ? 1 : 0.3, width = chosen ? 0.008 : 0.004;\n    const path = shot(c.impact_puck.x, c.impact_puck.y, c.puck_velocity.x, c.puck_velocity.y);\n    lines.push(line(c.states.map((s) => pt(s.x, s.y, 0.005)), rgba(0.2, 0.6, 1, alpha), width));\n    lines.push(line(path, rgba(1, 0.85, 0.2, alpha), width));\n    const tip = path[path.length - 1];\n    texts.push(text(pt(tip.x, tip.y, 0.05), `${c.label} ${c.cost.toFixed(2)}`, rgba(1, 1, 1, chosen ? 1 : 0.6)));\n    if (chosen) {\n      const end = c.states[c.states.length - 1];\n      cylinders.push(disc(end.x, end.y, R_ROBOT, rgba(0.2, 0.6, 1, 0.3), 0.0),\n                     disc(c.impact_puck.x, c.impact_puck.y, R_PUCK, rgba(1, 0.85, 0.2, 0.4), 0.0));\n    }\n  });\n  if (lines.length === 0) {\n    return { deletions: [{ timestamp: ts, type: 0, id: \"plan\" }], entities: [] };\n  }\n  return { deletions: [], entities: [entity(ts, \"plan\", lines, cylinders, texts)] };\n}\n"
+    }
+  },
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": "Tab!main"
+}

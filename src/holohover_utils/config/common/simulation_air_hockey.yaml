@@ -1,0 +1,15 @@
+# Air hockey: loaded after simulation_config.yaml, whose values it overrides.
+# The table and the puck of python-sim (holohover_simulator/python-sim/config/config.json):
+# 2.13 x 1.06 m, puck of radius 0.035 m. The puck's physics is the simulator's (simulator_node.cpp).
+# The goals are not simulated: the end walls are closed.
+/**:
+  ros__parameters:
+    table_size: [2.13, 1.06]
+
+    # The hovercraft pose is the centre of its disc, as in python-sim. simulation_config.yaml offsets
+    # it by (Gx, Gy) = (-0.5, -7.6) mm, which shifts the planned contact point: about 4 degrees of
+    # shot direction at the contact distance of 0.105 m.
+    Gx: 0.0
+    Gy: 0.0
+
+    puck_radius: 0.035
