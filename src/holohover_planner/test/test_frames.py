@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
 
-from holohover_planner.shot_mpc.params import Frame
+from holohover_planner.shot_mpc.params import Frame, load_parameters
+
+from conftest import CONFIG
 
 
 @pytest.mark.parametrize("goal", ["left", "right"])
@@ -32,3 +34,14 @@ def test_left_matches_python_sim_world(P):
 def test_bad_goal(P):
     with pytest.raises(ValueError):
         Frame(P, "up")
+
+
+def test_planner_walls_are_the_wall_faces(P):
+    """The planner's table is the Box2D walls' faces, wall_inset inside the table edges, centred on the table."""
+    p = load_parameters(CONFIG)
+    d = p["table.wall_inset"]
+    assert d > 0
+    fr = Frame(P, "left")
+    face_x, face_y = 0.5 * p["table.width"] - d, 0.5 * p["table.height"] - d
+    assert np.allclose(fr.pos_to_planner([-face_x, face_y]), [P.X, -0.5 * P.W])  # attacked end, left side
+    assert np.allclose(fr.pos_to_planner([face_x, -face_y]), [0.0, 0.5 * P.W])

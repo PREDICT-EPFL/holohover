@@ -45,6 +45,7 @@ def planner_parameters(config):
     p.update({
         "table.width": tbl["width"], "table.height": tbl["height"], "table.goal_width": tbl["goal_width"],
         "table.friction": tbl["friction"], "table.restitution": WALL_RESTITUTION,
+        "table.wall_inset": 0.0,  # python-sim's walls are on the table edges
         "robot.mass": rob["mass"], "robot.radius": rob["radius"], "robot.force_max": list(config["simulation"]["u_limits"]),
         "puck.mass": pck["mass"], "puck.radius": pck["radius"], "shot_mpc.restitution": RESTITUTION,
         "shot_mpc.friction": FRICTION,

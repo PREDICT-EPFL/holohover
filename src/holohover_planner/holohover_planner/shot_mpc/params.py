@@ -48,6 +48,7 @@ _SHOT_MPC_KEYS = {
 # holohover_utils/config/common/shot_planner_config.yaml: no defaults in the code.
 PARAMETERS = (
     "table.width", "table.height", "table.goal_width", "table.friction", "table.restitution",
+    "table.wall_inset",
     "robot.mass", "robot.radius", "robot.force_max", "puck.mass", "puck.radius",
     *("shot_mpc." + key for key in _SHOT_MPC_KEYS.values()),
 )
@@ -108,8 +109,9 @@ class ShotParams:
     def from_parameters(cls, p):
         """From the parameter values, keyed by the names of PARAMETERS."""
         return cls(
-            X=p["table.width"],
-            W=p["table.height"],
+            # The planner's table is the walls' faces: the table less wall_inset on every side
+            X=p["table.width"] - 2 * p["table.wall_inset"],
+            W=p["table.height"] - 2 * p["table.wall_inset"],
             h=0.5 * p["table.goal_width"],
             gamma=p["table.friction"],
             e_w=p["table.restitution"],
