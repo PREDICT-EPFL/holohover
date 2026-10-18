@@ -54,9 +54,11 @@ class GoalDetector:
     """Goals as python-sim scores them: the puck reaches an end wall inside the goal mouth. The Box2D end
     walls are closed, so the puck bounces off the goal line: a goal is a reversal of the puck's x velocity
     with its centre within r_puck + reach of an end wall, inside the mouth. Table frame (origin at the
-    centre); h0 attacks the left goal (x = -width / 2)."""
+    centre); h0 attacks the left goal (x = -width / 2). reach: the Box2D walls' skin bounces the puck 1 cm
+    early and the EKF's v_x turns one sample (up to 2.5 cm at 2.5 m/s) late; 5 cm missed goals at 2 m/s. The
+    hovercraft never gets within reach of an end wall (own half; home at x = 0.7455)."""
 
-    def __init__(self, width, goal_width, r_puck, reach=0.05):
+    def __init__(self, width, goal_width, r_puck, reach=0.1):
         self.x_wall, self.y_mouth, self.x_reach = 0.5 * width, 0.5 * goal_width, r_puck + reach
         self.vx = None
 
