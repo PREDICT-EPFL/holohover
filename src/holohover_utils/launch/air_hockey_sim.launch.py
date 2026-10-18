@@ -14,6 +14,8 @@ python_sim: python-sim's directory, where the evaluation reads its starts and se
 next to this file's source, found through the --symlink-install link; set it for any other install).
 
 puck: x, y of the puck at rest, table frame (default: the experiment file's puck).
+substeps: Box2D steps per simulator period (default 10, 1 ms steps). Box2D resolves a contact one of its steps
+after the overlap appears.
 record: record every topic to an MCAP bag, /root/data/rosbags/air_hockey_<date>_<time> (docker/data on the
 host), stopped with the launch. It opens in Foxglove with the same layout.
 
@@ -52,6 +54,7 @@ def launch_setup(context):
     evaluate = int(LaunchConfiguration('evaluate').perform(context) or 0)
     first = int(LaunchConfiguration('first').perform(context) or 0)
     python_sim = os.path.normpath(LaunchConfiguration('python_sim').perform(context) or PYTHON_SIM)
+    substeps = int(LaunchConfiguration('substeps').perform(context) or 10)
 
     utils_share = get_package_share_directory('holohover_utils')
     common = os.path.join(utils_share, 'config', 'common')
@@ -76,6 +79,7 @@ def launch_setup(context):
                                               'initial_state_vy', 'initial_state_w', 'holohover_props_files',
                                               'simulated')},
                 'puck_position': [float(puck[0]), float(puck[1])],
+                'substeps': substeps,
             }],
             output='screen',
         ),
@@ -158,6 +162,7 @@ def generate_launch_description():
         DeclareLaunchArgument('record', default_value='false', description='Record every topic to an MCAP bag'),
         DeclareLaunchArgument('evaluate', default_value='0', description="Evaluate on that many of python-sim's starts"),
         DeclareLaunchArgument('first', default_value='0', description='First start of the evaluation'),
+        DeclareLaunchArgument('substeps', default_value='10', description='Box2D steps per simulator period'),
         DeclareLaunchArgument('python_sim', default_value='', description="python-sim's directory (default: next to this file's source)"),
         OpaqueFunction(function=launch_setup),
     ])

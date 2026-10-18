@@ -12,6 +12,7 @@ SimulatorNode::SimulatorNode() :
     contact_listener_(std::make_shared<ContactListener>(this)) // Update Sep 30: collision detector
 {
     world->SetContactListener(contact_listener_.get());  // Update Sep 30: collision detector
+    substeps = this->declare_parameter<int>("substeps", 10);
 
     init_box2d_world();
     init_puck();    // Update Sep 30: puck simulation
@@ -294,8 +295,6 @@ void SimulatorNode::simulation_step()
         motor_velocities_vec[i] = holohover_vec[i].Ad_motor * motor_velocities_vec[i] + holohover_vec[i].Bd_motor * current_control_signal;
         //motor_velocities_vec[i] = current_control_signal;
         calculate_control_acc(states_vec[i], motor_velocities_vec[i], control_acc_vec[i], i);
-        apply_control_acc(hovercraft_bodies[i], control_acc_vec[i], i);
-        
     }
     // for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
     //     Holohover::control_acc_t<double> direct_acc;
@@ -314,10 +313,15 @@ void SimulatorNode::simulation_step()
     //     apply_control_acc(hovercraft_bodies[i], direct_acc, i);
     // }
 
-    // - box2d step of the world
-    world->Step(simulation_settings.period, 
-                simulation_settings.internal_iterations_velocity, 
-                simulation_settings.internal_iterations_position);
+    // - box2d steps of the world, the control accelerations held over the period
+    for(int k = 0; k < substeps; k++) {
+        // Box2D clears the forces after each step
+        for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++)
+            apply_control_acc(hovercraft_bodies[i], control_acc_vec[i], i);
+        world->Step(simulation_settings.period / substeps,
+                    simulation_settings.internal_iterations_velocity,
+                    simulation_settings.internal_iterations_position);
+    }
 
     for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
         body_to_state(states_vec[i], hovercraft_bodies[i]);

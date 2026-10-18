@@ -171,6 +171,11 @@ private:
     std::vector<Holohover::control_acc_t<double>>               control_acc_vec;
     bool are_all_simulated;
 
+    // Box2D steps per period (default 10: 1 ms at the 10 ms period). Box2D finds contacts at the start of a
+    // step, from the positions the previous step left, so an overlap is only resolved one Box2D step after it
+    // appears: at 10 ms a late contact normal turned the puck by up to 6 deg
+    int substeps;
+
     void init_hovercraft();
     void init_timer();
     void init_box2d_world();
