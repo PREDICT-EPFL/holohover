@@ -98,3 +98,26 @@ def test_defence_pd_is_clipped_and_wraps_the_heading():
     assert np.allclose(acc, [10 * 0.1 - 0.2, -1.0, 0.1])
     ctrl = PlanController(None, PD([0.7, 0.0, 0.0], [1e3] * 3, [0.0] * 3), ACC_MAX, 0.1)
     assert np.allclose(ctrl.step(0.0, np.zeros(6)), [ACC_MAX[0], 0.0, 0.0])
+
+
+
+def test_state_age_is_compensated(plan):
+    """A state measured 3 steps before the step, from a 2 cm offset: tracking with the state advanced to the
+    step's time ends at the planned impact much closer than tracking the stale state as if it were current."""
+    dt, d = 0.01, 3
+    A, B = discrete_matrices(dt, GAMMA, axes=3)
+
+    def run(compensate):
+        ctrl = PlanController(tracker(), PD([0, 0, 0], [0] * 3, [0] * 3), ACC_MAX, 0.1)
+        ctrl.on_plan(plan, T0)
+        x = state(plan.X[0]) + np.array([0.02, -0.02, 0.0, 0.0, 0.0, 0.0])
+        history = [(T0 - j * dt, x) for j in range(d, 0, -1)]  # at rest before T0
+        for i in range(int(round(TF / dt))):
+            t = T0 + i * dt
+            history.append((t, x))
+            t_x, x_old = history[-1 - d]
+            x = A @ x + B @ ctrl.step(t, x_old, t_x if compensate else None)
+        return np.linalg.norm(x[0:2] - plan.X[-1, 0:2])
+
+    ignored, compensated = run(False), run(True)
+    assert compensated < 1e-3 < ignored and compensated < ignored / 5

@@ -65,6 +65,7 @@ class ControlPlanNode(Node):
         self.controller = PlanController(tracker, defence, p["acc_max"], p["plan_expiry"], log=self.get_logger().info)
         self.actuation = Actuation(p["holohover_props_file"], self.period)
         self.state = None  # latest (x, y, yaw, v_x, v_y, w_z), the controller's order
+        self.state_t = None  # its stamp (s)
         self.model_state = None  # the same as (x, y, v_x, v_y, yaw, w_z), the model's order
         self.disturbance = np.zeros(3)  # latest (dist_x, dist_y, dist_yaw)
         self.active = not self.declare_parameter("start_idle", False).value  # idle: no acceleration (episode -1)
@@ -92,6 +93,7 @@ class ControlPlanNode(Node):
     def state_callback(self, msg):
         s = msg.state_msg
         self.state = np.array([s.x, s.y, s.yaw, s.v_x, s.v_y, s.w_z], dtype=float)
+        self.state_t = stamp_s(msg.header.stamp)
         self.model_state = np.array([s.x, s.y, s.v_x, s.v_y, s.yaw, s.w_z], dtype=float)
         self.disturbance = np.array([s.dist_x, s.dist_y, s.dist_yaw], dtype=float)
 
@@ -107,7 +109,7 @@ class ControlPlanNode(Node):
         if self.state is None:
             return
         now = self.get_clock().now()
-        acc = self.controller.step(1e-9 * now.nanoseconds, self.state) if self.active else None
+        acc = self.controller.step(1e-9 * now.nanoseconds, self.state, self.state_t) if self.active else None
         signal = self.actuation.step(self.model_state, self.disturbance, acc)
 
         msg = HolohoverControlStamped()

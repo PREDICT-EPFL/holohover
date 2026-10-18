@@ -17,7 +17,7 @@
       # (x, y, yaw, v_x, v_y, w_z): Q on nodes 1..H-1, Q_f on node H (the impact)
       Q: [1.0e4, 1.0e4, 1.0e2, 1.0e2, 1.0e2, 1.0]
       Q_f: [1.0e6, 1.0e6, 1.0e2, 1.0e4, 1.0e4, 1.0]
-      R: [1.0, 1.0, 1.0]       # input deviations from the plan, normalised by acc_max
+      R: [0.01, 0.01, 0.01]    # input deviations from the plan, normalised by acc_max: small, the states lead
 
     defence:                   # PD to home (python-sim robot 1: defensive_position_rel 0.85)
       home: [0.7455, 0.0, 0.0] # x, y, yaw, table frame
