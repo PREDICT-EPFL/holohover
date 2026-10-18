@@ -15,8 +15,8 @@ sequence is committed, closer than t_stop_replan the plan is no longer re-solved
 impact passed by more than plan_expiry is dropped.
 
 A plan starts at the tick's time t (its candidates' t0), from the robot and puck states advanced
-from their stamps to t with the planner's models: the robot under the last input, the puck in free
-flight with its wall reflections.
+from their stamps to t with the planner's models: the robot under the inputs of the plan being
+followed (the last input without one), the puck in free flight with its wall bounces.
 
 A contact drops the plan and the warm starts at the next tick and pauses the planning for
 contact_cooldown. on_contact and reset may run in another thread than tick (the node's callbacks):
@@ -27,7 +27,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .shot_mpc.model import discrete_matrices, flight_after, predict
+from .shot_mpc.model import discrete_matrices, flight_after, predict, zoh_interval
 from .shot_mpc.shot_selector import ShotSelector, label
 
 
@@ -67,6 +67,28 @@ class PlanSet:
     def plan(self):
         """The candidate to follow, or None."""
         return self.candidates[self.chosen] if self.chosen >= 0 else None
+
+
+def advance(x, t_from, t_to, plan, u_hold, gamma):
+    """Robot state (x, y, vx, vy), planner frame, at t_to from x at t_from: under the ZOH inputs of plan
+    (shot_selector.Plan: its first input before its t0, its last one after its impact), or under u_hold
+    without a plan. x itself if t_to <= t_from."""
+    t = t_from
+    while t_to - t > 1e-12:
+        if plan is None:
+            u, end = u_hold, t_to
+        else:
+            N = plan.sol.U.shape[1]
+            k = int(zoh_interval(t - plan.t0, plan.dt, N))
+            end = plan.t0 + (k + 1) * plan.dt if k < N - 1 else t_to
+            if end <= t:  # t on a node, rounded down: the next interval
+                k = min(k + 1, N - 1)
+                end = plan.t0 + (k + 1) * plan.dt if k < N - 1 else t_to
+            u, end = plan.sol.U[:, k], min(end, t_to)
+        A_d, B_d = discrete_matrices(end - t, gamma)
+        x = A_d @ x + B_d @ u
+        t = end
+    return x
 
 
 def candidates(selector, plan):
@@ -160,10 +182,10 @@ class ShotPlanner:
             u_prev = self.plan.input_at(t) if self.plan is not None else np.zeros(2)
         else:
             u_prev = fr.vec_to_planner(u_prev)
-        # The states at t, planner frame: the robot under the last input, the puck in free flight
+        # The states at t, planner frame: the robot under the plan's inputs (u_prev without a plan), the puck
+        # in free flight
         xR = np.concatenate([fr.pos_to_planner([robot.x, robot.y]), fr.vec_to_planner([robot.vx, robot.vy])])
-        A_d, B_d = discrete_matrices(max(t - robot.t, 0.0), P.gamma)
-        xR = A_d @ xR + B_d @ u_prev
+        xR = advance(xR, robot.t, t, self.plan, u_prev, P.gamma)
         q, v = flight_after(fr.pos_to_planner([puck.x, puck.y]), fr.vec_to_planner([puck.vx, puck.vy]), P,
                             max(t - puck.t, 0.0))
 
