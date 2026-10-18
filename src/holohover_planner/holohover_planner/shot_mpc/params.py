@@ -31,7 +31,8 @@ def load_parameters(path):
 
 # ShotParams field -> its parameter under shot_mpc.
 _SHOT_MPC_KEYS = {
-    "N": "N", "t_min": "t_min", "t_max": "t_max", "K": "K", "e": "restitution", "goal_margin": "goal_margin",
+    "N": "N", "t_min": "t_min", "t_max": "t_max", "K": "K", "e": "restitution", "mu": "friction",
+    "goal_margin": "goal_margin",
     "v_min": "v_min", "eps": "eps", "delta": "delta", "t_clear": "t_clear", "t_react": "t_react",
     "t_ref": "t_ref", "T_ref": "T_ref",
     "w_u": "weights.w_u", "w_du": "weights.w_du", "w_t": "weights.w_t", "w_T": "weights.w_T",
@@ -72,6 +73,7 @@ class ShotParams:
     t_max: float
     K: int
     e: float  # robot-puck restitution
+    mu: float  # robot-puck Coulomb friction
     goal_margin: float
     v_min: float
     eps: float

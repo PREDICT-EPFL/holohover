@@ -34,6 +34,8 @@
       t_max: 1.0
       K: 2                   # at most K wall bounces of the shot
       restitution: 0.8       # the Box2D puck's (max with the hovercraft's 0)
+      friction: 0.0632       # Coulomb friction of the robot-puck contact (not table.friction): Box2D's
+                             # sqrt(0.02 * 0.2), the puck's and the hovercraft's (Box2D's default)
       goal_margin: 0.01
       v_min: 0.2
       eps: 0.05

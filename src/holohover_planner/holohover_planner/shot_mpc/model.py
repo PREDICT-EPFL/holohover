@@ -5,7 +5,7 @@ Prediction model shared by the planner, the tracker and the display, in the plan
       p(t) = q + v * phi(t),   v(t) = v * exp(-gamma t)
   with phi(t) = (1 - exp(-gamma t)) / gamma (-> t for gamma -> 0).
 - Exact ZOH map of the robot double integrator with viscous friction (Section 2).
-- Frictionless impulsive robot-puck impact (Section 3).
+- Impulsive robot-puck impact with restitution and Coulomb friction (Section 3).
 - Puck prediction up to the first wall hit tau1, and the drawn puck paths.
 
 The flight, ZOH and impact functions use only elementwise operations, so they work
@@ -18,6 +18,7 @@ import numpy as np
 import casadi as ca
 
 GAMMA_EPS = 1e-9
+CLIP_SMOOTH = 2e-3  # m/s, rounding of the friction cap (impact): at most CLIP_SMOOTH / 2 off, ~0.06 deg / v_n[m/s]
 
 
 def _symbolic(*xs):
@@ -116,25 +117,45 @@ def discrete_matrices(dt, gamma, axes=2):
 ##############
 ### Impact ###
 ##############
-def impact(v_R, v_p, n, kap, mass_ratio):
+def smooth_clip(x, a, delta=CLIP_SMOOTH):
+    """clip(x, -a, a) with its corners rounded over ~delta, twice differentiable; 0 for a = 0."""
+    sqrt = ca.sqrt if _symbolic(x, a) else np.sqrt
+    return 0.5 * (sqrt((x + a) ** 2 + delta**2) - sqrt((x - a) ** 2 + delta**2))
+
+
+def impact(v_R, v_p, n, kap, mass_ratio, mu=0.0, e=0.0):
     """
-    Robot-puck impact along the contact normal n; returns (v_n, v_p_plus, v_R_plus).
+    Robot-puck impact along the contact normal n, with Coulomb friction; returns (v_n, v_p_plus, v_R_plus).
 
-        v_n  = (v_R - v_p) . n
-        v_p+ = v_p + kappa v_n n
-        v_R+ = v_R - kappa (m_p / m_R) v_n n,   kappa = (1 + e) m_R / (m_R + m_p)
+        v_n  = (v_R - v_p) . n,   u_t = (v_R - v_p) . t,   t = n turned by +90 deg
+        f    = clip(u_t / (3 (1 + e)), -mu v_n, mu v_n)
+        v_p+ = v_p + kappa (v_n n + f t)
+        v_R+ = v_R - kappa (m_p / m_R) (v_n n + f t),   kappa = (1 + e) m_R / (m_R + m_p)
 
-    mass_ratio = m_p / m_R; kappa is ShotParams.kappa.
+    The normal impulse gives the restitution e. The tangential one is the impulse that stops the sliding at
+    the contact point (with both discs free to spin, I = m r^2 / 2, a third of what a pure translation would
+    need), capped by friction at mu times the normal one: Box2D's contact of two discs. The clip is smooth_clip,
+    for the NLP. mu = 0: frictionless, v_p+ = v_p + kappa v_n n.
+
+    mass_ratio = m_p / m_R; kappa, mu and e are ShotParams.kappa, .mu and .e.
     """
     v_n = (v_R[0] - v_p[0]) * n[0] + (v_R[1] - v_p[1]) * n[1]
-    v_p_plus = _vec2(v_p[0] + kap * v_n * n[0], v_p[1] + kap * v_n * n[1])
-    v_R_plus = _vec2(v_R[0] - kap * mass_ratio * v_n * n[0], v_R[1] - kap * mass_ratio * v_n * n[1])
+    if mu == 0.0:
+        v_p_plus = _vec2(v_p[0] + kap * v_n * n[0], v_p[1] + kap * v_n * n[1])
+        v_R_plus = _vec2(v_R[0] - kap * mass_ratio * v_n * n[0], v_R[1] - kap * mass_ratio * v_n * n[1])
+        return v_n, v_p_plus, v_R_plus
+    u_t = -(v_R[0] - v_p[0]) * n[1] + (v_R[1] - v_p[1]) * n[0]
+    f = smooth_clip(u_t / (3 * (1 + e)), mu * v_n)
+    j_x, j_y = v_n * n[0] - f * n[1], v_n * n[1] + f * n[0]  # v_n n + f t
+    v_p_plus = _vec2(v_p[0] + kap * j_x, v_p[1] + kap * j_y)
+    v_R_plus = _vec2(v_R[0] - kap * mass_ratio * j_x, v_R[1] - kap * mass_ratio * j_y)
     return v_n, v_p_plus, v_R_plus
 
 
 def invert(sigma, d, v_p_minus, kap):
     """
-    Contact normal and closing speed that send the puck along unit d at speed sigma.
+    Contact normal and closing speed that send the puck along unit d at speed sigma, frictionless (the
+    cold guess's: friction turns the puck by at most atan(mu)).
 
     Requiring v_p+ = sigma d gives kappa v_n n = sigma d - v_p-.
     Returns (n, v_n, phi) with v_n > 0 by construction.

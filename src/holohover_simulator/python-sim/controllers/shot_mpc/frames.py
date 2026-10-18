@@ -28,9 +28,10 @@ from holohover_planner.shot_mpc.params import ShotParams, load_parameters
 CONFIG_DIR = Path(__file__).resolve().parents[4] / "holohover_utils" / "config" / "common"
 PLANNER_CONFIG = CONFIG_DIR / "shot_planner_config.yaml"
 CONTROLLER_CONFIG = CONFIG_DIR / "control_plan_config.yaml"
-# python-sim's robot-puck collision is elastic (simulation.dynamics.robot_puck_collision),
+# python-sim's robot-puck collision is elastic and frictionless (simulation.dynamics.robot_puck_collision),
 # and its wall bounces are elastic (simulation.dynamics.wall_collision)
 RESTITUTION = 1.0
+FRICTION = 0.0
 WALL_RESTITUTION = 1.0
 
 # Translational part (x, y, vx, vy) of a body state (x, y, theta, vx, vy, omega)
@@ -46,6 +47,7 @@ def planner_parameters(config):
         "table.friction": tbl["friction"], "table.restitution": WALL_RESTITUTION,
         "robot.mass": rob["mass"], "robot.radius": rob["radius"], "robot.force_max": list(config["simulation"]["u_limits"]),
         "puck.mass": pck["mass"], "puck.radius": pck["radius"], "shot_mpc.restitution": RESTITUTION,
+        "shot_mpc.friction": FRICTION,
     })
     return p
 

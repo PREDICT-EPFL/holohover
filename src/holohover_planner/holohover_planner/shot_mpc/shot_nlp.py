@@ -123,8 +123,8 @@ class ShotNLP:
         p_c, v_minus = puck_at(tf)
         n = ca.vertcat(ca.cos(ph), ca.sin(ph))
         add(X[0:2, N] - (p_c - (P.r_R + P.r_p) * n), 0.0, 0.0)
-        v_n, vp_expr, vR_plus = impact(X[2:4, N], v_minus, n, P.kappa, P.m_p / P.m_R) # vp_expr is the post-impact puck velocity expression
-        add(vp - vp_expr, 0.0, 0.0)                                                   # contact equality: the puck is sent along n at speed v_n
+        v_n, vp_expr, vR_plus = impact(X[2:4, N], v_minus, n, P.kappa, P.m_p / P.m_R, P.mu, P.e) # vp_expr is the post-impact puck velocity expression
+        add(vp - vp_expr, 0.0, 0.0)                                                   # contact equality: the puck is sent along n, turned by the friction
 
         # Coarse post-impact model (Section 4)
         x_c, y_c = p_c[0], p_c[1]
@@ -348,7 +348,7 @@ class ShotNLP:
         umax = P.u_max[:NU, None]
         U = np.clip(acc_m + P.gamma * vel_m, -umax, umax)
 
-        _, vp, _ = impact(v_f, v_minus, n, P.kappa, P.m_p / P.m_R)
+        _, vp, _ = impact(v_f, v_minus, n, P.kappa, P.m_p / P.m_R, P.mu, P.e)
         vp = np.array([max(vp[0], P.eps), vp[1]])
         zeta = float(np.clip(1.0 - P.gamma * (P.x_g - p_c[0]) / vp[0], ZETA_MIN, 1.0))
         return self.pack(X, U, tf, phi, vp, zeta)
