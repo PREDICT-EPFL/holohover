@@ -179,7 +179,11 @@ def launch_handler(args):
 
 def colcon_handler(args):
     colcon_args = args.colcon_args or ["build", "--symlink-install"]
-    sys.exit(ws_exec("cd /root/ros2_ws && " + subprocess.list2cmdline(["colcon", *colcon_args])))
+    # Same RAM cap as the Dockerfile build: unbounded parallel C++ compiles freeze the host
+    if colcon_args[0] == "build" and "--parallel-workers" not in colcon_args:
+        colcon_args += ["--parallel-workers", "2"]
+    sys.exit(ws_exec("cd /root/ros2_ws && MAKEFLAGS=${MAKEFLAGS:--j2} "
+                     + subprocess.list2cmdline(["colcon", *colcon_args])))
 
 
 def main():
