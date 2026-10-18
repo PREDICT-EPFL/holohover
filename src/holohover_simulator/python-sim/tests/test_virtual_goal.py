@@ -6,7 +6,7 @@ import pytest
 from conftest import DT, R1_PARK, R2_PARK, rollout
 from controllers.shot_mpc.frames import state_planner_to_world
 from holohover_planner.shot_mpc.model import hit_time, bounce_path
-from holohover_planner.shot_mpc.shot_selector import sequences, label, virtual_goal_y
+from holohover_planner.shot_mpc.shot_selector import sequences, label, virtual_goal
 
 # wall_bounces indices of dynamics.wall_collision: 1 = top (planner wall R), 4 = bottom (planner wall L)
 WALL_OF_INDEX = {1: "R", 4: "L"}
@@ -15,7 +15,7 @@ WALL_OF_INDEX = {1: "R", 4: "L"}
 @pytest.mark.parametrize("s,k", sequences(2))
 def test_virtual_goal_scores(physics, P, s, k):
     p_c = np.array([0.6, 0.1])
-    ybar = virtual_goal_y(s, k, P.w)
+    ybar, _ = virtual_goal(s, k, P)
     d = np.array([P.x_g, ybar]) - p_c
     v = 2.0 * d / np.linalg.norm(d)
 

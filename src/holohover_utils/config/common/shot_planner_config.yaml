@@ -10,6 +10,8 @@
       height: 1.06
       goal_width: 0.34
       friction: 0.3          # 1/s, viscous friction of robot and puck
+      restitution: 0.9       # wall bounce of the puck: the normal velocity is reversed and scaled by it, the
+                             # tangential one kept (the Box2D walls, simulator_node.hpp)
 
     robot:
       mass: 0.1463           # holohover_params_new.yaml

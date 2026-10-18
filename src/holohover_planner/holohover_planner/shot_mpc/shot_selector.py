@@ -3,8 +3,8 @@ Outer problem: choose the bounce sequence (Section 6), with the warm and cold
 starts of Section 7.
 
 A sequence B = (s, k) has first wall s (+1 = L, -1 = R) and k alternating
-side-wall bounces; it scores iff the unfolded straight shot hits the mirrored
-goal at y_bar = 2 s k w (Section 4).
+side-wall bounces; it scores iff the unfolded straight shot hits the mouth of the
+goal image (virtual_goal: y_bar = 2 s k w with elastic walls, Section 4).
 
 Every B keeps its own warm start; one sequence is never warm-started from
 another's solution. All times handed to the NLP are relative to the current
@@ -44,9 +44,21 @@ def label(s, k):
     return "".join("L" if s * (-1) ** j > 0 else "R" for j in range(k))
 
 
-def virtual_goal_y(s, k, w):
-    """y of the goal image after k bounces starting on wall s, e.g. +2w for L (s = +1, k = 1)."""
-    return 2 * s * k * w
+def virtual_goal(s, k, P):
+    """
+    The goal image after k bounces starting on wall s: (y_bar, h_bar), its centre and the half-width of
+    its mouth for the puck centre (Section 4).
+
+    A side-wall bounce keeps v_x and reverses v_y scaled by e_w, so past the j-th wall the puck's
+    y-velocity is e_w^j that of the mirrored elastic flight, at every instant. Stretching y past the j-th
+    mirrored wall by 1 / e_w^j makes the unfolded path straight again, with the same x(t):
+        y_bar = s w (1 + 2 / e_w + ... + 2 / e_w^(k-1) + 1 / e_w^k),   h_bar = h_eff / e_w^k
+    e.g. y_bar = 2 s k w and h_bar = h_eff for elastic walls (e_w = 1).
+    """
+    if k == 0:
+        return 0.0, P.h_eff
+    stretch = sum(2 / P.e_w**j for j in range(1, k)) + 1 / P.e_w**k
+    return s * P.w * (1 + stretch), P.h_eff / P.e_w**k
 
 
 #############
@@ -109,8 +121,8 @@ def solve_sequence(nlp, key, t_now, xR, u_prev, puck, t_lo, t_hi, warm):
     best = None
     t_spent = 0.0  # all solves for this key, including every cold seed
     start = None
-    ybar = virtual_goal_y(*key, P.w)
-    p = nlp.make_params(xR, u_prev, ybar, puck.q, puck.v)
+    ybar, hbar = virtual_goal(*key, P)
+    p = nlp.make_params(xR, u_prev, ybar, hbar, puck.q, puck.v)
     if warm is not None:
         sol, t0 = warm
         w0 = nlp.warm_guess(sol, t_now - t0, xR, t_lo, t_hi)

@@ -2,7 +2,8 @@
 Inner problem P(B) for one fixed bounce sequence (Sections 2 to 5).
 
 Built once with CasADi SX and solved with IPOPT; the sequence only enters
-through the parameter y_bar (virtual goal), so one solver serves all of B_K.
+through the parameters y_bar and h_bar (the virtual goal and the half-width of its
+mouth), so one solver serves all of B_K.
 
 Decision vector w = (X, U, t_f, phi, v+, zeta, s_box, s_av):
 - X (4 x N+1), U (2 x N): robot states (x, y, vx, vy) and accelerations (a_x, a_y)
@@ -14,7 +15,7 @@ Decision vector w = (X, U, t_f, phi, v+, zeta, s_box, s_av):
   reach constraint gamma (x_g - x_c) < v+_x, and T_B = -ln(zeta) / gamma is always defined
 - s_box, s_av: L1 slacks of the soft table/own-half and puck-avoidance constraints
 
-Parameters p = (x0_hat, u_prev, y_bar, q0, v0), with (q0, v0) the puck state at the
+Parameters p = (x0_hat, u_prev, y_bar, h_bar, q0, v0), with (q0, v0) the puck state at the
 planning instant. The puck flies freely up to the impact, since t_f <= tau1 (Section 1).
 
 Initial guesses w0 (Section 7): the previous solution shifted to now (warm), or a
@@ -90,9 +91,10 @@ class ShotNLP:
         x0 = ca.SX.sym("x0", NX)
         u_prev = ca.SX.sym("u_prev", NU)
         ybar = ca.SX.sym("ybar")
+        hbar = ca.SX.sym("hbar")  # half-width of the goal image's mouth
         q0 = ca.SX.sym("q0", 2) # puck position at the planning instant
         v0 = ca.SX.sym("v0", 2) # puck velocity at the planning instant
-        p = ca.vertcat(x0, u_prev, ybar, q0, v0)
+        p = ca.vertcat(x0, u_prev, ybar, hbar, q0, v0)
         self.np_ = p.numel() # numel = nummber of elements
 
         def puck_at(t):
@@ -130,8 +132,8 @@ class ShotNLP:
         add(v_n, P.v_min, ca.inf)                                       # v_n = (v_R - v_p) . n, robot must move toward the puck
 
         aim = (y_c - ybar) * vp[0] + (P.x_g - x_c) * vp[1]              # equation of section 4 to make sure we score a goal
-        add(aim - P.h_eff * vp[0], -ca.inf, 0.0)                        
-        add(-aim - P.h_eff * vp[0], -ca.inf, 0.0)                       # because of absolute value.
+        add(aim - hbar * vp[0], -ca.inf, 0.0)
+        add(-aim - hbar * vp[0], -ca.inf, 0.0)                          # because of absolute value.
 
         # Soft table limits, whole robot in own half (nodes 1..N)
         x_hi = P.x_mid - P.r_R
@@ -177,7 +179,8 @@ class ShotNLP:
             ub_prev = ub
 
         T_B = -ca.log(zeta) / gam if gam >= GAMMA_EPS else (P.x_g - x_c) / vp[0]
-        e_aim = (y_c - ybar) + (P.x_g - x_c) * vp[1] / vp[0]
+        # Aim error on the goal line: the unfolded one, unstretched by e_w^k = h_eff / h_bar
+        e_aim = ((y_c - ybar) + (P.x_g - x_c) * vp[1] / vp[0]) * (P.h_eff / hbar)
 
         terms = {
             "u": P.w_u * tf / N * J_u,
@@ -281,10 +284,11 @@ class ShotNLP:
             np.asarray(s_box, dtype=float).ravel(), np.asarray(s_av, dtype=float).ravel(),
         ])
 
-    def make_params(self, x0, u_prev, ybar, q0, v0):
-        """x0: robot state (x, y, vx, vy); u_prev: last input (a_x, a_y); (q0, v0): puck state now."""
+    def make_params(self, x0, u_prev, ybar, hbar, q0, v0):
+        """x0: robot state (x, y, vx, vy); u_prev: last input (a_x, a_y); (ybar, hbar): the virtual goal
+        (shot_selector.virtual_goal); (q0, v0): puck state now."""
         return np.concatenate([
-            np.asarray(x0, dtype=float), np.asarray(u_prev, dtype=float), [ybar],
+            np.asarray(x0, dtype=float), np.asarray(u_prev, dtype=float), [ybar, hbar],
             np.asarray(q0, dtype=float), np.asarray(v0, dtype=float),
         ])
 

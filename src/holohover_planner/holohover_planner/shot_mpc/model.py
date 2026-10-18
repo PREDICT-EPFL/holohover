@@ -188,10 +188,10 @@ def predict(q0, v0, P):
 def bounce_path(q0, v0, P, t_end, max_hits=30):
     """
     Vertices of the free puck path from now to t_end, for display and tests: the start,
-    every wall hit, and the position at t_end. Chains predict() through pure wall
-    reflections (exact for this simulator): a side wall flips v_y, an end wall v_x;
-    crossing an end wall inside the mouth (|y| <= h, the simulator's scoring rule on
-    the puck centre) ends the path there.
+    every wall hit, and the position at t_end. Chains predict() through the wall
+    bounces: a side wall reverses v_y, an end wall v_x, scaled by the wall restitution
+    e_w (the other component is kept); crossing an end wall inside the mouth (|y| <= h,
+    the simulator's scoring rule on the puck centre) ends the path there.
 
     Returns (points (n, 2), hits): hits[j] names vertex j + 1, one of 'L', 'R', 'near',
     'far', 'goal_for' or 'goal_against'. The last vertex has no entry unless it is a goal.
@@ -208,7 +208,7 @@ def bounce_path(q0, v0, P, t_end, max_hits=30):
             hits.append("goal_for" if flight.wall == "far" else "goal_against")
             return np.array(points), hits
         hits.append(flight.wall)
-        v[1 if flight.wall in ("L", "R") else 0] *= -1
+        v[1 if flight.wall in ("L", "R") else 0] *= -P.e_w
         flight = predict(q, v, P)
     points.append(flight.state_at(t_end)[0])
     return np.array(points), hits
@@ -216,10 +216,10 @@ def bounce_path(q0, v0, P, t_end, max_hits=30):
 
 def flight_after(q0, v0, P, t):
     """Puck position and velocity t after (q0, v0): the free flight of bounce_path with its wall
-    reflections (a puck entering a goal stops on the goal line)."""
+    bounces (a puck entering a goal stops on the goal line)."""
     points, hits = bounce_path(q0, v0, P, t)
     v = np.array(v0, dtype=float) * flight_decay(t, P.gamma)
     for wall in hits:
         if wall in ("L", "R", "near", "far"):
-            v[1 if wall in ("L", "R") else 0] *= -1
+            v[1 if wall in ("L", "R") else 0] *= -P.e_w
     return points[-1], v

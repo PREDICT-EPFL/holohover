@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from holohover_planner.shot_mpc.model import predict
-from holohover_planner.shot_mpc.shot_selector import ShotSelector
+from holohover_planner.shot_mpc.shot_selector import ShotSelector, virtual_goal
 
 # (robot1, puck): x, y, vx, vy in python-sim's world frame
 SCENARIOS = {
@@ -29,9 +29,9 @@ def test_derivatives_against_finite_differences(P, frame, nlp):
     rng = np.random.default_rng(1)
     xR, puck = _planner_setup(P, frame, "incoming")
     for (s, k) in [(0, 0), (1, 2)]:
-        ybar = 2 * s * k * P.w
+        ybar, hbar = virtual_goal(s, k, P)
         w0 = nlp.cold_guess(xR, puck, ybar, 0.6)
-        p = nlp.make_params(xR, np.zeros(2), ybar, puck.q, puck.v)
+        p = nlp.make_params(xR, np.zeros(2), ybar, hbar, puck.q, puck.v)
         w0 = w0 + 0.01 * rng.normal(size=w0.size)
         grad = np.array(nlp.grad_f_fun(w0, p)).ravel()
         jac = np.array(nlp.jac_g_fun(w0, p))

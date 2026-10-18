@@ -46,7 +46,7 @@ _SHOT_MPC_KEYS = {
 # The planner's ROS parameters (ShotParams), by name. Their values are only in
 # holohover_utils/config/common/shot_planner_config.yaml: no defaults in the code.
 PARAMETERS = (
-    "table.width", "table.height", "table.goal_width", "table.friction",
+    "table.width", "table.height", "table.goal_width", "table.friction", "table.restitution",
     "robot.mass", "robot.radius", "robot.force_max", "puck.mass", "puck.radius",
     *("shot_mpc." + key for key in _SHOT_MPC_KEYS.values()),
 )
@@ -59,6 +59,7 @@ class ShotParams:
     W: float  # table width
     h: float  # goal half-width
     gamma: float  # viscous friction, same for robot and puck
+    e_w: float  # wall restitution: a puck bounce reverses the normal velocity scaled by e_w, keeps the tangential one
     m_R: float
     I_R: float
     r_R: float
@@ -109,6 +110,7 @@ class ShotParams:
             W=p["table.height"],
             h=0.5 * p["table.goal_width"],
             gamma=p["table.friction"],
+            e_w=p["table.restitution"],
             m_R=p["robot.mass"],
             I_R=0.5 * p["robot.mass"] * p["robot.radius"] ** 2,
             r_R=p["robot.radius"],
