@@ -86,6 +86,10 @@ void SimulatorNode::init_puck()
     fixtureDef.density = 1.0f; // Density of the disk
     fixtureDef.friction = 0.02f; // Friction
     fixtureDef.restitution = 0.8f; // Bounciness
+    // Restitution at every impact speed. Box2D's default restitutionThreshold (1 m/s, its guard against jitter in
+    // resting contacts) made the hovercraft-puck contacts under 1 m/s fully inelastic (e = 0). A contact takes the
+    // smaller threshold of its two fixtures, so this one covers them; wall bounces are reflected in BeginContact.
+    fixtureDef.restitutionThreshold = 0.0f;
 
     // Attach the shape to the body
     puck->CreateFixture(&fixtureDef);
