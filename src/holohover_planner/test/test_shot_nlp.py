@@ -50,7 +50,7 @@ def test_unsolvable_input_is_invalid_not_a_hang(P, frame, nlp, bad):
     ybar, hbar = virtual_goal(0, 0, P)
     p = nlp.make_params(xR, np.zeros(2), ybar, hbar, puck.q, puck.v)
     w0 = nlp.init_slacks(nlp.cold_guess(xR, puck, ybar, 0.6), p)
-    w0[nlp.idx["tf"]] = 0.6
+    w0[nlp.idx["T"]] = 0.6
     w0[nlp.idx["phi"]] = bad
     assert not nlp.solve(w0, p, P.t_min, 1.0).valid
     p_bad = p.copy()
