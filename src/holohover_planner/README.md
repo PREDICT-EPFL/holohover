@@ -3,7 +3,7 @@ Planners of the holohover. A planner plans the motion of one hovercraft and publ
 `holohover_msgs/HolohoverPlan`; a controller follows the plan.
 
 ## Nodes
-- `shot_planner` - Shot MPC planner (bilevel gradient-based, CasADi + IPOPT; formulation in python-sim's
+- `shot_planner` - Shot MPC planner (bilevel gradient-based, CasADi + Fatrop; formulation in python-sim's
   `docs/air-hockey-mpc-formulation.md`). It plans the hovercraft's path up to its impact with the puck
   so that the puck goes into the attacked goal, directly or off at most `K` side walls.
 
@@ -32,7 +32,7 @@ How it runs:
   to it with the planner's models. It is published once solved (up to some 40 ms later): the controller
   follows it on the clock.
 - **Solver processes.** The sequences of a 5 Hz update are solved in parallel in `shot_mpc.n_workers`
-  spawned processes (IPOPT/MUMPS does not run in parallel threads), bit-identical to serial solves.
+  spawned processes (one CasADi solver does not run in parallel threads), bit-identical to serial solves.
 - **Contacts.** Detected with the planner's puck model (`contact.py`): a puck velocity the free flight with
   wall reflections does not explain, with the robot next to the puck. A contact drops the plan and the warm
   starts, publishes a plan with every candidate empty and pauses planning for `contact_cooldown`.

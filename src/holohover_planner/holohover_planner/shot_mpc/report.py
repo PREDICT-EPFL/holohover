@@ -30,5 +30,5 @@ def timing_summary(updates):
     lines = ["Solve times:", row("one B, warm start", warm), row("one B, cold (all seeds)", cold),
              row("outer update (all B)", outer), row("inner update (B*)", inner)]
     if len(iters_warm):
-        lines.append(f"  warm IPOPT iterations: mean {iters_warm.mean():.1f}, max {iters_warm.max()}")
+        lines.append(f"  warm Fatrop iterations: mean {iters_warm.mean():.1f}, max {iters_warm.max()}")
     return "\n".join(lines)

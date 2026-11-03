@@ -1,16 +1,21 @@
 """
 Inner problem P(B) for one fixed bounce sequence (Sections 2 to 5).
 
-Built once with CasADi SX and solved with IPOPT; the sequence only enters
+Built once with CasADi SX and solved with Fatrop; the sequence only enters
 through the parameters y_bar and h_bar (the virtual goal and the half-width of its
 mouth), so one solver serves all of B_K.
 
-Decision vector w = (X, U, t_f, phi, v+, zeta, s_box, s_av):
+Decision vector w, in the stage order Fatrop needs (state of stage k, then its controls):
+    stage 0:        x_0, t_f, u_0
+    stage 0<k<N:    x_k, t_f, u_{k-1}, u_k, s_box[k-1], s_av[k-1]
+    stage N:        x_N, t_f, phi, v+, zeta, s_box[N-1]
+Fatrop has no global variables and a stage-wise cost, hence t_f copied into every stage's state and
+u_{k-1} too, for the rate term. Rows go the same way: dynamics out of stage k, then its path rows.
 - X (4 x N+1), U (2 x N): robot states (x, y, vx, vy) and accelerations (a_x, a_y)
   on the grid t_f / N; the heading is left to the tracker
 - phi: angle of the contact normal n = (cos phi, sin phi), left unwrapped
 - v+: post-impact puck velocity, lifted with bound v+_x >= eps so every
-  division by v+_x is safe at every IPOPT iterate
+  division by v+_x is safe at every iterate
 - zeta = 1 - gamma (x_g - x_c) / v+_x, lifted with bounds [ZETA_MIN, 1]: this is the
   reach constraint gamma (x_g - x_c) < v+_x, and T_B = -ln(zeta) / gamma is always defined
 - s_box, s_av: L1 slacks of the soft table/own-half and puck-avoidance constraints
@@ -33,12 +38,12 @@ from .solve_pool import SolvePool
 
 NX, NU = 4, 2  # robot state (x, y, vx, vy) and input (a_x, a_y)
 ZETA_MIN = 1e-3  # floor of zeta for the strict reach inequality; T_B <= -ln(ZETA_MIN) / gamma
-OK_STATUS = ("Solve_Succeeded", "Solved_To_Acceptable_Level")
+MAX_INPUT = 100.0  # Fatrop spins forever inside C++, past max_iter, on NaN or absurd w0 and p: they are not solved
 
 
 @dataclass
 class Solution:
-    w: np.ndarray    # decision vector (X, U, t_f, phi, v+, zeta, s_box, s_av)
+    w: np.ndarray    # decision vector, in stage order
     X: np.ndarray    # robot state (x, y, vx, vy)
     U: np.ndarray    # robot input (a_x, a_y)
     tf: float        # final time of the plan
@@ -47,8 +52,8 @@ class Solution:
     vp: np.ndarray   # post-impact puck velocity
     zeta: float      # reach margin (unitless), lifted with bounds [ZETA_MIN, 1] so T_B = -ln(zeta) / gamma is always defined. zeta = 1 - gamma (x_g - x_c) / v+_x
     cost: float      # cost
-    status: str      # IPOPT return status
-    iters: int       # IPOPT iteration count
+    status: str      # Fatrop return status, "failed" if it raised or was not called
+    iters: int       # Fatrop iteration count
     t_wall: float    # wall-clock time of the solve
     valid: bool      # True if converged and cost, viol, slack are finite and <= valid_tol
     viol: float      # max violation of the hard constraints
@@ -69,21 +74,32 @@ class ShotNLP:
         ###########################
         X = ca.SX.sym("X", NX, N + 1)   # X0, ..., XN
         U = ca.SX.sym("U", NU, N)       # U0, ..., U_{N-1}
-        tf = ca.SX.sym("tf")            # tf
+        T = ca.SX.sym("T", N + 1)       # copy of tf in each stage
+        U_last = ca.SX.sym("U_last", NU, N - 1)  # U0, ..., U_{N-2}, copied into the stage after
         ph = ca.SX.sym("phi")           # angle of the contact normal n = (cos phi, sin phi)
         vp = ca.SX.sym("vp", 2)         # post-impact puck velocity
         zeta = ca.SX.sym("zeta")        # reach margin, lifted with bounds [ZETA_MIN, 1] so T_B = -ln(zeta) / gamma is always defined
         s_box = ca.SX.sym("s_box", N)   # L1 slacks of the soft table/own-half constraints
         s_av = ca.SX.sym("s_av", N - 1) # L1 slacks of the soft puck-avoidance constraints
+        tf = T[N]                       # the impact rows live in stage N
 
-        blocks = [("X", ca.vec(X)), ("U", ca.vec(U)), ("tf", tf), ("phi", ph),
-                  ("vp", vp), ("zeta", zeta), ("s_box", s_box), ("s_av", s_av)]
-        self.off, o = {}, 0
-        for name, b in blocks:
-            self.off[name] = (o, o + b.numel())
-            o += b.numel()
-        self.nw = o
-        w = ca.vertcat(*[b for _, b in blocks])  # decision vector, concatenation of the blocks
+        idx = {}  # block name -> indices in w
+        blocks, nx, nu = [], [], []
+        for k in range(N + 1):
+            state = [("X", X[:, k]), ("tf", T[k])] + ([("U_last", U_last[:, k - 1])] if 0 < k < N else [])
+            ctrl = [("U", U[:, k])] if k < N else [("phi", ph), ("vp", vp), ("zeta", zeta)]
+            ctrl += [("s_box", s_box[k - 1])] if k > 0 else []
+            ctrl += [("s_av", s_av[k - 1])] if 0 < k < N else []
+            nx.append(sum(b.numel() for _, b in state))
+            nu.append(sum(b.numel() for _, b in ctrl))
+            blocks += [b for _, b in state + ctrl]
+            o = sum(nx) + sum(nu) - nx[-1] - nu[-1]
+            for name, b in state + ctrl:
+                idx.setdefault(name, []).extend(range(o, o + b.numel()))
+                o += b.numel()
+        self.idx = {name: np.array(i) for name, i in idx.items()}
+        w = ca.vertcat(*blocks)  # decision vector
+        self.nw = w.numel()
 
         ##################
         ### Parameters ###
@@ -103,37 +119,20 @@ class ShotNLP:
         ###################
         ### Constraints ###
         ###################
-        g, lbg, ubg = [], [], []
+        g, lbg, ubg, ng = [], [], [], []
 
         def add(expr, lo, hi):
             g.append(expr)
             lbg.extend([lo] * expr.numel())
             ubg.extend([hi] * expr.numel())
 
-        dt = tf / N
-        # Exact ZOH map as expressions of t_f
-        A, B = discrete_matrices(dt, gam)
-
-        # Robot dynamics (nodes 0..N-1): x_{k+1} = A_d x_k + B_d u_k
-        add(X[:, 0] - x0, 0.0, 0.0)
-        for k in range(N):
-            add(X[:, k + 1] - (A @ X[:, k] + B @ U[:, k]), 0.0, 0.0)
-
         # Impact at t_f (Section 3)
         p_c, v_minus = puck_at(tf)
         n = ca.vertcat(ca.cos(ph), ca.sin(ph))
-        add(X[0:2, N] - (p_c - (P.r_R + P.r_p) * n), 0.0, 0.0)
         v_n, vp_expr, vR_plus = impact(X[2:4, N], v_minus, n, P.kappa, P.m_p / P.m_R, P.mu, P.e) # vp_expr is the post-impact puck velocity expression
-        add(vp - vp_expr, 0.0, 0.0)                                                   # contact equality: the puck is sent along n, turned by the friction
 
-        # Coarse post-impact model (Section 4)
         x_c, y_c = p_c[0], p_c[1]
-        add(zeta * vp[0] - (vp[0] - gam * (P.x_g - x_c)), 0.0, 0.0)     # define zeta
-        add(v_n, P.v_min, ca.inf)                                       # v_n = (v_R - v_p) . n, robot must move toward the puck
-
         aim = (y_c - ybar) * vp[0] + (P.x_g - x_c) * vp[1]              # equation of section 4 to make sure we score a goal
-        add(aim - hbar * vp[0], -ca.inf, 0.0)
-        add(-aim - hbar * vp[0], -ca.inf, 0.0)                          # because of absolute value.
 
         # Soft table limits, whole robot in own half (nodes 1..N)
         x_hi = P.x_mid - P.r_R
@@ -141,49 +140,70 @@ class ShotNLP:
         box_viol = [] # log constraint violation
         p_clear = X[0:2, N] + vR_plus * flight_phi(P.t_clear, gam)   # position of the robot at t_clear after impact
         clear_rows = ca.vertcat(P.r_R - p_clear[0], p_clear[1] - y_hi, -y_hi - p_clear[1]) # condition p_clear[0] >= r_R and |p_clear[1]| <= y_hi
-
         x_stop = X[0, N] + vR_plus[0] * P.t_react + vR_plus[0] * ca.fabs(vR_plus[0]) / (2 * P.u_max[0]) # furthest x the robot can reach after t_clear if it brakes at max acceleration, so it can stop before the wall
-        for k in range(1, N + 1):
-            rows = ca.vertcat(X[0, k] - x_hi, P.r_R - X[0, k], X[1, k] - y_hi, -y_hi - X[1, k]) # condition X[0, k] in [r_R, x_hi] and X[1, k]| <= y_hi
-            if k == N:
-                rows = ca.vertcat(rows, x_stop - x_hi)
-            if k == N and P.t_clear > 0:
-                rows = ca.vertcat(rows, clear_rows)
-            add(rows - s_box[k - 1], -ca.inf, 0.0) # soft constraints
-            box_viol.append(ca.mmax(rows)) # log the max violation
 
         # Soft puck avoidance before impact (nodes 1..N-1).
         av_viol = [] # log constraint violation
-        for k in range(1, N):
-            d_min = P.r_R + P.r_p + P.delta / N
-            pp, _ = puck_at(k * dt)
-            row = (d_min**2 - ca.sumsqr(X[0:2, k] - pp)) / (2 * d_min)
-            add(row - s_av[k - 1], -ca.inf, 0.0)
-            av_viol.append(row)
+        d_min = P.r_R + P.r_p + P.delta / N
+
+        for k in range(N + 1):
+            # Dynamics out of stage k: x_{k+1} = A_d x_k + B_d u_k with the exact ZOH map as expressions of t_f.
+            # Fatrop's sign: x_{k+1} - F(x_k, u_k)
+            if k < N:
+                A, B = discrete_matrices(T[k] / N, gam)
+                add(X[:, k + 1] - (A @ X[:, k] + B @ U[:, k]), 0.0, 0.0)
+                add(T[k + 1] - T[k], 0.0, 0.0)
+                if k < N - 1:
+                    add(U_last[:, k] - U[:, k], 0.0, 0.0)
+
+            # Path rows of stage k
+            n_rows = len(lbg)
+            if k == 0:
+                add(X[:, 0] - x0, 0.0, 0.0)
+            else:
+                rows = ca.vertcat(X[0, k] - x_hi, P.r_R - X[0, k], X[1, k] - y_hi, -y_hi - X[1, k]) # condition X[0, k] in [r_R, x_hi] and X[1, k]| <= y_hi
+                if k == N:
+                    add(X[0:2, N] - (p_c - (P.r_R + P.r_p) * n), 0.0, 0.0)
+                    add(vp - vp_expr, 0.0, 0.0)                                 # contact equality: the puck is sent along n, turned by the friction
+                    # Coarse post-impact model (Section 4)
+                    add(zeta * vp[0] - (vp[0] - gam * (P.x_g - x_c)), 0.0, 0.0) # define zeta
+                    add(v_n, P.v_min, ca.inf)                                   # v_n = (v_R - v_p) . n, robot must move toward the puck
+                    add(aim - hbar * vp[0], -ca.inf, 0.0)
+                    add(-aim - hbar * vp[0], -ca.inf, 0.0)                      # because of absolute value.
+                    rows = ca.vertcat(rows, x_stop - x_hi)
+                    if P.t_clear > 0:
+                        rows = ca.vertcat(rows, clear_rows)
+                add(rows - s_box[k - 1], -ca.inf, 0.0) # soft constraints
+                box_viol.append(ca.mmax(rows)) # log the max violation
+                if k < N:
+                    pp, _ = puck_at(k * T[k] / N)
+                    row = (d_min**2 - ca.sumsqr(X[0:2, k] - pp)) / (2 * d_min)
+                    add(row - s_av[k - 1], -ca.inf, 0.0)
+                    av_viol.append(row)
+            ng.append(len(lbg) - n_rows)
 
         g = ca.vertcat(*g)
         self.lbg = np.array(lbg, dtype=float)
         self.ubg = np.array(ubg, dtype=float)
+        equality = (self.lbg == self.ubg).tolist()
 
         ############
         ### Cost ###
         ############
         # Terms A-E of Section 5, inputs normalised componentwise by their limits
         umax = P.u_max[:NU]
-        ub_prev = u_prev / umax
         J_u, J_du = 0, 0
         for k in range(N):
             ub = U[:, k] / umax
-            J_u += ca.sumsqr(ub)
-            J_du += ca.sumsqr(ub - ub_prev)
-            ub_prev = ub
+            J_u += T[k] * ca.sumsqr(ub)
+            J_du += ca.sumsqr(ub - (u_prev if k == 0 else U_last[:, k - 1]) / umax)
 
         T_B = -ca.log(zeta) / gam if gam >= GAMMA_EPS else (P.x_g - x_c) / vp[0]
         # Aim error on the goal line: the unfolded one, unstretched by e_w^k = h_eff / h_bar
         e_aim = ((y_c - ybar) + (P.x_g - x_c) * vp[1] / vp[0]) * (P.h_eff / hbar)
 
         terms = {
-            "u": P.w_u * tf / N * J_u,
+            "u": P.w_u / N * J_u,
             "du": P.w_du * J_du,
             "tf": P.w_t * tf / P.t_ref,
             "T": P.w_T * T_B / P.T_ref,
@@ -206,26 +226,24 @@ class ShotNLP:
         ##############
         self.lbx = -np.inf * np.ones(self.nw)
         self.ubx = np.inf * np.ones(self.nw)
-        o0, o1 = self.off["U"]
-        self.lbx[o0:o1] = np.tile(-umax, N)
-        self.ubx[o0:o1] = np.tile(umax, N)
-        self.i_tf = self.off["tf"][0] # define after
-        i_vp = self.off["vp"][0] # vp = speed of the puck after impact
+        self.lbx[self.idx["U"]] = np.tile(-umax, N)
+        self.ubx[self.idx["U"]] = np.tile(umax, N)
+        self.i_tf = self.idx["tf"][0] # the copies follow from the dynamics; define after
+        i_vp = self.idx["vp"][0] # vp = speed of the puck after impact
         self.lbx[i_vp] = P.eps
-        i_z = self.off["zeta"][0]
+        i_z = self.idx["zeta"][0]
         self.lbx[i_z], self.ubx[i_z] = ZETA_MIN, 1.0
         for name in ("s_box", "s_av"): # slack variable are nonnegative
-            o0, o1 = self.off[name]
-            self.lbx[o0:o1] = 0.0
+            self.lbx[self.idx[name]] = 0.0
 
         ##############
         ### Solver ###
         ##############
         # Interpreted SX, no JIT: compiling the functions to C made a solve only 2-7 % faster
-        # (IPOPT and MUMPS take the rest of the time) for ~2.4 s of build per run.
+        # (measured with IPOPT and MUMPS, which took the rest of the time) for ~2.4 s of build per run.
         nlp = {"x": w, "p": p, "f": J, "g": g}
         t_build = time.perf_counter()
-        self._build_solver(nlp)
+        self._build_solver(nlp, nx, nu, ng, equality)
         self.t_build = time.perf_counter() - t_build
         if verbose:
             print(f"[shot_nlp] {self.nw} variables, {g.numel()} constraints, "
@@ -238,51 +256,53 @@ class ShotNLP:
             self.pool = SolvePool(self, n_workers)
         return self.pool
 
-    def _build_solver(self, nlp):
+    def _build_solver(self, nlp, nx, nu, ng, equality):
         P = self.P
         opts = {
             "print_time": False,
-            "ipopt": {
+            "structure_detection": "manual",
+            "N": P.N, "nx": nx, "nu": nu, "ng": ng,
+            "equality": equality,
+            "fatrop": {
                 "print_level": 0,
-                "sb": "yes",
                 "max_iter": P.max_iter,
                 "tol": P.tol,
-                "acceptable_tol": P.acceptable_tol,
-                "acceptable_iter": 5,
             },
         }
-        self.solver = ca.nlpsol("shot", "ipopt", nlp, opts)
+        self.solver = ca.nlpsol("shot", "fatrop", nlp, opts)
 
     ########################
     ### Packing helpers  ###
     ########################
-    def _block(self, w, name):
-        o0, o1 = self.off[name]
-        return w[o0:o1]
-
     def unpack(self, w):
         N = self.P.N
         return {
-            "X": self._block(w, "X").reshape((N + 1, NX)).T,
-            "U": self._block(w, "U").reshape((N, NU)).T,
-            "tf": float(self._block(w, "tf")[0]),
-            "phi": float(self._block(w, "phi")[0]),
-            "vp": self._block(w, "vp").copy(),
-            "zeta": float(self._block(w, "zeta")[0]),
-            "s_box": self._block(w, "s_box").copy(),
-            "s_av": self._block(w, "s_av").copy(),
+            "X": w[self.idx["X"]].reshape((N + 1, NX)).T,
+            "U": w[self.idx["U"]].reshape((N, NU)).T,
+            "tf": float(w[self.i_tf]),
+            "phi": float(w[self.idx["phi"][0]]),
+            "vp": w[self.idx["vp"]].copy(),
+            "zeta": float(w[self.idx["zeta"][0]]),
+            "s_box": w[self.idx["s_box"]].copy(),
+            "s_av": w[self.idx["s_av"]].copy(),
         }
 
     def pack(self, X, U, tf, phi, vp, zeta, s_box=None, s_av=None):
         N = self.P.N
-        s_box = np.zeros(N) if s_box is None else s_box
-        s_av = np.zeros(N - 1) if s_av is None else s_av
-        return np.concatenate([
-            np.asarray(X, dtype=float).T.ravel(),
-            np.asarray(U, dtype=float).T.ravel(),
-            [tf, phi], np.asarray(vp, dtype=float).ravel(), [zeta],
-            np.asarray(s_box, dtype=float).ravel(), np.asarray(s_av, dtype=float).ravel(),
-        ])
+        X, U = np.asarray(X, dtype=float), np.asarray(U, dtype=float)
+        w = np.zeros(self.nw)
+        w[self.idx["X"]] = X.T.ravel()
+        w[self.idx["U"]] = U.T.ravel()
+        w[self.idx["tf"]] = tf
+        w[self.idx["U_last"]] = U[:, :N - 1].T.ravel()
+        w[self.idx["phi"]] = phi
+        w[self.idx["vp"]] = np.asarray(vp, dtype=float).ravel()
+        w[self.idx["zeta"]] = zeta
+        if s_box is not None:
+            w[self.idx["s_box"]] = np.asarray(s_box, dtype=float).ravel()
+        if s_av is not None:
+            w[self.idx["s_av"]] = np.asarray(s_av, dtype=float).ravel()
+        return w
 
     def make_params(self, x0, u_prev, ybar, hbar, q0, v0):
         """x0: robot state (x, y, vx, vy); u_prev: last input (a_x, a_y); (ybar, hbar): the virtual goal
@@ -296,10 +316,8 @@ class ShotNLP:
         """Set the slacks of an initial guess to its actual violations (feasible w.r.t. the soft rows)."""
         box, av = self.viol_fun(w, p)
         w = w.copy()
-        o0, o1 = self.off["s_box"]
-        w[o0:o1] = np.maximum(np.array(box).ravel(), 0.0)
-        o0, o1 = self.off["s_av"]
-        w[o0:o1] = np.maximum(np.array(av).ravel(), 0.0)
+        w[self.idx["s_box"]] = np.maximum(np.array(box).ravel(), 0.0)
+        w[self.idx["s_av"]] = np.maximum(np.array(av).ravel(), 0.0)
         return w
 
     ########################
@@ -363,18 +381,26 @@ class ShotNLP:
         w0 = np.clip(w0, lbx, ubx)
 
         t0 = time.perf_counter()
-        res = self.solver(x0=w0, p=p, lbx=lbx, ubx=ubx, lbg=self.lbg, ubg=self.ubg)
+        res = None
+        if np.abs(np.concatenate([w0, p])).max() < MAX_INPUT:  # np.max keeps NaN, so also False for NaN
+            try:
+                res = self.solver(x0=w0, p=p, lbx=lbx, ubx=ubx, lbg=self.lbg, ubg=self.ubg)
+                stats = self.solver.stats()
+                status, iters = str(stats["return_status"]), int(stats["iter_count"])
+                converged = stats["success"] or iters >= P.max_iter  # a max_iter point still has to pass the checks below
+            except RuntimeError:  # Fatrop raises instead of returning a status
+                pass
+        if res is None:  # an invalid solve, not a crash
+            res = {"x": w0, "g": self.g_fun(w0, p), "f": self.f_fun(w0, p)}
+            status, iters, converged = "failed", 0, False
         t_wall = time.perf_counter() - t0
 
-        stats = self.solver.stats()
-        status = stats["return_status"]
         w = np.array(res["x"]).ravel()
         gv = np.array(res["g"]).ravel()
         cost = float(res["f"])
         viol = float(max(0.0, np.max(self.lbg - gv), np.max(gv - self.ubg)))
         parts = self.unpack(w)
         slack = float(max(np.max(parts["s_box"]), np.max(parts["s_av"]), 0.0))
-        converged = status in OK_STATUS or status == "Maximum_Iterations_Exceeded"
         valid = bool(converged and np.isfinite(cost) and viol <= P.valid_tol and slack <= P.valid_tol)
 
         terms = dict(zip(self.term_names, np.array(self.terms_fun(w, p)).ravel()))
@@ -382,6 +408,6 @@ class ShotNLP:
         p_c = X[0:2, -1] + (P.r_R + P.r_p) * np.array([np.cos(phi), np.sin(phi)])
         return Solution(
             w=w, X=X, U=parts["U"], tf=parts["tf"], phi=phi, p_c=p_c, vp=parts["vp"],
-            zeta=parts["zeta"], cost=cost, status=status, iters=int(stats["iter_count"]),
+            zeta=parts["zeta"], cost=cost, status=status, iters=iters,
             t_wall=t_wall, valid=valid, viol=viol, slack=slack, cold=cold, terms=terms,
         )

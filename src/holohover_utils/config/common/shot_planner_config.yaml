@@ -62,9 +62,8 @@
       contact_cooldown: 0.5
       sigma_init: 1.0
       n_tf_seeds: 1
-      ipopt:
+      fatrop:
         max_iter: 40
         tol: 1.0e-4
-        acceptable_tol: 1.0e-3
         valid_tol: 1.0e-3
       n_workers: 5           # solver processes of the outer updates; 0 or 1: serial

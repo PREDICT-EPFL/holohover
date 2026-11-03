@@ -44,6 +44,21 @@ def test_derivatives_against_finite_differences(P, frame, nlp):
             assert np.allclose(fd_g, jac @ d, rtol=1e-5, atol=1e-6)
 
 
+@pytest.mark.parametrize("bad", [np.nan, np.inf, 1e6])
+def test_unsolvable_input_is_invalid_not_a_hang(P, frame, nlp, bad):
+    xR, puck = _planner_setup(P, frame, "incoming")
+    ybar, hbar = virtual_goal(0, 0, P)
+    p = nlp.make_params(xR, np.zeros(2), ybar, hbar, puck.q, puck.v)
+    w0 = nlp.init_slacks(nlp.cold_guess(xR, puck, ybar, 0.6), p)
+    w0[nlp.idx["tf"]] = 0.6
+    w0[nlp.idx["phi"]] = bad
+    assert not nlp.solve(w0, p, P.t_min, 1.0).valid
+    p_bad = p.copy()
+    p_bad[0] = bad
+    assert not nlp.solve(nlp.init_slacks(nlp.cold_guess(xR, puck, ybar, 0.6), p), p_bad, P.t_min, 1.0).valid
+    assert nlp.solve(nlp.init_slacks(nlp.cold_guess(xR, puck, ybar, 0.6), p), p, P.t_min, 1.0).valid  # still works after
+
+
 @pytest.mark.parametrize("scenario", list(SCENARIOS))
 def test_cold_start_converges(P, frame, nlp, scenario):
     xR, puck = _planner_setup(P, frame, scenario)

@@ -2,9 +2,7 @@
 Worker processes for the outer updates (Section 8): the bounce sequences are solved in
 parallel, one task per sequence (shot_selector.solve_sequence).
 
-Processes, not threads: IPOPT 3.14 serialises every call into MUMPS with a process-wide
-mutex, so threads queue on it (measured: 4 threads slower than 1), and one CasADi solver
-called from several threads crashes.
+Processes, not threads: one CasADi solver called from several threads crashes.
 
 The workers are spawned, not forked: the node creates the pool after rclpy has started its
 threads, and forking a multithreaded process can deadlock the child. Each worker builds its

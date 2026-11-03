@@ -9,7 +9,7 @@ Robot 1 is driven by one of these controllers:
 | Controller | What it does | Code |
 |---|---|---|
 | `dial` | Sampling-based path planner (DIAL, Till's project) plus an MPC path follower | [`controllers/dial/`](controllers/dial/), see `SP_hockey/literature/report-till.pdf` |
-| `shot_mpc` | Gradient-based shot MPC (CasADi + IPOPT) plus a tracking QP: the planner and the controller of the ROS nodes, from [`holohover_planner`](../../holohover_planner/) and [`holohover_control`](../../holohover_control/) | [`controllers/shot_mpc/`](controllers/shot_mpc/), see [`docs/air-hockey-mpc-formulation.md`](docs/air-hockey-mpc-formulation.md) |
+| `shot_mpc` | Gradient-based shot MPC (CasADi + Fatrop) plus a tracking QP: the planner and the controller of the ROS nodes, from [`holohover_planner`](../../holohover_planner/) and [`holohover_control`](../../holohover_control/) | [`controllers/shot_mpc/`](controllers/shot_mpc/), see [`docs/air-hockey-mpc-formulation.md`](docs/air-hockey-mpc-formulation.md) |
 | `forward` | Example: a constant force toward the opponent goal (`forward.force`), a template for a new controller | [`controllers/forward/`](controllers/forward/) |
 
 ## Layout

@@ -40,8 +40,7 @@ _SHOT_MPC_KEYS = {
     "outer_hz": "rates.outer_hz", "inner_hz": "rates.inner_hz", "t_commit": "t_commit",
     "t_stop_replan": "t_stop_replan", "plan_expiry": "plan_expiry", "contact_cooldown": "contact_cooldown",
     "sigma_init": "sigma_init", "n_tf_seeds": "n_tf_seeds",
-    "max_iter": "ipopt.max_iter", "tol": "ipopt.tol", "acceptable_tol": "ipopt.acceptable_tol",
-    "valid_tol": "ipopt.valid_tol",
+    "max_iter": "fatrop.max_iter", "tol": "fatrop.tol", "valid_tol": "fatrop.valid_tol",
 }
 
 # The planner's ROS parameters (ShotParams), by name. Their values are only in
@@ -102,7 +101,6 @@ class ShotParams:
     # Solver
     max_iter: int
     tol: float
-    acceptable_tol: float
     valid_tol: float
 
     @classmethod
