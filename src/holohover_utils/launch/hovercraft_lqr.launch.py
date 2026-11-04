@@ -38,7 +38,8 @@ def launch_setup(context):
     navigation_node = Node(
         package="holohover_navigation",
         executable="navigation_disturbance",
-        parameters=[navigation_config, {'holohover_props_file' : params}],
+        parameters=[navigation_config, {'holohover_props_file' : params,
+                    'pose_receive_time': LaunchConfiguration('pose_receive_time').perform(context).lower() == 'true'}],
         namespace= name,
         ros_arguments=['--disable-rosout-logs'],
         output='screen',
@@ -105,6 +106,11 @@ def generate_launch_description():
         description='Initial Yaw angle.'
     ))
 
-    ld.add_action(opfunc)   
+    ld.add_action(DeclareLaunchArgument(
+        'pose_receive_time', default_value='false',
+        description='EKF times poses on arrival (mocap PC clock not synced)'
+    ))
+
+    ld.add_action(opfunc)
 
     return ld
