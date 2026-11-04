@@ -66,6 +66,7 @@ services:
       - ../src:/root/ros2_ws/src/holohover
       - ./data:/root/data
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /dev/input:/dev/input # gamepads connected after the container started (joy, teleop)
     working_dir: /root/data
     stdin_open: true
     tty: true

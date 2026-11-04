@@ -96,6 +96,10 @@ void HolohoverControlLQRNode::publish_control()
     //     return;
     // }
 
+    // no control before the first EKF state: the zero placeholder state would drive full thrust towards the reference
+    if (!has_state)
+        return;
+
     motor_velocities = holohover.Ad_motor * motor_velocities + holohover.Bd_motor * last_control_signal;
     
     Holohover::control_force_t<double> u_force_curr;
@@ -107,7 +111,10 @@ void HolohoverControlLQRNode::publish_control()
     state_ref.setZero();
     state_ref(0) = ref.x;
     state_ref(1) = ref.y;
+    state_ref(2) = ref.v_x;
+    state_ref(3) = ref.v_y;
     state_ref(4) = ref.yaw;
+    state_ref(5) = ref.w_z;
 
     // calculate control for next step
     Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_curr;
@@ -156,6 +163,7 @@ void HolohoverControlLQRNode::state_callback(const holohover_msgs::msg::Holohove
     disturbance(0) = msg_state.state_msg.dist_x;
     disturbance(1) = msg_state.state_msg.dist_y;
     disturbance(2) = msg_state.state_msg.dist_yaw;
+    has_state = true;
 }
 
 void HolohoverControlLQRNode::ref_callback(const holohover_msgs::msg::HolohoverState &pose)

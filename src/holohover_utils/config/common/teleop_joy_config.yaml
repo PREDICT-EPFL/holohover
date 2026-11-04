@@ -1,0 +1,26 @@
+# Gamepad teleop of air_hockey_sim.launch.py controller:=teleop: joy's game_controller_node (SDL's standard
+# layout: axes 0 left x, 1 left y, 2 right x; buttons 9 L1, 10 R1; left and up are +1) and teleop_twist_joy,
+# whose cmd_vel the teleop node reads in the table frame: left stick up = +x, left = +y (standing at the -x end).
+# Hold L1 to move (releasing it sends a zero Twist: the robot holds), R1 instead for the turbo speeds.
+/**:
+  ros__parameters:
+    require_enable_button: true
+    enable_button: 9        # L1
+    enable_turbo_button: 10 # R1
+
+    axis_linear:
+      x: 1                  # left stick up/down
+      y: 0                  # left stick left/right
+    scale_linear:
+      x: 0.4                # m/s
+      y: 0.4
+    scale_linear_turbo:
+      x: 0.8
+      y: 0.8
+
+    axis_angular:
+      yaw: 2                # right stick left/right: right turns clockwise
+    scale_angular:
+      yaw: 1.5              # rad/s
+    scale_angular_turbo:
+      yaw: 3.0

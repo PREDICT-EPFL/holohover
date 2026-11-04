@@ -33,6 +33,7 @@ private:
     Holohover holohover;
 
     Holohover::state_t<double> state;
+    bool has_state = false;
     Eigen::Vector3d disturbance;
     Holohover::control_force_t<double> motor_velocities;
     Holohover::control_force_t<double> last_control_signal;

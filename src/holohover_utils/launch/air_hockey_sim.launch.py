@@ -16,6 +16,10 @@ next to this file's source, found through the --symlink-install link; set it for
 puck: x, y of the puck at rest, table frame (default: the experiment file's puck).
 substeps: Box2D steps per simulator period (default 10, 1 ms steps). Box2D resolves a contact one of its steps
 after the overlap appears.
+controller: plan (default) or teleop: per hovercraft control_lqr and holohover_control teleop instead of the
+planner and control_plan, driven by a Twist on hN/cmd_vel. A gamepad drives h0 (config/common/teleop_joy_config.yaml:
+hold L1, left stick x/y, right stick yaw); the keyboard instead, in a second terminal (Shift for y):
+    ./holohover exec ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/h0/cmd_vel
 record: record every topic to an MCAP bag, /root/data/rosbags/air_hockey_<date>_<time> (docker/data on the
 host), stopped with the launch. It opens in Foxglove with the same layout.
 
@@ -55,6 +59,7 @@ def launch_setup(context):
     first = int(LaunchConfiguration('first').perform(context) or 0)
     python_sim = os.path.normpath(LaunchConfiguration('python_sim').perform(context) or PYTHON_SIM)
     substeps = int(LaunchConfiguration('substeps').perform(context) or 10)
+    teleop = LaunchConfiguration('controller').perform(context) == 'teleop'
 
     utils_share = get_package_share_directory('holohover_utils')
     common = os.path.join(utils_share, 'config', 'common')
@@ -109,17 +114,46 @@ def launch_setup(context):
             output='screen',
         ))
 
-    _, names, props_files, _ = ecp.getHovercraft()
-    for name, props in zip(names, props_files):
+    _, names, props_files, initial = ecp.getHovercraft()
+    if teleop:  # the gamepad drives the first hovercraft
+        joy_config = os.path.join(common, 'teleop_joy_config.yaml')
         ld += [
-            Node(
-                package='holohover_navigation',
-                executable='navigation_disturbance',
-                namespace=name,
-                parameters=[navigation_config, {'holohover_props_file': props}],
-                ros_arguments=['--disable-rosout-logs'],
-                output='screen',
-            ),
+            Node(package='joy', executable='game_controller_node', parameters=[joy_config], output='screen'),
+            Node(package='teleop_twist_joy', executable='teleop_node', parameters=[joy_config],
+                 remappings=[('cmd_vel', f'/{names[0]}/cmd_vel')], output='screen'),
+        ]
+    for i, (name, props) in enumerate(zip(names, props_files)):
+        ld.append(Node(
+            package='holohover_navigation',
+            executable='navigation_disturbance',
+            namespace=name,
+            parameters=[navigation_config, {'holohover_props_file': props}],
+            ros_arguments=['--disable-rosout-logs'],
+            output='screen',
+        ))
+        if teleop:
+            ld += [
+                Node(
+                    package='holohover_control',
+                    executable='control_lqr',
+                    name='lqr',
+                    namespace=name,
+                    parameters=[os.path.join(common, 'control_lqr_config.yaml'),
+                                {'holohover_props_file': props, 'initial_x': initial['x'][i],
+                                 'initial_y': initial['y'][i], 'initial_yaw': initial['theta'][i]}],
+                    output='screen',
+                ),
+                Node(
+                    package='holohover_control',
+                    executable='teleop',
+                    namespace=name,
+                    output='screen',
+                    emulate_tty=True,
+                    additional_env={'PYTHONUNBUFFERED': '1'},
+                ),
+            ]
+            continue
+        ld += [
             Node(
                 package='holohover_control',
                 executable='control_plan',
@@ -163,6 +197,7 @@ def generate_launch_description():
         DeclareLaunchArgument('evaluate', default_value='0', description="Evaluate on that many of python-sim's starts"),
         DeclareLaunchArgument('first', default_value='0', description='First start of the evaluation'),
         DeclareLaunchArgument('substeps', default_value='10', description='Box2D steps per simulator period'),
+        DeclareLaunchArgument('controller', default_value='plan', description='plan (shot planner) or teleop (control_lqr + teleop, cmd_vel)'),
         DeclareLaunchArgument('python_sim', default_value='', description="python-sim's directory (default: next to this file's source)"),
         OpaqueFunction(function=launch_setup),
     ])

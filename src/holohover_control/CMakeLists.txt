@@ -62,7 +62,7 @@ install(TARGETS
 
 # Python controllers (holohover_control/) and their nodes
 ament_python_install_package(${PROJECT_NAME})
-install(PROGRAMS scripts/control_plan DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS scripts/control_plan scripts/teleop DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_pytest QUIET)
