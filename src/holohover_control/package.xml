@@ -11,6 +11,7 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>ament_index_cpp</depend>
   <depend>geometry_msgs</depend>
   <depend>holohover_msgs</depend>
   <depend>holohover_common</depend>

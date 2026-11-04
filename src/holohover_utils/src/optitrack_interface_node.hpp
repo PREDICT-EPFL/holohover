@@ -6,6 +6,8 @@
 #include "holohover_common/utils/simulation_settings.hpp"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2/utils.h>
+#include <cmath>
 
 class OptitrackInterfaceNode : public rclcpp::Node
 {
@@ -24,6 +26,7 @@ private:
     std::vector<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr>    hovercraft_pose_publishers;
 
     void init_topics();
+    geometry_msgs::msg::PoseStamped to_table_frame(const geometry_msgs::msg::PoseStamped &raw_pose) const;
     void table_raw_pose_callback(const geometry_msgs::msg::PoseStamped &raw_pose);
     void hovercraft_raw_pose_callback(std::shared_ptr<geometry_msgs::msg::PoseStamped> raw_pose, long int hovercraft_id);
 
