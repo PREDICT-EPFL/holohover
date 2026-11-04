@@ -38,35 +38,33 @@ void OptitrackInterfaceNode::init_topics()
     puck_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/puck/pose", 10);
 }
 
+// Express a raw OptiTrack pose in the table frame (table origin, table yaw as x axis).
+geometry_msgs::msg::PoseStamped OptitrackInterfaceNode::to_table_frame(const geometry_msgs::msg::PoseStamped &raw_pose) const
+{
+    double y_raw = tf2::getYaw(raw_pose.pose.orientation);
+    double y_table = tf2::getYaw(table_pose.pose.orientation);
+
+    double dx = raw_pose.pose.position.x - table_pose.pose.position.x;
+    double dy = raw_pose.pose.position.y - table_pose.pose.position.y;
+    double c = std::cos(y_table), s = std::sin(y_table);
+
+    geometry_msgs::msg::PoseStamped pose;
+    pose.header = raw_pose.header;
+    pose.pose.position.x =  c * dx + s * dy;
+    pose.pose.position.y = -s * dx + c * dy;
+    pose.pose.position.z = 0;
+
+    tf2::Quaternion q;
+    q.setRPY(0, 0, y_raw - y_table);
+    q.normalize();
+    tf2::convert(q, pose.pose.orientation);
+    return pose;
+}
+
 // Update Sep 30: puck simulation
 void OptitrackInterfaceNode::puck_raw_pose_callback(const geometry_msgs::msg::PoseStamped &raw_pose)
 {
-    geometry_msgs::msg::PoseStamped pose;
-
-    pose.header = raw_pose.header;
-
-    pose.pose.position.x = raw_pose.pose.position.x - table_pose.pose.position.x;
-    pose.pose.position.y = raw_pose.pose.position.y - table_pose.pose.position.y;
-    pose.pose.position.z = 0;
-    
-    tf2::Quaternion q_raw, q_table, q_new;
-
-    tf2::convert(raw_pose.pose.orientation, q_raw);
-    tf2::convert(table_pose.pose.orientation, q_table);
-
-    double r,p,y_raw,y_table;
-    tf2::Matrix3x3 m_raw(q_raw);
-    m_raw.getRPY(r,p,y_raw);
-
-    tf2::Matrix3x3 m_table(q_table);
-    m_table.getRPY(r,p,y_table);
-
-    q_new.setRPY(0, 0, y_raw - y_table);
-    q_new.normalize();
-
-    tf2::convert(q_new, pose.pose.orientation);
-
-    puck_pose_publisher->publish(pose);
+    puck_pose_publisher->publish(to_table_frame(raw_pose));
 }
 
 
@@ -84,32 +82,7 @@ void OptitrackInterfaceNode::hovercraft_raw_pose_callback(std::shared_ptr<geomet
     if (!is_initialized)
         return;
 
-    geometry_msgs::msg::PoseStamped pose;
-
-    pose.header = raw_pose->header;
-
-    pose.pose.position.x = raw_pose->pose.position.x - table_pose.pose.position.x;
-    pose.pose.position.y = raw_pose->pose.position.y - table_pose.pose.position.y;
-    pose.pose.position.z = 0;
-    
-    tf2::Quaternion q_raw, q_table, q_new;
-
-    tf2::convert(raw_pose->pose.orientation, q_raw);
-    tf2::convert(table_pose.pose.orientation, q_table);
-
-    double r,p,y_raw,y_table;
-    tf2::Matrix3x3 m_raw(q_raw);
-    m_raw.getRPY(r,p,y_raw);
-
-    tf2::Matrix3x3 m_table(q_table);
-    m_table.getRPY(r,p,y_table);
-
-    q_new.setRPY(0, 0, y_raw - y_table);
-    q_new.normalize();
-
-    tf2::convert(q_new, pose.pose.orientation);
-
-    hovercraft_pose_publishers[hovercraft_id]->publish(pose);
+    hovercraft_pose_publishers[hovercraft_id]->publish(to_table_frame(*raw_pose));
 }
 
 

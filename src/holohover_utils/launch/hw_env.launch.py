@@ -19,6 +19,7 @@ def launch_setup(context):
     
     experiment_filename = LaunchConfiguration('experiment').perform(context)
     machine = LaunchConfiguration('machine').perform(context)
+    use_rviz = LaunchConfiguration('rviz').perform(context).lower() == 'true'
 
     print(f"Launching experiment from file: {experiment_filename}")
     print(f"This machine is named: {machine}")
@@ -63,11 +64,13 @@ def launch_setup(context):
     )
 
     recorder_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common', 'recorder.launch.py'))
+        PythonLaunchDescriptionSource(os.path.join(this_dir, 'common', 'recorder.launch.py')),
+        launch_arguments={'record': LaunchConfiguration('record')}.items()
     )
     
     if ecp.getCommonNodesMachine() == machine or machine == "all":
-        launch_description.append(rviz_launch)
+        if use_rviz:
+            launch_description.append(rviz_launch)
         if any(ecp.getSimConfig()["simulated"]): 
            launch_description.append(simulator_node)
         launch_description.append(optitrack_node)
@@ -93,6 +96,16 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'machine', default_value='master',
         description='Machine Name'
+    ))
+
+    ld.add_action(DeclareLaunchArgument(
+        'rviz', default_value='true', choices=['true', 'false'],
+        description='Start RViz'
+    ))
+
+    ld.add_action(DeclareLaunchArgument(
+        'record', default_value='false', choices=['true', 'false'],
+        description='Record a rosbag'
     ))
 
     ld.add_action(opfunc)
