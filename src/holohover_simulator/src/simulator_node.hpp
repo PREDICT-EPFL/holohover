@@ -20,6 +20,7 @@
 #include <box2d/box2d.h>
 #include <random>
 #include <std_msgs/msg/bool.hpp>
+#include <std_msgs/msg/float64_multi_array.hpp>
 
 // Update Sep 30: collision detector
 class ContactListener : public b2ContactListener {
@@ -71,8 +72,11 @@ public:
 
                     b2Vec2 new_v = v - (1 + restitution) * vn * normal;
 
+                    // No extra force here (removed 2026-10-17): ApplyForceToCenter(-0.2 v) with v the incoming
+                    // velocity pointed away from the wall. Over one 10 ms step on the 3.85 g puck it gave a normal
+                    // restitution of 1.42 instead of 0.9 (the puck left faster than it arrived), and one that
+                    // changed with the step size (1.16 at 5 ms): 0.9 + 0.2 dt / m.
                     puck->SetLinearVelocity(new_v);
-                    puck->ApplyForceToCenter(-0.2f * v, true);
                 }
             } else {
                 RCLCPP_WARN(node_->get_logger(), "Puck collided with an unknown object.");
@@ -135,6 +139,7 @@ class SimulatorNode : public rclcpp::Node, public std::enable_shared_from_this<S
 {
 public:
     SimulatorNode();
+    ~SimulatorNode();
 private:
     SimulationSettings simulation_settings;
     
@@ -166,6 +171,11 @@ private:
     std::vector<Holohover::control_acc_t<double>>               control_acc_vec;
     bool are_all_simulated;
 
+    // Box2D steps per period (default 10: 1 ms at the 10 ms period). Box2D finds contacts at the start of a
+    // step, from the positions the previous step left, so an overlap is only resolved one Box2D step after it
+    // appears: at 10 ms a late contact normal turned the puck by up to 6 deg
+    int substeps;
+
     void init_hovercraft();
     void init_timer();
     void init_box2d_world();
@@ -182,6 +192,10 @@ private:
     std::vector<body_ptr>                                       puck_bodies;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr puck_pose_publisher;
     void init_puck();
+
+    // ~/reset: (x, y, yaw, v_x, v_y, w_z) of every simulated hovercraft, then (x, y, v_x, v_y) of the puck
+    rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr reset_subscription;
+    void reset_callback(const std_msgs::msg::Float64MultiArray &msg);
 
     // Update Sep 30: collision detector
     std::shared_ptr<ContactListener> contact_listener_; // UPDATE SEP 10: collision detector

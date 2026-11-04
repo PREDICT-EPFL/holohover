@@ -2,15 +2,13 @@
 Worker processes for the outer updates (Section 8): the bounce sequences are solved in
 parallel, one task per sequence (shot_selector.solve_sequence).
 
-Processes, not threads: IPOPT 3.14 serialises every call into MUMPS with a process-wide
-mutex, so threads queue on it (measured: 4 threads slower than 1), and one CasADi solver
-called from several threads crashes. Each forked worker has its own copy of the built
-solvers and of the MUMPS lock.
+Processes, not threads: one CasADi solver called from several threads crashes.
 
-Create the pool before JAX starts its threads (physics_from_config): forking a
-multithreaded process can deadlock the child. ProcessPoolExecutor forks all its workers at
-the first submit, so the pool submits a no-op at creation. It never forks again: a dead
-worker breaks the pool, and the solves then run serially in the parent.
+The workers are spawned, not forked: the node creates the pool after rclpy has started its
+threads, and forking a multithreaded process can deadlock the child. Each worker builds its
+own ShotNLP from the parameters at startup (~1 s). The pool starts every worker at creation
+and never starts one again: a dead worker breaks the pool, and the solves then run serially
+in the parent.
 
 The solves are deterministic, so the results are bit-identical to serial solves.
 """
@@ -21,11 +19,14 @@ import signal
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 
-_NLP = None  # the ShotNLP of the pool being created, inherited by its forked workers
+_NLP = None  # the ShotNLP of this worker process
 
 
-def _init_worker():
+def _init_worker(P):
+    global _NLP
     signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ctrl-C is for the parent, which shuts the pool down
+    from .shot_nlp import ShotNLP
+    _NLP = ShotNLP(P, verbose=False)
 
 
 def _call(fn, args):
@@ -38,14 +39,13 @@ def _pid(nlp):
 
 class SolvePool:
     def __init__(self, nlp, n_workers):
-        """n_workers forked copies of nlp, at most one per CPU this process may use."""
-        global _NLP
-        _NLP = nlp
+        """n_workers processes with their own copy of nlp, at most one per CPU this process may use."""
         self.nlp = nlp
         self.n_workers = max(1, min(n_workers, len(os.sched_getaffinity(0))))
-        self._ex = ProcessPoolExecutor(self.n_workers, mp_context=mp.get_context("fork"),
-                                       initializer=_init_worker)
-        self._ex.submit(_call, _pid, ()).result()  # fork every worker now
+        self._ex = ProcessPoolExecutor(self.n_workers, mp_context=mp.get_context("spawn"),
+                                       initializer=_init_worker, initargs=(nlp.P,))
+        # Start every worker now: one task each, all running at once
+        list(self._ex.map(_call, [_pid] * (4 * self.n_workers), [()] * (4 * self.n_workers)))
 
     def map(self, fn, tasks):
         """[fn(nlp, *task) for task in tasks], computed in the workers."""

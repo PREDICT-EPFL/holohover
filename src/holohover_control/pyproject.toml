@@ -1,0 +1,13 @@
+# Only for pip/uv installs of the Python controllers outside ROS (python-sim's venv); colcon builds this
+# package from CMakeLists.txt (package.xml).
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "holohover-control"
+version = "0.0.0"
+dependencies = ["numpy", "casadi"]
+
+[tool.setuptools]
+packages = ["holohover_control"]

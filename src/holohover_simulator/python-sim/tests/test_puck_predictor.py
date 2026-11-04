@@ -3,8 +3,8 @@
 import numpy as np
 
 from conftest import DT, R1_PARK, R2_PARK, rollout
-from controllers.shot_mpc.params import state_world_to_planner
-from controllers.shot_mpc.model import predict, bounce_path, flight_after
+from controllers.shot_mpc.frames import state_world_to_planner
+from holohover_planner.shot_mpc.model import predict, bounce_path, flight_after
 
 
 def _planner(puck_world, P):

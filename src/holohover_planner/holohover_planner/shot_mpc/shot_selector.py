@@ -3,8 +3,8 @@ Outer problem: choose the bounce sequence (Section 6), with the warm and cold
 starts of Section 7.
 
 A sequence B = (s, k) has first wall s (+1 = L, -1 = R) and k alternating
-side-wall bounces; it scores iff the unfolded straight shot hits the mirrored
-goal at y_bar = 2 s k w (Section 4).
+side-wall bounces; it scores iff the unfolded straight shot hits the mouth of the
+goal image (virtual_goal: y_bar = 2 s k w with elastic walls, Section 4).
 
 Every B keeps its own warm start; one sequence is never warm-started from
 another's solution. All times handed to the NLP are relative to the current
@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from .model import zoh_coefficients, zoh_interval
+from .model import zoh_interval
 
 
 #########################
@@ -44,9 +44,21 @@ def label(s, k):
     return "".join("L" if s * (-1) ** j > 0 else "R" for j in range(k))
 
 
-def virtual_goal_y(s, k, w):
-    """y of the goal image after k bounces starting on wall s, e.g. +2w for L (s = +1, k = 1)."""
-    return 2 * s * k * w
+def virtual_goal(s, k, P):
+    """
+    The goal image after k bounces starting on wall s: (y_bar, h_bar), its centre and the half-width of
+    its mouth for the puck centre (Section 4).
+
+    A side-wall bounce keeps v_x and reverses v_y scaled by e_w, so past the j-th wall the puck's
+    y-velocity is e_w^j that of the mirrored elastic flight, at every instant. Stretching y past the j-th
+    mirrored wall by 1 / e_w^j makes the unfolded path straight again, with the same x(t):
+        y_bar = s w (1 + 2 / e_w + ... + 2 / e_w^(k-1) + 1 / e_w^k),   h_bar = h_eff / e_w^k
+    e.g. y_bar = 2 s k w and h_bar = h_eff for elastic walls (e_w = 1).
+    """
+    if k == 0:
+        return 0.0, P.h_eff
+    stretch = sum(2 / P.e_w**j for j in range(1, k)) + 1 / P.e_w**k
+    return s * P.w * (1 + stretch), P.h_eff / P.e_w**k
 
 
 #############
@@ -56,10 +68,8 @@ def virtual_goal_y(s, k, w):
 class Plan:
     key: tuple  # (s, k)
     label: str
-    ybar: float
     t0: float  # absolute time of node 0
-    sol: object  # shot_nlp.Solution
-    score: float = np.inf  # selection criterion: the inner cost J*(B) (Section 6)
+    sol: object  # shot_nlp.Solution; sol.cost, the inner cost J*(B), is the selection criterion (Section 6)
     t_spent: float = 0.0  # wall time of all solves that produced this plan
 
     @property
@@ -78,22 +88,12 @@ class Plan:
         k = zoh_interval(np.asarray(t, dtype=float) - self.t0, self.dt, self.sol.U.shape[1])
         return self.sol.U[:, k]
 
-    def state_at(self, times, gamma):
-        """Plan states (x, y, vx, vy) at an array of absolute times, propagated exactly
-        from the preceding node with its ZOH input."""
-        s = np.asarray(times, dtype=float) - self.t0
-        k = zoh_interval(s, self.dt, self.sol.U.shape[1])
-        e1, a, b = zoh_coefficients(s - k * self.dt, gamma)
-        X, U = self.sol.X[:, k], self.sol.U[:, k]
-        # Exact ZOH step from node k: position p + a v + b u, velocity e1 v + a u
-        return np.vstack([X[0:2] + a * X[2:4] + b * U, e1 * X[2:4] + a * U])
-
 
 @dataclass
 class SelectorLog:
     t: float
     outer: bool
-    # label -> (valid, cost, score, tf, t_spent, iters, cold, start); start: solve_sequence
+    # label -> (valid, cost, tf, t_spent, iters, cold, start); start: solve_sequence
     results: dict = field(default_factory=dict)
     chosen: str = None
     t_total: float = 0.0  # sum of the solve times
@@ -108,7 +108,7 @@ class SelectorLog:
 ##########################
 ### One sequence P(B)  ###
 ##########################
-def solve_sequence(nlp, key, t_now, xR, u_prev, puck, t_lo, t_hi, warm, allow_cold):
+def solve_sequence(nlp, key, t_now, xR, u_prev, puck, t_lo, t_hi, warm):
     """
     Solve P(B) for one B = (s, k), with t_lo <= t_f <= t_hi: warm start from
     warm = (Solution, t0) of B's stored plan if there is one; if not, or if it fails,
@@ -121,8 +121,8 @@ def solve_sequence(nlp, key, t_now, xR, u_prev, puck, t_lo, t_hi, warm, allow_co
     best = None
     t_spent = 0.0  # all solves for this key, including every cold seed
     start = None
-    ybar = virtual_goal_y(*key, P.w)
-    p = nlp.make_params(xR, u_prev, ybar, puck.q, puck.v)
+    ybar, hbar = virtual_goal(*key, P)
+    p = nlp.make_params(xR, u_prev, ybar, hbar, puck.q, puck.v)
     if warm is not None:
         sol, t0 = warm
         w0 = nlp.warm_guess(sol, t_now - t0, xR, t_lo, t_hi)
@@ -130,7 +130,7 @@ def solve_sequence(nlp, key, t_now, xR, u_prev, puck, t_lo, t_hi, warm, allow_co
         t_spent += best.t_wall
         start = "warm"
 
-    if (best is None or not best.valid) and allow_cold:
+    if best is None or not best.valid:
         start = "cold" if start is None else "warm+cold"
         n_seeds = max(1, P.n_tf_seeds)
         seeds = np.linspace(t_lo, t_hi, n_seeds + 2)[1:-1] if n_seeds > 1 else [0.5 * (t_lo + t_hi)]
@@ -171,7 +171,7 @@ class ShotSelector:
         x_hi = puck.state_at(t_hi)[0][0]
         return min(x_lo, x_hi) <= self.P.x_mid + self.P.r_p
 
-    def _solve_keys(self, keys, t_now, xR, u_prev, puck, allow_cold, log):
+    def _solve_keys(self, keys, t_now, xR, u_prev, puck, log):
         """solve_sequence of every key: {key: (best Solution or None, t_spent, start)}, empty if no shot
         is possible (log.skip says why). Several keys run in parallel in nlp.pool when started (log.parallel)."""
         # t_min <= t_f <= min(t_max, tau1): strike before the puck's next wall hit (Section 5)
@@ -186,7 +186,7 @@ class ShotSelector:
         for key in keys:
             plan = self.store.get(key)
             warm = (plan.sol, plan.t0) if plan is not None else None
-            tasks.append((key, t_now, xR, u_prev, puck, t_lo, t_hi, warm, allow_cold))
+            tasks.append((key, t_now, xR, u_prev, puck, t_lo, t_hi, warm))
         log.parallel = self.nlp.pool is not None and len(tasks) > 1
         if log.parallel:
             results = self.nlp.pool.map(solve_sequence, tasks)
@@ -194,16 +194,15 @@ class ShotSelector:
             results = [solve_sequence(self.nlp, *task) for task in tasks]
         return dict(zip(keys, results))
 
-    def update(self, t_now, xR, u_prev, puck, outer=True, commit_key=None, allow_cold=True, t_log=None):
+    def update(self, t_now, xR, u_prev, puck, outer=True, commit_key=None):
         """
         One planning update. With outer=True every sequence is solved and the one with
         the lowest inner cost J*(B) is selected; otherwise only the current (or committed)
         sequence is re-solved. xR = (x, y, vx, vy), u_prev = (a_x, a_y), puck: PuckFlight.
-        t_log: time of the update in the log (default t_now; with delay compensation t_now
-        is ahead of it). Returns the chosen valid Plan or None.
+        Returns the chosen valid Plan or None.
         """
         t_start = time.perf_counter()
-        log = SelectorLog(t=t_now if t_log is None else t_log, outer=outer)
+        log = SelectorLog(t=t_now, outer=outer)
         if commit_key is not None:
             keys, log.kind = [commit_key], "commit"
         elif outer or self.key_prev is None:
@@ -211,7 +210,7 @@ class ShotSelector:
         else:
             keys, log.kind = [self.key_prev], "inner"
 
-        results = self._solve_keys(keys, t_now, xR, u_prev, puck, allow_cold, log)
+        results = self._solve_keys(keys, t_now, xR, u_prev, puck, log)
         chosen = None
         for key in keys:
             sol, t_spent, start = results.get(key, (None, 0.0, None))
@@ -219,15 +218,13 @@ class ShotSelector:
                 self.candidates.pop(key, None)
                 continue
             s, k = key
-            plan = Plan(key=key, label=label(s, k), ybar=virtual_goal_y(s, k, self.P.w), t0=t_now, sol=sol,
-                        score=sol.cost, t_spent=t_spent)
+            plan = Plan(key=key, label=label(s, k), t0=t_now, sol=sol, t_spent=t_spent)
             if sol.valid:
                 self.store[key] = plan
             self.candidates[key] = plan
-            log.results[plan.label] = (sol.valid, sol.cost, plan.score, sol.tf, plan.t_spent, sol.iters, sol.cold,
-                                       start)
+            log.results[plan.label] = (sol.valid, sol.cost, sol.tf, plan.t_spent, sol.iters, sol.cold, start)
             log.t_total += plan.t_spent
-            if sol.valid and (chosen is None or plan.score < chosen.score):
+            if sol.valid and (chosen is None or sol.cost < chosen.sol.cost):
                 chosen = plan
 
         if chosen is not None:

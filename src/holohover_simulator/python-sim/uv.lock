@@ -147,6 +147,32 @@ wheels = [
 ]
 
 [[package]]
+name = "holohover-control"
+version = "0.0.0"
+source = { editable = "../../holohover_control" }
+dependencies = [
+    { name = "casadi" },
+    { name = "numpy" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "casadi" },
+    { name = "numpy" },
+]
+
+[[package]]
+name = "holohover-planner"
+version = "0.0.0"
+source = { editable = "../../holohover_planner" }
+dependencies = [
+    { name = "setuptools" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "setuptools" }]
+
+[[package]]
 name = "holohover-python-sim"
 version = "0.1.0"
 source = { virtual = "." }
@@ -154,9 +180,12 @@ dependencies = [
     { name = "casadi" },
     { name = "flax" },
     { name = "foxglove-sdk" },
+    { name = "holohover-control" },
+    { name = "holohover-planner" },
     { name = "interpax" },
     { name = "jax" },
     { name = "jaxopt" },
+    { name = "mcap-ros2-support" },
     { name = "numpy" },
     { name = "pydantic" },
     { name = "scipy" },
@@ -173,9 +202,12 @@ requires-dist = [
     { name = "casadi", specifier = "==3.8.1" },
     { name = "flax", specifier = "==0.10.7" },
     { name = "foxglove-sdk", specifier = "==0.28.0" },
+    { name = "holohover-control", editable = "../../holohover_control" },
+    { name = "holohover-planner", editable = "../../holohover_planner" },
     { name = "interpax", specifier = "==0.3.14" },
     { name = "jax", specifier = "==0.6.2" },
     { name = "jaxopt", specifier = "==0.8.5" },
+    { name = "mcap-ros2-support", specifier = "==0.5.5" },
     { name = "numpy", specifier = "==2.2.6" },
     { name = "pydantic", specifier = "==2.13.5" },
     { name = "scipy", specifier = "==1.15.3" },
@@ -366,6 +398,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/26/16/2ac1cbeaa524453d616050db9fda14010eda507fd8130e0676879bb8faf9/mcap-1.5.0.tar.gz", hash = "sha256:9c385cc5e5a6bccff4aa0c6814b305faa2c3239ece46778661eaa6d809b1768a", size = 23110, upload-time = "2026-09-24T21:45:44.714Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/59/caa4d60a58f129659ea5403e6fb52808f87005dfcbaa03e84f0e07f0033e/mcap-1.5.0-py3-none-any.whl", hash = "sha256:44ba129d381abdca474fbf5bcee036db87d7075d9059b139bf2fee2975c8bd52", size = 21021, upload-time = "2026-09-24T21:45:43.51Z" },
+]
+
+[[package]]
+name = "mcap-ros2-support"
+version = "0.5.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "mcap" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/50/7b/579794b5ace83beb46d051ad954e42f65f33bc587bff89f6c4ef5a41e5ff/mcap_ros2_support-0.5.5.tar.gz", hash = "sha256:cd0bf92fee3f5cbff1dcd129f8e890d5ea0d036e2257ceb1f0518bce68e64de4", size = 23027, upload-time = "2024-10-10T16:54:00.819Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2e/88/c2a7828d7f5f30a2fbfd1c67ca451df5c175fd19c2015b6a6657ee5ead28/mcap_ros2_support-0.5.5-py3-none-any.whl", hash = "sha256:79141d29d6b8e3b5494178333b260ef27ddcb3c61588bca388ee52993ab80443", size = 21983, upload-time = "2024-10-10T16:53:59.846Z" },
 ]
 
 [[package]]
@@ -913,6 +957,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/8e/038ccfe29d272b30086b25a4960f757f97122cb2ec42e62b460d02fe98e9/scipy-1.15.3-cp313-cp313t-musllinux_1_2_aarch64.whl", hash = "sha256:40e54d5c7e7ebf1aa596c374c49fa3135f04648a0caabcb66c52884b943f02b4", size = 36393132, upload-time = "2025-05-08T16:08:15.34Z" },
     { url = "https://files.pythonhosted.org/packages/10/7e/5c12285452970be5bdbe8352c619250b97ebf7917d7a9a9e96b8a8140f17/scipy-1.15.3-cp313-cp313t-musllinux_1_2_x86_64.whl", hash = "sha256:5e721fed53187e71d0ccf382b6bf977644c533e506c4d33c3fb24de89f5c3ed5", size = 38979503, upload-time = "2025-05-08T16:08:21.513Z" },
     { url = "https://files.pythonhosted.org/packages/81/06/0a5e5349474e1cbc5757975b21bd4fad0e72ebf138c5592f191646154e06/scipy-1.15.3-cp313-cp313t-win_amd64.whl", hash = "sha256:76ad1fb5f8752eabf0fa02e4cc0336b4e8f021e2d5f061ed37d6d264db35e3ca", size = 40308097, upload-time = "2025-05-08T16:08:27.627Z" },
+]
+
+[[package]]
+name = "setuptools"
+version = "84.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6d/44/f5da03a8ef95d369145c5bb53050e7877c9f3d312e128605fd9504829143/setuptools-84.0.0.tar.gz", hash = "sha256:f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73", size = 1168449, upload-time = "2026-08-08T18:27:58.365Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/95/9c/c510029fc6ef33a6275cd2c5d3cecd6613dfd6aa401d57c54f1c18852ccf/setuptools-84.0.0-py3-none-any.whl", hash = "sha256:51a52592b3b99e102b609654876bd65f19f999935166d1352678931132b0c670", size = 818216, upload-time = "2026-08-08T18:27:56.719Z" },
 ]
 
 [[package]]

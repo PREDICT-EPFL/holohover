@@ -36,11 +36,24 @@ COPY docker/scripts/check_optitrack.py /usr/local/bin/check-optitrack
 RUN chmod +x /usr/local/bin/holohover-entrypoint /usr/local/bin/check-optitrack \
     && echo "source /root/setup.bash" >> /root/.bashrc
 
+# Python packages from pip (numpy stays the apt one, < 2, as Humble's message packages need)
+COPY src/holohover_planner/requirements.txt /tmp/planner_requirements.txt
+RUN apt-get update && apt-get install --no-install-recommends -y python3-pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m pip install --no-cache-dir -r /tmp/planner_requirements.txt \
+    && rm /tmp/planner_requirements.txt
+
 # Compile the ROS 2 packages of this repository
+# Each C++ compiler process can take ~2 GB, so cap the parallelism (at most
+# COLCON_WORKERS x MAKE_JOBS compilers at once); unbounded it exhausts RAM
+# and freezes the host. Override with --build-arg on machines with more RAM.
+ARG COLCON_WORKERS=2
+ARG MAKE_JOBS=2
 WORKDIR /root/ros2_ws
 COPY src src/holohover
 RUN source /opt/ros/humble/setup.bash \
-    && colcon build --symlink-install
+    && MAKEFLAGS="-j${MAKE_JOBS}" colcon build --symlink-install \
+        --parallel-workers ${COLCON_WORKERS}
 
 ENTRYPOINT ["/usr/local/bin/holohover-entrypoint"]
 CMD ["bash"]

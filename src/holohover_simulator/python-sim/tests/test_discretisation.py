@@ -1,14 +1,11 @@
-"""Test 1: exact ZOH map against the simulator, and the frame/unit conversions."""
+"""Test 1: exact ZOH map against the simulator, and the frame conversions."""
 
 import numpy as np
 from scipy.linalg import expm
 
 from conftest import DT, R2_PARK, PUCK_PARK, rollout
-from controllers.shot_mpc.params import (
-    XY, state_world_to_planner, state_planner_to_world, pos_world_to_planner,
-    accel_planner_to_force_world, force_world_to_accel_planner,
-)
-from controllers.shot_mpc.model import discrete_matrices, zoh_coefficients
+from controllers.shot_mpc.frames import XY, state_world_to_planner, state_planner_to_world, pos_world_to_planner
+from holohover_planner.shot_mpc.model import discrete_matrices, zoh_coefficients
 
 
 def test_zoh_matches_simulator(physics, P):
@@ -18,7 +15,7 @@ def test_zoh_matches_simulator(physics, P):
     states, *_ = rollout(physics, np.array(r1 + R2_PARK + PUCK_PARK), steps, r1_force=F)
 
     x0 = state_world_to_planner(np.array(r1), P)[XY]
-    u = force_world_to_accel_planner(F, P)[0:2]
+    u = -F[0:2] / P.m_R  # the force as a planner-frame acceleration (the world frame rotated by pi)
     A, B = discrete_matrices(steps * DT, P.gamma)
     x_pred = A @ x0 + B @ u
     x_sim = state_world_to_planner(states[-1, :6], P)[XY]
@@ -54,8 +51,6 @@ def test_frame_transforms(P):
     rng = np.random.default_rng(0)
     s = rng.normal(size=(5, 6))
     assert np.allclose(state_planner_to_world(state_world_to_planner(s, P), P), s)
-    F = rng.normal(size=(5, 3))
-    assert np.allclose(accel_planner_to_force_world(force_world_to_accel_planner(F, P), P), F)
 
     # Opponent goal (world x = 0) is at planner x = X, table centre line y = H/2 is y_p = 0,
     # and wall L (+y_p) is the world bottom wall

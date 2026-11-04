@@ -37,6 +37,7 @@ Below is a summary of the packages in this repository. For detailed information,
 - **`holohover_mpc`**: Code for the MPC controller of a single hovercraft.
 - **`holohover_msgs`**: Custom ROS2 message definitions.
 - **`holohover_navigation`**: Pose estimation using an Extended Kalman Filter (EKF).
+- **`holohover_planner`**: Planners publishing a `HolohoverPlan` for a controller: the shot MPC planner of the air hockey.
 - **`holohover_simulator`**: Multibody physics simulator for experiments with multiple hovercraft.
 - **`holohover_utils`**: Interface nodes, RViz configurations, launch files, and other utilities.  
 - **`micro_ros`**: Submodules for Micro-ROS integration, including [Micro-ROS Agent](https://github.com/micro-ROS/micro-ROS-Agent) and [Micro-ROS Messages](https://github.com/micro-ROS/micro_ros_msgs).

@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+from holohover_control.control_plan_node import main
+
+main()

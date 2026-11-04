@@ -12,6 +12,7 @@ SimulatorNode::SimulatorNode() :
     contact_listener_(std::make_shared<ContactListener>(this)) // Update Sep 30: collision detector
 {
     world->SetContactListener(contact_listener_.get());  // Update Sep 30: collision detector
+    substeps = this->declare_parameter<int>("substeps", 10);
 
     init_box2d_world();
     init_puck();    // Update Sep 30: puck simulation
@@ -24,6 +25,41 @@ SimulatorNode::SimulatorNode() :
 
     init_hovercraft();
     init_timer();
+
+    reset_subscription = this->create_subscription<std_msgs::msg::Float64MultiArray>(
+            "~/reset", 10, std::bind(&SimulatorNode::reset_callback, this, std::placeholders::_1));
+}
+
+// The contact listener is destroyed before the bodies, whose destruction ends their contacts: detach it
+// first, or Box2D calls it after its destruction (segfault at shutdown when the puck touches something)
+SimulatorNode::~SimulatorNode()
+{
+    world->SetContactListener(nullptr);
+}
+
+void SimulatorNode::reset_callback(const std_msgs::msg::Float64MultiArray &msg)
+{
+    const size_t n = hovercraft_bodies.size();
+    if (msg.data.size() != 6 * n + 4) {
+        RCLCPP_WARN(get_logger(), "Reset ignored: %zu values, expected %zu (6 per hovercraft, then 4 for the puck).",
+                    msg.data.size(), 6 * n + 4);
+        return;
+    }
+    for (size_t i = 0; i < n; i++) {
+        const double *s = &msg.data[6 * i];
+        hovercraft_bodies[i]->SetTransform(b2Vec2(s[0], s[1]), s[2]);
+        hovercraft_bodies[i]->SetLinearVelocity(b2Vec2(s[3], s[4]));
+        hovercraft_bodies[i]->SetAngularVelocity(s[5]);
+        hovercraft_bodies[i]->SetAwake(true);
+        motor_velocities_vec[i].setZero();
+        body_to_state(states_vec[i], hovercraft_bodies[i]);
+    }
+    const double *p = &msg.data[6 * n];
+    puck_bodies[0]->SetTransform(b2Vec2(p[0], p[1]), 0.0);
+    puck_bodies[0]->SetLinearVelocity(b2Vec2(p[2], p[3]));
+    puck_bodies[0]->SetAngularVelocity(0.0);
+    puck_bodies[0]->SetAwake(true);
+    body_to_state(state_puck, puck_bodies[0]);
 }
 
 // Update Sep 30: puck simulation
@@ -51,6 +87,10 @@ void SimulatorNode::init_puck()
     fixtureDef.density = 1.0f; // Density of the disk
     fixtureDef.friction = 0.02f; // Friction
     fixtureDef.restitution = 0.8f; // Bounciness
+    // Restitution at every impact speed. Box2D's default restitutionThreshold (1 m/s, its guard against jitter in
+    // resting contacts) made the hovercraft-puck contacts under 1 m/s fully inelastic (e = 0). A contact takes the
+    // smaller threshold of its two fixtures, so this one covers them; wall bounces are reflected in BeginContact.
+    fixtureDef.restitutionThreshold = 0.0f;
 
     // Attach the shape to the body
     puck->CreateFixture(&fixtureDef);
@@ -255,8 +295,6 @@ void SimulatorNode::simulation_step()
         motor_velocities_vec[i] = holohover_vec[i].Ad_motor * motor_velocities_vec[i] + holohover_vec[i].Bd_motor * current_control_signal;
         //motor_velocities_vec[i] = current_control_signal;
         calculate_control_acc(states_vec[i], motor_velocities_vec[i], control_acc_vec[i], i);
-        apply_control_acc(hovercraft_bodies[i], control_acc_vec[i], i);
-        
     }
     // for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
     //     Holohover::control_acc_t<double> direct_acc;
@@ -275,10 +313,15 @@ void SimulatorNode::simulation_step()
     //     apply_control_acc(hovercraft_bodies[i], direct_acc, i);
     // }
 
-    // - box2d step of the world
-    world->Step(simulation_settings.period, 
-                simulation_settings.internal_iterations_velocity, 
-                simulation_settings.internal_iterations_position);
+    // - box2d steps of the world, the control accelerations held over the period
+    for(int k = 0; k < substeps; k++) {
+        // Box2D clears the forces after each step
+        for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++)
+            apply_control_acc(hovercraft_bodies[i], control_acc_vec[i], i);
+        world->Step(simulation_settings.period / substeps,
+                    simulation_settings.internal_iterations_velocity,
+                    simulation_settings.internal_iterations_position);
+    }
 
     for(size_t i = 0; i < simulation_settings.hovercraft_ids.size(); i++) {
         body_to_state(states_vec[i], hovercraft_bodies[i]);

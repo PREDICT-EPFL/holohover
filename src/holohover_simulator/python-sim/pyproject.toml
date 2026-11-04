@@ -12,7 +12,15 @@ dependencies = [
     "numpy==2.2.6",
     "scipy==1.15.3",
     "pydantic==2.13.5",
+    "holohover-planner",
+    "holohover-control",
+    "mcap-ros2-support==0.5.5",
 ]
+
+# The shot MPC's planner and controller: the ROS packages' Python code, without ROS
+[tool.uv.sources]
+holohover-planner = { path = "../../holohover_planner", editable = true }
+holohover-control = { path = "../../holohover_control", editable = true }
 
 [dependency-groups]
 dev = [

@@ -5,3 +5,10 @@ __pycache__
 docker/data/
 docker/.env
 simulation_data/
+*.egg-info/
+
+# Agent setup (local only)
+CLAUDE.md
+docs/agents/
+.scratch/
+.claude/

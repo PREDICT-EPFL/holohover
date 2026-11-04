@@ -1,0 +1,20 @@
+# Air hockey in the Box2D simulation: h0 runs the shot MPC planner (holohover_planner) and its controller
+# (holohover_control control_plan), alone on the table. Launch with air_hockey_sim.launch.py.
+# States in the table frame (origin at the centre): python-sim's world position minus (1.065, 0.53).
+experiment:
+  name: air_hockey
+  description: "Shot MPC planner + plan controller on h0 attacking the left goal, Box2D simulation"
+  machine: master
+  rviz_props_file: "common/holohover_params_new.yaml"
+
+hovercraft:
+  - name: h0
+    id: 0
+    initial_state: [0.835, 0.32, 0, 0, 0, 0] # python-sim scenario "default": (1.9, 0.85)
+    holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
+    color : [0.0, 0.0, 1.0, 1.0]
+    simulate: true
+    machine: master
+
+puck:
+  initial_state: [0.135, 0.0] # x, y, at rest; python-sim scenario "default": (1.2, 0.53) at rest

@@ -2,7 +2,7 @@
 Robot 1 controllers, selected by the config's "controller":
 
     dial      sampling-based path planner (DIAL) plus input interpolation (controllers/dial)
-    shot_mpc  gradient-based shot MPC plus tracking QP (controllers/shot_mpc)
+    shot_mpc  gradient-based shot MPC (holohover_planner) plus tracking QP (holohover_control)
     forward   example: a constant force toward the opponent goal (controllers/forward)
 
 A controller is built per episode by its factory, and provides
@@ -26,13 +26,13 @@ def load(config, workers=None):
     """The factory of config["controller"]. Call it before simulation.setup.physics_from_config:
     the shot MPC forks its solver processes here, before JAX starts its threads (forking a
     multithreaded process can deadlock the child). workers: shot_mpc solver processes
-    (default shot_mpc.n_workers, 0: serial)."""
+    (default: shot_mpc.n_workers of shot_planner_config.yaml, 0: serial)."""
     name = config["controller"]
     if name == "dial":
         from .dial.controller import DialFactory
         return DialFactory(config)
     if name == "shot_mpc":
-        from .shot_mpc.shot_controller import ShotFactory
+        from .shot_mpc.controller import ShotFactory
         return ShotFactory(config, workers)
     if name == "forward":
         from .forward.controller import ForwardFactory

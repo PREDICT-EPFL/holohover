@@ -12,6 +12,7 @@
   <depend>rclcpp</depend>
   <depend>tf2_ros</depend>
   <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
   <depend>holohover_msgs</depend>
   <depend>holohover_common</depend>
 

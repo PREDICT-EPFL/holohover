@@ -6,22 +6,25 @@ file for the Foxglove web app.
     python main.py view [simulation_data/<run>.mcap]         # saved run (default: the newest)
 
 main.py opens the file in the Foxglove web app (viz/foxglove_open.py). The first time, import the
-layout viz/foxglove_layout.json (README.md).
+layout holohover_utils/gui/air_hockey.foxglove.json (README.md): the same as for rosbags of the ROS
+nodes, whose topics a file also has (viz/ros_messages.py).
 
-Frames: "world" is the simulator table frame (origin at the bottom-left corner, z up);
-"robot1", "robot2" and "puck" are its children. Each robot frame's x-axis points at the
-goal that robot attacks (FRAME_YAW); the /<body>/state topics keep the simulator's theta.
-Row k of the data is logged at start + k / simulation.hz. A file can hold several episodes
-(McapWriter, evaluate --mcap), one after the other.
+Frames: "world" is the table frame of the ROS nodes (origin at the table centre, z up); "sim" is
+the simulator's (origin at the bottom-left corner), its child. "robot1", "robot2" and "puck" are
+children of "sim". Each robot frame's x-axis points at the goal that robot attacks (FRAME_YAW); the
+state topics keep the simulator's theta. Row k of the data is logged at start + k / simulation.hz.
+A file can hold several episodes (McapWriter, evaluate --mcap), one after the other.
 
 Topics:
-    /tf                              FrameTransforms  world -> robot1, robot2, puck
+    /h0/state, /puck/state           ROS 2           robot 1 and the puck, table frame (HolohoverStateStamped)
+    /h0/acc_ref                      ROS 2           robot 1's input from this step as an acceleration (AccelStamped)
+    /tf                              FrameTransforms  world -> sim -> robot1, robot2, puck
     /scene/table, /scene/bodies      SceneUpdate      logged once; bodies follow their frame
     /robot1/plan                     SceneUpdate      planned robot 1 path (path_plans)
     /puck/prediction                 SceneUpdate      predicted puck path (future_trajs)
     /robot2/prediction               SceneUpdate      predicted robot 2 path (future_trajs)
     /puck/trail                      SceneUpdate      last TRAIL_LENGTH puck positions
-    /robot1/state, /robot2/state, /puck/state   JSON  x, y, theta, vx, vy, omega
+    /robot2/state                    JSON             x, y, theta, vx, vy, omega
     /robot1/control                  JSON             applied fx, fy, tau
     /status                          JSON             mode, time to impact, goals
     /events                          Log              mode switches, goals; contacts and the outcome (needs log)
@@ -29,6 +32,7 @@ Topics:
   dial:
     /dial/samples                    SceneUpdate      robot paths of some samples of the last diffusion step
   shot_mpc:
+    /h0/plan                         ROS 2            the planner's plans at each update (HolohoverPlan)
     /robot1/plan_control, /robot1/def_control   JSON  plan and defence PD inputs before clipping
                                                       (plan: zero without one)
     /shot_mpc/candidates/<label>     SceneUpdate      robot path and shot of each bounce sequence
@@ -54,8 +58,12 @@ import foxglove
 from foxglove import messages as fm
 from foxglove.channels import FrameTransformsChannel, LogChannel, SceneUpdateChannel
 
+from .ros_messages import RosChannels, accel_message, plan_message, state_message
+
 MODE_NAMES = ("DEF", "ATT")
 BODIES = ("robot1", "robot2", "puck")  # the 6-dim blocks of the 18-dim state, in order
+ROS_STATE_TOPICS = {"robot1": "/h0/state", "puck": "/puck/state"}  # the others: /<body>/state, JSON
+SIM_FRAME = "sim"  # the simulator's frame, child of "world" (the table frame)
 # Frame yaw added to theta: x toward the goal each robot attacks. Robot 1 attacks x = 0, as in
 # the shot MPC's planner frame (shot_mpc/params.py: theta_p = theta_w + pi); robot 2 attacks +x.
 FRAME_YAW = {"robot1": math.pi, "robot2": 0.0, "puck": 0.0}
@@ -169,7 +177,7 @@ class Status(BaseModel):
 
 
 class ShotScores(BaseModel):
-    """Score and validity of every bounce sequence, by label."""
+    """Cost J*(B) (the selection criterion, "score") and validity of every bounce sequence, by label."""
     model_config = ConfigDict(title="holohover.ShotScores")
     t: float
     chosen: str | None  # None: no valid sequence
@@ -180,7 +188,6 @@ class ShotScores(BaseModel):
 class SolveResult(BaseModel):
     valid: bool
     cost: float
-    score: float
     tf: float
     t_wall_ms: float
     iters: int
@@ -278,9 +285,11 @@ def setup_channels(ctx, labels=(), solves=False, robot1_controllers=False, sampl
         "status": json_channel(ctx, "/status", Status),
         "events": LogChannel("/events", context=ctx),
         "robot1_control": json_channel(ctx, "/robot1/control", Control),
+        "ros": RosChannels(ctx),
     }
     for body in BODIES:
-        ch[f"{body}_state"] = json_channel(ctx, f"/{body}/state", BodyState)
+        if body not in ROS_STATE_TOPICS:
+            ch[f"{body}_state"] = json_channel(ctx, f"/{body}/state", BodyState)
     if robot1_controllers:
         ch["robot1_plan_control"] = json_channel(ctx, "/robot1/plan_control", Control)
         ch["robot1_def_control"] = json_channel(ctx, "/robot1/def_control", Control)
@@ -321,7 +330,7 @@ def table_scene(config, stamp, extra=()):
     centre = _line([[width / 2, y] for y in dashes[:20]], Z_MARKINGS, _color("gray"), 2.0,
                    fm.LinePrimitiveLineType.LineList)
     return fm.SceneUpdate(entities=[fm.SceneEntity(
-        timestamp=stamp, frame_id="world", id="table", cubes=[surface, *goals], lines=[border, centre],
+        timestamp=stamp, frame_id=SIM_FRAME, id="table", cubes=[surface, *goals], lines=[border, centre],
     ), *extra])
 
 
@@ -404,12 +413,12 @@ def _sequence_state(result):
 
 
 def solve_message(update):
-    """ShotSolve of one selector update (controllers/shot_mpc/report.update_json)."""
+    """ShotSolve of one selector update (holohover_planner shot_mpc/report.update_json)."""
     return ShotSolve(
         t=update["t"], outer=update["outer"], kind=_kind(update), skip=update.get("skip"), chosen=update["chosen"],
         t_total_ms=1e3 * update["t_total"], t_wall_ms=1e3 * update.get("t_wall", update["t_total"]),
         n_solves=len(update["results"]),
-        results={name: SolveResult(valid=r["valid"], cost=r["cost"], score=r["score"], tf=r["tf"],
+        results={name: SolveResult(valid=r["valid"], cost=r["cost"], tf=r["tf"],
                                    t_wall_ms=1e3 * r["t_wall"], iters=r["iters"], cold=r["cold"], start=_start(r))
                  for name, r in update["results"].items()},
     )
@@ -539,6 +548,10 @@ class McapWriter:
             labels=list(cand["labels"]) if cand else [],
             r_robot=config["robot"]["radius"],
             r_puck=config["puck"]["radius"],
+            centre=(0.5 * config["table"]["width"], 0.5 * config["table"]["height"]),
+            # (m, m, I): input (Fx, Fy, tau) -> acceleration
+            mass=np.array([1.0, 1.0, 0.5 * config["robot"]["radius"] ** 2]) * config["robot"]["mass"],
+            ros_plans=data.get("ros_plan"),
         )
         updates = (log or {}).get("updates", [])
         n = run.states.shape[0]
@@ -617,23 +630,34 @@ def _log_timed(ch, item, start_ns):
         ch["solves"].log(solve_message(payload[0]).model_dump_json(), log_time=ns)
 
 
-def log_bodies(ch, state, t, ns):
-    """Frames (/tf) and /<body>/state of an 18-dim state."""
-    transforms = []
+def log_bodies(ch, state, t, ns, centre):
+    """Frames (/tf) and the state topics of an 18-dim state; centre: the table centre (x, y) in the
+    simulator's frame, the table frame's origin."""
+    transforms = [fm.FrameTransform(timestamp=_timestamp(ns), parent_frame_id="world", child_frame_id=SIM_FRAME,
+                                    translation=fm.Vector3(x=-centre[0], y=-centre[1], z=0.0), rotation=_quat(0.0))]
     for j, body in enumerate(BODIES):
         x, y, theta, vx, vy, omega = state[6 * j:6 * j + 6]
-        transforms.append(fm.FrameTransform(timestamp=_timestamp(ns), parent_frame_id="world", child_frame_id=body,
+        transforms.append(fm.FrameTransform(timestamp=_timestamp(ns), parent_frame_id=SIM_FRAME, child_frame_id=body,
                                             translation=fm.Vector3(x=x, y=y, z=0.0),
                                             rotation=_quat(theta + FRAME_YAW[body])))
-        message = BodyState(t=t, x=x, y=y, theta=theta, vx=vx, vy=vy, omega=omega)
-        ch[f"{body}_state"].log(message.model_dump_json(), log_time=ns)
+        if body in ROS_STATE_TOPICS:
+            table = (x - centre[0], y - centre[1], theta, vx, vy, omega)
+            ch["ros"].log(ROS_STATE_TOPICS[body], state_message(ns, table), ns)
+        else:
+            message = BodyState(t=t, x=x, y=y, theta=theta, vx=vx, vy=vy, omega=omega)
+            ch[f"{body}_state"].log(message.model_dump_json(), log_time=ns)
     ch["tf"].log(fm.FrameTransforms(transforms=transforms), log_time=ns)
 
 
 def log_step(ch, run, k, t, ns):
     """Everything shown for row k of the data: frames, states, inputs, status and overlays."""
     stamp = _timestamp(ns)
-    log_bodies(ch, run.states[k], t, ns)
+    log_bodies(ch, run.states[k], t, ns, run.centre)
+    # Row k + 1 holds what the controller computed at step k (episode_data)
+    if k + 1 < len(run.inputs):
+        ch["ros"].log("/h0/acc_ref", accel_message(ns, run.inputs[k + 1] / run.mass), ns)
+        if run.ros_plans is not None and run.ros_plans[k + 1] is not None:
+            ch["ros"].log("/h0/plan", plan_message(ns, run.ros_plans[k + 1], ns - round(t * 1e9)), ns)
 
     controls = [("robot1_control", run.inputs[k])]
     if "robot1_plan_control" in ch:
@@ -649,7 +673,7 @@ def log_step(ch, run, k, t, ns):
 
     def scene(channel, entity_id, lines):
         channel.log(fm.SceneUpdate(entities=[fm.SceneEntity(
-            timestamp=stamp, frame_id="world", id=entity_id, lines=lines)]), log_time=ns)
+            timestamp=stamp, frame_id=SIM_FRAME, id=entity_id, lines=lines)]), log_time=ns)
 
     scene(ch["plan"], "plan", [_line(run.plans[k, :, :2], Z_PLAN, _color("red", 0.9), LINE_PX["plan"])])
     for key, cols, radius, color in (("puck_prediction", slice(12, 14), run.r_puck, "green"),

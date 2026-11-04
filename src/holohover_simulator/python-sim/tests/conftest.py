@@ -11,7 +11,7 @@ import jax.numpy as jnp
 import pytest
 
 from simulation.dynamics import physics_step
-from controllers.shot_mpc.params import ShotParams
+from controllers.shot_mpc.frames import shot_params
 from simulation.setup import load_config, physics_from_config
 
 DT = 0.01
@@ -37,12 +37,12 @@ def physics(config):
 
 @pytest.fixture(scope="session")
 def P(config):
-    return ShotParams.from_config(config)
+    return shot_params(config)
 
 
 @pytest.fixture(scope="session")
 def nlp(P):
-    from controllers.shot_mpc.shot_nlp import ShotNLP
+    from holohover_planner.shot_mpc.shot_nlp import ShotNLP
 
     return ShotNLP(P, verbose=False)
 

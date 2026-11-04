@@ -142,7 +142,7 @@ def launch_setup(context):
                       "initial_state_vy":      initial_states_simulated['vy'], 
                       "initial_state_w":       initial_states_simulated['w'],
                       "holohover_props_files": holohover_params_simulated,
-                      "simulated":  [True],
+                      "simulated":  [True] * len(hovercraft_ids_simulated),
                       "are_all_simulated":     True
                     }],
         output='screen'
@@ -163,7 +163,7 @@ def launch_setup(context):
                       "initial_state_w":       initial_states['w'],
                       "holohover_props_files": holohover_params,
                       "color": colors,    
-                      "simulated":  [True]                
+                      "simulated":  [True] * len(hovercraft_ids)
                     }],
         output='screen'
     )
@@ -181,7 +181,7 @@ def launch_setup(context):
                       "initial_state_vy":      initial_states['vy'], 
                       "initial_state_w":       initial_states['w'],
                       "holohover_props_files": holohover_params,
-                      "simulated": [True]                                        
+                      "simulated": [True] * len(hovercraft_ids)
                     }],
         output='screen'
     )
