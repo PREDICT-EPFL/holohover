@@ -48,9 +48,8 @@ def _merge(base, over):
 def bag_paths(path):
     """(mcap file, output directory) for a bag directory or an .mcap file.
 
-    Outputs (segments.yaml, results.yaml, plots) go next to the bag, or to
-    identification/results/<bag name>/ when the bag directory is not writable (bags recorded
-    in the docker container belong to root)."""
+    Outputs (segments.yaml, results.yaml, plots) go next to the bag, so the bag directory must
+    be writable (bags recorded in the docker container belong to root: chown them)."""
     path = os.path.abspath(path)
     if os.path.isdir(path):
         files = sorted(f for f in os.listdir(path) if f.endswith(".mcap"))
@@ -61,11 +60,10 @@ def bag_paths(path):
         mcap_file, bag_dir = os.path.join(path, files[0]), path
     else:
         mcap_file, bag_dir = path, os.path.dirname(path)
-    if os.access(bag_dir, os.W_OK):
-        return mcap_file, bag_dir
-    out_dir = os.path.join(HERE, "results", os.path.basename(bag_dir.rstrip("/")))
-    os.makedirs(out_dir, exist_ok=True)
-    return mcap_file, out_dir
+    if not os.access(bag_dir, os.W_OK):
+        raise PermissionError(f"{bag_dir} is not writable, the outputs go next to the bag "
+                              f"(recorded in docker, owned by root?): sudo chown -R $USER:$USER {bag_dir}")
+    return mcap_file, bag_dir
 
 
 @dataclass

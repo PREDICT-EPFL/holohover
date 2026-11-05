@@ -18,8 +18,7 @@ uv sync
 ```
 
 The review and plot windows use [Dear ImGui / ImPlot](https://github.com/pthom/imgui_bundle)
-(OpenGL). Open them on a machine with a display: on your laptop (copy the bag and the
-`results/<bag name>/` folder) or at the lab computer's screen. Over ssh X forwarding every frame
+(OpenGL). Open them on a machine with a display: on your laptop (copy the bag folder) or at the lab computer's screen. Over ssh X forwarding every frame
 is sent as an image and the window runs at ~2 frames per second. `segment`, `fit` and
 `plot --save` need no display.
 
@@ -70,9 +69,9 @@ uv run identify.py plot    ../../../docker/data/puck_id_...   # measured vs mode
 uv run identify.py plot    ../../../docker/data/puck_id_... --save   # same as PNGs in plots/
 ```
 
-The bag path is the bag directory or its `.mcap`. The outputs go next to the bag, or to
-`results/<bag name>/` when the bag directory is not writable (bags recorded in the docker
-container belong to root). `segment` does not overwrite reviewed segments without `--force`.
+The bag path is the bag directory or its `.mcap`. The outputs go next to the bag, so the bag
+directory must be writable: bags recorded in the docker container belong to root, take them
+over once with `sudo chown -R $USER:$USER ../../../docker/data`. `segment` does not overwrite reviewed segments without `--force`.
 Settings are in [config.yaml](config.yaml); `--config my.yaml` merges a partial file over it.
 
 ### segment

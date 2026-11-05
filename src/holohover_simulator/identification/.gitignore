@@ -1,6 +1,4 @@
 .pytest_cache/
 
-# Outputs for bags in read-only directories (identify.py writes next to the bag otherwise)
-results/
 cache/
 .venv/
