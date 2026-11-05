@@ -21,102 +21,7 @@
 #include <random>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
-
-// Update Sep 30: collision detector
-class ContactListener : public b2ContactListener {
-public:
-
-    ContactListener(rclcpp::Node* node) : node_(node) {
-        // Initialize publishers
-        wall_collided_pub_ = node_->create_publisher<std_msgs::msg::Bool>("wall_collided", 10);
-        hovercraft_collided_pub_ = node_->create_publisher<std_msgs::msg::Bool>("hovercraft_collided", 10);
-
-    }
-
-    void BeginContact(b2Contact* contact) override {
-        // std::cout << "Collision started!" << std::endl << std::flush;
-        // RCLCPP_INFO(logger, "Collision started!");
-        auto* bodyA = contact->GetFixtureA()->GetBody();
-        auto* bodyB = contact->GetFixtureB()->GetBody();
-
-        // Retrieve user data correctly as uintptr_t and cast to const char*
-        const char* dataA = reinterpret_cast<const char*>(bodyA->GetUserData().pointer);
-        const char* dataB = reinterpret_cast<const char*>(bodyB->GetUserData().pointer);
-        bool puckA = dataA && std::string(dataA) == "puck";
-        bool puckB = dataB && std::string(dataB) == "puck";
-        std_msgs::msg::Bool msg;
-        // Check for puck collisions
-        if (puckA || puckB) {
-            b2Body* puck = puckA ? bodyA : bodyB;
-            // Determine what the puck collided with
-            if ((dataA && std::string(dataA) == "hovercraft") || (dataB && std::string(dataB) == "hovercraft")) {
-                RCLCPP_INFO(node_->get_logger(), "Puck collided with hovercraft.");
-                msg.data = true;
-                hovercraft_collided_pub_->publish(msg);
-            } else if ((dataA && std::string(dataA) == "wall") || (dataB && std::string(dataB) == "wall")) {
-                RCLCPP_INFO(node_->get_logger(), "Puck collided with wall.");
-                msg.data = true;
-                wall_collided_pub_->publish(msg); 
-
-                b2WorldManifold manifold;
-                contact->GetWorldManifold(&manifold);
-                b2Vec2 normal = manifold.normal;
-                b2Vec2 v = puck->GetLinearVelocity();
-
-                float vn = b2Dot(v, normal);
-
-                // only reflect if moving into the wall
-                if (vn < 0)
-                {
-                    float restitution = 0.9f;   // realistic bounce
-
-                    b2Vec2 new_v = v - (1 + restitution) * vn * normal;
-
-                    // No extra force here (removed 2026-10-17): ApplyForceToCenter(-0.2 v) with v the incoming
-                    // velocity pointed away from the wall. Over one 10 ms step on the 3.85 g puck it gave a normal
-                    // restitution of 1.42 instead of 0.9 (the puck left faster than it arrived), and one that
-                    // changed with the step size (1.16 at 5 ms): 0.9 + 0.2 dt / m.
-                    puck->SetLinearVelocity(new_v);
-                }
-            } else {
-                RCLCPP_WARN(node_->get_logger(), "Puck collided with an unknown object.");
-            }
-        }
-    }
-
-    void EndContact(b2Contact* contact) override {
-        // std::cout << "Collision ended!" << std::endl << std::flush;
-        // RCLCPP_INFO(logger, "Collision ended!");
-        auto* bodyA = contact->GetFixtureA()->GetBody();
-        auto* bodyB = contact->GetFixtureB()->GetBody();
-
-        // Retrieve user data correctly as uintptr_t and cast to const char*
-        const char* dataA = reinterpret_cast<const char*>(bodyA->GetUserData().pointer);
-        const char* dataB = reinterpret_cast<const char*>(bodyB->GetUserData().pointer);
-
-        std_msgs::msg::Bool msg;
-        // Check for puck collisions
-        if ((dataA && std::string(dataA) == "puck") || (dataB && std::string(dataB) == "puck")) {
-            // Determine what the puck stopped colliding with
-            if ((dataA && std::string(dataA) == "hovercraft") || (dataB && std::string(dataB) == "hovercraft")) {
-                RCLCPP_INFO(node_->get_logger(), "Puck stopped colliding with hovercraft.");
-                msg.data = false;
-                hovercraft_collided_pub_->publish(msg);
-            } else if ((dataA && std::string(dataA) == "wall") || (dataB && std::string(dataB) == "wall")) {
-                RCLCPP_INFO(node_->get_logger(), "Puck stopped colliding with wall.");
-                msg.data = false;
-                wall_collided_pub_->publish(msg); 
-            } else {
-                RCLCPP_WARN(node_->get_logger(), "Puck stopped colliding with an unknown object.");
-            }
-        }
-    }
-private:
-    rclcpp::Node* node_;  // Use raw pointer
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr wall_collided_pub_;
-    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr hovercraft_collided_pub_;
-};
-
+#include "simulator_collisions.hpp"
 
 class BodyDeleter
 {
@@ -193,7 +98,7 @@ private:
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr puck_pose_publisher;
     void init_puck();
 
-    // ~/reset: (x, y, yaw, v_x, v_y, w_z) of every simulated hovercraft, then (x, y, v_x, v_y) of the puck
+    // ~/reset: (x, y, yaw, v_x, v_y, w_z) of every simulated hovercraft, then (x, y, v_x, v_y[, w_z]) of the puck (w_z: spin, 0 when left out)
     rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr reset_subscription;
     void reset_callback(const std_msgs::msg::Float64MultiArray &msg);
 

@@ -60,6 +60,9 @@ def launch_setup(context):
     python_sim = os.path.normpath(LaunchConfiguration('python_sim').perform(context) or PYTHON_SIM)
     substeps = int(LaunchConfiguration('substeps').perform(context) or 10)
     teleop = LaunchConfiguration('controller').perform(context) == 'teleop'
+    wall_collision = LaunchConfiguration('wall_collision').perform(context)
+    hovercraft_collision = LaunchConfiguration('hovercraft_collision').perform(context)
+    sim_config_dir = os.path.join(get_package_share_directory('holohover_simulator'), 'config')
 
     utils_share = get_package_share_directory('holohover_utils')
     common = os.path.join(utils_share, 'config', 'common')
@@ -78,13 +81,17 @@ def launch_setup(context):
         Node(
             package='holohover_simulator',
             executable='simulator',
-            parameters=simulation_files + [{
+            parameters=simulation_files + [
+                os.path.join(sim_config_dir, 'elastic.yaml'),
+                os.path.join(sim_config_dir, 'friction_restitution.yaml'), {
                 **{k: sim_config[k] for k in ('hovercraft_ids', 'hovercraft_names', 'initial_state_x',
                                               'initial_state_y', 'initial_state_theta', 'initial_state_vx',
                                               'initial_state_vy', 'initial_state_w', 'holohover_props_files',
                                               'simulated')},
                 'puck_position': [float(puck[0]), float(puck[1])],
                 'substeps': substeps,
+                'wall_collision_model': wall_collision,
+                'hovercraft_collision_model': hovercraft_collision,
             }],
             output='screen',
         ),
@@ -196,6 +203,10 @@ def generate_launch_description():
         DeclareLaunchArgument('record', default_value='false', description='Record every topic to an MCAP bag'),
         DeclareLaunchArgument('evaluate', default_value='0', description="Evaluate on that many of python-sim's starts"),
         DeclareLaunchArgument('first', default_value='0', description='First start of the evaluation'),
+        DeclareLaunchArgument('wall_collision', default_value='elastic',
+                              description='Wall bounce of the puck: box2d, elastic or friction_restitution'),
+        DeclareLaunchArgument('hovercraft_collision', default_value='box2d',
+                              description='Hovercraft-puck bounce: box2d, elastic or friction_restitution'),
         DeclareLaunchArgument('substeps', default_value='10', description='Box2D steps per simulator period'),
         DeclareLaunchArgument('controller', default_value='plan', description='plan (shot planner) or teleop (control_lqr + teleop, cmd_vel)'),
         DeclareLaunchArgument('python_sim', default_value='', description="python-sim's directory (default: next to this file's source)"),
