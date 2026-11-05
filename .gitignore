@@ -9,6 +9,7 @@ simulation_data/
 
 # Agent setup (local only)
 CLAUDE.md
+GLOSARY.md
 docs/agents/
 .scratch/
 .claude/
