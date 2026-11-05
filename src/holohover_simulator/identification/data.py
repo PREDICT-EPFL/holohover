@@ -137,7 +137,9 @@ def _read(mcap_file, cfg):
 def load(path, cfg):
     """Recording of the bag at `path` (directory or .mcap), cached next to the bag."""
     mcap_file, out_dir = bag_paths(path)
-    cache = os.path.join(out_dir, f".identification_cache_{cfg['source']}.npz")
+    cache_dir = os.path.join(out_dir, "cache")  # only rebuildable files: safe to delete
+    os.makedirs(cache_dir, exist_ok=True)
+    cache = os.path.join(cache_dir, f"identification_{cfg['source']}.npz")
     key = f"{CACHE_VERSION}|{mcap_file}|{os.path.getmtime(mcap_file)}|{cfg['source']}|{cfg['topics']}"
     raw = table = None
     if os.path.exists(cache):
