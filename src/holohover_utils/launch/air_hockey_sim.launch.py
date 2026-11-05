@@ -17,9 +17,8 @@ puck: x, y of the puck at rest, table frame (default: the experiment file's puck
 substeps: Box2D steps per simulator period (default 10, 1 ms steps). Box2D resolves a contact one of its steps
 after the overlap appears.
 controller: plan (default) or teleop: per hovercraft control_lqr and holohover_control teleop instead of the
-planner and control_plan, driven by a Twist on hN/cmd_vel. A gamepad drives h0 (config/common/teleop_joy_config.yaml:
-hold L1, left stick x/y, right stick yaw); the keyboard instead, in a second terminal (Shift for y):
-    ./holohover exec ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/h0/cmd_vel
+planner and control_plan, driven by a Twist on hN/cmd_vel. teleop.launch.py starts it with the gamepad or
+keyboard nodes.
 record: record every topic to an MCAP bag, /root/data/rosbags/air_hockey_<date>_<time> (docker/data on the
 host), stopped with the launch. It opens in Foxglove with the same layout.
 
@@ -115,13 +114,6 @@ def launch_setup(context):
         ))
 
     _, names, props_files, initial = ecp.getHovercraft()
-    if teleop:  # the gamepad drives the first hovercraft
-        joy_config = os.path.join(common, 'teleop_joy_config.yaml')
-        ld += [
-            Node(package='joy', executable='game_controller_node', parameters=[joy_config], output='screen'),
-            Node(package='teleop_twist_joy', executable='teleop_node', parameters=[joy_config],
-                 remappings=[('cmd_vel', f'/{names[0]}/cmd_vel')], output='screen'),
-        ]
     for i, (name, props) in enumerate(zip(names, props_files)):
         ld.append(Node(
             package='holohover_navigation',

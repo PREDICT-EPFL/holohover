@@ -19,6 +19,7 @@ private:
     bool is_initialized = false;
     
     geometry_msgs::msg::PoseStamped table_pose;
+    std::vector<double> table_center;  // the table frame's origin in the table marker's frame
 
     rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr table_raw_pose_subscription;
 
