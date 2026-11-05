@@ -1,0 +1,8 @@
+#!/bin/bash
+# identify.py of the puck identification in the image's own venv, e.g.
+#   identify segment /root/data/puck_id_...     (paths relative to the current directory work too)
+# The ROS environment points PYTHONPATH at Humble's Python 3.10 packages: keep them out of the 3.11 venv.
+# The venv lives in /opt (set here, not only in the image ENV): never the host's .venv in the mounted source.
+DIR=/root/ros2_ws/src/holohover/holohover_simulator/identification
+export UV_PYTHON_INSTALL_DIR=/opt/uv-python UV_PROJECT_ENVIRONMENT=/opt/identification-venv
+exec env -u PYTHONPATH uv run --frozen --project "$DIR" python "$DIR/identify.py" "$@"
