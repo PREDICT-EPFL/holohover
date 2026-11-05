@@ -3,16 +3,15 @@
     "3D!impacts": {
       "foxglovePanelTitle": "Wall impacts: measured (white) vs simulator models (box2d red, elastic blue, friction_restitution green)",
       "cameraState": {
-        "perspective": false,
         "distance": 2.4,
+        "perspective": false,
         "phi": 0,
-        "thetaOffset": 0,
-        "targetOffset": [
+        "target": [
           0,
           0,
           0
         ],
-        "target": [
+        "targetOffset": [
           0,
           0,
           0
@@ -23,6 +22,7 @@
           0,
           1
         ],
+        "thetaOffset": 0,
         "fovy": 45,
         "near": 0.01,
         "far": 100
@@ -32,7 +32,7 @@
       "scene": {
         "transforms": {
           "showLabel": false,
-          "axisScale": 0.2
+          "axisSize": 0.04000000000000001
         }
       },
       "transforms": {
@@ -47,9 +47,16 @@
       },
       "layers": {},
       "publish": {
-        "type": "point"
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
       },
-      "imageMode": {}
+      "imageMode": {},
+      "synchronize": false
     },
     "Plot!vx": {
       "foxglovePanelTitle": "vx [m/s] (table frame)",
@@ -90,7 +97,10 @@
       "showPlotValuesInLegend": false,
       "isSynced": true,
       "xAxisVal": "timestamp",
-      "sidebarDimension": 240
+      "sidebarDimension": 240,
+      "timeWindowMode": "sliding",
+      "followingViewWidth": 10,
+      "playbackBarPosition": "center"
     },
     "Plot!vy": {
       "foxglovePanelTitle": "vy [m/s] (table frame)",
@@ -131,7 +141,10 @@
       "showPlotValuesInLegend": false,
       "isSynced": true,
       "xAxisVal": "timestamp",
-      "sidebarDimension": 240
+      "sidebarDimension": 240,
+      "timeWindowMode": "sliding",
+      "followingViewWidth": 10,
+      "playbackBarPosition": "center"
     },
     "Plot!w": {
       "foxglovePanelTitle": "Spin [rad/s]",
@@ -172,7 +185,10 @@
       "showPlotValuesInLegend": false,
       "isSynced": true,
       "xAxisVal": "timestamp",
-      "sidebarDimension": 240
+      "sidebarDimension": 240,
+      "timeWindowMode": "sliding",
+      "followingViewWidth": 10,
+      "playbackBarPosition": "center"
     },
     "Plot!error": {
       "foxglovePanelTitle": "Position error vs measured [mm]",
@@ -206,7 +222,10 @@
       "showPlotValuesInLegend": false,
       "isSynced": true,
       "xAxisVal": "timestamp",
-      "sidebarDimension": 240
+      "sidebarDimension": 240,
+      "timeWindowMode": "sliding",
+      "followingViewWidth": 10,
+      "playbackBarPosition": "center"
     },
     "RawMessages!segment": {
       "foxglovePanelTitle": "Current impact: position RMS after the impact",
@@ -216,7 +235,8 @@
       "diffTopicPath": "",
       "showFullMessageForDiff": false,
       "fontSize": 12,
-      "expansion": "all"
+      "expansion": "all",
+      "defaultExpanded": false
     },
     "RawMessages!summary": {
       "foxglovePanelTitle": "All impacts",
@@ -226,7 +246,8 @@
       "diffTopicPath": "",
       "showFullMessageForDiff": false,
       "fontSize": 12,
-      "expansion": "all"
+      "expansion": "all",
+      "defaultExpanded": false
     }
   },
   "globalVariables": {},

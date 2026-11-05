@@ -42,6 +42,7 @@ MODELS = ["box2d", "elastic", "friction_restitution"]
 COLORS = {"box2d": (0.88, 0.31, 0.31), "elastic": (0.30, 0.56, 0.90), "friction_restitution": (0.30, 0.78, 0.39)}
 MEASURED = (0.95, 0.95, 0.95)
 TRAIL = 1.0  # [s] of measured trail
+REBOUND = (0.03, 0.20)  # [s] after the impact: window of the rebound velocity line fit
 
 
 def stamp(t):
@@ -95,6 +96,21 @@ def sim_coefficients():
     return {"box2d": {},
             "elastic": {"restitution": params("elastic.yaml")["elastic"]["wall"]["restitution"]},
             "friction_restitution": {k: fr[k] for k in ("e_n", "mu", "e_t")}}
+
+
+def rebound(tt, xy, t0, t1):
+    """Velocity [vx, vy] of a line fit to the positions in [t0, t1] (None if too few points).
+    Positions, not the EKF velocity: it lags right after a contact."""
+    k = (tt >= t0) & (tt <= t1)
+    return np.polyfit(tt[k], xy[k], 1)[0] if k.sum() >= 4 else None
+
+
+def rebound_error(v_sim, v_meas):
+    """(direction error [deg], signed; speed error [%]) of the simulated rebound."""
+    if v_sim is None or v_meas is None or np.linalg.norm(v_meas) < 1e-3:
+        return math.nan, math.nan
+    d = math.atan2(v_sim[1], v_sim[0]) - math.atan2(v_meas[1], v_meas[0])
+    return math.degrees(math.atan2(math.sin(d), math.cos(d))), 100 * (np.linalg.norm(v_sim) / np.linalg.norm(v_meas) - 1)
 
 
 def replay(tool, case):
@@ -215,20 +231,29 @@ def main():
         r = run[MODELS[0]]
         jump = np.flatnonzero(np.linalg.norm(np.diff(r[:, 4:6], axis=0), axis=1) > 0.1)
         t_imp = r[jump[0] + 1, 0] if jump.size else g["t0"]
+        # rebound window: skip the contact itself, stop before a later contact can matter
+        w0, w1 = t_imp + REBOUND[0], min(t_imp + REBOUND[1], g["t1"])
+        v_meas = rebound(t[idx], rows[idx, 1:3], w0, w1)
         err = {}
         for m in MODELS:
             pos = np.column_stack([np.interp(t[idx], run[m][:, 0], run[m][:, k]) for k in (1, 2)])
             e = 1e3 * np.linalg.norm(pos - rows[idx, 1:3], axis=1)
             after = t[idx] > t_imp
-            err[m] = (e, float(np.sqrt(np.mean(e[after] ** 2))) if after.any() else math.nan)
+            angle, speed = rebound_error(rebound(run[m][:, 0], run[m][:, 1:3], w0, w1), v_meas)
+            err[m] = (e, float(np.sqrt(np.mean(e[after] ** 2))) if after.any() else math.nan, angle, speed)
         sims.append((g, idx, run, err))
-        errors.append([err[m][1] for m in MODELS])
-        print(f"  segment {g['id']:3d}: " + "  ".join(f"{m} {err[m][1]:6.1f}" for m in MODELS) + "  mm after the impact")
-    errors = np.array(errors)
-    best = np.nanargmin(errors, axis=1)
-    summary = [f"position RMS after the impact over {len(impacts)} wall impacts [mm]:"] + [
-        f"  {m:22s} mean {np.nanmean(errors[:, k]):5.1f}  median {np.nanmedian(errors[:, k]):5.1f}  "
-        f"best in {int(np.sum(best == k))}/{len(impacts)}" for k, m in enumerate(MODELS)]
+        errors.append([err[m][1:] for m in MODELS])
+        print(f"  segment {g['id']:3d}: " + "  ".join(f"{m} {err[m][1]:6.1f} mm {err[m][2]:+6.1f} deg {err[m][3]:+5.0f} %"
+                                                   for m in MODELS) + "  (position RMS, rebound direction, rebound speed)")
+    errors = np.array(errors)  # [impact, model, (position RMS, direction, speed)]
+    summary = []
+    for j, (what, unit) in enumerate([("position RMS after the impact", "mm"), ("|rebound direction error|", "deg"),
+                                      ("|rebound speed error|", "%")]):
+        e = np.abs(errors[:, :, j])
+        best = np.nanargmin(np.where(np.isnan(e), np.inf, e), axis=1)
+        summary += [f"{what} over {len(impacts)} wall impacts [{unit}]:"] + [
+            f"  {m:22s} mean {np.nanmean(e[:, k]):5.1f}  median {np.nanmedian(e[:, k]):5.1f}  "
+            f"best in {int(np.sum(best == k))}/{len(impacts)}" for k, m in enumerate(MODELS)]
     print("\n".join(summary))
 
     # messages, at the recording's times
@@ -240,7 +265,8 @@ def main():
             msgs += [(t_ref + r[0], f"/{m}/puck/state", state_msg(t_ref + r[0], r[1:])) for r in run[m]]
         for m in MODELS:
             msgs += [(rows[i, 0], f"/{m}/position_error", Float64(data=float(e))) for i, e in zip(idx, err[m][0])]
-        text = f"segment {g['id']}: " + ", ".join(f"{m} {err[m][1]:.1f} mm" for m in MODELS) + " (position RMS after the impact)"
+        text = (f"segment {g['id']} (position RMS after the impact, rebound direction and speed error vs measured):\n"
+                + "\n".join(f"  {m}: {err[m][1]:.1f} mm, {err[m][2]:+.1f} deg, {err[m][3]:+.0f} %" for m in MODELS))
         msgs.append((t_ref + g["t0"], "/impact_comparison/segment", String(data=text)))
         for i in idx:
             active[i] = run
