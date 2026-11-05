@@ -1,0 +1,268 @@
+{
+  "configById": {
+    "3D!impacts": {
+      "foxglovePanelTitle": "Wall impacts: measured (white) vs simulator models (box2d red, elastic blue, friction_restitution green)",
+      "cameraState": {
+        "perspective": false,
+        "distance": 2.4,
+        "phi": 0,
+        "thetaOffset": 0,
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 100
+      },
+      "followMode": "follow-none",
+      "followTf": "world",
+      "scene": {
+        "transforms": {
+          "showLabel": false,
+          "axisScale": 0.2
+        }
+      },
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/impact_comparison/scene": {
+          "visible": true
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point"
+      },
+      "imageMode": {}
+    },
+    "Plot!vx": {
+      "foxglovePanelTitle": "vx [m/s] (table frame)",
+      "paths": [
+        {
+          "value": "/measured/puck/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "measured",
+          "color": "#bdbdbd"
+        },
+        {
+          "value": "/box2d/puck/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "box2d",
+          "color": "#e05050"
+        },
+        {
+          "value": "/elastic/puck/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "elastic",
+          "color": "#4c8ee6"
+        },
+        {
+          "value": "/friction_restitution/puck/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "friction_restitution",
+          "color": "#4cc764"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!vy": {
+      "foxglovePanelTitle": "vy [m/s] (table frame)",
+      "paths": [
+        {
+          "value": "/measured/puck/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "measured",
+          "color": "#bdbdbd"
+        },
+        {
+          "value": "/box2d/puck/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "box2d",
+          "color": "#e05050"
+        },
+        {
+          "value": "/elastic/puck/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "elastic",
+          "color": "#4c8ee6"
+        },
+        {
+          "value": "/friction_restitution/puck/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "friction_restitution",
+          "color": "#4cc764"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!w": {
+      "foxglovePanelTitle": "Spin [rad/s]",
+      "paths": [
+        {
+          "value": "/measured/puck/state.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "measured",
+          "color": "#bdbdbd"
+        },
+        {
+          "value": "/box2d/puck/state.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "box2d",
+          "color": "#e05050"
+        },
+        {
+          "value": "/elastic/puck/state.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "elastic",
+          "color": "#4c8ee6"
+        },
+        {
+          "value": "/friction_restitution/puck/state.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "friction_restitution",
+          "color": "#4cc764"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!error": {
+      "foxglovePanelTitle": "Position error vs measured [mm]",
+      "paths": [
+        {
+          "value": "/box2d/position_error.data",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "box2d",
+          "color": "#e05050"
+        },
+        {
+          "value": "/elastic/position_error.data",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "elastic",
+          "color": "#4c8ee6"
+        },
+        {
+          "value": "/friction_restitution/position_error.data",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "friction_restitution",
+          "color": "#4cc764"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "RawMessages!segment": {
+      "foxglovePanelTitle": "Current impact: position RMS after the impact",
+      "topicPath": "/impact_comparison/segment.data",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 12,
+      "expansion": "all"
+    },
+    "RawMessages!summary": {
+      "foxglovePanelTitle": "All impacts",
+      "topicPath": "/impact_comparison/summary.data",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 12,
+      "expansion": "all"
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 0.25
+  },
+  "layout": {
+    "direction": "row",
+    "splitPercentage": 50,
+    "first": {
+      "direction": "column",
+      "splitPercentage": 70,
+      "first": "3D!impacts",
+      "second": {
+        "direction": "row",
+        "splitPercentage": 50,
+        "first": "RawMessages!segment",
+        "second": "RawMessages!summary"
+      }
+    },
+    "second": {
+      "direction": "column",
+      "splitPercentage": 50,
+      "first": {
+        "direction": "row",
+        "splitPercentage": 50,
+        "first": "Plot!vx",
+        "second": "Plot!vy"
+      },
+      "second": {
+        "direction": "row",
+        "splitPercentage": 50,
+        "first": "Plot!w",
+        "second": "Plot!error"
+      }
+    }
+  }
+}

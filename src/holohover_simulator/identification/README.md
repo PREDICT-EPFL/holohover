@@ -211,3 +211,15 @@ uv run pytest
 with the EKF state and the raw pose (`uv run identify.py synth OUT` writes one too), runs segment
 and fit on both sources and checks the parameters are recovered, and drives the review and plot
 code headless. The synthetic EKF state has noise but no filter dynamics.
+
+### Comparing the simulator's wall collision models
+
+After `fit` (on the host), in the docker container (`./holohover shell`, workspace built):
+
+```bash
+ros2 run holohover_simulator impact_comparison.py /root/data/puck_id_...
+```
+
+replays every wall impact of `results.yaml` in the C++ simulator (box2d, elastic and friction_restitution, with the
+coefficients of `holohover_simulator/config/`) and writes the measured and simulated pucks to the bag
+`<bag>/impact_comparison/`. Open it in Foxglove with the layout `holohover_simulator/gui/impact_comparison.foxglove.json`.

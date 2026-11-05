@@ -65,7 +65,9 @@ def cmd_fit(args, cfg):
     rec = data.load(args.bag, cfg)
     pr, res = fit.run(rec, data.load_segments(seg_file, rec), cfg, verbose=args.verbose)
     out = fit.report(pr, res)
-    out = {"bag": rec.source, "segments_file": seg_file, "config": cfg, **out}
+    # t_ref and the table pose place the segments in the bag (holohover_simulator impact_comparison.py)
+    out = {"bag": rec.source, "segments_file": seg_file, "t_ref": rec.t_ref,
+           "table_pose_in_mocap": [round(float(v), 6) for v in rec.table], "config": cfg, **out}
     data.save_yaml(res_file, out, header="Puck identification results (identify.py fit).")
     print(fit.summary_text(out))
     print(f"wrote {res_file}")
