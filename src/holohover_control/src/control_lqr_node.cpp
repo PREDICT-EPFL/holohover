@@ -118,7 +118,9 @@ void HolohoverControlLQRNode::publish_control()
 
     // calculate control for next step
     Holohover::state_t<double> state_next = holohover.Ad * state + holohover.Bd * u_acc_curr;
-    Holohover::control_acc_t<double> u_acc_next = -K * (state_next - state_ref) - disturbance;
+    Holohover::state_t<double> error = state_next - state_ref;
+    error(4) = std::remainder(error(4), 2 * M_PI);
+    Holohover::control_acc_t<double> u_acc_next = -K * error - disturbance;
 
     // calculate thrust bounds for next step
     Holohover::control_force_t<double> u_force_next_min, u_force_next_max;
