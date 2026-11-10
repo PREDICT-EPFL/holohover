@@ -10,9 +10,10 @@ The launch file passes python-sim's directory (--python-sim, its launch argument
 
 An episode: /<name>/episode -1 idles the planner and the controller (the controller commands no
 acceleration, without the disturbance compensation), the simulator is reset (/simulator/reset) to the start with the puck at
-rest, and once h0's EKF has settled there it is reset again with the puck's velocity and the episode
-starts (/<name>/episode <e>: the nodes restart afresh). It ends at the first goal or after python-sim's
-evaluation.duration.
+rest, and once h0's EKF has settled there it is reset again with the puck's velocity. The episode starts
+(/<name>/episode <e>: the nodes restart afresh) once the puck's EKF has a state from after that reset:
+started at the reset itself, the first planning tick could plan for the puck as it was before it (at rest).
+It ends at the first goal or after python-sim's evaluation.duration.
 
 Goals as python-sim scores them (GoalDetector), contacts from the simulator (/hovercraft_collided).
 Outcomes as python-sim's: goal (first shot: one contact before the goal), late_goal (more contacts, not
@@ -35,12 +36,13 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 from holohover_msgs.msg import HolohoverPlan, HolohoverStateStamped
-from geometry_msgs.msg import AccelStamped
+from geometry_msgs.msg import AccelStamped, PoseStamped
 from std_msgs.msg import Bool, Float64MultiArray, Int32
 
 OUT_DIR = "/root/data/box2d_eval"
 SETTLE_POS, SETTLE_VEL = 0.005, 0.02  # m, m/s: h0's EKF state is at the start, at rest
 SETTLE_MIN, SETTLE_MAX = 0.3, 3.0  # s
+PUCK_WAIT = 0.1  # s at most from the velocity reset to a puck EKF state from after it (~20 ms)
 STOP_WAIT = 0.3  # s from idling the nodes to the reset: the motors settle (time constant 0.03 s)
 READY_TIMEOUT = 60.0  # s to wait for the simulation and the nodes
 CONTACT_MERGE = 0.05  # s: /hovercraft_collided messages closer than this are one contact
@@ -96,6 +98,7 @@ class Evaluator(Node):
         self.episode_publisher = self.create_publisher(Int32, f"/{name}/episode", 10)
         self.create_subscription(HolohoverStateStamped, f"/{name}/state", self.state_callback, 10)
         self.create_subscription(HolohoverStateStamped, "/puck/state", self.puck_callback, 10)
+        self.create_subscription(PoseStamped, "/puck/pose", self.puck_pose_callback, 10)
         self.create_subscription(Bool, "/hovercraft_collided", self.contact_callback, 10)
         self.create_subscription(HolohoverPlan, f"/{name}/plan", self.plan_callback, 10)
         self.create_subscription(AccelStamped, f"/{name}/acc_ref", self.acc_callback, 100)
@@ -105,6 +108,8 @@ class Evaluator(Node):
         self.t_start = 0.0
         self.goals, self.contacts, self.attacked = None, [], False
         self.detector = None
+        # After a velocity reset (t_reset): stamps of the puck poses since, and of the latest puck EKF state
+        self.t_reset, self.pose_stamps, self.t_puck_state = None, [], 0.0
         self.acc_times, self.plan_delays = [], []  # this episode's
         self.t0_followed = None  # t0 of the plan followed (republished while its re-solves fail)
 
@@ -115,7 +120,17 @@ class Evaluator(Node):
         s = msg.state_msg
         self.state = np.array([s.x, s.y, s.v_x, s.v_y])
 
+    def puck_pose_callback(self, msg):
+        if self.t_reset is not None and stamp_s(msg.header.stamp) > self.t_reset:
+            self.pose_stamps.append(stamp_s(msg.header.stamp))
+
+    def puck_ready(self):
+        """The puck's EKF has a state from after the velocity reset: one after the second pose stamped after
+        it (a pose the simulator publishes while handling the reset may still predate the teleport)."""
+        return len(self.pose_stamps) >= 2 and self.t_puck_state > self.pose_stamps[1]
+
     def puck_callback(self, msg):
+        self.t_puck_state = stamp_s(msg.header.stamp)
         if not self.running or self.goals is not None:
             return
         s = msg.state_msg
@@ -167,7 +182,11 @@ class Evaluator(Node):
         self.goals, self.contacts, self.attacked = None, [], False
         self.acc_times, self.plan_delays, self.t0_followed = [], [], None
         self.detector = GoalDetector(*self.table)
+        self.t_reset, self.pose_stamps = self.now_s(), []
         self.reset(robot, puck)
+        if not self.wait(self.puck_ready, PUCK_WAIT):
+            self.get_logger().warn(f"episode {e}: no puck EKF state from after the reset, running it anyway")
+        self.t_reset = None
         self.t_start, self.running = self.now_s(), True
         self.episode_publisher.publish(Int32(data=e))
         self.wait(lambda: self.goals is not None, duration)

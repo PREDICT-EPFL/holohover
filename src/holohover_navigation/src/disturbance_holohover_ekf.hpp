@@ -114,7 +114,10 @@ private:
         Holohover::control_force_t<double> signal = x.segment<6>(9); // motor_speed;
         Holohover::control_force_t<double> thrust;
         holohover.signal_to_thrust(signal, thrust);
-        Holohover::state_t<double> holohover_state = x.head<6>();
+        // The model's state order is (x, y, v_x, v_y, yaw, w_z), not the EKF's (x, y, theta, x_dot, y_dot, theta_dot):
+        // x.head<6>() made the model rotate the thrust by y_dot instead of the yaw
+        Holohover::state_t<double> holohover_state;
+        holohover_state << x(0), x(1), x(3), x(4), x(2), x(5);
         Holohover::control_acc_t<double> acc;
         holohover.control_force_to_acceleration(holohover_state, thrust, acc);
         x_dot.segment<3>(3) = acc + x.segment<3>(6);

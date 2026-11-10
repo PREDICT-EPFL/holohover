@@ -47,7 +47,7 @@ def stamp(t):
 def controller(P):
     acc_max = P.u_max
     tracker = Tracker(P.gamma, acc_max, 10, 0.0, Q=[1e4, 1e4, 1e2, 1e2, 1e2, 1.0],
-                      Q_f=[1e6, 1e6, 1e2, 1e4, 1e4, 1.0], R=[1.0, 1.0, 1.0])
+                      Q_f=[1e6, 1e6, 1e2, 1e4, 1e4, 1.0], R=[1.0, 1.0, 1.0], period=0.01)
     return PlanController(tracker, PD([0.7455, 0.0, 0.0], [43.1, 43.1, 100.0], [8.62, 8.62, 20.0]), acc_max,
                           P.plan_expiry)
 
