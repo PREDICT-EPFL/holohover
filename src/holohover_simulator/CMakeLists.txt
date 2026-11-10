@@ -40,13 +40,23 @@ add_executable(simulator src/simulator_node.cpp)
 ament_target_dependencies(simulator rclcpp holohover_msgs holohover_common geometry_msgs std_msgs box2d tf2_ros visualization_msgs)
 target_link_libraries(simulator box2d yaml-cpp)
 
-# install(DIRECTORY
-#   config
-#   DESTINATION share/${PROJECT_NAME}
-# )
+# offline replay of the puck physics (scripts/impact_comparison.py)
+add_executable(collision_replay src/collision_replay.cpp)
+ament_target_dependencies(collision_replay rclcpp std_msgs box2d)
+target_link_libraries(collision_replay box2d yaml-cpp)
+
+install(DIRECTORY
+  config gui
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+  scripts/impact_comparison.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 install(TARGETS
-  simulator
+  simulator collision_replay
   DESTINATION lib/${PROJECT_NAME}
 )
 

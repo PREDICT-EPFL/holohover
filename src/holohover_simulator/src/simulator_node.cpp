@@ -8,9 +8,11 @@ SimulatorNode::SimulatorNode() :
     Node("simulator"),
     simulation_settings(load_simulation_settings(*this)),
     gravity(0.0f, 0.0f),
-    world(std::make_unique<b2World>(gravity)),
-    contact_listener_(std::make_shared<ContactListener>(this)) // Update Sep 30: collision detector
+    world(std::make_unique<b2World>(gravity))
 {
+    contact_listener_ = std::make_shared<ContactListener>(this,
+        load_collision_params(*this, "wall", "elastic", 0.9),
+        load_collision_params(*this, "hovercraft", "box2d", 0.8));
     world->SetContactListener(contact_listener_.get());  // Update Sep 30: collision detector
     substeps = this->declare_parameter<int>("substeps", 10);
 
@@ -40,9 +42,9 @@ SimulatorNode::~SimulatorNode()
 void SimulatorNode::reset_callback(const std_msgs::msg::Float64MultiArray &msg)
 {
     const size_t n = hovercraft_bodies.size();
-    if (msg.data.size() != 6 * n + 4) {
-        RCLCPP_WARN(get_logger(), "Reset ignored: %zu values, expected %zu (6 per hovercraft, then 4 for the puck).",
-                    msg.data.size(), 6 * n + 4);
+    if (msg.data.size() != 6 * n + 4 && msg.data.size() != 6 * n + 5) {
+        RCLCPP_WARN(get_logger(), "Reset ignored: %zu values, expected %zu or %zu (6 per hovercraft, then 4 or 5 for the puck).",
+                    msg.data.size(), 6 * n + 4, 6 * n + 5);
         return;
     }
     for (size_t i = 0; i < n; i++) {
@@ -57,7 +59,7 @@ void SimulatorNode::reset_callback(const std_msgs::msg::Float64MultiArray &msg)
     const double *p = &msg.data[6 * n];
     puck_bodies[0]->SetTransform(b2Vec2(p[0], p[1]), 0.0);
     puck_bodies[0]->SetLinearVelocity(b2Vec2(p[2], p[3]));
-    puck_bodies[0]->SetAngularVelocity(0.0);
+    puck_bodies[0]->SetAngularVelocity(msg.data.size() == 6 * n + 5 ? p[4] : 0.0);
     puck_bodies[0]->SetAwake(true);
     body_to_state(state_puck, puck_bodies[0]);
 }
@@ -65,87 +67,26 @@ void SimulatorNode::reset_callback(const std_msgs::msg::Float64MultiArray &msg)
 // Update Sep 30: puck simulation
 void SimulatorNode::init_puck()
 {
-    // print 
     RCLCPP_INFO(get_logger(), "Simulate a puck");
-
-    // Define the dynamic body (puck)
-    b2BodyDef puckBodyDef;
-    puckBodyDef.type = b2_dynamicBody; // Set the body as dynamic
-    puckBodyDef.linearDamping = 0.4f;
-    puckBodyDef.angularDamping = 0.5f;
-    puckBodyDef.position.Set(simulation_settings.puck_position[0], simulation_settings.puck_position[1]); // Initial position of the disk
-    // b2Body* puckBody = world.CreateBody(&puckBodyDef);
-    body_ptr puck(world->CreateBody(&puckBodyDef), world);
-
-    // Define the shape of the puck (circle shape)
-    b2CircleShape circleShape;
-    circleShape.m_radius = simulation_settings.puck_radius; // Radius of the puck
-
-    // Define the fixture with properties
-    b2FixtureDef fixtureDef;
-    fixtureDef.shape = &circleShape;
-    fixtureDef.density = 1.0f; // Density of the disk
-    fixtureDef.friction = 0.02f; // Friction
-    fixtureDef.restitution = 0.8f; // Bounciness
-    // Restitution at every impact speed. Box2D's default restitutionThreshold (1 m/s, its guard against jitter in
-    // resting contacts) made the hovercraft-puck contacts under 1 m/s fully inelastic (e = 0). A contact takes the
-    // smaller threshold of its two fixtures, so this one covers them; wall bounces are reflected in BeginContact.
-    fixtureDef.restitutionThreshold = 0.0f;
-
-    // Attach the shape to the body
-    puck->CreateFixture(&fixtureDef);
-    puck->GetUserData().pointer = reinterpret_cast<uintptr_t>("puck");  // Update Sep 30: collision detector
-
-    // puck's state
+    body_ptr puck(create_puck(*world, b2Vec2(simulation_settings.puck_position[0], simulation_settings.puck_position[1]),
+                              simulation_settings.puck_radius), world);
     body_to_state(state_puck, puck);
     puck_bodies.push_back(std::move(puck));
-
-    // puck's pose publisher
     puck_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/puck_pose_raw", rclcpp::SensorDataQoS());
 }
 
-
-
+// Walls 1 mm thick on the table edges (their faces are b2_polygonRadius = 1 cm further in: Box2D's polygon skin)
 void SimulatorNode::init_box2d_world()
 {
-    b2PolygonShape wallBox;
-    b2BodyDef wallDef;
-    b2Body *wall;
-
-    b2FixtureDef wallFixtureDef;
-    wallFixtureDef.shape = &wallBox;
-    wallFixtureDef.restitution = 0.0f; 
-    wallFixtureDef.friction = 0.05f;  
-    wallDef.type = b2_staticBody; 
-    
-    // Wall 1
-    wallBox.SetAsBox(simulation_settings.table_size[0] / 2, 0.001 /2);
-    wallDef.position.Set(0, -simulation_settings.table_size[1] / 2);
-    wall = world->CreateBody(&wallDef);
-    wall->CreateFixture(&wallFixtureDef); // 0 density for static body
-    wall->GetUserData().pointer = reinterpret_cast<uintptr_t>("wall");  // Update Sep 30: collision detector
-
-    // Wall 2
-    wallBox.SetAsBox(0.001 / 2, simulation_settings.table_size[1] / 2);
-    wallDef.position.Set(simulation_settings.table_size[0] / 2, 0);
-    wall = world->CreateBody(&wallDef);
-    wall->CreateFixture(&wallFixtureDef); // 0 density for static body
-    wall->GetUserData().pointer = reinterpret_cast<uintptr_t>("wall");  // Update Sep 30: collision detector
-
-    // Wall 3
-    wallBox.SetAsBox(simulation_settings.table_size[0] / 2, 0.001 / 2);
-    wallDef.position.Set(0, simulation_settings.table_size[1] / 2);
-    wall = world->CreateBody(&wallDef);
-    wall->CreateFixture(&wallFixtureDef); // 0 density for static body
-    wall->GetUserData().pointer = reinterpret_cast<uintptr_t>("wall");  // Update Sep 30: collision detector
-
-    // Wall 4
-    wallBox.SetAsBox(0.001/ 2, simulation_settings.table_size[1] / 1);
-    wallDef.position.Set(-simulation_settings.table_size[0] / 2, 0);
-    wall = world->CreateBody(&wallDef);
-    wall->CreateFixture(&wallFixtureDef); // 0 density for static body
-    wall->GetUserData().pointer = reinterpret_cast<uintptr_t>("wall");  // Update Sep 30: collision detector
-
+    const float x = simulation_settings.table_size[0] / 2, y = simulation_settings.table_size[1] / 2, h = 0.001 / 2;
+    b2PolygonShape box;
+    box.SetAsBox(x, h);
+    create_wall(*world, box, b2Vec2(0, -y));
+    create_wall(*world, box, b2Vec2(0, y));
+    box.SetAsBox(h, y);
+    create_wall(*world, box, b2Vec2(x, 0));
+    box.SetAsBox(h, 2 * y);  // as long as before (table_size[1] / 1)
+    create_wall(*world, box, b2Vec2(-x, 0));
 }
 
 void SimulatorNode::init_hovercraft()
@@ -352,7 +293,7 @@ void SimulatorNode::simulation_step()
     puck_pose.pose.position.y = simulation_settings.table_position[1] + state_puck(1);
     puck_pose.pose.position.z = 0;
     tf2::Quaternion q;
-    q.setRPY(0, 0, simulation_settings.table_position[2]);
+    q.setRPY(0, 0, simulation_settings.table_position[2] + state_puck(4));  // the puck's yaw, as the mocap gives it
     puck_pose.pose.orientation.w = q.w();
     puck_pose.pose.orientation.x = q.x();
     puck_pose.pose.orientation.y = q.y();

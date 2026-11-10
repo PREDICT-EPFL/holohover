@@ -43,6 +43,19 @@ RUN apt-get update && apt-get install --no-install-recommends -y python3-pip \
     && python3 -m pip install --no-cache-dir -r /tmp/planner_requirements.txt \
     && rm /tmp/planner_requirements.txt
 
+# Puck identification (holohover_simulator/identification): its own Python (>= 3.11, Humble has 3.10)
+# and the locked packages of its uv.lock, in /opt so the mounted source never gets a root-owned .venv.
+# Run with `identify <command> BAG`, see docker/scripts/identify.
+ARG UV_VERSION=0.8.22
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv-python \
+    UV_PROJECT_ENVIRONMENT=/opt/identification-venv
+COPY src/holohover_simulator/identification/pyproject.toml src/holohover_simulator/identification/uv.lock /tmp/identification/
+RUN pip install --no-cache-dir uv==${UV_VERSION} \
+    && cd /tmp/identification && uv sync --frozen --no-cache \
+    && rm -rf /tmp/identification
+COPY docker/scripts/identify /usr/local/bin/identify
+RUN chmod +x /usr/local/bin/identify
+
 # Compile the ROS 2 packages of this repository
 # Each C++ compiler process can take ~2 GB, so cap the parallelism (at most
 # COLCON_WORKERS x MAKE_JOBS compilers at once); unbounded it exhausts RAM

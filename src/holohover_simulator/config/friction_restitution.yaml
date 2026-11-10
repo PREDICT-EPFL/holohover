@@ -1,0 +1,20 @@
+# Puck bounces with <contact>_collision_model: friction_restitution (contact: wall, hovercraft)
+# Independent friction-restitution impact (Domenech-Carbo 2022), the wall model of identification/model.py,
+# solved relative to the surface that is hit (the hovercraft is a moving wall):
+#   v_n' = -e_n v_n
+#   u_t' = u_t - sign(u_t) (1 + e_t) min(|u_t|, mu (1 + e_n) |v_n| (1 + kappa) / kappa),   u_t = v_t - r w
+/**:
+  ros__parameters:
+    friction_restitution:
+    
+      # identify.py fit of puck_id_2026-10-13_18-15-39 (38 wall impacts; 1 sigma: 0.001, 0.0004, 0.005)
+      wall:
+        e_n: 0.884   # normal restitution
+        mu: 0.070    # friction
+        e_t: 0.458   # tangential restitution
+
+      # TODO: not identified: initial guesses of identification/config.yaml
+      hovercraft:
+        e_n: 0.85
+        mu: 0.20
+        e_t: 0.30

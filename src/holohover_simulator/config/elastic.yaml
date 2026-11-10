@@ -1,0 +1,9 @@
+# Puck bounces with <contact>_collision_model: elastic (contact: wall, hovercraft)
+#   v_n' = -restitution v_n (relative to the surface), tangential velocity and spin unchanged
+/**:
+  ros__parameters:
+    elastic:
+      wall:
+        restitution: 0.884   # e_n of the identify.py fit of puck_id_2026-10-13_18-15-39 (1.0: perfectly elastic)
+      hovercraft:
+        restitution: 0.8

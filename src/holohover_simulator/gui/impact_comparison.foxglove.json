@@ -1,0 +1,289 @@
+{
+  "configById": {
+    "3D!impacts": {
+      "foxglovePanelTitle": "Wall impacts: measured (white) vs simulator models (box2d red, elastic blue, friction_restitution green)",
+      "cameraState": {
+        "distance": 2.4,
+        "perspective": false,
+        "phi": 0,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "thetaOffset": 0,
+        "fovy": 45,
+        "near": 0.01,
+        "far": 100
+      },
+      "followMode": "follow-none",
+      "followTf": "world",
+      "scene": {
+        "transforms": {
+          "showLabel": false,
+          "axisSize": 0.04000000000000001
+        }
+      },
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/impact_comparison/scene": {
+          "visible": true
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {},
+      "synchronize": false
+    },
+    "Plot!vx": {
+      "foxglovePanelTitle": "vx [m/s] (table frame)",
+      "paths": [
+        {
+          "value": "/measured/puck/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "measured",
+          "color": "#bdbdbd"
+        },
+        {
+          "value": "/box2d/puck/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "box2d",
+          "color": "#e05050"
+        },
+        {
+          "value": "/elastic/puck/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "elastic",
+          "color": "#4c8ee6"
+        },
+        {
+          "value": "/friction_restitution/puck/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "friction_restitution",
+          "color": "#4cc764"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "timeWindowMode": "sliding",
+      "followingViewWidth": 10,
+      "playbackBarPosition": "center"
+    },
+    "Plot!vy": {
+      "foxglovePanelTitle": "vy [m/s] (table frame)",
+      "paths": [
+        {
+          "value": "/measured/puck/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "measured",
+          "color": "#bdbdbd"
+        },
+        {
+          "value": "/box2d/puck/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "box2d",
+          "color": "#e05050"
+        },
+        {
+          "value": "/elastic/puck/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "elastic",
+          "color": "#4c8ee6"
+        },
+        {
+          "value": "/friction_restitution/puck/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "friction_restitution",
+          "color": "#4cc764"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "timeWindowMode": "sliding",
+      "followingViewWidth": 10,
+      "playbackBarPosition": "center"
+    },
+    "Plot!w": {
+      "foxglovePanelTitle": "Spin [rad/s]",
+      "paths": [
+        {
+          "value": "/measured/puck/state.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "measured",
+          "color": "#bdbdbd"
+        },
+        {
+          "value": "/box2d/puck/state.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "box2d",
+          "color": "#e05050"
+        },
+        {
+          "value": "/elastic/puck/state.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "elastic",
+          "color": "#4c8ee6"
+        },
+        {
+          "value": "/friction_restitution/puck/state.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "friction_restitution",
+          "color": "#4cc764"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "timeWindowMode": "sliding",
+      "followingViewWidth": 10,
+      "playbackBarPosition": "center"
+    },
+    "Plot!error": {
+      "foxglovePanelTitle": "Position error vs measured [mm]",
+      "paths": [
+        {
+          "value": "/box2d/position_error.data",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "box2d",
+          "color": "#e05050"
+        },
+        {
+          "value": "/elastic/position_error.data",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "elastic",
+          "color": "#4c8ee6"
+        },
+        {
+          "value": "/friction_restitution/position_error.data",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "friction_restitution",
+          "color": "#4cc764"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "timeWindowMode": "sliding",
+      "followingViewWidth": 10,
+      "playbackBarPosition": "center"
+    },
+    "RawMessages!segment": {
+      "foxglovePanelTitle": "Current impact: position RMS after the impact",
+      "topicPath": "/impact_comparison/segment.data",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 12,
+      "expansion": "all",
+      "defaultExpanded": false
+    },
+    "RawMessages!summary": {
+      "foxglovePanelTitle": "All impacts",
+      "topicPath": "/impact_comparison/summary.data",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 12,
+      "expansion": "all",
+      "defaultExpanded": false
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 0.25
+  },
+  "layout": {
+    "direction": "row",
+    "splitPercentage": 50,
+    "first": {
+      "direction": "column",
+      "splitPercentage": 70,
+      "first": "3D!impacts",
+      "second": {
+        "direction": "row",
+        "splitPercentage": 50,
+        "first": "RawMessages!segment",
+        "second": "RawMessages!summary"
+      }
+    },
+    "second": {
+      "direction": "column",
+      "splitPercentage": 50,
+      "first": {
+        "direction": "row",
+        "splitPercentage": 50,
+        "first": "Plot!vx",
+        "second": "Plot!vy"
+      },
+      "second": {
+        "direction": "row",
+        "splitPercentage": 50,
+        "first": "Plot!w",
+        "second": "Plot!error"
+      }
+    }
+  }
+}
