@@ -2,9 +2,10 @@
 # Builds and installs the third-party C++ libraries needed by the holohover packages.
 set -euo pipefail
 
-QUILL_VERSION=${QUILL_VERSION:-v4.4.1}
-CASADI_VERSION=${CASADI_VERSION:-582be5d9d0e8a9854951e9a11e2b033fa924e1ee}
-PIQP_VERSION=${PIQP_VERSION:-a9e2cd91bb378223723cecf4ac8a628ef252fe04}
+# Each library is installed only if its *_VERSION (tag or commit) is set and non-empty.
+QUILL_VERSION=${QUILL_VERSION:-}
+CASADI_VERSION=${CASADI_VERSION:-}
+PIQP_VERSION=${PIQP_VERSION:-}
 
 # clone_at <url> <ref> <dir>: shallow checkout of a tag or commit
 clone_at() {
@@ -25,16 +26,28 @@ build_install() {
 
 cd /tmp
 
-echo "Installing QUILL ${QUILL_VERSION}..."
-clone_at https://github.com/odygrd/quill.git "$QUILL_VERSION" quill
-build_install quill
+if [ -n "$QUILL_VERSION" ]; then
+    echo "Installing QUILL ${QUILL_VERSION}..."
+    clone_at https://github.com/odygrd/quill.git "$QUILL_VERSION" quill
+    build_install quill
+else
+    echo "Skipping QUILL (QUILL_VERSION not set)"
+fi
 
-echo "Installing CASADI ${CASADI_VERSION}..."
-clone_at https://github.com/casadi/casadi.git "$CASADI_VERSION" casadi
-build_install casadi
+if [ -n "$CASADI_VERSION" ]; then
+    echo "Installing CASADI ${CASADI_VERSION}..."
+    clone_at https://github.com/casadi/casadi.git "$CASADI_VERSION" casadi
+    build_install casadi
+else
+    echo "Skipping CASADI (CASADI_VERSION not set)"
+fi
 
-echo "Installing PIQP ${PIQP_VERSION}..."
-clone_at https://github.com/PREDICT-EPFL/piqp.git "$PIQP_VERSION" piqp
-build_install piqp -DBUILD_TESTS=OFF -DBUILD_BENCHMARKS=OFF
+if [ -n "$PIQP_VERSION" ]; then
+    echo "Installing PIQP ${PIQP_VERSION}..."
+    clone_at https://github.com/PREDICT-EPFL/piqp.git "$PIQP_VERSION" piqp
+    build_install piqp -DBUILD_TESTS=OFF -DBUILD_BENCHMARKS=OFF
+else
+    echo "Skipping PIQP (PIQP_VERSION not set)"
+fi
 
 ldconfig

@@ -1,9 +1,12 @@
 # syntax=docker/dockerfile:1
 # Holohover ROS 2 workspace image (amd64 / PC).
 # Build context is the repository root, see docker/docker-compose.yml.
-FROM osrf/ros:humble-desktop
+FROM osrf/ros:lyrical-desktop
 
 ENV DEBIAN_FRONTEND=noninteractive
+# Ubuntu 26.04 enforces PEP 668; allow pip (and rosdep's pip keys) system-wide.
+# Fine in a single-purpose container: pip installs to /usr/local, apt's files are untouched
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
 SHELL ["/bin/bash", "-c"]
 
 RUN apt-get update && apt-get install --no-install-recommends -y \
@@ -16,17 +19,18 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
         libmatio-dev \
         libyaml-cpp-dev \
         python3-pyqtgraph \
-        ros-humble-foxglove-bridge \
-        ros-humble-rosbag2-storage-mcap \
+        ros-lyrical-foxglove-bridge \
+        ros-lyrical-rosbag2-storage-mcap \
         xterm \
     && rm -rf /var/lib/apt/lists/*
 
 # Third-party libraries built from source (pinned to the versions of the previous holohover image)
 ARG QUILL_VERSION=v4.4.1
-ARG CASADI_VERSION=582be5d9d0e8a9854951e9a11e2b033fa924e1ee
-ARG PIQP_VERSION=a9e2cd91bb378223723cecf4ac8a628ef252fe04
+ARG CASADI_VERSION=a5852c23b2100296cee23b81227fcaa3bef43f04
+# ARG PIQP_VERSION=a9e2cd91bb378223723cecf4ac8a628ef252fe04 TODO: update to python 3.12
 COPY docker/scripts/install_deps.sh /tmp/install_deps.sh
-RUN QUILL_VERSION=${QUILL_VERSION} CASADI_VERSION=${CASADI_VERSION} PIQP_VERSION=${PIQP_VERSION} \
+RUN QUILL_VERSION=${QUILL_VERSION} CASADI_VERSION=${CASADI_VERSION} \ 
+        # PIQP_VERSION=${PIQP_VERSION} \
         bash /tmp/install_deps.sh \
     && rm /tmp/install_deps.sh
 
@@ -36,7 +40,7 @@ COPY docker/scripts/check_optitrack.py /usr/local/bin/check-optitrack
 RUN chmod +x /usr/local/bin/holohover-entrypoint /usr/local/bin/check-optitrack \
     && echo "source /root/setup.bash" >> /root/.bashrc
 
-# Python packages from pip (numpy stays the apt one, < 2, as Humble's message packages need)
+# Python packages from pip (numpy stays the apt one)
 COPY src/holohover_planner/requirements.txt /tmp/planner_requirements.txt
 RUN apt-get update && apt-get install --no-install-recommends -y python3-pip \
     && rm -rf /var/lib/apt/lists/* \
@@ -51,7 +55,7 @@ ARG COLCON_WORKERS=2
 ARG MAKE_JOBS=2
 WORKDIR /root/ros2_ws
 COPY src src/holohover
-RUN source /opt/ros/humble/setup.bash \
+RUN source /opt/ros/lyrical/setup.bash \
     && MAKEFLAGS="-j${MAKE_JOBS}" colcon build --symlink-install \
         --parallel-workers ${COLCON_WORKERS}
 
