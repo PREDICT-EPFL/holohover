@@ -35,19 +35,21 @@ endif()
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(control_lqr src/control_lqr_node.cpp)
-ament_target_dependencies(control_lqr rclcpp geometry_msgs holohover_msgs holohover_common)
+# TODO: [Lyrical] ament_target_dependencies() was removed in Lyrical, replaced by target_link_libraries()
+# with the dependencies' CMake targets (pkg::pkg, ${msg_pkg_TARGETS})
+target_link_libraries(control_lqr rclcpp::rclcpp ${geometry_msgs_TARGETS} ${holohover_msgs_TARGETS} holohover_common::holohover_common)
 target_link_libraries(control_lqr yaml-cpp)
 
 # add_executable(control_signal src/control_signal_node.cpp)
-# ament_target_dependencies(control_signal rclcpp geometry_msgs holohover_msgs holohover_common)
+# target_link_libraries(control_signal rclcpp::rclcpp ${geometry_msgs_TARGETS} ${holohover_msgs_TARGETS} holohover_common::holohover_common)
 # target_link_libraries(control_signal yaml-cpp)
 
 add_executable(control_exp src/control_exp_node.cpp)
-ament_target_dependencies(control_exp rclcpp geometry_msgs holohover_msgs holohover_common)
+target_link_libraries(control_exp rclcpp::rclcpp ${geometry_msgs_TARGETS} ${holohover_msgs_TARGETS} holohover_common::holohover_common)
 target_link_libraries(control_exp yaml-cpp)
 
 add_executable(control_teleop src/control_teleop_node.cpp)
-ament_target_dependencies(control_teleop rclcpp ament_index_cpp holohover_msgs holohover_common)
+target_link_libraries(control_teleop rclcpp::rclcpp ament_index_cpp::ament_index_cpp ${holohover_msgs_TARGETS} holohover_common::holohover_common)
 target_link_libraries(control_teleop yaml-cpp)
 
 # install(DIRECTORY

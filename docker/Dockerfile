@@ -1,7 +1,12 @@
 # syntax=docker/dockerfile:1
 # Holohover ROS 2 workspace image (amd64 / PC).
 # Build context is the repository root, see docker/docker-compose.yml.
-FROM osrf/ros:lyrical-desktop
+# Build args are set in docker/.env and passed by docker-compose.yml (no defaults here: single source of truth;
+# compose checks they are set). Each ARG is declared just before its first use so changing it only rebuilds
+# from there: ROS_DISTRO (base image), QUILL/CASADI/PIQP_VERSION (third-party libs), MAKE_JOBS (third-party libs + colcon), COLCON_WORKERS (colcon).
+ARG ROS_DISTRO
+FROM osrf/ros:${ROS_DISTRO}-desktop
+ARG ROS_DISTRO
 
 ENV DEBIAN_FRONTEND=noninteractive
 # Ubuntu 26.04 enforces PEP 668; allow pip (and rosdep's pip keys) system-wide.
@@ -19,19 +24,21 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
         libmatio-dev \
         libyaml-cpp-dev \
         python3-pyqtgraph \
-        ros-lyrical-foxglove-bridge \
-        ros-lyrical-rosbag2-storage-mcap \
+        ros-${ROS_DISTRO}-foxglove-bridge \
+        ros-${ROS_DISTRO}-rosbag2-storage-mcap \
         xterm \
     && rm -rf /var/lib/apt/lists/*
 
 # Third-party libraries built from source (pinned to the versions of the previous holohover image)
-ARG QUILL_VERSION=v4.4.1
-ARG CASADI_VERSION=a5852c23b2100296cee23b81227fcaa3bef43f04
-# ARG PIQP_VERSION=a9e2cd91bb378223723cecf4ac8a628ef252fe04 TODO: update to python 3.12
+ARG QUILL_VERSION
+ARG CASADI_VERSION
+# Empty = skipped (see docker/.env); holohover_common needs PIQP
+ARG PIQP_VERSION
+# Parallel compilers per build, also caps the colcon build below (each compiler can take ~2 GB of RAM)
+ARG MAKE_JOBS
 COPY docker/scripts/install_deps.sh /tmp/install_deps.sh
-RUN QUILL_VERSION=${QUILL_VERSION} CASADI_VERSION=${CASADI_VERSION} \ 
-        # PIQP_VERSION=${PIQP_VERSION} \
-        bash /tmp/install_deps.sh \
+RUN QUILL_VERSION=${QUILL_VERSION} CASADI_VERSION=${CASADI_VERSION} PIQP_VERSION=${PIQP_VERSION} \
+        MAKE_JOBS=${MAKE_JOBS} bash /tmp/install_deps.sh \
     && rm /tmp/install_deps.sh
 
 COPY docker/scripts/entrypoint.sh /usr/local/bin/holohover-entrypoint
@@ -51,11 +58,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y python3-pip \
 # Each C++ compiler process can take ~2 GB, so cap the parallelism (at most
 # COLCON_WORKERS x MAKE_JOBS compilers at once); unbounded it exhausts RAM
 # and freezes the host. Override with --build-arg on machines with more RAM.
-ARG COLCON_WORKERS=2
-ARG MAKE_JOBS=2
+ARG COLCON_WORKERS
 WORKDIR /root/ros2_ws
 COPY src src/holohover
-RUN source /opt/ros/lyrical/setup.bash \
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
     && MAKEFLAGS="-j${MAKE_JOBS}" colcon build --symlink-install \
         --parallel-workers ${COLCON_WORKERS}
 

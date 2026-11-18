@@ -34,13 +34,15 @@ message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(control_mpc src/holohover_mpc_node.cpp)
 target_include_directories(control_mpc PRIVATE external/laopt/include)
-ament_target_dependencies(control_mpc rclcpp geometry_msgs holohover_msgs holohover_common)
+# TODO: [Lyrical] ament_target_dependencies() was removed in Lyrical, replaced by target_link_libraries()
+# with the dependencies' CMake targets (pkg::pkg, ${msg_pkg_TARGETS})
+target_link_libraries(control_mpc rclcpp::rclcpp ${geometry_msgs_TARGETS} ${holohover_msgs_TARGETS} holohover_common::holohover_common)
 target_compile_options(control_mpc PRIVATE "-Wno-unused-parameter")
 target_link_libraries(control_mpc yaml-cpp)
 
 add_executable(double_integrator_test src/double_integrator_test.cpp)
 target_include_directories(double_integrator_test PRIVATE external/laopt/include)
-ament_target_dependencies(double_integrator_test rclcpp holohover_common)
+target_link_libraries(double_integrator_test rclcpp::rclcpp holohover_common::holohover_common)
 target_compile_options(double_integrator_test PRIVATE "-Wno-unused-parameter")
 target_link_libraries(double_integrator_test yaml-cpp)
 

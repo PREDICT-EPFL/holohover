@@ -19,6 +19,15 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+      # Values from docker/.env; compose aborts before building if one is missing.
+      # ":?" = must be set and non-empty, "?" = must be set, empty allowed (= library skipped)
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:?set ROS_DISTRO in docker/.env}
+        QUILL_VERSION: ${QUILL_VERSION?set QUILL_VERSION in docker/.env (empty = skip)}
+        CASADI_VERSION: ${CASADI_VERSION?set CASADI_VERSION in docker/.env (empty = skip)}
+        PIQP_VERSION: ${PIQP_VERSION?set PIQP_VERSION in docker/.env (empty = skip)}
+        COLCON_WORKERS: ${COLCON_WORKERS:?set COLCON_WORKERS in docker/.env}
+        MAKE_JOBS: ${MAKE_JOBS:?set MAKE_JOBS in docker/.env}
     container_name: holohover-discovery-server
     environment:
       ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-123}
@@ -51,8 +60,7 @@ services:
   workspace:
     <<: *ros
     container_name: holohover
-    depends_on:
-      - discovery-server
+    # no depends_on: the devcontainer starts only this service; `./holohover up` starts everything
     privileged: true
     cap_add:
       - SYS_NICE
@@ -62,6 +70,8 @@ services:
       QT_X11_NO_MITSHM: 1
       HISTFILE: /root/data/.bash_history
       ROS_LOG_DIR: /root/data/ros_log
+      COLCON_WORKERS: ${COLCON_WORKERS:-2} # used by `./holohover colcon`
+      MAKE_JOBS: ${MAKE_JOBS:-2}
     volumes:
       - ../src:/root/ros2_ws/src/holohover
       - ./data:/root/data

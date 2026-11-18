@@ -1,5 +1,6 @@
 # Sourced by ~/.bashrc and by the entrypoint: ROS 2 + holohover workspace environment.
-source /opt/ros/humble/setup.bash
+# ROS_DISTRO is set by the osrf/ros base image
+source /opt/ros/${ROS_DISTRO}/setup.bash
 if [ -f /root/ros2_ws/install/setup.bash ]; then
     source /root/ros2_ws/install/setup.bash
 fi

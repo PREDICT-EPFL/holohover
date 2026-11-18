@@ -1,6 +1,12 @@
 #include "navigation_node.hpp"
-#include "tf2/LinearMath/Quaternion.h"
-#include "tf2/utils.h"
+// TODO: [Lyrical] tf2 removed the .h headers (.hpp since Jazzy); keep .h for the Humble Radxas
+#if __has_include(<tf2/LinearMath/Quaternion.hpp>)
+#include <tf2/LinearMath/Quaternion.hpp>
+#include <tf2/utils.hpp>
+#else
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/utils.h>
+#endif
 
 HolohoverNavigationNode::HolohoverNavigationNode() :
     Node("navigation"),

@@ -37,23 +37,25 @@ message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_library(control_dmpc_lib src/sparse_casadi_function_buffer.cpp src/vector_casadi_function_buffer.cpp src/sProb.cpp
                              src/doptTimer.cpp src/rcl_timer_helper.c)
-ament_target_dependencies(control_dmpc_lib rclcpp)
+# TODO: [Lyrical] ament_target_dependencies() was removed in Lyrical, replaced by target_link_libraries()
+# with the dependencies' CMake targets (pkg::pkg, ${msg_pkg_TARGETS})
+target_link_libraries(control_dmpc_lib rclcpp::rclcpp)
 target_link_libraries(control_dmpc_lib casadi yaml-cpp Eigen3::Eigen)
 
 add_executable(control_dmpc_admm src/holohover_dmpc_admm_node.cpp)
-ament_target_dependencies(control_dmpc_admm rclcpp geometry_msgs holohover_msgs holohover_common)
+target_link_libraries(control_dmpc_admm rclcpp::rclcpp ${geometry_msgs_TARGETS} ${holohover_msgs_TARGETS} holohover_common::holohover_common)
 target_link_libraries(control_dmpc_admm control_dmpc_lib quill::quill piqp::piqp)
 
 add_executable(control_dmpc_dsqp src/holohover_dmpc_dsqp_node.cpp)
-ament_target_dependencies(control_dmpc_dsqp rclcpp geometry_msgs holohover_msgs holohover_common)
+target_link_libraries(control_dmpc_dsqp rclcpp::rclcpp ${geometry_msgs_TARGETS} ${holohover_msgs_TARGETS} holohover_common::holohover_common)
 target_link_libraries(control_dmpc_dsqp control_dmpc_lib quill::quill piqp::piqp)
 
 add_executable(dmpc_trigger src/holohover_dmpc_trigger_node.cpp)
-ament_target_dependencies(dmpc_trigger rclcpp std_msgs)
+target_link_libraries(dmpc_trigger rclcpp::rclcpp ${std_msgs_TARGETS})
 target_link_libraries(dmpc_trigger yaml-cpp)
 
 add_executable(trajectory_generator src/trajectory_generator.cpp)
-ament_target_dependencies(trajectory_generator rclcpp holohover_msgs)
+target_link_libraries(trajectory_generator rclcpp::rclcpp ${holohover_msgs_TARGETS})
 target_link_libraries(trajectory_generator yaml-cpp)
 
 install(DIRECTORY

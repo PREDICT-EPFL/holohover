@@ -28,11 +28,13 @@ find_package(holohover_msgs REQUIRED)
 find_package(holohover_common REQUIRED)
 
 add_executable(rviz_interface src/rviz_interface_node.cpp)
-ament_target_dependencies(rviz_interface rclcpp tf2 visualization_msgs holohover_msgs holohover_common geometry_msgs)
+# TODO: [Lyrical] ament_target_dependencies() was removed in Lyrical, replaced by target_link_libraries()
+# with the dependencies' CMake targets (pkg::pkg, ${msg_pkg_TARGETS})
+target_link_libraries(rviz_interface rclcpp::rclcpp tf2::tf2 ${visualization_msgs_TARGETS} ${holohover_msgs_TARGETS} holohover_common::holohover_common ${geometry_msgs_TARGETS})
 target_link_libraries(rviz_interface yaml-cpp)
 
 add_executable(optitrack_interface src/optitrack_interface_node.cpp)
-ament_target_dependencies(optitrack_interface rclcpp geometry_msgs tf2 tf2_geometry_msgs holohover_common)
+target_link_libraries(optitrack_interface rclcpp::rclcpp ${geometry_msgs_TARGETS} tf2::tf2 tf2_geometry_msgs::tf2_geometry_msgs holohover_common::holohover_common)
 
 # Install Python modules
 ament_python_install_package(${PROJECT_NAME})

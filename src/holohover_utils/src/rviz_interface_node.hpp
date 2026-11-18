@@ -2,7 +2,12 @@
 #define HOLOHOVER_UTILS_RVIZ_INTERFACE_NODE_HPP
 
 #include "rclcpp/rclcpp.hpp"
-#include "tf2/LinearMath/Quaternion.h"
+// TODO: [Lyrical] tf2 removed the .h headers (.hpp since Jazzy); keep .h for the Humble Radxas
+#if __has_include(<tf2/LinearMath/Quaternion.hpp>)
+#include <tf2/LinearMath/Quaternion.hpp>
+#else
+#include <tf2/LinearMath/Quaternion.h>
+#endif
 #include "visualization_msgs/msg/marker.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
 #include "holohover_msgs/msg/holohover_state_stamped.hpp"

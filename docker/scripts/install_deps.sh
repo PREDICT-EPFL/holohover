@@ -19,7 +19,8 @@ clone_at() {
 build_install() {
     local dir=$1; shift
     cmake -S "$dir" -B "$dir/build" -DCMAKE_BUILD_TYPE=Release "$@"
-    cmake --build "$dir/build" -j"$(nproc)"
+    # MAKE_JOBS caps parallel compilers (RAM), same as the colcon build
+    cmake --build "$dir/build" -j"${MAKE_JOBS:-$(nproc)}"
     cmake --install "$dir/build"
     rm -rf "$dir"
 }

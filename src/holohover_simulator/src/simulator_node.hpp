@@ -16,7 +16,12 @@
 #include "holohover_msgs/msg/holohover_control_stamped.hpp"
 #include "holohover_msgs/msg/holohover_trajectory.hpp"
 #include "geometry_msgs/msg/pose2_d.hpp"
+// TODO: [Lyrical] tf2 removed the .h headers (.hpp since Jazzy); keep .h for the Humble Radxas
+#if __has_include(<tf2/LinearMath/Quaternion.hpp>)
+#include <tf2/LinearMath/Quaternion.hpp>
+#else
 #include <tf2/LinearMath/Quaternion.h>
+#endif
 #include <box2d/box2d.h>
 #include <random>
 #include <std_msgs/msg/bool.hpp>

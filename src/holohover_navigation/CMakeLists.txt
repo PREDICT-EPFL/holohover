@@ -33,11 +33,13 @@ endif()
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(navigation src/navigation_node.cpp)
-ament_target_dependencies(navigation rclcpp tf2_ros geometry_msgs holohover_msgs holohover_common)
+# TODO: [Lyrical] ament_target_dependencies() was removed in Lyrical, replaced by target_link_libraries()
+# with the dependencies' CMake targets (pkg::pkg, ${msg_pkg_TARGETS})
+target_link_libraries(navigation rclcpp::rclcpp tf2_ros::tf2_ros ${geometry_msgs_TARGETS} ${holohover_msgs_TARGETS} holohover_common::holohover_common)
 target_link_libraries(navigation yaml-cpp)
 
 add_executable(navigation_disturbance src/navigation_disturbance_node.cpp)
-ament_target_dependencies(navigation_disturbance rclcpp tf2_ros geometry_msgs holohover_msgs holohover_common)
+target_link_libraries(navigation_disturbance rclcpp::rclcpp tf2_ros::tf2_ros ${geometry_msgs_TARGETS} ${holohover_msgs_TARGETS} holohover_common::holohover_common)
 target_link_libraries(navigation_disturbance yaml-cpp)
 
 #install(DIRECTORY

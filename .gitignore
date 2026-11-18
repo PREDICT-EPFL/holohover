@@ -3,7 +3,6 @@
 __pycache__
 .DS_Store
 docker/data/
-docker/.env
 simulation_data/
 *.egg-info/
 

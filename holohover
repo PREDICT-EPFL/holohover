@@ -42,10 +42,9 @@ notes:
     edits are live. After C++ changes run `./holohover colcon` to recompile in the running
     container (kept until the container is recreated), or `./holohover build` + `up` to bake it in.
   - Rosbags, ROS logs and shell history are stored in docker/data/ (/root/data in the container).
-  - Settings (env vars or docker/.env): ROS_DOMAIN_ID (123), DISCOVERY_SERVER_IP (127.0.0.1),
-    DISCOVERY_SERVER_PORT (11811), FOXGLOVE_PORT (8765), HOLOHOVER_IMAGE (holohover-ws:latest),
-    MOCAP_CONFIG (container path of the mocap_node parameters, default
-    /root/ros2_ws/src/holohover/holohover_utils/config/optitrack/mocap_config.yaml).
+  - Settings live in docker/.env (build: ROS_DISTRO, *_VERSION, COLCON_WORKERS, MAKE_JOBS;
+    run: HOLOHOVER_IMAGE, ROS_DOMAIN_ID, DISCOVERY_SERVER_*, FOXGLOVE_PORT, MOCAP_CONFIG).
+    An exported shell variable overrides the file.
 
 Run `./holohover <command> -h` for help on a single command.
 """
@@ -102,14 +101,15 @@ def build_handler(args):
         build_args.append("--pull")
     compose(*build_args)
     if is_running():
-        print("Image rebuilt, run `./holohover up` to recreate the running containers.")
+        print("Image rebuilt, run `./holohover down && ./holohover up` to recreate the running containers.")
 
 
 def up_handler(args):
     os.makedirs(os.path.join(DOCKER_DIR, "data"), exist_ok=True)
     if os.environ.get("DISPLAY") and shutil.which("xhost"):
         subprocess.run(["xhost", "+local:root"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    compose("up", "-d")
+    # --no-recreate: never replace a running workspace (VS Code devcontainer attaches to it with its own overrides)
+    compose("up", "-d", "--no-recreate")
     port = os.environ.get("FOXGLOVE_PORT", "8765")
     print(f"\nStack is up. Foxglove: ws://localhost:{port}   Shell: ./holohover shell")
 
@@ -180,10 +180,12 @@ def launch_handler(args):
 def colcon_handler(args):
     colcon_args = args.colcon_args or ["build", "--symlink-install"]
     # Same RAM cap as the Dockerfile build: unbounded parallel C++ compiles freeze the host
+    # COLCON_WORKERS / MAKE_JOBS come from docker/.env through the workspace container's environment
+    workers = ""
     if colcon_args[0] == "build" and "--parallel-workers" not in colcon_args:
-        colcon_args += ["--parallel-workers", "2"]
-    sys.exit(ws_exec("cd /root/ros2_ws && MAKEFLAGS=${MAKEFLAGS:--j2} "
-                     + subprocess.list2cmdline(["colcon", *colcon_args])))
+        workers = " --parallel-workers ${COLCON_WORKERS:-2}"
+    sys.exit(ws_exec("cd /root/ros2_ws && MAKEFLAGS=${MAKEFLAGS:--j${MAKE_JOBS:-2}} "
+                     + subprocess.list2cmdline(["colcon", *colcon_args]) + workers))
 
 
 def main():

@@ -37,7 +37,9 @@ endif()
 message(STATUS "Building ${CMAKE_BUILD_TYPE}")
 
 add_executable(simulator src/simulator_node.cpp)
-ament_target_dependencies(simulator rclcpp holohover_msgs holohover_common geometry_msgs std_msgs box2d tf2_ros visualization_msgs)
+# TODO: [Lyrical] ament_target_dependencies() was removed in Lyrical, replaced by target_link_libraries()
+# with the dependencies' CMake targets (pkg::pkg, ${msg_pkg_TARGETS})
+target_link_libraries(simulator rclcpp::rclcpp ${holohover_msgs_TARGETS} holohover_common::holohover_common ${geometry_msgs_TARGETS} ${std_msgs_TARGETS} tf2_ros::tf2_ros ${visualization_msgs_TARGETS})
 target_link_libraries(simulator box2d yaml-cpp)
 
 # install(DIRECTORY

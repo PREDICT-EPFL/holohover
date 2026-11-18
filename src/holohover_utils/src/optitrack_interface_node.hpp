@@ -5,8 +5,14 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "holohover_common/utils/simulation_settings.hpp"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+// TODO: [Lyrical] tf2 removed the .h headers (.hpp since Jazzy); keep .h for the Humble Radxas
+#if __has_include(<tf2/LinearMath/Quaternion.hpp>)
+#include <tf2/LinearMath/Quaternion.hpp>
+#include <tf2/utils.hpp>
+#else
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/utils.h>
+#endif
 #include <cmath>
 
 class OptitrackInterfaceNode : public rclcpp::Node
