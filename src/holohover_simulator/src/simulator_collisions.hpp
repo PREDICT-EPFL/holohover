@@ -59,11 +59,25 @@ inline void friction_restitution_impact(b2Vec2 &v, float &w, b2Vec2 n, float r, 
     const b2Vec2 t(-n.y, n.x);  // z x n
     const float vn = b2Dot(v, n), vt = b2Dot(v, t);
     if (vn >= 0) return;
-    const float ut = vt - r * w;  // slip of the contact point
-    const float friction = std::min(std::abs(ut), float(c.mu * (1 + c.e_n) * -vn * (1 + kappa) / kappa));
-    const float du = -std::copysign(1.0f, ut) * float(1 + c.e_t) * friction;
-    v = float(-c.e_n * vn) * n + (vt + kappa / (1 + kappa) * du) * t;
-    w -= du / (r * (1 + kappa));
+
+    // slip of the contact point: (u_t)
+    const float slip = vt - r * w;  
+
+    // Largest change of slip Coulomb friction can produce: mu * P_n / m_t  [m/s]
+    const float coulomb_slip_limit = float(c.mu * (1 + c.e_n) * -vn * (1 + kappa) / kappa);
+    // Stick: friction stops the slip completely (|slip|). Slide: friction runs out first.
+    const float slip_reduction = std::min(std::abs(slip), coulomb_slip_limit);
+
+    // if (1 + c.e_t) * abs(slip) <= coulomb_slip_limit
+    //      STICK: friction is strong enough to stop the slip completely
+    // else
+    //      SLIDE: friction runs out first, so it removes only what it can
+
+    // Change of slip over the impact: Delta U_t = P_t / m_t  [m/s]
+    const float du = -std::copysign(1.0f, slip) * float(1 + c.e_t) * slip_reduction;
+
+    v = float(-c.e_n * vn) * n + (vt + kappa / (1 + kappa) * du) * t; // v_t' = v_t + P_t/m 
+    w -= du / (r * (1 + kappa));                                      // w' = w - R*P_t/I
 }
 
 // Bounce of the puck on a surface with normal n (towards the puck) whose contact point moves with surface_v.
