@@ -60,7 +60,8 @@ class ControlPlanNode(Node):
         p = self.parameters(PARAMETERS)
         self.period = p["period"]
         tracker = Tracker(gamma=p["tracker.friction"], acc_max=p["acc_max"], H=p["tracker.H"],
-                          theta_ref=p["tracker.yaw_ref"], Q=p["tracker.Q"], Q_f=p["tracker.Q_f"], R=p["tracker.R"])
+                          theta_ref=p["tracker.yaw_ref"], Q=p["tracker.Q"], Q_f=p["tracker.Q_f"], R=p["tracker.R"],
+                          period=self.period)
         defence = PD(p["defence.home"], p["defence.kp"], p["defence.kd"])
         self.controller = PlanController(tracker, defence, p["acc_max"], p["plan_expiry"], log=self.get_logger().info)
         self.actuation = Actuation(p["holohover_props_file"], self.period)

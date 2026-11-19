@@ -2,7 +2,9 @@
 
 OptitrackInterfaceNode::OptitrackInterfaceNode() : 
     Node("optitrack_interface"),
-    simulation_settings(load_simulation_settings(*this))
+    simulation_settings(load_simulation_settings(*this)),
+    // the real table's marker is on a corner, the simulator's table pose is the centre
+    table_center(declare_parameter<std::vector<double>>("table_center", {0.0, 0.0}))
 {
     init_topics();
 }
@@ -50,8 +52,8 @@ geometry_msgs::msg::PoseStamped OptitrackInterfaceNode::to_table_frame(const geo
 
     geometry_msgs::msg::PoseStamped pose;
     pose.header = raw_pose.header;
-    pose.pose.position.x =  c * dx + s * dy;
-    pose.pose.position.y = -s * dx + c * dy;
+    pose.pose.position.x =  c * dx + s * dy - table_center[0];
+    pose.pose.position.y = -s * dx + c * dy - table_center[1];
     pose.pose.position.z = 0;
 
     tf2::Quaternion q;

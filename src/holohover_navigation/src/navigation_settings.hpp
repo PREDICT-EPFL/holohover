@@ -38,7 +38,8 @@ struct NavigationSettings
 
     double publish_time_threshold;
     double pose_update_time_threshold;
-    
+    bool pose_receive_time;
+
 };
 
 NavigationSettings load_navigation_settings(rclcpp::Node &node)
@@ -80,6 +81,8 @@ NavigationSettings load_navigation_settings(rclcpp::Node &node)
 
     settings.publish_time_threshold = node.declare_parameter<double>("publish_time_threshold", 30e-3);
     settings.pose_update_time_threshold = node.declare_parameter<double>("pose_update_time_threshold", 45e-3);
+    // true: time poses on arrival, for a mocap PC whose clock is not synced with this machine
+    settings.pose_receive_time = node.declare_parameter<bool>("pose_receive_time", false);
 
     return settings;
 }

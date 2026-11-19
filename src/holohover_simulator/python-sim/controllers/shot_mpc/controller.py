@@ -39,7 +39,7 @@ def make_tracker(config):
         return None
     c = controller_parameters()
     return Tracker(c["tracker.friction"], c["acc_max"], c["tracker.H"], c["tracker.yaw_ref"], c["tracker.Q"],
-                   c["tracker.Q_f"], c["tracker.R"])
+                   c["tracker.Q_f"], c["tracker.R"], 1.0 / config["simulation"]["hz"])
 
 
 def plan_controller(tracker):

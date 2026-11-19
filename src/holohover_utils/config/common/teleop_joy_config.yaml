@@ -1,4 +1,4 @@
-# Gamepad teleop of air_hockey_sim.launch.py controller:=teleop: joy's game_controller_node (SDL's standard
+# Gamepad teleop of teleop.launch.py input:=ps5: joy's game_controller_node (SDL's standard
 # layout: axes 0 left x, 1 left y, 2 right x; buttons 9 L1, 10 R1; left and up are +1) and teleop_twist_joy,
 # whose cmd_vel the teleop node reads in the table frame: left stick up = +x, left = +y (standing at the -x end).
 # Hold L1 to move (releasing it sends a zero Twist: the robot holds), R1 instead for the turbo speeds.

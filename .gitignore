@@ -9,9 +9,10 @@ simulation_data/
 
 # Agent setup (local only)
 CLAUDE.md
-GLOSARY.md
+GLOSSARY.md
 docs/agents/
 .scratch/
 .claude/
 GLOSSARY.md
 
+holohover_puck_collision.ini

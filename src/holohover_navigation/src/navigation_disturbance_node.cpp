@@ -151,7 +151,7 @@ void HolohoverNavigationDisturbanceNode::pose_callback(const geometry_msgs::msg:
     else
     {
         rclcpp::Time current_time = this->now();
-        rclcpp::Time pose_time = measurement.header.stamp;
+        rclcpp::Time pose_time = navigation_settings.pose_receive_time ? current_time : rclcpp::Time(measurement.header.stamp);
         // don't predict if update was too long ago otherwise we diverge
         if (pose_time >= last_update && (current_time - last_update).seconds() < navigation_settings.pose_update_time_threshold)
         {

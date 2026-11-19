@@ -4,6 +4,8 @@ experiment:
   machine: master
   rviz_props_file: "common/holohover_params_new.yaml"
   opt_alg: "dsqp"
+  # the table centre in the table marker's frame (marker on the -x, -y corner): poses are centred on the table
+  table_center: [1.065, 0.53]
 
   file_name_xd_trajectory: ""
   file_name_ud_trajectory: ""

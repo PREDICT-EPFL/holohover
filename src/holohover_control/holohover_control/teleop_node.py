@@ -62,7 +62,7 @@ class TeleopNode(Node):
         clamped = np.abs(self.ref[:2]) >= lim
         self.ref[:2] = np.clip(self.ref[:2], -lim, lim)
         v[:2][clamped] = 0.0  # a carrot held at a bound does not move
-        # control_lqr does not wrap the yaw error: keep the carrot within pi of the measured yaw
+        # keep the carrot within pi of the measured yaw (control_lqr wraps the yaw error; this keeps the plots readable)
         self.ref[2] = self.yaw + wrap(self.ref[2] - self.yaw)
         self.ref_publisher.publish(HolohoverState(x=self.ref[0], y=self.ref[1], v_x=v[0], v_y=v[1],
                                                   yaw=self.ref[2], w_z=v[2]))

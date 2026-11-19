@@ -15,6 +15,7 @@ GAMMA = 0.3
 ACC_MAX = np.array([0.35 / 0.116, 0.35 / 0.116, 0.005 / (0.5 * 0.116 * 0.07**2)])
 WEIGHTS = dict(Q=[1e4, 1e4, 1e2, 1e2, 1e2, 1.0], Q_f=[1e6, 1e6, 1e2, 1e4, 1e4, 1.0], R=[1.0, 1.0, 1.0])
 N, T0, TF = 20, 1.0, 0.5
+PERIOD = 0.01  # control period
 
 
 @pytest.fixture(scope="module")
@@ -30,8 +31,8 @@ def plan():
     return Plan(label="direct", t0=T0, tf=TF, X=X, U=U)
 
 
-def tracker(H=10):
-    return Tracker(GAMMA, ACC_MAX, H, theta_ref=0.0, **WEIGHTS)
+def tracker(H=10, R=WEIGHTS["R"], period=PERIOD):
+    return Tracker(GAMMA, ACC_MAX, H, theta_ref=0.0, **dict(WEIGHTS, R=R), period=period)
 
 
 def state(x_plan, theta=0.0):
@@ -121,3 +122,33 @@ def test_state_age_is_compensated(plan):
 
     ignored, compensated = run(False), run(True)
     assert compensated < 1e-3 < ignored and compensated < ignored / 5
+
+
+def test_grid_is_never_shorter_than_the_period(plan):
+    track = tracker().solve(plan, T0 + TF - 0.035, state(plan.X[-1]))
+    assert track.dt == PERIOD
+    far = tracker().solve(plan, T0, state(plan.X[0]))
+    assert far.dt == pytest.approx(TF / 10)
+
+
+def test_late_error_is_corrected_without_chatter(plan):
+    """The robot gets each input one step late and is pushed 100 ms before the impact (R 0.01, as configured).
+    The old grid (time to impact / H, down to ~0 near the impact) plans corrections shorter than the period
+    an input is held: it ends 1.5 mm off with 5 m/s^2 jumps between steps; the period grid ends within 0.5 mm."""
+    A, B = discrete_matrices(PERIOD, GAMMA, axes=3)
+    steps = int(round(TF / PERIOD))
+
+    def run(period):
+        ctrl = PlanController(tracker(R=[0.01] * 3, period=period), PD([0, 0, 0], [0] * 3, [0] * 3), ACC_MAX, 0.1)
+        ctrl.on_plan(plan, T0)
+        x, sent = state(plan.X[0]), [np.zeros(3)]
+        for i in range(steps):
+            if i == steps - 10:
+                x[[0, 1, 3, 4]] += [0.003, -0.003, -0.05, 0.05]
+            sent.append(ctrl.step(T0 + i * PERIOD, x))
+            x = A @ x + B @ sent[-2]
+        jumps = np.abs(np.diff(np.array(sent[-10:])[:, :2], axis=0)).max()
+        return np.linalg.norm(x[0:2] - plan.X[-1, 0:2]), jumps
+
+    (old_err, old_jump), (new_err, new_jump) = run(1e-9), run(PERIOD)
+    assert new_err < 0.5e-3 < 1e-3 < old_err and new_jump < 0.5 * old_jump

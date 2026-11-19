@@ -52,7 +52,8 @@ def launch_setup(context):
         package="holohover_utils",
         executable="optitrack_interface",
         parameters=[simulator_config,
-                    ecp.getSimConfig()],
+                    ecp.getSimConfig(),
+                    {'table_center': ecp.data['experiment'].get('table_center', [0.0, 0.0])}],
         output='screen'
     )
 

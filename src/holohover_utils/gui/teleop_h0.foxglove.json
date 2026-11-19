@@ -1,0 +1,431 @@
+{
+  "configById": {
+    "3D!teleop": {
+      "foxglovePanelTitle": "Table: h0 (blue), OptiTrack (ring), carrot (orange, arrow = command), error (red)",
+      "cameraState": {
+        "perspective": false,
+        "distance": 2.6,
+        "phi": 0,
+        "thetaOffset": 0,
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 100
+      },
+      "followMode": "follow-none",
+      "followTf": "world",
+      "scene": {
+        "transforms": {
+          "showLabel": false,
+          "axisScale": 0.5
+        },
+        "meshUpAxis": "z_up"
+      },
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/studio_script/teleop": {
+          "visible": true
+        }
+      },
+      "layers": {}
+    },
+    "Plot!x": {
+      "foxglovePanelTitle": "x [m]",
+      "paths": [
+        {
+          "value": "/h0/state_disturbance.state_msg.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "EKF"
+        },
+        {
+          "value": "/h0/state_ref.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "carrot"
+        },
+        {
+          "value": "/h0/pose.pose.position.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "OptiTrack"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!y": {
+      "foxglovePanelTitle": "y [m]",
+      "paths": [
+        {
+          "value": "/h0/state_disturbance.state_msg.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "EKF"
+        },
+        {
+          "value": "/h0/state_ref.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "carrot"
+        },
+        {
+          "value": "/h0/pose.pose.position.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "OptiTrack"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!yaw": {
+      "foxglovePanelTitle": "yaw [rad]",
+      "paths": [
+        {
+          "value": "/h0/state_disturbance.state_msg.yaw",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "EKF"
+        },
+        {
+          "value": "/h0/state_ref.yaw",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "carrot"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!v": {
+      "foxglovePanelTitle": "velocity [m/s]",
+      "paths": [
+        {
+          "value": "/h0/state_disturbance.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vx"
+        },
+        {
+          "value": "/h0/state_ref.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vx carrot"
+        },
+        {
+          "value": "/h0/state_disturbance.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vy"
+        },
+        {
+          "value": "/h0/state_ref.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vy carrot"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!w": {
+      "foxglovePanelTitle": "yaw rate [rad/s]",
+      "paths": [
+        {
+          "value": "/h0/state_disturbance.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "w_z"
+        },
+        {
+          "value": "/h0/state_ref.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "w_z carrot"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!cmd": {
+      "foxglovePanelTitle": "Command /h0/cmd_vel",
+      "paths": [
+        {
+          "value": "/h0/cmd_vel.linear.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vx"
+        },
+        {
+          "value": "/h0/cmd_vel.linear.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vy"
+        },
+        {
+          "value": "/h0/cmd_vel.angular.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "w_z"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!joy": {
+      "foxglovePanelTitle": "Gamepad /joy (L1 enable, R1 turbo)",
+      "paths": [
+        {
+          "value": "/joy.axes[0]",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "left x (axis 0)"
+        },
+        {
+          "value": "/joy.axes[1]",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "left y (axis 1)"
+        },
+        {
+          "value": "/joy.axes[2]",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "right x (axis 2)"
+        },
+        {
+          "value": "/joy.buttons[9]",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "L1"
+        },
+        {
+          "value": "/joy.buttons[10]",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "R1"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!motors": {
+      "foxglovePanelTitle": "Motor signals /h0/control",
+      "paths": [
+        {
+          "value": "/h0/control.motor_a_1",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "motor_a_1"
+        },
+        {
+          "value": "/h0/control.motor_a_2",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "motor_a_2"
+        },
+        {
+          "value": "/h0/control.motor_b_1",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "motor_b_1"
+        },
+        {
+          "value": "/h0/control.motor_b_2",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "motor_b_2"
+        },
+        {
+          "value": "/h0/control.motor_c_1",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "motor_c_1"
+        },
+        {
+          "value": "/h0/control.motor_c_2",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "motor_c_2"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "Plot!dist": {
+      "foxglovePanelTitle": "EKF disturbance",
+      "paths": [
+        {
+          "value": "/h0/state_disturbance.state_msg.dist_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "x"
+        },
+        {
+          "value": "/h0/state_disturbance.state_msg.dist_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "y"
+        },
+        {
+          "value": "/h0/state_disturbance.state_msg.dist_yaw",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "yaw"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240
+    },
+    "RosOut!log": {
+      "foxglovePanelTitle": "Log",
+      "searchTerms": [],
+      "minLogLevel": 2,
+      "nameFilter": {}
+    },
+    "Tab!main": {
+      "activeTabIdx": 0,
+      "tabs": [
+        {
+          "title": "Teleop h0",
+          "layout": {
+            "direction": "row",
+            "splitPercentage": 40,
+            "first": {
+              "direction": "column",
+              "splitPercentage": 75,
+              "first": "3D!teleop",
+              "second": "RosOut!log"
+            },
+            "second": {
+              "direction": "column",
+              "splitPercentage": 50,
+              "first": {
+                "direction": "column",
+                "splitPercentage": 50,
+                "first": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "Plot!x",
+                  "second": "Plot!y"
+                },
+                "second": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "Plot!yaw",
+                  "second": "Plot!w"
+                }
+              },
+              "second": {
+                "direction": "column",
+                "splitPercentage": 50,
+                "first": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "Plot!v",
+                  "second": "Plot!cmd"
+                },
+                "second": {
+                  "direction": "row",
+                  "splitPercentage": 40,
+                  "first": "Plot!joy",
+                  "second": {
+                    "direction": "row",
+                    "splitPercentage": 50,
+                    "first": "Plot!motors",
+                    "second": "Plot!dist"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {
+    "teleop-scene": {
+      "name": "teleop scene",
+      "sourceCode": "// Teleop scene, frame \"world\" (table frame, origin at the centre): the table, h0 from its EKF state (blue), its\n// OptiTrack pose (white ring), the table frame's axes and corners, the OptiTrack world frame, the carrot h0/state_ref (orange ghost) with its velocity arrow (= the command)\n// and the tracking error (red line, robot to carrot).\nimport { Input } from \"./types\";\nimport { SceneUpdate, SceneEntity, LinePrimitive, CylinderPrimitive, TextPrimitive, Color, Point3 } from \"@foxglove/schemas\";\n\ntype Time = { sec: number; nsec: number };\n\nexport const inputs = [\"/h0/state_disturbance\", \"/h0/state_ref\", \"/h0/pose\", \"/optitrack/table_pose_raw\"];\nexport const output = \"/studio_script/teleop\";\n\nconst WIDTH = 2.13, HEIGHT = 1.06, GOAL_WIDTH = 0.34, R_ROBOT = 0.07;\n// teleop_node.py: the carrot's bounds\nconst X_MAX = 0.9, Y_MAX = 0.4;\nconst AXIS = 0.3;  // m, the frame axes' length\n\nconst identity = { x: 0, y: 0, z: 0, w: 1 };\nconst pose = { position: { x: 0, y: 0, z: 0 }, orientation: identity };\nconst rgba = (r: number, g: number, b: number, a = 1): Color => ({ r, g, b, a });\nconst pt = (x: number, y: number, z = 0.02): Point3 => ({ x, y, z });\n\nconst ROBOT = rgba(0.2, 0.6, 1), CARROT = rgba(1, 0.55, 0.1), WALL = rgba(0.85, 0.85, 0.85);\nlet robot = { x: 0, y: 0 }, carrot = { x: 0, y: 0 };\n\nfunction line(points: Point3[], color: Color, thickness = 0.008): LinePrimitive {\n  return { type: 0, pose, thickness, scale_invariant: false, points, color, colors: [], indices: [] };\n}\n\nfunction disc(x: number, y: number, radius: number, color: Color, z = 0.01): CylinderPrimitive {\n  return { pose: { position: { x, y, z }, orientation: identity },\n           size: { x: 2 * radius, y: 2 * radius, z: 0.02 }, bottom_scale: 1, top_scale: 1, color };\n}\n\nfunction circle(x: number, y: number, r: number): Point3[] {\n  return Array.from({ length: 33 }, (_, i) => pt(x + r * Math.cos(i * Math.PI / 16), y + r * Math.sin(i * Math.PI / 16), 0.04));\n}\n\nfunction body(x: number, y: number, yaw: number, color: Color): [LinePrimitive, CylinderPrimitive] {\n  const heading = [pt(x, y, 0.03), pt(x + R_ROBOT * Math.cos(yaw), y + R_ROBOT * Math.sin(yaw), 0.03)];\n  return [line(heading, rgba(1, 1, 1, color.a), 0.01), disc(x, y, R_ROBOT, color)];\n}\n\nfunction text(p: Point3, s: string, color: Color): TextPrimitive {\n  return { pose: { position: p, orientation: identity }, billboard: true, font_size: 12, scale_invariant: true,\n           color, text: s };\n}\n\nfunction entity(timestamp: Time, id: string, lines: LinePrimitive[], cylinders: CylinderPrimitive[] = [],\n                texts: TextPrimitive[] = []): SceneEntity {\n  return { timestamp, frame_id: \"world\", id, lifetime: { sec: 0, nsec: 0 }, frame_locked: false, metadata: [],\n           arrows: [], cubes: [], spheres: [], cylinders, lines, triangles: [], texts, models: [] };\n}\n\nfunction table(ts: Time): SceneEntity {\n  const x = WIDTH / 2, y = HEIGHT / 2, g = GOAL_WIDTH / 2;\n  return entity(ts, \"table\", [\n    line([pt(-x, -y), pt(x, -y), pt(x, y), pt(-x, y), pt(-x, -y)], WALL, 0.01),\n    line([pt(0, -y), pt(0, y)], rgba(0.85, 0.85, 0.85, 0.4), 0.004),\n    line([pt(-x, -g), pt(-x, g)], rgba(1, 0.2, 0.2), 0.025),\n    line([pt(x, -g), pt(x, g)], rgba(1, 0.2, 0.2), 0.025),\n    line([pt(-X_MAX, -Y_MAX), pt(X_MAX, -Y_MAX), pt(X_MAX, Y_MAX), pt(-X_MAX, Y_MAX), pt(-X_MAX, -Y_MAX)],\n         rgba(1, 0.55, 0.1, 0.35), 0.004),  // the carrot's bounds\n    // the table frame: origin at the centre, x (red) to the right goal, y (green) up\n    line([pt(0, 0, 0.06), pt(AXIS, 0, 0.06), pt(AXIS - 0.04, 0.025, 0.06), pt(AXIS, 0, 0.06), pt(AXIS - 0.04, -0.025, 0.06)],\n         rgba(1, 0.2, 0.2), 0.012),\n    line([pt(0, 0, 0.06), pt(0, AXIS, 0.06), pt(0.025, AXIS - 0.04, 0.06), pt(0, AXIS, 0.06), pt(-0.025, AXIS - 0.04, 0.06)],\n         rgba(0.2, 1, 0.2), 0.012),\n  ], [], [\n    text(pt(AXIS + 0.04, 0, 0.06), \"x\", rgba(1, 0.2, 0.2)),\n    text(pt(0, AXIS + 0.04, 0.06), \"y\", rgba(0.2, 1, 0.2)),\n    text(pt(0, -0.04, 0.06), \"(0, 0)\", WALL),\n    ...[[x, y], [-x, y], [-x, -y], [x, -y]].map(([cx, cy]) =>\n      text(pt(cx, cy, 0.06), `(${cx.toFixed(3)}, ${cy.toFixed(2)})`, WALL)),\n  ]);\n}\n\nfunction error(ts: Time): SceneEntity {\n  return entity(ts, \"error\", [line([pt(robot.x, robot.y, 0.05), pt(carrot.x, carrot.y, 0.05)], rgba(1, 0.2, 0.2), 0.006)]);\n}\n\nexport default function script(\n  event: Input<\"/h0/state_disturbance\"> | Input<\"/h0/state_ref\"> | Input<\"/h0/pose\">\n         | Input<\"/optitrack/table_pose_raw\">,\n): SceneUpdate {\n  const ts = event.receiveTime;\n  if (event.topic === \"/optitrack/table_pose_raw\") {\n    // the OptiTrack world frame in the table frame (optitrack_interface's to_table_frame applied to its origin)\n    const p = event.message.pose.position, q = event.message.pose.orientation;\n    const yaw = Math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z));\n    const c = Math.cos(yaw), sn = Math.sin(yaw);\n    const ox = -c * p.x - sn * p.y, oy = sn * p.x - c * p.y;\n    const axis = (a: number, color: Color) =>\n      line([pt(ox, oy, 0.06), pt(ox + AXIS * Math.cos(a), oy + AXIS * Math.sin(a), 0.06)], color, 0.012);\n    return { deletions: [], entities: [entity(ts, \"world\", [axis(-yaw, rgba(1, 0.2, 0.2)), axis(Math.PI / 2 - yaw, rgba(0.2, 1, 0.2))],\n      [], [text(pt(ox, oy - 0.05, 0.06), \"OptiTrack world\", WALL),\n           text(pt(0, -HEIGHT / 2 - 0.08, 0.06),\n                `table in world: (${p.x.toFixed(3)}, ${p.y.toFixed(3)}), yaw ${(yaw * 180 / Math.PI).toFixed(1)}\u00b0`, WALL)])] };\n  }\n  if (event.topic === \"/h0/state_disturbance\") {\n    const s = event.message.state_msg;\n    robot = { x: s.x, y: s.y };\n    const [h, d] = body(s.x, s.y, s.yaw, ROBOT);\n    return { deletions: [], entities: [table(ts), entity(ts, \"robot\", [h], [d]), error(ts)] };\n  }\n  if (event.topic === \"/h0/state_ref\") {\n    const s = event.message;\n    carrot = { x: s.x, y: s.y };\n    const [h, d] = body(s.x, s.y, s.yaw, rgba(1, 0.55, 0.1, 0.45));\n    const v = line([pt(s.x, s.y, 0.04), pt(s.x + 0.5 * s.v_x, s.y + 0.5 * s.v_y, 0.04)], CARROT, 0.012);  // 0.5 s ahead\n    return { deletions: [], entities: [entity(ts, \"carrot\", [h, v], [d]), error(ts)] };\n  }\n  const p = event.message.pose.position;\n  return { deletions: [], entities: [table(ts), entity(ts, \"optitrack\", [line(circle(p.x, p.y, R_ROBOT), rgba(1, 1, 1), 0.005)])] };\n}\n"
+    }
+  },
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": "Tab!main"
+}
