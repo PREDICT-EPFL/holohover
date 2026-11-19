@@ -3,9 +3,9 @@
 // Used by scripts/impact_comparison.py to replay recorded wall impacts.
 //
 // Input (YAML, stdin):
-//   model: box2d | elastic | friction_restitution
+//   model: box2d | elastic | walton
 //   restitution: 0.88                    # elastic
-//   e_n: 0.88  mu: 0.07  e_t: 0.46       # friction_restitution
+//   e_n: 0.88  mu: 0.07  e_t: 0.46       # walton
 //   radius: 0.035
 //   linear_damping: 0.4  angular_damping: 0.5  gravity: [gx, gy]   # free flight (Box2D damping ~ exp(-c t))
 //   period: 0.01  substeps: 10  iterations: [6, 2]  duration: 0.6

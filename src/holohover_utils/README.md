@@ -28,7 +28,7 @@ ros2 launch holohover_utils air_hockey_sim.launch.py evaluate:=50 first:=0   # s
 | `experiment` | `air_hockey.yaml` | experiment file |
 | `controller` | `plan` | `plan` (shot planner) or `teleop` (`hN/cmd_vel`; gamepad: hold L1) |
 | `puck` | experiment's | `x,y` of the puck at rest, table frame |
-| `wall_collision` | `elastic` | puck-wall bounce: `box2d`, `elastic`, `friction_restitution` (see holohover_simulator) |
+| `wall_collision` | `walton` | puck-wall bounce: `box2d`, `elastic`, `walton` (see holohover_simulator) |
 | `hovercraft_collision` | `box2d` | puck-hovercraft bounce, same options |
 | `substeps` | `10` | Box2D steps per simulator period |
 | `record` | `false` | record every topic to `/root/data/rosbags/air_hockey_<date>_<time>` |

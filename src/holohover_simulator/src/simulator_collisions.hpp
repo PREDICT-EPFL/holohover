@@ -6,7 +6,7 @@
 // Model of each contact, node parameters wall_collision_model and hovercraft_collision_model (config/*.yaml):
 //   box2d:                Box2D's own contact solver with the fixture values
 //   elastic:              v_n' = -e v_n, tangential velocity and spin unchanged
-//   friction_restitution: independent friction-restitution impact (normal restitution e_n, Coulomb friction mu,
+//   walton:               Walton impact (normal restitution e_n, Coulomb friction mu,
 //                         tangential restitution e_t), the model fitted by identification/ (see model.py there)
 //
 // The same impact law serves both contacts: it is solved in the frame of the surface that is hit, moving with the
@@ -21,23 +21,23 @@
 #include <stdexcept>
 #include <string>
 
-enum class CollisionModel { box2d, elastic, friction_restitution };
+enum class CollisionModel { box2d, elastic, walton };
 
 struct CollisionParams {
     CollisionModel model = CollisionModel::elastic;
     double restitution = 0.9;                // elastic
-    double e_n = 0.85, mu = 0.2, e_t = 0.3;  // friction_restitution
+    double e_n = 0.85, mu = 0.2, e_t = 0.3;  // walton
 };
 
 inline CollisionModel parse_collision_model(const std::string &model)
 {
     if (model == "box2d") return CollisionModel::box2d;
     if (model == "elastic") return CollisionModel::elastic;
-    if (model == "friction_restitution") return CollisionModel::friction_restitution;
-    throw std::invalid_argument("collision model must be box2d, elastic or friction_restitution, not '" + model + "'");
+    if (model == "walton") return CollisionModel::walton;
+    throw std::invalid_argument("collision model must be box2d, elastic or walton, not '" + model + "'");
 }
 
-// Parameters <contact>_collision_model, elastic.<contact>.restitution, friction_restitution.<contact>.{e_n,mu,e_t}
+// Parameters <contact>_collision_model, elastic.<contact>.restitution, walton.<contact>.{e_n,mu,e_t}
 inline CollisionParams load_collision_params(rclcpp::Node &node, const std::string &contact,
                                              const std::string &default_model, double default_restitution)
 {
@@ -45,16 +45,16 @@ inline CollisionParams load_collision_params(rclcpp::Node &node, const std::stri
     const auto model = node.declare_parameter<std::string>(contact + "_collision_model", default_model);
     c.model = parse_collision_model(model);
     c.restitution = node.declare_parameter<double>("elastic." + contact + ".restitution", default_restitution);
-    c.e_n = node.declare_parameter<double>("friction_restitution." + contact + ".e_n", c.e_n);
-    c.mu = node.declare_parameter<double>("friction_restitution." + contact + ".mu", c.mu);
-    c.e_t = node.declare_parameter<double>("friction_restitution." + contact + ".e_t", c.e_t);
+    c.e_n = node.declare_parameter<double>("walton." + contact + ".e_n", c.e_n);
+    c.mu = node.declare_parameter<double>("walton." + contact + ".mu", c.mu);
+    c.e_t = node.declare_parameter<double>("walton." + contact + ".e_t", c.e_t);
     RCLCPP_INFO(node.get_logger(), "Puck-%s collision model: %s", contact.c_str(), model.c_str());
     return c;
 }
 
 // Velocity v and spin w of the puck after an impact, v relative to the surface that is hit. n: surface normal
 // towards the puck, r: puck radius, kappa = I / (m r^2). Same law as impact() in identification/model.py
-inline void friction_restitution_impact(b2Vec2 &v, float &w, b2Vec2 n, float r, float kappa, const CollisionParams &c)
+inline void walton_impact(b2Vec2 &v, float &w, b2Vec2 n, float r, float kappa, const CollisionParams &c)
 {
     const b2Vec2 t(-n.y, n.x);  // z x n
     const float vn = b2Dot(v, n), vt = b2Dot(v, t);
@@ -93,7 +93,7 @@ inline b2Vec2 bounce_puck(b2Body *puck, b2Vec2 n, b2Vec2 surface_v, const Collis
         v -= float(1 + c.restitution) * vn * n;
     } else {
         const float r = puck->GetFixtureList()->GetShape()->m_radius;
-        friction_restitution_impact(v, w, n, r, puck->GetInertia() / (puck->GetMass() * r * r), c);
+        walton_impact(v, w, n, r, puck->GetInertia() / (puck->GetMass() * r * r), c);
     }
     puck->SetLinearVelocity(v + surface_v);
     puck->SetAngularVelocity(w);
@@ -154,7 +154,7 @@ public:
         hovercraft_collided_pub_ = node_->create_publisher<std_msgs::msg::Bool>("hovercraft_collided", 10);
     }
 
-    // elastic / friction_restitution: the bounce is set in BeginContact, Box2D only keeps the bodies apart
+    // elastic / walton: the bounce is set in BeginContact, Box2D only keeps the bodies apart
     void PreSolve(b2Contact *contact, const b2Manifold *) override {
         const Puck p(contact);
         if (p.params(*this) && p.params(*this)->model != CollisionModel::box2d) {

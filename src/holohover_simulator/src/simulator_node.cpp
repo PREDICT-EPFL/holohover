@@ -11,7 +11,7 @@ SimulatorNode::SimulatorNode() :
     world(std::make_unique<b2World>(gravity))
 {
     contact_listener_ = std::make_shared<ContactListener>(this,
-        load_collision_params(*this, "wall", "elastic", 0.9),
+        load_collision_params(*this, "wall", "walton", 0.9),
         load_collision_params(*this, "hovercraft", "box2d", 0.8));
     world->SetContactListener(contact_listener_.get());  // Update Sep 30: collision detector
     substeps = this->declare_parameter<int>("substeps", 10);

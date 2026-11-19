@@ -1,7 +1,7 @@
 {
   "configById": {
     "3D!impacts": {
-      "foxglovePanelTitle": "Wall impacts: measured (white) vs simulator models (box2d red, elastic blue, friction_restitution green)",
+      "foxglovePanelTitle": "Wall impacts: measured (white) vs simulator models (box2d red, elastic blue, walton green)",
       "cameraState": {
         "distance": 2.4,
         "perspective": false,
@@ -83,10 +83,10 @@
           "color": "#4c8ee6"
         },
         {
-          "value": "/friction_restitution/puck/state.state_msg.v_x",
+          "value": "/walton/puck/state.state_msg.v_x",
           "enabled": true,
           "timestampMethod": "receiveTime",
-          "label": "friction_restitution",
+          "label": "walton",
           "color": "#4cc764"
         }
       ],
@@ -127,10 +127,10 @@
           "color": "#4c8ee6"
         },
         {
-          "value": "/friction_restitution/puck/state.state_msg.v_y",
+          "value": "/walton/puck/state.state_msg.v_y",
           "enabled": true,
           "timestampMethod": "receiveTime",
-          "label": "friction_restitution",
+          "label": "walton",
           "color": "#4cc764"
         }
       ],
@@ -171,10 +171,10 @@
           "color": "#4c8ee6"
         },
         {
-          "value": "/friction_restitution/puck/state.state_msg.w_z",
+          "value": "/walton/puck/state.state_msg.w_z",
           "enabled": true,
           "timestampMethod": "receiveTime",
-          "label": "friction_restitution",
+          "label": "walton",
           "color": "#4cc764"
         }
       ],
@@ -208,10 +208,10 @@
           "color": "#4c8ee6"
         },
         {
-          "value": "/friction_restitution/position_error.data",
+          "value": "/walton/position_error.data",
           "enabled": true,
           "timestampMethod": "receiveTime",
-          "label": "friction_restitution",
+          "label": "walton",
           "color": "#4cc764"
         }
       ],

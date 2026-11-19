@@ -154,7 +154,7 @@ whatever its direction, a tilt of ~0.1 deg. Both have closed forms, the wall con
 solved exactly. A Coulomb drag on the linear motion was tried and dropped: on the data it was
 not separable from `c_v` (its estimate was negative).
 
-**Wall impact**: 2D version of the independent friction-restitution model of A.
+**Wall impact** (Walton model): 2D version of the independent friction-restitution model of A.
 Domenech-Carbo, *On the friction/tangential restitution problem: Independent
 friction-restitution modeling of sphere rebound with arbitrary spin*, Powder Technology 2022,
 [doi:10.1016/j.powtec.2022.118141](https://doi.org/10.1016/j.powtec.2022.118141): normal
@@ -219,6 +219,6 @@ After `fit` (on the host), in the docker container (`./holohover shell`, workspa
 ros2 run holohover_simulator impact_comparison.py /root/data/puck_id_...
 ```
 
-replays every wall impact of `results.yaml` in the C++ simulator (box2d, elastic and friction_restitution, with the
+replays every wall impact of `results.yaml` in the C++ simulator (box2d, elastic and walton, with the
 coefficients of `holohover_simulator/config/`) and writes the measured and simulated pucks to the bag
 `<bag>/impact_comparison/`. Open it in Foxglove with the layout `holohover_simulator/gui/impact_comparison.foxglove.json`.

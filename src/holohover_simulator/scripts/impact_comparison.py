@@ -3,7 +3,7 @@
 
 Every wall_impact segment that the identification fitted (results.yaml next to the bag, from `identify.py segment`,
 `review` and `fit` on the host) is replayed by collision_replay (the simulator's Box2D puck, walls and collision
-code) from its fitted initial state, once per model: box2d, elastic and friction_restitution with the coefficients
+code) from its fitted initial state, once per model: box2d, elastic and walton with the coefficients
 of holohover_simulator/config/*.yaml. The free flight uses the fitted c_v, c_w and tilt and the fitted walls, so
 the runs differ only by the collision model.
 
@@ -38,8 +38,8 @@ from rclpy.serialization import deserialize_message, serialize_message
 from std_msgs.msg import ColorRGBA, Float64, String
 from visualization_msgs.msg import Marker, MarkerArray
 
-MODELS = ["box2d", "elastic", "friction_restitution"]
-COLORS = {"box2d": (0.88, 0.31, 0.31), "elastic": (0.30, 0.56, 0.90), "friction_restitution": (0.30, 0.78, 0.39)}
+MODELS = ["box2d", "elastic", "walton"]
+COLORS = {"box2d": (0.88, 0.31, 0.31), "elastic": (0.30, 0.56, 0.90), "walton": (0.30, 0.78, 0.39)}
 MEASURED = (0.95, 0.95, 0.95)
 TRAIL = 1.0  # [s] of measured trail
 REBOUND = (0.03, 0.20)  # [s] after the impact: window of the rebound velocity line fit
@@ -92,10 +92,10 @@ def sim_coefficients():
     def params(name):
         with open(os.path.join(config, name)) as f:
             return yaml.safe_load(f)["/**"]["ros__parameters"]
-    fr = params("friction_restitution.yaml")["friction_restitution"]["wall"]
+    fr = params("walton.yaml")["walton"]["wall"]
     return {"box2d": {},
             "elastic": {"restitution": params("elastic.yaml")["elastic"]["wall"]["restitution"]},
-            "friction_restitution": {k: fr[k] for k in ("e_n", "mu", "e_t")}}
+            "walton": {k: fr[k] for k in ("e_n", "mu", "e_t")}}
 
 
 def rebound(tt, xy, t0, t1):

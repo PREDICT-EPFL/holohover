@@ -10,7 +10,7 @@ the wall contacts are found exactly (`next_impact`) instead of by time stepping.
 A Coulomb term on the linear motion is not in the model: on the recorded data it could not be
 separated from c_v (see README).
 
-Wall impact, a 2D version of the independent friction-restitution model of
+Wall impact, the Walton model: a 2D version of the independent friction-restitution model of
 A. Domenech-Carbo, "On the friction/tangential restitution problem: Independent
 friction-restitution modeling of sphere rebound with arbitrary spin", Powder Technology (2022),
 doi:10.1016/j.powtec.2022.118141. Normal restitution, friction and tangential restitution are

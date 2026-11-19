@@ -26,17 +26,17 @@ The puck's bounce on the walls and on the hovercraft is chosen separately with t
 |---|---|
 | `box2d` | Box2D's own contact solver with the fixture values |
 | `elastic` | `v_n' = -e v_n`, tangential velocity and spin unchanged |
-| `friction_restitution` | normal restitution `e_n`, Coulomb friction `mu`, tangential restitution `e_t`: couples the puck's spin and tangential velocity. The model fitted by [identification/](identification/README.md) |
+| `walton` | normal restitution `e_n`, Coulomb friction `mu`, tangential restitution `e_t`: couples the puck's spin and tangential velocity. The model fitted by [identification/](identification/README.md) |
 
-The coefficients are in [config/elastic.yaml](config/elastic.yaml) and [config/friction_restitution.yaml](config/friction_restitution.yaml). The wall ones are fitted on `puck_id_2026-10-13_18-15-39`; the hovercraft ones are not identified yet.
+The coefficients are in [config/elastic.yaml](config/elastic.yaml) and [config/walton.yaml](config/walton.yaml). The wall ones are fitted on `puck_id_2026-10-13_18-15-39`; the hovercraft ones are not identified yet.
 
 From the air hockey launch:
 
 ```bash
-ros2 launch holohover_utils air_hockey_sim.launch.py wall_collision:=friction_restitution hovercraft_collision:=box2d
+ros2 launch holohover_utils air_hockey_sim.launch.py wall_collision:=elastic hovercraft_collision:=box2d
 ```
 
-(defaults: `wall_collision:=elastic`, `hovercraft_collision:=box2d`).
+(defaults: `wall_collision:=walton`, `hovercraft_collision:=box2d`).
 
 ## Comparing the collision models with recorded impacts
 
@@ -46,7 +46,7 @@ ros2 launch holohover_utils air_hockey_sim.launch.py wall_collision:=friction_re
 ros2 run holohover_simulator impact_comparison.py /root/data/puck_id_2026-10-13_18-15-39
 ```
 
-Output: `<bag>/impact_comparison/`, open it in Foxglove with [gui/impact_comparison.foxglove.json](gui/impact_comparison.foxglove.json). On `puck_id_2026-10-13_18-15-39` (38 impacts), mean position error after the impact: `box2d` 15.6 mm, `elastic` 14.3 mm, `friction_restitution` 3.7 mm.
+Output: `<bag>/impact_comparison/`, open it in Foxglove with [gui/impact_comparison.foxglove.json](gui/impact_comparison.foxglove.json). On `puck_id_2026-10-13_18-15-39` (38 impacts), mean position error after the impact: `box2d` 15.6 mm, `elastic` 14.3 mm, `walton` 3.7 mm.
 
 ## Puck identification
 

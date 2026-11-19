@@ -6,7 +6,7 @@
 
 Geometry and masses default to holohover_dial/config.yaml.
 
-Both impacts use the friction-restitution law of holohover_simulator/identification/model.py
+Both impacts use the Walton law of holohover_simulator/identification/model.py
 (normal restitution e, Coulomb friction mu, tangential restitution e_t), which tracks the
 puck spin w. With u_t the slip of the contact point, P_n and P_t the normal and tangential
 impulses on the puck and M_n, M_t the effective masses at the contact:
@@ -85,7 +85,7 @@ class State:
     wall_e: float = 0.884
     wall_mu: float = 0.070
     wall_et: float = 0.458
-    # hit impact: holohover_simulator/config/friction_restitution.yaml, not identified
+    # hit impact: holohover_simulator/config/walton.yaml, not identified
     hit_e: float = 0.85
     hit_mu: float = 0.20
     hit_et: float = 0.30

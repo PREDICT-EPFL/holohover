@@ -82,7 +82,7 @@ def launch_setup(context):
             executable='simulator',
             parameters=simulation_files + [
                 os.path.join(sim_config_dir, 'elastic.yaml'),
-                os.path.join(sim_config_dir, 'friction_restitution.yaml'), {
+                os.path.join(sim_config_dir, 'walton.yaml'), {
                 **{k: sim_config[k] for k in ('hovercraft_ids', 'hovercraft_names', 'initial_state_x',
                                               'initial_state_y', 'initial_state_theta', 'initial_state_vx',
                                               'initial_state_vy', 'initial_state_w', 'holohover_props_files',
@@ -195,10 +195,10 @@ def generate_launch_description():
         DeclareLaunchArgument('record', default_value='false', description='Record every topic to an MCAP bag'),
         DeclareLaunchArgument('evaluate', default_value='0', description="Evaluate on that many of python-sim's starts"),
         DeclareLaunchArgument('first', default_value='0', description='First start of the evaluation'),
-        DeclareLaunchArgument('wall_collision', default_value='elastic',
-                              description='Wall bounce of the puck: box2d, elastic or friction_restitution'),
+        DeclareLaunchArgument('wall_collision', default_value='walton',
+                              description='Wall bounce of the puck: box2d, elastic or walton'),
         DeclareLaunchArgument('hovercraft_collision', default_value='box2d',
-                              description='Hovercraft-puck bounce: box2d, elastic or friction_restitution'),
+                              description='Hovercraft-puck bounce: box2d, elastic or walton'),
         DeclareLaunchArgument('substeps', default_value='10', description='Box2D steps per simulator period'),
         DeclareLaunchArgument('controller', default_value='plan', description='plan (shot planner) or teleop (control_lqr + teleop, cmd_vel)'),
         DeclareLaunchArgument('python_sim', default_value='', description="python-sim's directory (default: next to this file's source)"),
