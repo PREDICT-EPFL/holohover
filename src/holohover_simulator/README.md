@@ -46,7 +46,17 @@ ros2 launch holohover_utils air_hockey_sim.launch.py wall_collision:=elastic hov
 ros2 run holohover_simulator impact_comparison.py /root/data/puck_id_2026-10-13_18-15-39
 ```
 
-Output: `<bag>/impact_comparison/`, open it in Foxglove with [gui/impact_comparison.foxglove.json](gui/impact_comparison.foxglove.json). On `puck_id_2026-10-13_18-15-39` (38 impacts), mean position error after the impact: `box2d` 15.6 mm, `elastic` 14.3 mm, `walton` 3.7 mm.
+Output: `<bag>/impact_comparison/`, open it in Foxglove with [gui/impact_comparison.foxglove.json](gui/impact_comparison.foxglove.json).
+
+On `puck_id_2026-10-13_18-15-39` (38 impacts), mean errors after the impact:
+
+| | position RMS [mm] | rebound direction [deg] | rebound speed [%] | rebound spin [rad/s] |
+|---|---|---|---|---|
+| `box2d` | 15.6 | 3.8 | 6.8 | 2.77 |
+| `elastic` | 14.3 | 5.7 | 5.8 | 4.82 |
+| `walton` | 3.7 | 0.9 | 4.2 | 0.26 |
+
+The rebound speed barely separates `elastic` and `walton`: both use the same `e_n`, and the friction mostly turns the rebound and changes the spin, not the speed. The spin and direction errors are where the models differ.
 
 ## Puck identification
 
