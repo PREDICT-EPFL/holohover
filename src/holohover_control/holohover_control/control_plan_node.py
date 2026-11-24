@@ -14,8 +14,10 @@ publishes them.
     control           (out) HolohoverControlStamped, the motor signals
     acc_ref           (out) AccelStamped, the commanded acceleration (a_x, a_y, w_dot_z), table frame
                             (not published while idle)
+    timing/tracker    (out) std_msgs/Float64, wall time [ms] of each tracker solve (reference + QP)
 
-A timer at 1 / period runs the controller's steps from the latest state.
+A timer at 1 / period runs the controller's steps from the latest state. When a shot ends (back in
+defence), the tracker's solve times over it are logged in one line.
 """
 
 import numpy as np
@@ -26,11 +28,11 @@ from rclpy.qos import qos_profile_sensor_data
 from rcl_interfaces.msg import ParameterDescriptor
 from geometry_msgs.msg import AccelStamped
 from holohover_msgs.msg import HolohoverControlStamped, HolohoverPlan, HolohoverStateDisturbanceStamped
-from std_msgs.msg import Int32
+from std_msgs.msg import Float64, Int32
 
 from .actuation import Actuation
 from .plan import Plan
-from .plan_controller import PD, PlanController
+from .plan_controller import DEF, PD, PlanController
 from .tracker import Tracker
 
 
@@ -73,6 +75,7 @@ class ControlPlanNode(Node):
 
         self.control_publisher = self.create_publisher(HolohoverControlStamped, "control", qos_profile_sensor_data)
         self.acc_publisher = self.create_publisher(AccelStamped, "acc_ref", 10)
+        self.tracker_time_publisher = self.create_publisher(Float64, "timing/tracker", 10)
         self.create_subscription(HolohoverStateDisturbanceStamped, "state_disturbance", self.state_callback, 10)
         self.create_subscription(HolohoverPlan, "plan", self.plan_callback, 10)
         self.create_subscription(Int32, "episode", self.episode_callback, 10)
@@ -102,15 +105,30 @@ class ControlPlanNode(Node):
         if msg.data >= 0:
             self.controller.reset()
         self.active = msg.data >= 0
+        self.report_shot()
 
     def plan_callback(self, msg):
         self.controller.on_plan(chosen_plan(msg), self.now_s())
+        self.report_shot()
+
+    def report_shot(self):
+        """Back in defence after a shot: log its tracker solve times and forget them."""
+        times = self.controller.tracker_times
+        if self.controller.mode == DEF and times:
+            ms = 1e3 * np.array(times)
+            self.get_logger().info(f"shot tracker: n={len(ms)} mean={ms.mean():.2f} max={ms.max():.2f} [ms]")
+            times.clear()
 
     def control_step(self):
         if self.state is None:
             return
         now = self.get_clock().now()
+        times = self.controller.tracker_times
+        n_solves = len(times)
         acc = self.controller.step(1e-9 * now.nanoseconds, self.state, self.state_t) if self.active else None
+        if len(times) > n_solves:
+            self.tracker_time_publisher.publish(Float64(data=1e3 * times[-1]))
+        self.report_shot()
         signal = self.actuation.step(self.model_state, self.disturbance, acc)
 
         msg = HolohoverControlStamped()

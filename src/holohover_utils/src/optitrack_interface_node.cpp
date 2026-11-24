@@ -27,6 +27,7 @@ void OptitrackInterfaceNode::init_topics()
         // pose publishers
         topic_name = "/" + simulation_settings.hovercraft_names[i] + "/pose";
         hovercraft_pose_publishers.push_back(this->create_publisher<geometry_msgs::msg::PoseStamped>(topic_name, 10));
+        hovercraft_shifted_publishers.push_back(create_shifted_publishers(simulation_settings.hovercraft_names[i]));
     }
 
     table_raw_pose_subscription = this->create_subscription<geometry_msgs::msg::PoseStamped>(
@@ -38,6 +39,33 @@ void OptitrackInterfaceNode::init_topics()
         "/optitrack/puck_pose_raw", rclcpp::SensorDataQoS(),
         std::bind(&OptitrackInterfaceNode::puck_raw_pose_callback, this, std::placeholders::_1));
     puck_pose_publisher = this->create_publisher<geometry_msgs::msg::PoseStamped>("/puck/pose", 10);
+    puck_shifted_publishers = create_shifted_publishers("puck");
+}
+
+OptitrackInterfaceNode::ShiftedPublishers OptitrackInterfaceNode::create_shifted_publishers(const std::string &name)
+{
+    return {create_publisher<geometry_msgs::msg::PoseStamped>("/optitrack/" + name + "_pose_raw_shifted", 10),
+            create_publisher<geometry_msgs::msg::Vector3Stamped>("/optitrack/" + name + "_rpy_shifted", 10)};
+}
+
+// Same x, y as to_table_frame; z relative to the table marker; the raw orientation less the table's yaw (roll
+// and pitch kept). rpy: x = roll, y = pitch, z = yaw [rad], z compares with the EKF's yaw.
+void OptitrackInterfaceNode::publish_shifted(const geometry_msgs::msg::PoseStamped &raw_pose,
+                                             const ShiftedPublishers &publishers) const
+{
+    auto pose = to_table_frame(raw_pose);
+    pose.pose.position.z = raw_pose.pose.position.z - table_pose.pose.position.z;
+    tf2::Quaternion q_raw, q_table;
+    tf2::fromMsg(raw_pose.pose.orientation, q_raw);
+    q_table.setRPY(0, 0, tf2::getYaw(table_pose.pose.orientation));
+    const tf2::Quaternion q = (q_table.inverse() * q_raw).normalized();
+    pose.pose.orientation = tf2::toMsg(q);
+    publishers.pose->publish(pose);
+
+    geometry_msgs::msg::Vector3Stamped rpy;
+    rpy.header = pose.header;
+    tf2::Matrix3x3(q).getRPY(rpy.vector.x, rpy.vector.y, rpy.vector.z);
+    publishers.rpy->publish(rpy);
 }
 
 // Express a raw OptiTrack pose in the table frame (table origin, table yaw as x axis).
@@ -67,6 +95,7 @@ geometry_msgs::msg::PoseStamped OptitrackInterfaceNode::to_table_frame(const geo
 void OptitrackInterfaceNode::puck_raw_pose_callback(const geometry_msgs::msg::PoseStamped &raw_pose)
 {
     puck_pose_publisher->publish(to_table_frame(raw_pose));
+    publish_shifted(raw_pose, puck_shifted_publishers);
 }
 
 
@@ -85,6 +114,7 @@ void OptitrackInterfaceNode::hovercraft_raw_pose_callback(std::shared_ptr<geomet
         return;
 
     hovercraft_pose_publishers[hovercraft_id]->publish(to_table_frame(*raw_pose));
+    publish_shifted(*raw_pose, hovercraft_shifted_publishers[hovercraft_id]);
 }
 
 

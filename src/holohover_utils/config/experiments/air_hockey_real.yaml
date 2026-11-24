@@ -1,0 +1,19 @@
+# Air hockey on the real table: h3 runs the shot MPC planner (holohover_planner) and its controller
+# (holohover_control control_plan), tracked by OptiTrack with the puck. Launch with air_hockey_real.launch.py.
+# Poses in the table frame (origin at the centre), as in hw_table_frame.yaml.
+experiment:
+  name: air_hockey_real
+  description: "Shot MPC planner + plan controller on the real h3 attacking the left goal, OptiTrack"
+  machine: master
+  rviz_props_file: "common/holohover_params_new.yaml"
+  # the table centre in the table marker's frame (marker on the -x, -y corner): poses are centred on the table
+  table_center: [0.942, 0.504]  # measured 2026-11-24, puck against the 4 walls (docker/data/table_center_calib.py)
+
+hovercraft:
+  - name: h3
+    id: 3
+    initial_state: [0, 0, 0, 0, 0, 0] # unused: the EKF starts from the first OptiTrack pose
+    holohover_props: "common/holohover_params_new.yaml" # path starting from holohover_utils/config directory
+    color: [0.0, 1.0, 0.0, 1.0]
+    simulate: false
+    machine: master

@@ -5,7 +5,7 @@ experiment:
   rviz_props_file: "common/holohover_params_new.yaml"
   opt_alg: "dsqp"
   # the table centre in the table marker's frame (marker on the -x, -y corner): poses are centred on the table
-  table_center: [1.065, 0.53]
+  table_center: [0.942, 0.504]  # measured 2026-11-24, puck against the 4 walls (docker/data/table_center_calib.py)
 
   file_name_xd_trajectory: ""
   file_name_ud_trajectory: ""

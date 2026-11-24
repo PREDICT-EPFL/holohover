@@ -1,0 +1,12 @@
+# holohover_control control_plan on the real hovercraft: overrides of control_plan_config.yaml, loaded after it
+# by air_hockey_real.launch.py. The simulator keeps control_plan_config.yaml's values.
+/**:
+  ros__parameters:
+    # Defence PD retuned for the real loop delay. Identified from the bag air_hockey_real_20261124_133822
+    # (2026-11-24): command -> measured acceleration has ~50-130 ms delay and gain ~0.7-1.3. With the simulator's
+    # gains (kp 43.1/100, kd 8.62/20) the phase margin was ~15 deg in x/y and ~0 in yaw: x/y rang for ~2.5 s
+    # after each shot, and yaw was a bang-bang limit cycle at +-acc_max that took the thrust x/y needed.
+    # These give ~45-50 deg nominal margin (>= 27 deg over that delay/gain range).
+    defence:
+      kp: [8.0, 8.0, 6.0]      # 1/s^2
+      kd: [5.0, 5.0, 4.0]      # 1/s

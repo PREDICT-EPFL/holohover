@@ -10,9 +10,16 @@ shot_planner.ShotPlanner, which python-sim runs too; this node feeds it and publ
                          sequence (its latest valid plan with its cost, empty if none) and the index of
                          the one to follow (chosen, -1: none); every candidate empty and chosen = -1 after a
                          contact or an expired plan
+    timing/outer  (out)  std_msgs/Float64, wall time [ms] of each outer update (all bounce sequences)
+    timing/inner  (out)  std_msgs/Float64, wall time [ms] of each inner update (the followed sequence B*)
+    timing/warm   (out)  std_msgs/Float64, wall time [ms] of each solve of one sequence kept from a warm start
+    timing/cold   (out)  std_msgs/Float64, the same kept from a cold start (all seeds)
 
 A timer at shot_mpc.rates.inner_hz runs the planner's ticks. A plan is published once solved, so the
 controller gets it a solve time after its t0 and follows it on the clock.
+
+A shot runs from the update that adopts a plan to the tick that drops it (contact, expiry, new episode)
+or to idle; its solve times are logged in one line when it ends (report.shot_summary).
 
 Contacts are detected with the planner's puck model (contact.py), in the puck state callback.
 
@@ -30,15 +37,14 @@ from rclpy.node import Node
 from rclpy.time import Time
 from rcl_interfaces.msg import ParameterDescriptor
 from holohover_msgs.msg import HolohoverPlan, HolohoverPlanCandidate, HolohoverState, HolohoverStateStamped
-from std_msgs.msg import Int32
+from std_msgs.msg import Float64, Int32
 
 from .contact import ContactDetector
 from .shot_mpc.params import PARAMETERS, Frame, ShotParams
-from .shot_mpc.report import timing_summary, update_json
+from .shot_mpc.report import shot_summary, update_json
 from .shot_mpc.shot_nlp import ShotNLP
 from .shot_planner import Body, ShotPlanner
 
-REPORT_PERIOD = 5.0  # s between two timing reports
 # The node's own parameters, besides ShotParams' (PARAMETERS); start_idle is the launch file's (default false)
 NODE_PARAMETERS = ("attack_goal", "max_state_age", "shot_mpc.n_workers", "contact.dv", "contact.margin",
                    "contact.lookback")
@@ -104,11 +110,13 @@ class ShotPlannerNode(Node):
 
         self.robot = None  # latest Body of the hovercraft
         self.puck = None  # latest Body of the puck
-        self.updates = []  # selector updates since the last report (update_json)
-        self.overruns = 0  # ticks that took longer than their period
-        self.t_report = None
+        self.shot_updates = []  # selector updates of the current shot (update_json)
+        self.overruns = 0  # its ticks that took longer than their period
+        self.shot_label = ""  # the label of its latest plan
 
         self.plan_publisher = self.create_publisher(HolohoverPlan, "plan", 10)
+        self.time_publishers = {name: self.create_publisher(Float64, f"timing/{name}", 10)
+                                for name in ("outer", "inner", "warm", "cold")}
         # The states stay fresh while a solve blocks the planning timer
         sensors = MutuallyExclusiveCallbackGroup()
         self.create_subscription(HolohoverStateStamped, "state", self.state_callback, 10, callback_group=sensors)
@@ -161,29 +169,38 @@ class ShotPlannerNode(Node):
     def planning_tick(self):
         t_start = time.perf_counter()
         now = self.get_clock().now()
-        t = 1e-9 * now.nanoseconds
-        if self.t_report is None:
-            self.t_report = t
-
         if not self.active:
+            self.report_shot()  # idle ends the shot
             return
-        plans = self.planner.tick(t, self.robot, self.puck)
+        followed, drops = self.planner.plan, self.planner.drops  # the plan followed before this tick
+        plans = self.planner.tick(1e-9 * now.nanoseconds, self.robot, self.puck)
         logs = self.planner.selector.logs
-        self.updates += [update_json(u) for u in logs]
+        updates = [update_json(u) for u in logs]
         logs.clear()
-        if plans is not None:
+        if plans is not None and self.active:  # idle during the solve: the controller already got no plan
             self.plan_publisher.publish(plan_msg(now.to_msg(), plans))
+        self.publish_times(updates)
 
-        if time.perf_counter() - t_start > self.period:
-            self.overruns += 1
-        if t - self.t_report >= REPORT_PERIOD:
-            self.report(t)
+        if followed is not None and self.planner.drops > drops:  # the shot ended at the start of this tick
+            self.report_shot()
+        if self.planner.plan is not None:  # in a shot, maybe one adopted at this tick
+            self.shot_label = self.planner.plan.label
+            self.shot_updates += updates
+            self.overruns += time.perf_counter() - t_start > self.period
 
-    def report(self, t):
-        if self.updates:
-            self.get_logger().info(f"{len(self.updates)} updates, {self.overruns} ticks over "
-                                   f"{1e3 * self.period:.0f} ms\n{timing_summary(self.updates)}")
-        self.updates, self.overruns, self.t_report = [], 0, t
+    def report_shot(self):
+        """Log the solve times of the shot that just ended, if any, and start afresh."""
+        if self.shot_updates:
+            self.get_logger().info(f"shot {self.shot_label}: {len(self.shot_updates)} updates, "
+                                   f"{self.overruns} ticks over {1e3 * self.period:.0f} ms | "
+                                   f"{shot_summary(self.shot_updates)}")
+        self.shot_updates, self.overruns = [], 0
+
+    def publish_times(self, updates):
+        for u in updates:
+            self.time_publishers["outer" if u["kind"] == "outer" else "inner"].publish(Float64(data=1e3 * u["t_wall"]))
+            for r in u["results"].values():
+                self.time_publishers["cold" if r["cold"] else "warm"].publish(Float64(data=1e3 * r["t_wall"]))
 
     def close(self):
         if self.nlp.pool is not None:

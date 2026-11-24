@@ -3,6 +3,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "holohover_common/utils/simulation_settings.hpp"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2/LinearMath/Quaternion.h>
@@ -25,6 +26,17 @@ private:
 
     std::vector<rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr> hovercraft_raw_pose_subscriptions;
     std::vector<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr>    hovercraft_pose_publishers;
+
+    // Debug: a raw pose in the table frame, height and tilt kept (/optitrack/<name>_pose_raw_shifted), and its
+    // roll, pitch, yaw [rad] (/optitrack/<name>_rpy_shifted), to compare with the EKF and see a mis-solved rigid body
+    struct ShiftedPublishers {
+        rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose;
+        rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr rpy;
+    };
+    ShiftedPublishers puck_shifted_publishers;
+    std::vector<ShiftedPublishers> hovercraft_shifted_publishers;
+    ShiftedPublishers create_shifted_publishers(const std::string &name);
+    void publish_shifted(const geometry_msgs::msg::PoseStamped &raw_pose, const ShiftedPublishers &publishers) const;
 
     void init_topics();
     geometry_msgs::msg::PoseStamped to_table_frame(const geometry_msgs::msg::PoseStamped &raw_pose) const;

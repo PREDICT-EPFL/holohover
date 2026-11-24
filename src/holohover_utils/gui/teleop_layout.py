@@ -25,7 +25,7 @@ type Time = { sec: number; nsec: number };
 export const inputs = ["/NAME/state_disturbance", "/NAME/state_ref", "/NAME/pose", "/optitrack/table_pose_raw"];
 export const output = "/studio_script/teleop";
 
-const WIDTH = 2.13, HEIGHT = 1.06, GOAL_WIDTH = 0.34, R_ROBOT = 0.07;
+const WIDTH = 2.204, HEIGHT = 1.102, GOAL_WIDTH = 0.34, R_ROBOT = 0.07;
 // teleop_node.py: the carrot's bounds
 const X_MAX = 0.9, Y_MAX = 0.4;
 const AXIS = 0.3;  // m, the frame axes' length

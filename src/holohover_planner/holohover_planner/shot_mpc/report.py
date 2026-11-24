@@ -1,4 +1,5 @@
-"""Selector updates as plain data and the solve-time summary of the node's timing reports."""
+"""Selector updates as plain data, and their solve-time summaries: python-sim's (timing_summary) and the
+node's one line per shot (shot_summary)."""
 
 import numpy as np
 
@@ -32,3 +33,25 @@ def timing_summary(updates):
     if len(iters_warm):
         lines.append(f"  warm Fatrop iterations: mean {iters_warm.mean():.1f}, max {iters_warm.max()}")
     return "\n".join(lines)
+
+
+def ms_stats(name, seconds):
+    """'name n=.. mean=.. max=..' of wall times in s, shown in ms; '' if there are none."""
+    if len(seconds) == 0:
+        return ""
+    a = 1e3 * np.asarray(seconds)
+    return f"{name} n={len(a)} mean={a.mean():.2f} max={a.max():.2f}"
+
+
+def shot_summary(updates):
+    """One line of the solve times of selector updates (update_json) [ms]: the updates (outer: all B,
+    inner: B* or committed B*) and the solves of one B (warm or cold start, with the warm Fatrop iterations)."""
+    solves = [r for u in updates for r in u["results"].values()]
+    warm = [r for r in solves if not r["cold"]]
+    parts = [ms_stats("outer", [u["t_wall"] for u in updates if u["kind"] == "outer"]),
+             ms_stats("inner", [u["t_wall"] for u in updates if u["kind"] != "outer"]),
+             ms_stats("warm", [r["t_wall"] for r in warm]),
+             ms_stats("cold", [r["t_wall"] for r in solves if r["cold"]])]
+    if warm:
+        parts[2] += f" ({np.mean([r['iters'] for r in warm]):.1f} it)"
+    return " | ".join(p for p in parts if p) + " [ms]"

@@ -16,6 +16,7 @@ does not exist, so always pass them an experiment.
 | Launcher | What it starts |
 |---|---|
 | [air_hockey_sim.launch.py](launch/air_hockey_sim.launch.py) | The whole game: the simulator (table + puck), the optitrack interface, the puck's EKF and, per hovercraft, its EKF + `shot_planner` + `control_plan`. With `controller:=teleop`, `control_lqr` + teleop (gamepad or keyboard) instead. |
+| [air_hockey_real.launch.py](launch/air_hockey_real.launch.py) | The same on the real table (experiment `air_hockey_real.yaml`, h3), without the simulator: the mocap node and the hovercraft's `launchFC_loc.sh` run separately. Starts idle (`start_idle:=true`): `ros2 topic pub --once /h3/episode std_msgs/msg/Int32 "{data: 0}"` starts it, `data: -1` idles it. `record:=true` records every topic. |
 
 ```bash
 ros2 launch holohover_utils air_hockey_sim.launch.py                         # play

@@ -125,6 +125,7 @@ class ShotPlanner:
         self.attack_after = -np.inf  # end of the contact cooldown
         self.contact_pending = False  # a contact the next tick has not handled yet
         self.reset_pending = False  # a reset the next tick has not handled yet
+        self.drops = 0  # plans dropped so far (contact, expiry, reset): a tick may drop one and adopt another
 
     def none(self):
         """The PlanSet with no plan and no candidates."""
@@ -203,6 +204,8 @@ class ShotPlanner:
         return self.plan_set()
 
     def reset_plan(self):
+        if self.plan is not None:
+            self.drops += 1
         self.plan = None
         self.selector.reset()
 
