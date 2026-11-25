@@ -12,7 +12,6 @@ control_lqr (hovercraft_lqr.launch.py) and teleop; hw_env.launch.py (OptiTrack) 
 launchFC_loc.sh run separately.
 input: ps5 (default): joy + teleop_twist_joy (config/common/teleop_joy_config.yaml: hold L1, left stick x/y,
 right stick yaw, R1 turbo). keyboard: teleop_twist_keyboard in an xterm (needs a display; over ssh, ssh -X).
-pose_receive_time (real only, default true): the EKF times poses on arrival, the mocap PC's clock is not synced.
 """
 
 import os
@@ -41,8 +40,7 @@ def launch_setup(context):
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_lqr.launch.py')),
                 launch_arguments={'index': name.lstrip('h'), 'name': name,
-                                  'params': os.path.join(config, arg('params')),
-                                  'pose_receive_time': arg('pose_receive_time')}.items()),
+                                  'params': os.path.join(config, arg('params'))}.items()),
             Node(package='holohover_control', executable='teleop', namespace=name, output='screen',
                  emulate_tty=True, additional_env={'PYTHONUNBUFFERED': '1'}),
         ]
@@ -67,7 +65,5 @@ def generate_launch_description():
         DeclareLaunchArgument('name', default_value='h0', description='Hovercraft driven (real robot: e.g. h3)'),
         DeclareLaunchArgument('params', default_value='common/holohover_params_new.yaml',
                               description='Real robot: props file, from holohover_utils/config'),
-        DeclareLaunchArgument('pose_receive_time', default_value='true', choices=['true', 'false'],
-                              description='Real robot: EKF times poses on arrival (mocap clock not synced)'),
         OpaqueFunction(function=launch_setup),
     ])

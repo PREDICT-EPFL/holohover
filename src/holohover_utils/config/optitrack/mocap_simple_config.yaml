@@ -17,7 +17,7 @@ mocap_node:
                 parent_frame_id: world
                 child_frame_id: table_mocap
             '56': # <- Puck's Streaming ID from Motive
-                pose: optitrack/puck/pose
+                pose: optitrack/puck_pose_raw
                 tf: "true"
                 parent_frame_id: world
                 child_frame_id: puck_mocap

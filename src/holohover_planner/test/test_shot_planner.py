@@ -21,11 +21,19 @@ def test_contact_cooldown_and_reset(P, frame, nlp):
     assert none.chosen == -1 and all(c is None for c in none.candidates)
     assert planner.on_contact(0.2) is None  # during the cooldown: ignored
     assert planner.tick(0.15, *bodies(0.15)) is None and planner.plan is None  # dropped, no planning
+    assert planner.drops == 1
     assert planner.attack_after == 0.1 + P.contact_cooldown
 
+    t = 0.1 + P.contact_cooldown
+    while planner.plan is None and t < 2.0:  # after the cooldown, the next outer update adopts a plan
+        t += 0.05
+        planner.tick(t, *bodies(t))
+    assert planner.plan is not None
     planner.reset()
-    plans = planner.tick(0.2, *bodies(0.2))  # no cooldown any more, and an outer update
+    t += 0.05
+    plans = planner.tick(t, *bodies(t))  # no cooldown any more, and an outer update
     assert plans is not None and plans.chosen >= 0
+    assert planner.drops == 2  # the reset dropped the plan, though the same tick adopted a new one
     assert planner.selector.logs[-1].kind == "outer"
 
 

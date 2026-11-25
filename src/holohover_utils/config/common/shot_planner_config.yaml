@@ -6,8 +6,8 @@
     max_state_age: 0.05      # s: no planning from older robot or puck states
 
     table:
-      width: 2.13
-      height: 1.06
+      width: 2.225          # the real table: walls' faces 2.204 x 1.102 (measured 2026-11-24) + 2 wall_inset
+      height: 1.123
       goal_width: 0.34
       friction: 0.3          # 1/s, viscous friction of robot and puck
       restitution: 0.9       # wall bounce of the puck: the normal velocity is reversed and scaled by it, the
