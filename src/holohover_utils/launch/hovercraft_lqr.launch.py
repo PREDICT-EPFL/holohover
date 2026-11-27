@@ -17,6 +17,7 @@ def launch_setup(context):
     initial_x = float(LaunchConfiguration('initial_x').perform(context))    
     initial_y = float(LaunchConfiguration('initial_y').perform(context))    
     initial_yaw = float(LaunchConfiguration('initial_yaw').perform(context))    
+    initial_w_z = float(LaunchConfiguration('initial_w_z').perform(context))    
     
     print(f"\t- hovercraft\t\tID: {index} - Name: {name}")
     print(f"Configuration file: {params}")
@@ -49,7 +50,7 @@ def launch_setup(context):
         package="holohover_control",
         executable="control_lqr",
         parameters=[control_lqr_config,
-        {"holohover_props_file": params, "initial_x": initial_x, "initial_y": initial_y, "initial_yaw": initial_yaw}],
+        {"holohover_props_file": params, "initial_x": initial_x, "initial_y": initial_y, "initial_yaw": initial_yaw, "initial_w_z": initial_w_z}],
         namespace=name,
         ros_arguments=['--disable-rosout-logs'],
         output='both',
@@ -103,6 +104,11 @@ def generate_launch_description():
     ld.add_action(DeclareLaunchArgument(
         'initial_yaw', default_value='0.0',
         description='Initial Yaw angle.'
+    ))
+
+    ld.add_action(DeclareLaunchArgument(
+        'initial_w_z', default_value='0.0',
+        description='Spin'
     ))
 
     ld.add_action(opfunc)

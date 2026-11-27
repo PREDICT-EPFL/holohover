@@ -101,7 +101,9 @@ def launch_setup(context):
                 PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_lqr.launch.py')),
                 launch_arguments={'name': name, 'params': props, 'initial_x': str(ctrl.get('x', 0.0)),
                                   'initial_y': str(ctrl.get('y', 0.0)),
-                                  'initial_yaw': str(ctrl.get('yaw', 0.0))}.items(),
+                                  'initial_yaw': str(ctrl.get('yaw', 0.0)),
+                                  'initial_w_z': str(ctrl.get('w_z', 0.0)),
+                                  }.items(),
             ))
             continue
         ld += [

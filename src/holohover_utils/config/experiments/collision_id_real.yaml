@@ -16,5 +16,5 @@ hovercraft:
     color: [0.0, 1.0, 0.0, 1.0]
     simulate: false
     machine: master
-    controller: {type: lqr, x: 0.0, y: 0.0, yaw: 0.0}  # table frame [m, rad]
+    controller: {type: lqr, x: 0.0, y: 0.0, yaw: 0.0, w_z: 0.3}  # table frame [m, rad]
     planner: {active: false}

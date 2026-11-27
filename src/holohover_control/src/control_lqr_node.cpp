@@ -18,6 +18,7 @@ HolohoverControlLQRNode::HolohoverControlLQRNode() :
     ref.x = control_settings.initial_x;
     ref.y = control_settings.initial_y;
     ref.yaw = control_settings.initial_yaw;
+    ref.w_z = control_settings.initial_w_z;
 
     std::cout << "Initial reference: " << control_settings.initial_x << std::endl;
 
@@ -106,6 +107,7 @@ void HolohoverControlLQRNode::publish_control()
     Holohover::control_acc_t<double> u_acc_curr;
     holohover.signal_to_thrust(motor_velocities, u_force_curr);
     holohover.control_force_to_acceleration(state, u_force_curr, u_acc_curr);
+    ref.yaw = std::remainder(ref.yaw + ref.w_z * control_settings.period, 2 * M_PI);
 
     Holohover::state_t<double> state_ref;
     state_ref.setZero();
