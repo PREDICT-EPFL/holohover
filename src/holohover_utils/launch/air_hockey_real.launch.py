@@ -10,8 +10,15 @@ simulator: the mocap node (./holohover mocap start) and the hovercraft's own lau
 start_idle: the planner and the controller start idle (no plan, no acceleration). Start them with
     ros2 topic pub --once /h3/episode std_msgs/msg/Int32 "{data: 0}"
 and idle them again with data: -1. Stopping the launch stops the motors (holohover_fc's watchdog).
-record: record every topic to an MCAP bag, /root/data/rosbags/air_hockey_real_<date>_<time> (docker/data on
-the host), stopped with the launch.
+record: record every topic to an MCAP bag, /root/data/<name>/<run>_<date>_<time> (docker/data on the host;
+name:= defaults to the experiment's name, run counts up per folder), stopped with the launch.
+
+Per hovercraft, the experiment file picks the controller (default: control_plan + shot planner):
+    controller: {type: lqr, x: 0.0, y: 0.0, yaw: 0.0}             # hold a pose (hovercraft_lqr.launch.py)
+    planner: {active: false}                                     # control_plan only (defence hold), no shot planner
+Collision identification (collision_id_real.yaml), moving the LQR's reference live:
+    ros2 launch holohover_utils air_hockey_real.launch.py experiment:=collision_id_real.yaml record:=true
+    ros2 topic pub --once /h3/state_ref holohover_msgs/msg/HolohoverState "{x: 0.2, y: 0.0, yaw: 0.0}"
 
 Foxglove: the layout gui/air_hockey.foxglove.json draws /h0/...; rename its topics for another hovercraft.
 """
@@ -22,7 +29,8 @@ from datetime import datetime
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
+from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, OpaqueFunction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -73,14 +81,29 @@ def launch_setup(context):
         ),
     ]
 
+    hovercraft = ecp.data['hovercraft'][:len(sim_config['simulated'])]
+    controllers = [hc.get('controller') or {'type': 'plan'} for hc in hovercraft]
+    folder = os.path.join('/root/data', arg('name') or ecp.data['experiment']['name'])
+    run = len(os.listdir(folder)) + 1 if os.path.isdir(folder) else 1
+    bag = os.path.join(folder, f"{run:03d}_{datetime.now():%Y%m%d_%H%M%S}")
     if record:
-        bag = os.path.join('/root/data/rosbags', f"air_hockey_real_{datetime.now():%Y%m%d_%H%M%S}")
-        os.makedirs(os.path.dirname(bag), exist_ok=True)
         print(f"Recording every topic to {bag}")
+        os.makedirs(folder, exist_ok=True)
         ld.append(ExecuteProcess(cmd=['ros2', 'bag', 'record', '-a', '-s', 'mcap', '-o', bag], output='screen'))
 
     _, names, props_files, _ = ecp.getHovercraft()
-    for name, props in zip(names, props_files):
+    for name, props, hc, ctrl in zip(names, props_files, hovercraft, controllers):
+        if ctrl['type'] not in ('plan', 'lqr'):
+            raise RuntimeError(f"{name}: controller type {ctrl['type']!r}, expected plan or lqr")
+        if ctrl['type'] == 'lqr':
+            # the hovercraft's EKF (navigation_disturbance) and its LQR
+            ld.append(IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(os.path.join(this_dir, 'hovercraft_lqr.launch.py')),
+                launch_arguments={'name': name, 'params': props, 'initial_x': str(ctrl.get('x', 0.0)),
+                                  'initial_y': str(ctrl.get('y', 0.0)),
+                                  'initial_yaw': str(ctrl.get('yaw', 0.0))}.items(),
+            ))
+            continue
         ld += [
             Node(
                 package='holohover_navigation',
@@ -101,7 +124,9 @@ def launch_setup(context):
                 emulate_tty=True,
                 additional_env={'PYTHONUNBUFFERED': '1'},
             ),
-            Node(
+        ]
+        if (hc.get('planner') or {}).get('active', True):
+            ld.append(Node(
                 package='holohover_planner',
                 executable='shot_planner',
                 namespace=name,
@@ -109,8 +134,7 @@ def launch_setup(context):
                 output='screen',
                 emulate_tty=True,
                 additional_env={'PYTHONUNBUFFERED': '1'},
-            ),
-        ]
+            ))
     return ld
 
 
@@ -121,5 +145,7 @@ def generate_launch_description():
                               description='Planner and controller idle until an episode >= 0 on hN/episode'),
         DeclareLaunchArgument('record', default_value='false', choices=['true', 'false'],
                               description='Record every topic to an MCAP bag'),
+        DeclareLaunchArgument('name', default_value='',
+                              description="Bag folder under /root/data (default: the experiment's name)"),
         OpaqueFunction(function=launch_setup),
     ])

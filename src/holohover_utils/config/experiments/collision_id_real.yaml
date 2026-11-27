@@ -1,0 +1,20 @@
+# Collision identification on the real table: h3 holds a pose with the LQR while the puck is
+# shot at it from the rail. Launch with air_hockey_real.launch.py experiment:=collision_id_real.yaml record:=true;
+# bags in docker/data/collision_id_real/. Move the reference live by publishing on /h3/state_ref
+experiment:
+  name: collision_id_real
+  description: "h3 holds a pose (LQR) while the puck is shot at it, OptiTrack"
+  machine: master
+  rviz_props_file: "common/holohover_params_new.yaml"
+  table_center: [0.942, 0.504]  # same as air_hockey_real.yaml
+
+hovercraft:
+  - name: h3
+    id: 3
+    initial_state: [0, 0, 0, 0, 0, 0] # unused: the EKF starts from the first OptiTrack pose
+    holohover_props: "common/holohover_params_new.yaml"
+    color: [0.0, 1.0, 0.0, 1.0]
+    simulate: false
+    machine: master
+    controller: {type: lqr, x: 0.0, y: 0.0, yaw: 0.0}  # table frame [m, rad]
+    planner: {active: false}
