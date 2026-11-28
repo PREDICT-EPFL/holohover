@@ -1,0 +1,4 @@
+topics:
+  state: /puck/state
+  pose: /puck/pose
+  table: /none_already_table_frame

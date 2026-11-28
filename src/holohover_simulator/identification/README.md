@@ -222,3 +222,22 @@ ros2 run holohover_simulator impact_comparison.py /root/data/puck_id_...
 replays every wall impact of `results.yaml` in the C++ simulator (box2d, elastic and walton, with the
 coefficients of `holohover_simulator/config/`) and writes the measured and simulated pucks to the bag
 `<bag>/impact_comparison/`. Open it in Foxglove with the layout `holohover_simulator/gui/impact_comparison.foxglove.json`.
+
+## Puck-robot impacts
+
+`identify.py hits BAG [BAG ...]` ([robot_hits.py](robot_hits.py)) measures every puck-robot contact from the
+raw poses of both bodies (`topics.pose` and `robot_hits.robot_topic`, e.g. `/h3/pose`) and fits a two-body
+version of the wall impact law (e_n, mu, e_t) plus the puck mass to the velocities right after the impacts.
+Several bags are fitted together; the result goes to `hits.yaml` and `hits.png` next to the bag (or in the
+bags' common folder). No segmentation or review step.
+
+- Contacts: close approaches of the two centres. Line fits of the puck before/after give its velocities and
+  the impact time; the robot is fitted with a line before (held still) and a parabola after (its controller
+  pulls it back). Hits with unclean fits (hand, double contact, mocap), lines that do not meet, a wrong
+  centre distance or no yaw rate are listed as rejected.
+- Per hit it also reports the direct e_n of the relative normal velocity and the mass ratio from the normal
+  momentum: a check of the fit and of the robot mass / radius in `robot_hits.robot`.
+- Record with the robot held by its LQR (`air_hockey_real.launch.py experiment:=collision_id_real.yaml
+  record:=true`), robot yaw fixed, puck shot at different offsets from the robot centre (impact angles).
+- The mu/e_t coupling of the wall fit applies: with nearly head-on hits only e_n and the mass are well
+  determined. `mu_starts` restarts the fit from several mu (the cost is flat where every contact sticks).

@@ -65,6 +65,30 @@ fit:
     mu:   {value: 0.20, min: 0.0, max: 2.0,  fit: true}   # wall friction
     e_t:  {value: 0.30, min: 0.0, max: 1.0,  fit: true}   # tangential restitution
 
+robot_hits:
+  # puck-robot impacts (identify.py hits, robot_hits.py): raw poses of both bodies, same frame
+  robot_topic: /h3/pose  # geometry_msgs/PoseStamped of the robot (the puck: topics.pose)
+  robot: {mass: 0.1463, inertia: 0.000294, radius: 0.07}  # [kg, kg m^2, m] holohover_params_new.yaml, hull
+  contact_margin: 0.02   # [m] candidates: centre distance below puck + robot radius + this
+  contact_tolerance: 0.012 # [m] used hits: centre distance at the impact within this of the radii sum
+  event_gap: 0.012       # [s] samples this close to the contact are left out of the fits
+  fit_window: 0.10       # [s] puck line fits before / after, robot line fit before
+  robot_window: 0.08     # [s] robot quadratic fit after (its controller pulls it back)
+  min_samples: 8
+  max_miss: 0.01         # [m] the puck lines before / after must meet this well at the impact
+  max_fit_rms_mm: 1.5    # [mm] fits with a larger residual (hand, double contact, mocap) reject the hit
+  quiet: 0.2             # [s] no other close approach this close
+  sigma_velocity: 0.02   # [m/s]   residual scaling of the post-impact velocities
+  sigma_yaw_rate: 0.5    # [rad/s] residual scaling of the post-impact yaw rates
+  loss: soft_l1
+  f_scale: 3.0
+  mu_starts: [0.03, 0.1, 0.3]  # the cost is flat in mu where every contact sticks: best of these starts
+  parameters:
+    e_n: {value: 0.8,  min: 0.0,   max: 1.0, fit: true}   # normal restitution puck-robot
+    mu:  {value: 0.1,  min: 0.0,   max: 2.0, fit: true}   # friction puck-robot
+    e_t: {value: 0.3,  min: 0.0,   max: 1.0, fit: true}   # tangential restitution puck-robot
+    m_p: {value: 0.02, min: 0.001, max: 0.2, fit: true}   # [kg] puck mass (fixed when weighed: fit false)
+
 plot:
   horizon: 0.5           # [s] prediction horizon of the "predict from every time" view and the error curve
   every: 0.05            # [s] time between two predictions in that view

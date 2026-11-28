@@ -5,6 +5,7 @@
     uv run identify.py review  BAG    check and correct the segments in a window
     uv run identify.py fit     BAG    fit the model -> results.yaml
     uv run identify.py plot    BAG    measured vs predicted, per segment, plus a summary
+    uv run identify.py hits    BAG [BAG ...]  puck-robot impacts: measure them and fit the impact law
     uv run identify.py synth   OUT    write a synthetic bag with known parameters (to test the pipeline)
 
 BAG is a bag directory or its .mcap file. See README.md.
@@ -90,6 +91,11 @@ def cmd_plot(args, cfg):
              segment_id=args.segment, horizon=args.horizon, every=args.every)
 
 
+def cmd_hits(args, cfg):
+    import robot_hits
+    robot_hits.run(args.bags, cfg, out=args.out)
+
+
 def cmd_synth(args, cfg):
     import synthetic
     synthetic.write(args.out, cfg, duration=args.duration, seed=args.seed)
@@ -122,6 +128,11 @@ def main():
     p.add_argument("--save", nargs="?", const="", help="write PNGs instead of opening a window "
                    "(default directory: plots/ next to results.yaml)")
     p.set_defaults(func=cmd_plot)
+
+    p = sub.add_parser("hits", help="puck-robot impacts: measure them and fit the impact law -> hits.yaml")
+    p.add_argument("bags", nargs="+", help="one or more bags (fitted together)")
+    p.add_argument("--out", help="output yaml (default: hits.yaml next to the bag, or in the bags' common folder)")
+    p.set_defaults(func=cmd_hits)
 
     p = sub.add_parser("synth", help="write a synthetic bag with known parameters")
     p.add_argument("out", help="output bag directory")

@@ -1,0 +1,854 @@
+{
+  "configById": {
+    "3D!table": {
+      "foxglovePanelTitle": "Table: /h3/state, /puck/state (no planner)",
+      "cameraState": {
+        "perspective": false,
+        "distance": 1.9112389156246066,
+        "phi": 5.729577951308232e-05,
+        "thetaOffset": -91.02918349161388,
+        "targetOffset": [
+          0.07761522773558376,
+          0.06612376525875165,
+          -1.732430846806162e-24
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 100
+      },
+      "followMode": "follow-none",
+      "followTf": "world",
+      "scene": {
+        "transforms": {
+          "showLabel": false,
+          "axisSize": 0.1
+        },
+        "meshUpAxis": "z_up"
+      },
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/studio_script/air_hockey": {
+          "visible": true
+        },
+        "/visualization/drone": {
+          "visible": false
+        },
+        "/scene/table": {
+          "visible": false
+        },
+        "/scene/bodies": {
+          "visible": false
+        },
+        "/robot1/plan": {
+          "visible": false
+        },
+        "/puck/prediction": {
+          "visible": false
+        },
+        "/robot2/prediction": {
+          "visible": false
+        },
+        "/puck/trail": {
+          "visible": false
+        },
+        "/shot_mpc/candidates/direct": {
+          "visible": false
+        },
+        "/shot_mpc/candidates/L": {
+          "visible": false
+        },
+        "/shot_mpc/candidates/R": {
+          "visible": false
+        },
+        "/shot_mpc/candidates/LR": {
+          "visible": false
+        },
+        "/shot_mpc/candidates/RL": {
+          "visible": false
+        },
+        "/dial/samples": {
+          "visible": false
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {},
+      "synchronize": false
+    },
+    "StateTransitions!plan": {
+      "foxglovePanelTitle": "Chosen sequence (empty: none, defence)",
+      "paths": [
+        {
+          "value": "/h3/plan.label",
+          "timestampMethod": "receiveTime",
+          "customStates": {
+            "type": "discrete",
+            "states": []
+          },
+          "label": "label"
+        }
+      ],
+      "isSynced": true,
+      "showLegend": true,
+      "legendDisplay": "top",
+      "xAxisDisplayMethod": "relative"
+    },
+    "Plot!uq6xxu": {
+      "foxglovePanelTitle": "battery",
+      "paths": [
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/h3/voltage.data",
+          "enabled": true,
+          "color": "#4e98e2",
+          "id": "01575514-c38c-4c25-ac9b-c8980ee3e406"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "timeWindowMode": "sliding",
+      "followingViewWidth": 50
+    },
+    "RosOut!log": {
+      "foxglovePanelTitle": "Log",
+      "searchTerms": [],
+      "minLogLevel": 2,
+      "nameFilter": {},
+      "fontSize": 12,
+      "showLevel": true,
+      "showDate": true,
+      "showTime": true,
+      "showTimezone": true,
+      "showName": true,
+      "showSourceLocation": false
+    },
+    "Plot!h0_velocity": {
+      "foxglovePanelTitle": "h0 position",
+      "paths": [
+        {
+          "value": "/h3/state.state_msg.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "state_x",
+          "color": "#f7df71",
+          "id": "352d8417-9a5e-414e-81c3-4d759ddf93fc"
+        },
+        {
+          "value": "/h3/state.state_msg.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "state_y",
+          "color": "#5cd6a9",
+          "id": "a120c308-08ca-442b-8588-87b1f22a9ee8"
+        },
+        {
+          "value": "/h3/state.state_msg.yaw",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "state_yaw",
+          "color": "#61cbff",
+          "id": "3249b616-58da-4762-86cc-8b19758bc875"
+        },
+        {
+          "value": "/optitrack/h3_pose_raw_shifted.pose.position.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "optitrack_x",
+          "color": "#a395e2",
+          "id": "e9f62c34-4dcf-4701-b744-c6af42db0934"
+        },
+        {
+          "value": "/optitrack/h3_pose_raw_shifted.pose.position.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "optitrack_y",
+          "color": "#cad660",
+          "id": "82fe761c-ec42-46bd-aaba-c06a08d2ba29"
+        },
+        {
+          "value": "/optitrack/h3_pose_raw_shifted.pose.position.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "optitrack_z",
+          "color": "#4e98e2",
+          "id": "5a282be4-b26d-49cf-953a-030feb6e7fb4"
+        },
+        {
+          "value": "/optitrack/h3_rpy_shifted.vector.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "optitrack_yaw",
+          "color": "#f5774d",
+          "id": "7f0d1757-2ba5-4b82-96e1-15dac5de4a1a"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 10
+    },
+    "Plot!48hcjzx": {
+      "foxglovePanelTitle": "h0 velocity [m/s] (EKF)",
+      "paths": [
+        {
+          "value": "/h3/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vx",
+          "color": "#4e98e2"
+        },
+        {
+          "value": "/h3/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vy",
+          "color": "#f5774d"
+        },
+        {
+          "value": "/h3/state.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "v_w",
+          "color": "#f7df71",
+          "id": "a16cfa01-b4fd-4680-ba57-48b042549e0e"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 10
+    },
+    "Plot!puck_velocity": {
+      "foxglovePanelTitle": "Puck position",
+      "paths": [
+        {
+          "value": "/puck/state.state_msg.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "state_x",
+          "color": "#5cd6a9",
+          "id": "b10f0826-62d8-4095-81b0-78d8c0af466d"
+        },
+        {
+          "value": "/puck/state.state_msg.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "state_y",
+          "color": "#a395e2",
+          "id": "99e9b6e1-76cf-4818-8711-5ca45aa0d326"
+        },
+        {
+          "value": "/puck/state.state_msg.yaw",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "state_yaw",
+          "color": "#f5774d",
+          "id": "658687e7-c5fc-4cd4-a116-fbf5b6755074"
+        },
+        {
+          "value": "/optitrack/puck_pose_raw_shifted.pose.position.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "color": "#cad660",
+          "id": "06f24539-57b0-4731-b53a-b61e2cb3cfac",
+          "label": "optitrack_x"
+        },
+        {
+          "value": "/optitrack/puck_pose_raw_shifted.pose.position.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "color": "#4e98e2",
+          "id": "2f8b8ccb-70f4-44d6-a4e4-38b24135da31",
+          "label": "optitrack_y"
+        },
+        {
+          "value": "/optitrack/puck_pose_raw_shifted.pose.position.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "color": "#4e98e2",
+          "id": "176876f0-be04-4361-98ca-4a428913e362",
+          "label": "optitrack_z"
+        },
+        {
+          "value": "/optitrack/puck_rpy_shifted.vector.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "color": "#00d627",
+          "id": "6d5815a5-f945-43ee-8c17-e1312a92b845",
+          "label": "optitrack_yaw"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 10
+    },
+    "Plot!49j1gmd": {
+      "foxglovePanelTitle": "Puck velocity (EKF)",
+      "paths": [
+        {
+          "value": "/puck/state.state_msg.v_x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vx",
+          "color": "#4e98e2"
+        },
+        {
+          "value": "/puck/state.state_msg.v_y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "vy",
+          "color": "#f7df71",
+          "id": "3097d00a-c3e8-4fd4-adb0-6dc919f99850"
+        },
+        {
+          "value": "/puck/state.state_msg.w_z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "v_w",
+          "color": "#5cd6a9",
+          "id": "fae2a18c-780c-47d2-9dae-7ef83ba19b78"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 10
+    },
+    "Plot!h0_acc": {
+      "foxglovePanelTitle": "h0 commanded acceleration [m/s\u00b2] (control_plan)",
+      "paths": [
+        {
+          "value": "/h3/acc_ref.accel.linear.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "ax"
+        },
+        {
+          "value": "/h3/acc_ref.accel.linear.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "ay"
+        },
+        {
+          "value": "/h3/acc_ref.accel.angular.z",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "w_dot_z"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 10
+    },
+    "Plot!shot_costs": {
+      "foxglovePanelTitle": "Shot costs J*(B) (gap: no valid plan)",
+      "paths": [
+        {
+          "value": "/h3/plan.candidates[0].cost",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "direct"
+        },
+        {
+          "value": "/h3/plan.candidates[1].cost",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "L"
+        },
+        {
+          "value": "/h3/plan.candidates[2].cost",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "R"
+        },
+        {
+          "value": "/h3/plan.candidates[3].cost",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "LR"
+        },
+        {
+          "value": "/h3/plan.candidates[4].cost",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "RL"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "maxYValue": 17,
+      "minYValue": 0,
+      "timeWindowMode": "sliding",
+      "followingViewWidth": 10
+    },
+    "RawMessages!plan": {
+      "foxglovePanelTitle": "Last plan",
+      "topicPath": "/h3/plan",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 12,
+      "defaultExpanded": false
+    },
+    "3D!sim": {
+      "foxglovePanelTitle": "python-sim scene (frame sim, under the table frame world)",
+      "cameraState": {
+        "perspective": false,
+        "distance": 2.6,
+        "phi": 0,
+        "thetaOffset": 0,
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 100
+      },
+      "followMode": "follow-none",
+      "followTf": "world",
+      "scene": {
+        "transforms": {
+          "showLabel": false,
+          "axisSize": 0.1
+        }
+      },
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/scene/table": {
+          "visible": true
+        },
+        "/scene/bodies": {
+          "visible": true
+        },
+        "/robot1/plan": {
+          "visible": true
+        },
+        "/puck/prediction": {
+          "visible": true
+        },
+        "/robot2/prediction": {
+          "visible": true
+        },
+        "/puck/trail": {
+          "visible": true
+        },
+        "/shot_mpc/candidates/direct": {
+          "visible": true
+        },
+        "/shot_mpc/candidates/L": {
+          "visible": true
+        },
+        "/shot_mpc/candidates/R": {
+          "visible": true
+        },
+        "/shot_mpc/candidates/LR": {
+          "visible": true
+        },
+        "/shot_mpc/candidates/RL": {
+          "visible": true
+        },
+        "/dial/samples": {
+          "visible": true
+        },
+        "/studio_script/air_hockey": {
+          "visible": false
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {}
+    },
+    "Plot!robot1_force": {
+      "foxglovePanelTitle": "Robot 1 force [N]",
+      "paths": [
+        {
+          "value": "/robot1/control.fx",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "Fx"
+        },
+        {
+          "value": "/robot1/control.fy",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "Fy"
+        },
+        {
+          "value": "/robot1/plan_control.fx",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "plan Fx"
+        },
+        {
+          "value": "/robot1/plan_control.fy",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "plan Fy"
+        },
+        {
+          "value": "/robot1/def_control.fx",
+          "enabled": false,
+          "timestampMethod": "receiveTime",
+          "label": "def Fx"
+        },
+        {
+          "value": "/robot1/def_control.fy",
+          "enabled": false,
+          "timestampMethod": "receiveTime",
+          "label": "def Fy"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 10
+    },
+    "Plot!sequence_scores": {
+      "foxglovePanelTitle": "Sequence scores",
+      "paths": [
+        {
+          "value": "/shot_mpc/scores.scores.direct",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "direct"
+        },
+        {
+          "value": "/shot_mpc/scores.scores.L",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "L"
+        },
+        {
+          "value": "/shot_mpc/scores.scores.R",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "R"
+        },
+        {
+          "value": "/shot_mpc/scores.scores.LR",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "LR"
+        },
+        {
+          "value": "/shot_mpc/scores.scores.RL",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "RL"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 10
+    },
+    "Plot!solve_time": {
+      "foxglovePanelTitle": "Selector update time [ms]",
+      "paths": [
+        {
+          "value": "/shot_mpc/solves{kind=='outer'}.t_wall_ms",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "outer"
+        },
+        {
+          "value": "/shot_mpc/solves{kind=='inner'}.t_wall_ms",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "inner"
+        },
+        {
+          "value": "/shot_mpc/solves{kind=='commit'}.t_wall_ms",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "label": "commit"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 10
+    },
+    "StateTransitions!mode": {
+      "foxglovePanelTitle": "Mode",
+      "paths": [
+        {
+          "value": "/episode.label",
+          "timestampMethod": "receiveTime",
+          "label": "episode"
+        },
+        {
+          "value": "/status.mode_name",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/shot_mpc/scores.chosen",
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "isSynced": true
+    },
+    "StateTransitions!compute": {
+      "foxglovePanelTitle": "Compute (bar width = wall time)",
+      "paths": [
+        {
+          "value": "/shot_mpc/compute/selector.state",
+          "timestampMethod": "receiveTime",
+          "label": "update"
+        },
+        {
+          "value": "/shot_mpc/compute/direct.state",
+          "timestampMethod": "receiveTime",
+          "label": "direct"
+        },
+        {
+          "value": "/shot_mpc/compute/L.state",
+          "timestampMethod": "receiveTime",
+          "label": "L"
+        },
+        {
+          "value": "/shot_mpc/compute/R.state",
+          "timestampMethod": "receiveTime",
+          "label": "R"
+        },
+        {
+          "value": "/shot_mpc/compute/LR.state",
+          "timestampMethod": "receiveTime",
+          "label": "LR"
+        },
+        {
+          "value": "/shot_mpc/compute/RL.state",
+          "timestampMethod": "receiveTime",
+          "label": "RL"
+        }
+      ],
+      "isSynced": true
+    },
+    "RosOut!events": {
+      "foxglovePanelTitle": "Events",
+      "searchTerms": [],
+      "minLogLevel": 1,
+      "topicToRender": "/events"
+    },
+    "RawMessages!solves": {
+      "foxglovePanelTitle": "Last selector update",
+      "topicPath": "/shot_mpc/solves",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "fontSize": 12
+    },
+    "Tab!main": {
+      "activeTabIdx": 0,
+      "tabs": [
+        {
+          "title": "Air hockey (Box2D and python-sim)",
+          "layout": {
+            "direction": "row",
+            "splitPercentage": 26.017699115044245,
+            "first": {
+              "direction": "column",
+              "splitPercentage": 65,
+              "first": "3D!table",
+              "second": {
+                "direction": "row",
+                "splitPercentage": 50,
+                "first": {
+                  "first": "StateTransitions!plan",
+                  "second": "Plot!uq6xxu",
+                  "direction": "column"
+                },
+                "second": "RosOut!log"
+              }
+            },
+            "second": {
+              "direction": "column",
+              "splitPercentage": 75,
+              "first": {
+                "direction": "column",
+                "splitPercentage": 43.017163229290176,
+                "first": {
+                  "direction": "row",
+                  "splitPercentage": 44.79665071770334,
+                  "first": {
+                    "first": "Plot!h0_velocity",
+                    "second": "Plot!48hcjzx",
+                    "direction": "column",
+                    "splitPercentage": 50.230995061144576
+                  },
+                  "second": {
+                    "first": "Plot!puck_velocity",
+                    "second": "Plot!49j1gmd",
+                    "direction": "column",
+                    "splitPercentage": 50.016943150565595
+                  }
+                },
+                "second": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "Plot!h0_acc",
+                  "second": "Plot!shot_costs"
+                }
+              },
+              "second": "RawMessages!plan"
+            }
+          }
+        },
+        {
+          "title": "Shot MPC details (python-sim)",
+          "layout": {
+            "direction": "row",
+            "splitPercentage": 45,
+            "first": "3D!sim",
+            "second": {
+              "direction": "column",
+              "splitPercentage": 50,
+              "first": {
+                "direction": "column",
+                "splitPercentage": 50,
+                "first": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "Plot!robot1_force",
+                  "second": "Plot!sequence_scores"
+                },
+                "second": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "Plot!solve_time",
+                  "second": "StateTransitions!mode"
+                }
+              },
+              "second": {
+                "direction": "column",
+                "splitPercentage": 50,
+                "first": "StateTransitions!compute",
+                "second": {
+                  "direction": "row",
+                  "splitPercentage": 50,
+                  "first": "RosOut!events",
+                  "second": "RawMessages!solves"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {
+    "holohover-air-hockey-scene": {
+      "name": "air hockey scene (no planner)",
+      "sourceCode": "// No-planner variant (LQR / collision identification / puck only): reads only /h3/state and /puck/state,\n// since Foxglove does not run a script while one of its inputs is missing. The table is drawn with either.\n// Air hockey scene for live runs and recordings, frame \"world\" (= table frame, origin at the centre):\n// the table, its goal mouths and midline, h3 and the puck from their EKF states, and h3's plans\n// (holohover_msgs/HolohoverPlan): for every valid candidate its planned path, its predicted shot\n// (straight, with side-wall reflections, up to an end wall) and its label and cost; the chosen one in\n// full colour with the robot and the puck at the impact, the others faint. No candidate clears them.\n// Each message updates its own entities; the table is redrawn with every h3 state, so it is there\n// right after a seek in a recording.\nimport { Input } from \"./types\";\nimport {\n  SceneUpdate,\n  SceneEntity,\n  LinePrimitive,\n  CylinderPrimitive,\n  TextPrimitive,\n  Color,\n  Point3,\n} from \"@foxglove/schemas\";\n\ntype Time = { sec: number; nsec: number };\n\nexport const inputs = [\"/h3/state\", \"/puck/state\"];\nexport const output = \"/studio_script/air_hockey\";\n\n// Table and bodies: shot_planner_config.yaml\nconst WIDTH = 2.204,\n  HEIGHT = 1.102,\n  GOAL_WIDTH = 0.34,\n  R_ROBOT = 0.07,\n  R_PUCK = 0.035;\n\nconst identity = { x: 0, y: 0, z: 0, w: 1 };\nconst pose = { position: { x: 0, y: 0, z: 0 }, orientation: identity };\nconst rgba = (r: number, g: number, b: number, a = 1): Color => ({\n  r,\n  g,\n  b,\n  a,\n});\nconst pt = (x: number, y: number, z = 0.02): Point3 => ({ x, y, z });\n\nconst ROBOT = rgba(0.2, 0.6, 1),\n  PUCK = rgba(1, 0.85, 0.2),\n  WALL = rgba(0.85, 0.85, 0.85),\n  GOAL = rgba(1, 0.2, 0.2);\n\nfunction line(\n  points: Point3[],\n  color: Color,\n  thickness = 0.008,\n): LinePrimitive {\n  return {\n    type: 0,\n    pose,\n    thickness,\n    scale_invariant: false,\n    points,\n    color,\n    colors: [],\n    indices: [],\n  };\n}\n\nfunction disc(\n  x: number,\n  y: number,\n  radius: number,\n  color: Color,\n  z = 0.01,\n): CylinderPrimitive {\n  return {\n    pose: { position: { x, y, z }, orientation: identity },\n    size: { x: 2 * radius, y: 2 * radius, z: 0.02 },\n    bottom_scale: 1,\n    top_scale: 1,\n    color,\n  };\n}\n\nfunction text(p: Point3, s: string, color: Color): TextPrimitive {\n  return {\n    pose: { position: p, orientation: identity },\n    billboard: true,\n    font_size: 12,\n    scale_invariant: true,\n    color,\n    text: s,\n  };\n}\n\nfunction entity(\n  timestamp: Time,\n  id: string,\n  lines: LinePrimitive[],\n  cylinders: CylinderPrimitive[] = [],\n  texts: TextPrimitive[] = [],\n): SceneEntity {\n  return {\n    timestamp,\n    frame_id: \"world\",\n    id,\n    lifetime: { sec: 0, nsec: 0 },\n    frame_locked: false,\n    metadata: [],\n    arrows: [],\n    cubes: [],\n    spheres: [],\n    cylinders,\n    lines,\n    triangles: [],\n    texts,\n    models: [],\n  };\n}\n\nfunction table(ts: Time): SceneEntity {\n  const x = WIDTH / 2,\n    y = HEIGHT / 2,\n    g = GOAL_WIDTH / 2;\n  return entity(ts, \"table\", [\n    line([pt(-x, -y), pt(x, -y), pt(x, y), pt(-x, y), pt(-x, -y)], WALL, 0.01),\n    line([pt(0, -y), pt(0, y)], rgba(0.85, 0.85, 0.85, 0.4), 0.004),\n    line([pt(-x, -g), pt(-x, g)], GOAL, 0.025),\n    line([pt(x, -g), pt(x, g)], GOAL, 0.025),\n  ]);\n}\n\n// Straight puck path from p along v, reflected on the side walls, up to an end wall\nfunction shot(px: number, py: number, vx: number, vy: number): Point3[] {\n  const xw = WIDTH / 2 - R_PUCK,\n    yw = HEIGHT / 2 - R_PUCK;\n  const points = [pt(px, py)];\n  for (let i = 0; i < 6 && (vx !== 0 || vy !== 0); i++) {\n    const tx = vx !== 0 ? ((vx > 0 ? xw : -xw) - px) / vx : Infinity;\n    const ty = vy !== 0 ? ((vy > 0 ? yw : -yw) - py) / vy : Infinity;\n    const t = Math.max(0, Math.min(tx, ty));\n    px += vx * t;\n    py += vy * t;\n    points.push(pt(px, py));\n    if (tx <= ty) break; // end wall\n    vy = -vy;\n  }\n  return points;\n}\n\nexport default function script(\n  event: Input<\"/h3/state\"> | Input<\"/puck/state\">,\n): SceneUpdate {\n  const ts = event.receiveTime;\n  const s = event.message.state_msg;\n  if (event.topic === \"/h3/state\") {\n    const heading = [\n      pt(s.x, s.y, 0.03),\n      pt(\n        s.x + R_ROBOT * Math.cos(s.yaw),\n        s.y + R_ROBOT * Math.sin(s.yaw),\n        0.03,\n      ),\n    ];\n    return {\n      deletions: [],\n      entities: [\n        table(ts),\n        entity(\n          ts,\n          \"h3\",\n          [line(heading, rgba(1, 1, 1), 0.01)],\n          [disc(s.x, s.y, R_ROBOT, ROBOT)],\n        ),\n      ],\n    };\n  }\n  return {\n    deletions: [],\n    entities: [table(ts), entity(ts, \"puck\", [], [disc(s.x, s.y, R_PUCK, PUCK)])],\n  };\n}\n"
+    }
+  },
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": "Tab!main"
+}
